@@ -1,0 +1,10 @@
+{
+  "short_name": "小秧排表注释助手",
+  "name": "小秧排表注释助手",
+  "icons": [
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
