@@ -4,9 +4,11 @@ services:
     build:
       context: ./client
     ports:
-      - "3000:3000"
+      - "45360:3000"
     depends_on:
       - server
+    env_file:
+      - .env.local
     volumes:
       - ./client:/app
       - /app/node_modules
@@ -15,7 +17,7 @@ services:
     build:
       context: ./server
     ports:
-      - "5000:5000"
+      - "45361:5000"
     depends_on:
       - mongo
     env_file:
