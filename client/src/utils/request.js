@@ -3,7 +3,7 @@ import { getLocalToken } from "./token";
 import { store } from "@/store";
 
 const request = axios.create({
-  baseURL: process.env.SERVER_URL || "http://localhost:5000",
+  baseURL: process.env.SERVER_URL || "http://localhost:5000/api",
   timeout: 5000,
 });
 

@@ -4,6 +4,10 @@ const { Title, Paragraph, Text } = Typography;
 
 const versionInfo = [
   {
+    version: "0.1.1",
+    content: ["修复团长钦定人后保存无效的bug", "修复更多心法展示的样式错误"],
+  },
+  {
     version: "0.1.0",
     content: [
       "第一版上线",

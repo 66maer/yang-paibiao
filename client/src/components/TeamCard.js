@@ -284,18 +284,14 @@ const getRuleContent = ({ available_xinfa, allow_rich }) => {
       const item = xinfaInfoTable[xinfa];
       icons.push(
         <Tooltip key={xinfa} title={item.name} placement="top">
-          <div>
-            <Avatar src={`/xinfa/${item.icon}`} />
-          </div>
+          <Avatar src={`/xinfa/${item.icon}`} />
         </Tooltip>
       );
     });
   } else if (available_xinfa.length === xinfaLength) {
     icons.push(
       <Tooltip key="all" title="不限定心法" placement="top">
-        <div>
-          <Avatar src="/jx3.png" />
-        </div>
+        <Avatar src="/jx3.png" />
       </Tooltip>
     );
   } else {

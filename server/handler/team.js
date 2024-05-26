@@ -80,6 +80,24 @@ exports.updateTeam = async (req, res) => {
         );
       }
     }
+    // 团长钦定的人要保存记录引用
+    slots.forEach((slot) => {
+      if (slot.member && slot.member?.is_lock && !slots.member?._id) {
+        const member = new TeamMember({
+          user: slot.member?.user,
+          nickname: slot.member.nickname,
+          character_name: slot.member?.character_name,
+          xinfa: slot.member.xinfa,
+          tags: slot.member?.tags,
+          is_proxy: slot.member?.is_proxy,
+          is_rich: slot.member?.is_rich,
+          is_lock: slot.member?.is_lock,
+          is_dove: slot.member?.is_dove,
+        });
+        member.save();
+        slot.member = member;
+      }
+    });
 
     team.slots = slots;
     await team.save();
