@@ -59,6 +59,8 @@ exports.publishTeam = async (req, res) => {
 };
 
 exports.updateTeam = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
     const { uuid, title, team_time, note, slots } = req.body;
     const team = await Team.findOne({ uuid })
@@ -101,14 +103,19 @@ exports.updateTeam = async (req, res) => {
 
     team.slots = slots;
     await team.save();
+    await session.commitTransaction();
 
     res.json({
       message: "更新团队成功",
     });
   } catch (err) {
+    console.error(err);
+    await session.abortTransaction();
     res.status(500).json({
       message: "更新团队失败",
     });
+  } finally {
+    session.endSession();
   }
 };
 
@@ -126,7 +133,42 @@ exports.closeTeam = async (req, res) => {
   }
 };
 
+exports.getTeamTemplete = async (req, res) => {
+  try {
+    const teamTp = await TeamTemplete.find({ league: req.curLeagueId });
+    res.json(teamTp);
+  } catch (err) {
+    res.status(500).json({
+      message: "查询团队模板失败",
+    });
+  }
+};
+
+exports.saveSlotTemplete = async (req, res) => {
+  try {
+    const { name, slot_rules } = req.body;
+
+    const newTemp = await TeamTemplete.findOneAndUpdate(
+      { name: name, league: req.curLeagueId },
+      { name, league: req.curLeagueId, slot_rules },
+      { upsert: true, new: true }
+    );
+
+    res.json({
+      message: "保存模板成功",
+      newTemp,
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: "保存模板失败",
+    });
+  }
+};
+
 exports.signup = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { uuid, xinfa, character_name, is_rich, is_proxy, tags } = req.body;
     const team = await Team.findOne({ uuid })
@@ -252,19 +294,26 @@ exports.signup = async (req, res) => {
     }
     await record.save();
     await team.save();
+    await session.commitTransaction();
     res.json({
       message: resMessage,
       newTeam: team,
     });
   } catch (err) {
     console.error(err);
+    await session.abortTransaction();
     res.status(500).json({
       message: "报名失败",
     });
+  } finally {
+    session.endSession();
   }
 };
 
 exports.cancelSignup = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { uuid, recordId } = req.body;
     const team = await Team.findOne({ uuid })
@@ -300,14 +349,18 @@ exports.cancelSignup = async (req, res) => {
       (candidate) => candidate._id.toString() !== recordId
     );
     await team.save();
+    await session.commitTransaction();
     res.json({
       message: "取消报名成功",
       newTeam: team,
     });
   } catch (err) {
     console.error(err);
+    await session.abortTransaction();
     res.status(500).json({
       message: "取消报名失败",
     });
+  } finally {
+    session.endSession();
   }
 };

@@ -17,5 +17,4 @@ const leagueStore = createSlice({
 });
 
 export const { setCurLeague, setRole } = leagueStore.actions;
-export const selectCurLeague = (state) => state.league.curLeague;
 export default leagueStore.reducer;

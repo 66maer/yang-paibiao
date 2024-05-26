@@ -1,18 +1,5 @@
 version: '3.8'
 services:
-  client:
-    build:
-      context: ./client
-    ports:
-      - "45360:3000"
-    depends_on:
-      - server
-    env_file:
-      - .env.local
-    volumes:
-      - ./client:/app
-      - /app/node_modules
-
   server:
     build:
       context: ./server
