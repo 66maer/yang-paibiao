@@ -253,18 +253,15 @@ const EditModeAssign = ({ curMember, setCurMember, setIsModalOpen }) => {
 };
 
 const EditModal = (props) => {
-  const tabs = [
-    {
-      key: "role",
-      label: "规则",
-      children: EditModelRule(props),
-    },
-    {
-      key: "user",
+  const { onlyRuly } = props;
+  const tabs = [{ key: "role", label: "规则", children: EditModelRule(props) }];
+  if (!onlyRuly) {
+    tabs.push({
+      key: "assign",
       label: "钦定",
       children: EditModeAssign(props),
-    },
-  ];
+    });
+  }
   return (
     <Tabs
       defaultActiveKey="role"
@@ -472,7 +469,7 @@ const ShowCard = ({ member, rule, onUserCancelSignup }) => {
   );
 };
 
-const EditCard = ({ member, rule, onSave }) => {
+const EditCard = ({ member, rule, onSave, onlyRuly }) => {
   const [showEditMask, setShowEditMask] = React.useState(false);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
@@ -564,6 +561,7 @@ const EditCard = ({ member, rule, onSave }) => {
           curRule,
           setCurRule,
           setIsModalOpen,
+          onlyRuly,
         })}
       </Modal>
     </Popconfirm>

@@ -2,6 +2,7 @@ const User = require("../models/user");
 const League = require("../models/league");
 const Team = require("../models/team");
 const TeamMember = require("../models/teamMember");
+const TeamTemplete = require("../models/teamTemplete");
 const { v4: uuidv4 } = require("uuid");
 const { xinfaInfoTable } = require("../utils/xinfa.js");
 

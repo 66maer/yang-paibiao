@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { request } from "@/utils";
 
 const tempTempleteStore = createSlice({
   name: "teamTemplete",
@@ -6,20 +7,20 @@ const tempTempleteStore = createSlice({
     teamTemplete: [],
   },
   reducers: {
-    setTeamTemplete(state, action) {
-      state.teamTemplete = action.payload;
-    },
-    addTeamTemplete(state, action) {
-      state.teamTemplete.push(action.payload);
-    },
-    removeTeamTemplete(state, action) {
-      state.teamTemplete = state.teamTemplete.filter(
-        (t) => t?.name !== action.payload
-      );
+    updateTeamTemplete(state, action) {
+      const getTeamTemplete = async () => {
+        try {
+          const res = await request.post("/getTeamTemplete");
+          state.teamTemplete = res;
+        } catch (err) {
+          console.log(err);
+        }
+      };
+
+      getTeamTemplete();
     },
   },
 });
 
-export const { setTeamTemplete, addTeamTemplete, removeTeamTemplete } =
-  tempTempleteStore.actions;
+export const { updateTeamTemplete } = tempTempleteStore.actions;
 export default tempTempleteStore.reducer;

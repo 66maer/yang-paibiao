@@ -23,7 +23,7 @@ const EditTemplete = (props) => {
   const location = useLocation();
 
   const team = location.state ? location.state.team : null;
-  const pageTitle = team ? "编辑团队" : "发布团队";
+  const pageTitle = team ? "编辑模板" : "创建模板";
 
   let formSlots = team
     ? team.slots
@@ -39,27 +39,24 @@ const EditTemplete = (props) => {
     formSlots = slots;
   };
 
-  const onTempleteSelectChange = (value) => {
-    console.log("未实现模板变更：", value);
-  };
-
   const onFinish = (values) => {
-    const { title, date, time } = values;
-    const team_time = dayjs(
-      `${date.format("YYYY-MM-DD")} ${time.format("HH:mm")}`
-    ).format();
-    const url = team ? "/updateTeam" : "/publishTeam";
-
+    const { title } = values;
+    const slots = formSlots;
+    const data = {
+      name: title,
+      slot_rules: slots.map((slot) => {
+        const { rule } = slot;
+        return {
+          available_xinfa: rule.available_xinfa,
+          allow_rich: rule.allow_rich,
+        };
+      }),
+    };
     request
-      .post(url, {
-        uuid: team ? team.uuid : null,
-        title,
-        team_time,
-        slots: formSlots,
-      })
+      .post("/saveSlotTemplete", data)
       .then((res) => {
         message.success(res.message);
-        navigate("/teamEdit");
+        navigate("/teamTemplete");
       })
       .catch((err) => {
         const { response } = err;
@@ -77,7 +74,7 @@ const EditTemplete = (props) => {
         <Button
           icon={<ArrowLeftOutlined />}
           size="large"
-          onClick={() => navigate("/teamEdit")}
+          onClick={() => navigate("/teamTemplete")}
         >
           返回
         </Button>
@@ -89,14 +86,12 @@ const EditTemplete = (props) => {
         onFinish={onFinish}
         initialValues={{
           title: team ? team.title : "",
-          date: team ? dayjs(team.team_time) : dayjs(),
-          time: team ? dayjs(team.team_time) : dayjs("19:30", "HH:mm"),
         }}
       >
         <Space align="baseline">
           <Form.Item
             name="title"
-            rules={[{ required: true, message: "请输入标题" }]}
+            rules={[{ required: true, message: "请输入模板名称" }]}
             style={{
               width: 800,
             }}
@@ -105,39 +100,16 @@ const EditTemplete = (props) => {
               size="large"
               showCount
               maxLength={20}
-              placeholder="请输入标题"
+              placeholder="请输入模板名称"
             />
           </Form.Item>
         </Space>
-        <Form.Item name="date" label="开团日期">
-          <DatePicker />
-        </Form.Item>
-        <Form.Item name="time" label="时间">
-          <TimePicker format="HH:mm" minuteStep={5} />
-        </Form.Item>
-        <Form.Item label="选择模板">
-          <Select
-            defaultValue="未实现"
-            style={{
-              width: 120,
-            }}
-            onClear={onTempleteSelectChange}
-            onSelect={onTempleteSelectChange}
-            allowClear
-            options={[
-              {
-                value: "未实现",
-                label: "未实现",
-              },
-            ]}
-          />
-        </Form.Item>
         <Form.Item>
-          <EditPanel onSave={onSave} slots={formSlots} />
+          <EditPanel onSave={onSave} slots={formSlots} onlyRuly />
         </Form.Item>
         <Form.Item>
           <Button type="primary" size="large" htmlType="submit">
-            {team ? "保存" : "发布"}
+            保存
           </Button>
         </Form.Item>
       </Form>
@@ -145,4 +117,4 @@ const EditTemplete = (props) => {
   );
 };
 
-export default Publish;
+export default EditTemplete;

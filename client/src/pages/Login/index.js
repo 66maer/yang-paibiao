@@ -4,10 +4,17 @@ import "./index.scss";
 import { useDispatch } from "react-redux";
 import { fetchLogin, fetchRegister } from "@/store/modules/user";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { SHA512 } from "crypto-js";
 import React, { useState } from "react";
 
 const Login = () => {
+  useEffect(() => {
+    document.title = "小秧排表 - 花眠 - 登录";
+    const link = document.querySelector("link[rel*='icon']");
+    link.href = "/logo.png";
+  });
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);

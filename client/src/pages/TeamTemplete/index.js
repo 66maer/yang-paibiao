@@ -21,12 +21,21 @@ import { EditPanel } from "@/components/TeamPanel";
 import { useNavigate } from "react-router-dom";
 import { request } from "@/utils";
 import { store } from "@/store";
+import { updateTeamTemplete } from "@/store/modules/teamTemplete";
+import { useEffect, useState } from "react";
 
 const { Text, Title } = Typography;
 const { Header, Content, Sider } = Layout;
 
 const TeamTemplete = () => {
-  const teamTp = store.getState().teamTemplete.teamTemplete;
+  const [teamTp, setTeamTp] = useState([]);
+
+  useEffect(() => {
+    store.dispatch(updateTeamTemplete());
+    setTeamTp(store.getState().teamTemplete.teamTemplete);
+    console.log(teamTp);
+  }, []);
+
   const navigate = useNavigate();
   return (
     <Layout>
@@ -40,7 +49,13 @@ const TeamTemplete = () => {
         }}
       >
         <h1>团队模板</h1>
-        <Button icon={<DiffOutlined />} size="large">
+        <Button
+          icon={<DiffOutlined />}
+          size="large"
+          onClick={() => {
+            navigate("/teamTemplete/edit");
+          }}
+        >
           新模板
         </Button>
       </Header>

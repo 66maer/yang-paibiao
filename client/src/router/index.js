@@ -8,6 +8,7 @@ import UserCharacter from "@/pages/UserCharacter";
 import CareerHistory from "@/pages/CareerHistory";
 import TeamHistory from "@/pages/TeamHistory";
 import Publish from "@/pages/TeamEdit/Publish";
+import EditTemplate from "@/pages/TeamTemplete/EditTemplete";
 import TestPage from "@/pages/Test/test";
 import { Navigate } from "react-router-dom";
 
@@ -58,6 +59,10 @@ const router = createBrowserRouter([
       {
         path: "teamEdit/edit",
         element: <Publish />,
+      },
+      {
+        path: "teamTemplete/edit",
+        element: <EditTemplate />,
       },
       {
         path: "version",
