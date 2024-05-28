@@ -1,7 +1,6 @@
 import { Tag } from "antd";
 
 const DateTag = ({ date }) => {
-  console.log("DateTag", date);
   if (!date) {
     return <Tag color="#888">未知</Tag>;
   }

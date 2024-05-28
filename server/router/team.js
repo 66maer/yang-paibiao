@@ -39,10 +39,17 @@ router.post(
 );
 
 router.post(
-  "/saveSlotTemplete",
+  "/saveTeamTemplete",
   verifyToken,
   verifyRole(["leader", "assistant"]),
-  TeamHandler.saveSlotTemplete
+  TeamHandler.saveTeamTemplete
+);
+
+router.post(
+  "/deleteTeamTemplete",
+  verifyToken,
+  verifyRole(["leader", "assistant"]),
+  TeamHandler.deleteTeamTemplete
 );
 
 router.post(

@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const User = require("../models/user");
 const League = require("../models/league");
 const Team = require("../models/team");
@@ -60,63 +61,67 @@ exports.publishTeam = async (req, res) => {
 };
 
 exports.updateTeam = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
   try {
-    const { uuid, title, team_time, note, slots } = req.body;
-    const team = await Team.findOne({ uuid })
-      .populate("slots.member")
-      .populate("member_record");
-    team || res.status(404).json({ message: "未找到团队" });
-    team.active || res.status(400).json({ message: "团队已关闭" });
-    team.title = title;
-    team.team_time = team_time;
-    team.note = note;
-    // 如果新的slots中有被踢出的人，需要将其取消报名
-    for (const oldSlots of team.slots) {
-      if (
-        oldSlots.member &&
-        !slots.find((s) => s.member?.id === oldSlots.member.id)
-      ) {
-        team.member_record = team.member_record.filter(
-          (member) => member.id !== oldSlots.member.id
-        );
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      const { uuid, title, team_time, note, slots } = req.body;
+      const team = await Team.findOne({ uuid })
+        .populate("slots.member")
+        .populate("member_record");
+      team || res.status(404).json({ message: "未找到团队" });
+      team.active || res.status(400).json({ message: "团队已关闭" });
+      team.title = title;
+      team.team_time = team_time;
+      team.note = note;
+      // 如果新的slots中有被踢出的人，需要将其取消报名
+      for (const oldSlots of team.slots) {
+        if (
+          oldSlots.member &&
+          !slots.find((s) => s.member?.id === oldSlots.member.id)
+        ) {
+          team.member_record = team.member_record.filter(
+            (member) => member.id !== oldSlots.member.id
+          );
+        }
       }
+      // 团长钦定的人要保存记录引用
+      slots.forEach((slot) => {
+        if (slot.member && slot.member?.is_lock && !slots.member?._id) {
+          const member = new TeamMember({
+            user: slot.member?.user,
+            nickname: slot.member.nickname,
+            character_name: slot.member?.character_name,
+            xinfa: slot.member.xinfa,
+            tags: slot.member?.tags,
+            is_proxy: slot.member?.is_proxy,
+            is_rich: slot.member?.is_rich,
+            is_lock: slot.member?.is_lock,
+            is_dove: slot.member?.is_dove,
+          });
+          member.save();
+          slot.member = member;
+        }
+      });
+
+      team.slots = slots;
+      await team.save();
+      await session.commitTransaction();
+
+      res.json({
+        message: "更新团队成功",
+      });
+    } catch (err) {
+      console.error(err);
+      await session.abortTransaction();
+      res.status(500).json({
+        message: "更新团队失败",
+      });
+    } finally {
+      session.endSession();
     }
-    // 团长钦定的人要保存记录引用
-    slots.forEach((slot) => {
-      if (slot.member && slot.member?.is_lock && !slots.member?._id) {
-        const member = new TeamMember({
-          user: slot.member?.user,
-          nickname: slot.member.nickname,
-          character_name: slot.member?.character_name,
-          xinfa: slot.member.xinfa,
-          tags: slot.member?.tags,
-          is_proxy: slot.member?.is_proxy,
-          is_rich: slot.member?.is_rich,
-          is_lock: slot.member?.is_lock,
-          is_dove: slot.member?.is_dove,
-        });
-        member.save();
-        slot.member = member;
-      }
-    });
-
-    team.slots = slots;
-    await team.save();
-    await session.commitTransaction();
-
-    res.json({
-      message: "更新团队成功",
-    });
   } catch (err) {
     console.error(err);
-    await session.abortTransaction();
-    res.status(500).json({
-      message: "更新团队失败",
-    });
-  } finally {
-    session.endSession();
   }
 };
 
@@ -145,7 +150,7 @@ exports.getTeamTemplete = async (req, res) => {
   }
 };
 
-exports.saveSlotTemplete = async (req, res) => {
+exports.saveTeamTemplete = async (req, res) => {
   try {
     const { name, slot_rules } = req.body;
 
@@ -162,6 +167,20 @@ exports.saveSlotTemplete = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message: "保存模板失败",
+    });
+  }
+};
+
+exports.deleteTeamTemplete = async (req, res) => {
+  try {
+    const { name } = req.body;
+    await TeamTemplete.findOneAndDelete({ name, league: req.curLeagueId });
+    res.json({
+      message: "删除模板成功",
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: "删除模板失败",
     });
   }
 };

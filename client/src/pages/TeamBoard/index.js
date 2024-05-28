@@ -48,7 +48,6 @@ const TeamBoard = () => {
       </div>
     );
   }
-  console.log("activeTeam", activeTeam);
 
   const onUserCancelSignup = (id) => {
     request

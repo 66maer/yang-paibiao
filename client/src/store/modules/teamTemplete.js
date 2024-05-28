@@ -7,20 +7,20 @@ const tempTempleteStore = createSlice({
     teamTemplete: [],
   },
   reducers: {
-    updateTeamTemplete(state, action) {
-      const getTeamTemplete = async () => {
-        try {
-          const res = await request.post("/getTeamTemplete");
-          state.teamTemplete = res;
-        } catch (err) {
-          console.log(err);
-        }
-      };
-
-      getTeamTemplete();
+    setTeamTemplete(state, action) {
+      state.teamTemplete = action.payload;
     },
   },
 });
 
-export const { updateTeamTemplete } = tempTempleteStore.actions;
+export const fetchTeamTemplete = () => async (dispatch) => {
+  try {
+    const res = await request.post("/getTeamTemplete");
+    dispatch(setTeamTemplete(res));
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+export const { setTeamTemplete } = tempTempleteStore.actions;
 export default tempTempleteStore.reducer;

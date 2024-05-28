@@ -22,18 +22,30 @@ const EditTemplete = (props) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  console.log("location: ", location);
   const team = location.state ? location.state.team : null;
   const pageTitle = team ? "编辑模板" : "创建模板";
 
-  let formSlots = team
-    ? team.slots
-    : Array.from({ length: 25 }).fill({
+  let formSlots = [];
+  if (!team) {
+    formSlots = Array.from({ length: 25 }).fill({
+      rule: {
+        available_xinfa: [],
+        allow_rich: false,
+      },
+      member: null,
+    });
+  } else {
+    formSlots = team.slot_rules.map((rule) => {
+      return {
         rule: {
-          available_xinfa: [],
-          allow_rich: false,
+          available_xinfa: rule.available_xinfa,
+          allow_rich: rule.allow_rich,
         },
         member: null,
-      });
+      };
+    });
+  }
 
   const onSave = (slots) => {
     formSlots = slots;
@@ -53,7 +65,7 @@ const EditTemplete = (props) => {
       }),
     };
     request
-      .post("/saveSlotTemplete", data)
+      .post("/saveTeamTemplete", data)
       .then((res) => {
         message.success(res.message);
         navigate("/teamTemplete");
@@ -85,7 +97,7 @@ const EditTemplete = (props) => {
         form={form}
         onFinish={onFinish}
         initialValues={{
-          title: team ? team.title : "",
+          title: team ? team.name : "",
         }}
       >
         <Space align="baseline">

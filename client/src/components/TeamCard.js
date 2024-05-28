@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Card,
   Avatar,
@@ -475,6 +475,11 @@ const EditCard = ({ member, rule, onSave, onlyRuly }) => {
 
   const [curMember, setCurMember] = React.useState(member);
   const [curRule, setCurRule] = React.useState(rule);
+
+  useEffect(() => {
+    setCurMember(member);
+    setCurRule(rule);
+  }, [member, rule]);
 
   const confirm = () => {
     setCurMember(null);

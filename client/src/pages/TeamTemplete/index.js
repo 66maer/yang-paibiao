@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   Typography,
+  Popconfirm,
   message,
 } from "antd";
 import {
@@ -21,19 +22,18 @@ import { EditPanel } from "@/components/TeamPanel";
 import { useNavigate } from "react-router-dom";
 import { request } from "@/utils";
 import { store } from "@/store";
-import { updateTeamTemplete } from "@/store/modules/teamTemplete";
+import { fetchTeamTemplete } from "@/store/modules/teamTemplete";
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 
 const { Text, Title } = Typography;
 const { Header, Content, Sider } = Layout;
 
 const TeamTemplete = () => {
-  const [teamTp, setTeamTp] = useState([]);
+  const teamTemplete = useSelector((state) => state.teamTemplete.teamTemplete);
 
   useEffect(() => {
-    store.dispatch(updateTeamTemplete());
-    setTeamTp(store.getState().teamTemplete.teamTemplete);
-    console.log(teamTp);
+    store.dispatch(fetchTeamTemplete());
   }, []);
 
   const navigate = useNavigate();
@@ -67,7 +67,7 @@ const TeamTemplete = () => {
           size="large"
           // 数据超过10个则展示分页, 否则隐藏
           pagination={
-            teamTp.length > 10
+            teamTemplete.length > 10
               ? {
                   onChange: (page) => {
                     console.log(page);
@@ -77,7 +77,7 @@ const TeamTemplete = () => {
                 }
               : false
           }
-          dataSource={teamTp}
+          dataSource={teamTemplete}
           renderItem={(item) => {
             return (
               <List.Item
@@ -87,22 +87,24 @@ const TeamTemplete = () => {
                     icon={<FormOutlined />}
                     onClick={() => {
                       navigate("/teamTemplete/edit", {
-                        state: { teamTp: item },
+                        state: { team: item },
                       });
                     }}
                   >
                     编辑
                   </Button>,
-                  <Button
-                    icon={<DeleteOutlined />}
-                    onClick={() => {
+                  <Popconfirm
+                    title="确定删除该模板吗?"
+                    description="删除后不可恢复"
+                    onConfirm={() => {
                       try {
                         request
-                          .post("/closeTeam", {
-                            uuid: item.uuid,
+                          .post("/deleteTeamTemplete", {
+                            name: item.name,
                           })
                           .then((res) => {
                             message.success(res.message);
+                            store.dispatch(fetchTeamTemplete());
                             //setActiveTeam(activeTeam.filter((t) => t !== item));
                           });
                       } catch (err) {
@@ -115,8 +117,8 @@ const TeamTemplete = () => {
                       }
                     }}
                   >
-                    删除
-                  </Button>,
+                    <Button icon={<DeleteOutlined />}>删除</Button>
+                  </Popconfirm>,
                 ]}
               >
                 <Space>
