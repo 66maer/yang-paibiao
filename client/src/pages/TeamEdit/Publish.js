@@ -48,7 +48,6 @@ const Publish = (props) => {
       });
 
   const [panelSlots, setPanelSlots] = useState(formSlots);
-  const [ver, setVer] = useState(false);
 
   const onSave = (slots) => {
     formSlots = slots;
@@ -61,17 +60,16 @@ const Publish = (props) => {
       message.error("模板不存在");
       return;
     }
-    formSlots.forEach((slot, index) => {
-      slot.rule = {
-        available_xinfa: templete.slot_rules[index].available_xinfa,
-        allow_rich: templete.slot_rules[index].allow_rich,
+    formSlots = formSlots.map((slot, index) => {
+      return {
+        rule: {
+          available_xinfa: templete.slot_rules[index].available_xinfa,
+          allow_rich: templete.slot_rules[index].allow_rich,
+        },
+        member: null,
       };
-      slot.member = null;
     });
     setPanelSlots(formSlots);
-    console.log("formSlots: ", formSlots);
-    console.log("panelSlots: ", panelSlots);
-    setVer(true);
   };
 
   const onFinish = (values) => {
@@ -81,12 +79,13 @@ const Publish = (props) => {
     ).format();
     const url = team ? "/updateTeam" : "/publishTeam";
 
+    console.log("onFinish", panelSlots);
     request
       .post(url, {
         uuid: team ? team.uuid : null,
         title,
         team_time,
-        slots: formSlots,
+        slots: panelSlots,
       })
       .then((res) => {
         message.success(res.message);
@@ -174,7 +173,7 @@ const Publish = (props) => {
           </Space>
         </Form.Item>
         <Form.Item>
-          <EditPanel onSave={onSave} slots={panelSlots} onlyRuly={ver} />
+          <EditPanel onSave={onSave} slots={panelSlots} />
         </Form.Item>
         <Form.Item>
           <Space>

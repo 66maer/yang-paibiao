@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Tabs, Button, Empty, Space, Modal, message } from "antd";
+import { Tabs, Button, Empty, Space, Modal, message, Divider } from "antd";
 import { request } from "@/utils";
 import { ShowPanel } from "@/components/TeamPanel";
 import DateTag from "@/components/DateTag";
@@ -76,6 +76,29 @@ const TeamBoard = () => {
       });
   };
 
+  const showCondidates = (candidates) => {
+    if (candidates.length === 0) {
+      return <div>无候补人员</div>;
+    }
+
+    return candidates.map((candidate) => {
+      return (
+        <div key={candidate.id}>
+          <div>
+            <span>{candidate.name}</span>
+            <Button
+              onClick={() => {
+                onUserCancelSignup(candidate.id);
+              }}
+            >
+              取消报名
+            </Button>
+          </div>
+        </div>
+      );
+    });
+  };
+
   const items = activeTeam.map((team, i) => {
     return {
       key: team.uuid,
@@ -109,6 +132,11 @@ const TeamBoard = () => {
             slots={team.slots}
             onUserCancelSignup={onUserCancelSignup}
           />
+          <Divider />
+          <div>
+            <h2>候补人员</h2>
+            {showCondidates(team.candidates)}
+          </div>
         </>
       ),
     };
