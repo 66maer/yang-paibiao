@@ -12,7 +12,9 @@ exports.getActiveTeam = async (req, res) => {
     const teams = await Team.find({
       league: req.curLeagueId,
       active: true,
-    }).populate("slots.member");
+    })
+      .populate("slots.member")
+      .populate("candidates");
     res.json(teams);
   } catch (err) {
     res.status(500).json({

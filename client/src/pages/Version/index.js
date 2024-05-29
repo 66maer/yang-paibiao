@@ -5,7 +5,13 @@ const { Title, Paragraph, Text } = Typography;
 const versionInfo = [
   {
     version: "0.1.2",
-    content: ["新增模板功能", "数据保存使用事务，防止错乱"],
+    content: [
+      "新增模板功能",
+      "数据保存使用事务，防止错乱",
+      "展示候补列表",
+      "添加注册提示",
+      "新增首页名称显示",
+    ],
   },
   {
     version: "0.1.1",

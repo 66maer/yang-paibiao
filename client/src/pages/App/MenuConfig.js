@@ -38,6 +38,7 @@ const menuConfig = [
     key: "userCharacter",
     label: "我的角色",
     icon: <UserOutlined />,
+    disabled: true,
   },
   {
     key: "careerHistory",

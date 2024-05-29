@@ -1,6 +1,6 @@
 // App.js
 import React, { useEffect, useState } from "react";
-import { Layout, Button, Space, message } from "antd";
+import { Layout, Button, Space, message, Avatar } from "antd";
 import { Outlet, useNavigate } from "react-router-dom";
 import { removeLocalToken, request } from "@/utils";
 import store from "@/store";
@@ -98,6 +98,12 @@ const App = () => {
             />
           </div>
           <Space style={{ marginLeft: "auto" }}>
+            <Avatar size="large" gap={1}>
+              头像
+            </Avatar>
+            <div style={{ color: "#fff", fontSize: 18 }}>
+              {store.getState().user.nickname}
+            </div>
             <Button
               onClick={() => {
                 removeLocalToken();

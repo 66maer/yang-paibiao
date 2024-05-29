@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import { Tabs, Button, Empty, Space, Modal, message, Divider } from "antd";
 import { request } from "@/utils";
 import { ShowPanel } from "@/components/TeamPanel";
+import { ShowCard } from "@/components/TeamCard";
 import DateTag from "@/components/DateTag";
 import SingUp from "./SignUp";
 import dayjs from "dayjs";
+import { xinfaInfoTable } from "@/utils/xinfa";
 
 const TeamBoard = () => {
   const [activeTeam, setActiveTeam] = useState([]);
@@ -83,15 +85,19 @@ const TeamBoard = () => {
 
     return candidates.map((candidate) => {
       return (
-        <div key={candidate.id}>
+        <div>
           <div>
-            <span>{candidate.name}</span>
+            <span>{candidate.nickname}</span>
+            <span>[{xinfaInfoTable[candidate.xinfa].nickname[0]}]</span>
+            <span>[{candidate.character_name}]</span>
+
             <Button
+              type="link"
               onClick={() => {
-                onUserCancelSignup(candidate.id);
+                onUserCancelSignup(candidate._id);
               }}
             >
-              取消报名
+              (取消报名)
             </Button>
           </div>
         </div>
@@ -132,11 +138,8 @@ const TeamBoard = () => {
             slots={team.slots}
             onUserCancelSignup={onUserCancelSignup}
           />
-          <Divider />
-          <div>
-            <h2>候补人员</h2>
-            {showCondidates(team.candidates)}
-          </div>
+          <Divider orientation="left">候补人员</Divider>
+          {showCondidates(team.candidates)}
         </>
       ),
     };
