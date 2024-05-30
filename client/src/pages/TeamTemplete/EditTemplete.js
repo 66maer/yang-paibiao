@@ -22,7 +22,6 @@ const EditTemplete = (props) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  console.log("location: ", location);
   const team = location.state ? location.state.team : null;
   const pageTitle = team ? "编辑模板" : "创建模板";
 
@@ -117,7 +116,7 @@ const EditTemplete = (props) => {
           </Form.Item>
         </Space>
         <Form.Item>
-          <EditPanel onSave={onSave} slots={formSlots} onlyRuly />
+          <EditPanel onSave={onSave} slots={formSlots} onlyRule={true} />
         </Form.Item>
         <Form.Item>
           <Button type="primary" size="large" htmlType="submit">

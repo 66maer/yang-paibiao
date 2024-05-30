@@ -19,7 +19,7 @@ const ShowPanel = ({ slots, onUserCancelSignup }) => {
   return <Flex gap={5}>{team}</Flex>;
 };
 
-const EditPanel = ({ onSave, slots, onlyRuly }) => {
+const EditPanel = ({ onSave, slots, onlyRule }) => {
   const team = Array.from({ length: 5 }).map((_, i) => {
     const squad = Array.from({ length: 5 }).map((_, j) => {
       return (
@@ -30,7 +30,7 @@ const EditPanel = ({ onSave, slots, onlyRuly }) => {
             slots[i * 5 + j] = { member: m, rule: r };
             onSave && onSave(slots);
           }}
-          onlyRuly
+          onlyRule={onlyRule}
         />
       );
     });

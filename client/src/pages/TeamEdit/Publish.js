@@ -173,7 +173,7 @@ const Publish = (props) => {
           </Space>
         </Form.Item>
         <Form.Item>
-          <EditPanel onSave={onSave} slots={panelSlots} />
+          <EditPanel onSave={onSave} slots={panelSlots} onlyRule={false} />
         </Form.Item>
         <Form.Item>
           <Space>

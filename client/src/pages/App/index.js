@@ -10,7 +10,7 @@ import { ConfigProvider, Menu } from "antd";
 import menuConfig from "./MenuConfig";
 import zhCN from "antd/locale/zh_CN";
 
-const { Header, Content, Sider } = Layout;
+const { Header, Content, Sider, Footer } = Layout;
 
 const App = () => {
   const navigate = useNavigate();
@@ -79,6 +79,8 @@ const App = () => {
         components: {
           Layout: {
             headerBg: "#dc8b9d",
+            footerBg: "#dc8b9d",
+            footerPadding: "5px 50px",
           },
           Menu: {
             itemSelectedBg: "#f0c9cf",
@@ -138,6 +140,13 @@ const App = () => {
             </Content>
           </Layout>
         </Layout>
+        <Footer
+          style={{
+            textAlign: "center",
+          }}
+        >
+          小秧排表 ©{new Date().getFullYear()} 丐箩箩 | 蜀ICP备2024079726号-1
+        </Footer>
       </Layout>
     </ConfigProvider>
   );

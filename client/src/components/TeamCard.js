@@ -253,9 +253,9 @@ const EditModeAssign = ({ curMember, setCurMember, setIsModalOpen }) => {
 };
 
 const EditModal = (props) => {
-  const { onlyRuly } = props;
+  const { onlyRule } = props;
   const tabs = [{ key: "role", label: "规则", children: EditModelRule(props) }];
-  if (!onlyRuly) {
+  if (!onlyRule) {
     tabs.push({
       key: "assign",
       label: "钦定",
@@ -469,7 +469,7 @@ const ShowCard = ({ member, rule, onUserCancelSignup }) => {
   );
 };
 
-const EditCard = ({ member, rule, onSave, onlyRuly }) => {
+const EditCard = ({ member, rule, onSave, onlyRule }) => {
   const [showEditMask, setShowEditMask] = React.useState(false);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
@@ -566,7 +566,7 @@ const EditCard = ({ member, rule, onSave, onlyRuly }) => {
           curRule,
           setCurRule,
           setIsModalOpen,
-          onlyRuly,
+          onlyRule,
         })}
       </Modal>
     </Popconfirm>
