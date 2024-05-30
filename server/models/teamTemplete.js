@@ -1,20 +1,24 @@
 const mongoose = require("mongoose");
 
 const teamTempleteSchema = new mongoose.Schema({
-  templeteName: {
+  name: {
     type: String,
     required: true,
     unique: true,
   },
-  leagueId: {
+  league: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "League",
     required: true,
   },
-  slots: [
+  slot_rules: [
     {
-      rule: {
-        type: String,
+      available_xinfa: {
+        type: [String],
+        required: true,
+      },
+      allow_rich: {
+        type: Boolean,
         required: true,
       },
     },

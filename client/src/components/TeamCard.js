@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Card,
   Avatar,
@@ -253,18 +253,15 @@ const EditModeAssign = ({ curMember, setCurMember, setIsModalOpen }) => {
 };
 
 const EditModal = (props) => {
-  const tabs = [
-    {
-      key: "role",
-      label: "规则",
-      children: EditModelRule(props),
-    },
-    {
-      key: "user",
+  const { onlyRuly } = props;
+  const tabs = [{ key: "role", label: "规则", children: EditModelRule(props) }];
+  if (!onlyRuly) {
+    tabs.push({
+      key: "assign",
       label: "钦定",
       children: EditModeAssign(props),
-    },
-  ];
+    });
+  }
   return (
     <Tabs
       defaultActiveKey="role"
@@ -284,18 +281,14 @@ const getRuleContent = ({ available_xinfa, allow_rich }) => {
       const item = xinfaInfoTable[xinfa];
       icons.push(
         <Tooltip key={xinfa} title={item.name} placement="top">
-          <div>
-            <Avatar src={`/xinfa/${item.icon}`} />
-          </div>
+          <Avatar src={`/xinfa/${item.icon}`} />
         </Tooltip>
       );
     });
   } else if (available_xinfa.length === xinfaLength) {
     icons.push(
       <Tooltip key="all" title="不限定心法" placement="top">
-        <div>
-          <Avatar src="/jx3.png" />
-        </div>
+        <Avatar src="/jx3.png" />
       </Tooltip>
     );
   } else {
@@ -476,12 +469,17 @@ const ShowCard = ({ member, rule, onUserCancelSignup }) => {
   );
 };
 
-const EditCard = ({ member, rule, onSave }) => {
+const EditCard = ({ member, rule, onSave, onlyRuly }) => {
   const [showEditMask, setShowEditMask] = React.useState(false);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
   const [curMember, setCurMember] = React.useState(member);
   const [curRule, setCurRule] = React.useState(rule);
+
+  useEffect(() => {
+    setCurMember(member);
+    setCurRule(rule);
+  }, [member, rule]);
 
   const confirm = () => {
     setCurMember(null);
@@ -568,6 +566,7 @@ const EditCard = ({ member, rule, onSave }) => {
           curRule,
           setCurRule,
           setIsModalOpen,
+          onlyRuly,
         })}
       </Modal>
     </Popconfirm>

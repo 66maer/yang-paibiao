@@ -17,8 +17,8 @@ app.use("/api", leagueRouter);
 app.use("/api", teamRouter);
 
 // 从环境变量中获取 MongoDB 连接字符串，如果没有设置，则默认连接到本地的 MongoDB 服务
-const mongoURI =
-  process.env.MONGO_DB_URI || "mongodb://localhost:27017/paibiao_test";
+const mongoURI = process.env.MONGO_DB_URI;
+console.log("mongoURI", mongoURI);
 // 连接到 MongoDB 数据库
 mongoose
   .connect(mongoURI, {

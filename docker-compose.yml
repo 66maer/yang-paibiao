@@ -1,27 +1,20 @@
-version: '3.8'
+version: '3.3'
 services:
   client:
     build:
       context: ./client
     ports:
-      - "45360:3000"
-    depends_on:
-      - server
-    env_file:
-      - .env.local
-    volumes:
-      - ./client:/app
-      - /app/node_modules
+      - "80:80"
 
   server:
     build:
       context: ./server
     ports:
-      - "45361:5000"
+      - "5000:5000"
     depends_on:
       - mongo
     env_file:
-      - .env.local
+      - .env.prod
     volumes:
       - ./server:/app
       - /app/node_modules

@@ -32,6 +32,27 @@ router.post(
 );
 
 router.post(
+  "/getTeamTemplete",
+  verifyToken,
+  verifyRole(["leader", "assistant"]),
+  TeamHandler.getTeamTemplete
+);
+
+router.post(
+  "/saveTeamTemplete",
+  verifyToken,
+  verifyRole(["leader", "assistant"]),
+  TeamHandler.saveTeamTemplete
+);
+
+router.post(
+  "/deleteTeamTemplete",
+  verifyToken,
+  verifyRole(["leader", "assistant"]),
+  TeamHandler.deleteTeamTemplete
+);
+
+router.post(
   "/signup",
   verifyToken,
   verifyRole(["leader", "assistant", "member"]),

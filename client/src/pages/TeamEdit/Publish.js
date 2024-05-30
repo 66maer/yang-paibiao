@@ -10,12 +10,18 @@ import {
   DatePicker,
   TimePicker,
   message,
+  Popconfirm,
+  Modal,
 } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { EditPanel } from "@/components/TeamPanel";
 import dayjs from "dayjs";
 import { request } from "@/utils";
 import { useNavigate, useLocation } from "react-router-dom";
+import { store } from "@/store";
+import { fetchTeamTemplete } from "@/store/modules/teamTemplete";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 
 const Publish = (props) => {
   const [form] = Form.useForm();
@@ -24,6 +30,12 @@ const Publish = (props) => {
 
   const team = location.state ? location.state.team : null;
   const pageTitle = team ? "编辑团队" : "发布团队";
+
+  const teamTemplete = useSelector((state) => state.teamTemplete.teamTemplete);
+
+  useEffect(() => {
+    store.dispatch(fetchTeamTemplete());
+  }, []);
 
   let formSlots = team
     ? team.slots
@@ -35,12 +47,29 @@ const Publish = (props) => {
         member: null,
       });
 
+  const [panelSlots, setPanelSlots] = useState(formSlots);
+
   const onSave = (slots) => {
     formSlots = slots;
   };
 
-  const onTempleteSelectChange = (value) => {
-    console.log("未实现模板变更：", value);
+  const onTempleteApply = () => {
+    const value = form.getFieldValue("templete");
+    const templete = teamTemplete.find((t) => t.name === value);
+    if (!templete) {
+      message.error("模板不存在");
+      return;
+    }
+    formSlots = formSlots.map((slot, index) => {
+      return {
+        rule: {
+          available_xinfa: templete.slot_rules[index].available_xinfa,
+          allow_rich: templete.slot_rules[index].allow_rich,
+        },
+        member: null,
+      };
+    });
+    setPanelSlots(formSlots);
   };
 
   const onFinish = (values) => {
@@ -50,12 +79,13 @@ const Publish = (props) => {
     ).format();
     const url = team ? "/updateTeam" : "/publishTeam";
 
+    console.log("onFinish", panelSlots);
     request
       .post(url, {
         uuid: team ? team.uuid : null,
         title,
         team_time,
-        slots: formSlots,
+        slots: panelSlots,
       })
       .then((res) => {
         message.success(res.message);
@@ -92,10 +122,12 @@ const Publish = (props) => {
           date: team ? dayjs(team.team_time) : dayjs(),
           time: team ? dayjs(team.team_time) : dayjs("19:30", "HH:mm"),
         }}
+        layout="vertical"
       >
         <Space align="baseline">
           <Form.Item
             name="title"
+            label="标题"
             rules={[{ required: true, message: "请输入标题" }]}
             style={{
               width: 800,
@@ -116,29 +148,39 @@ const Publish = (props) => {
           <TimePicker format="HH:mm" minuteStep={5} />
         </Form.Item>
         <Form.Item label="选择模板">
-          <Select
-            defaultValue="未实现"
-            style={{
-              width: 120,
-            }}
-            onClear={onTempleteSelectChange}
-            onSelect={onTempleteSelectChange}
-            allowClear
-            options={[
-              {
-                value: "未实现",
-                label: "未实现",
-              },
-            ]}
-          />
+          <Space>
+            <Form.Item name="templete">
+              <Select
+                style={{
+                  width: 300,
+                }}
+                allowClear
+                options={teamTemplete.map((t) => ({
+                  label: t.name,
+                  value: t.name,
+                }))}
+              />
+            </Form.Item>
+            <Form.Item>
+              <Popconfirm
+                title="确定应用模板吗?"
+                description="应用后会覆盖当前所有内容, 清除所有已经报名的成员"
+                onConfirm={onTempleteApply}
+              >
+                <Button type="primary">应用模板</Button>
+              </Popconfirm>
+            </Form.Item>
+          </Space>
         </Form.Item>
         <Form.Item>
-          <EditPanel onSave={onSave} slots={formSlots} />
+          <EditPanel onSave={onSave} slots={panelSlots} />
         </Form.Item>
         <Form.Item>
-          <Button type="primary" size="large" htmlType="submit">
-            {team ? "保存" : "发布"}
-          </Button>
+          <Space>
+            <Button type="primary" size="large" htmlType="submit">
+              {team ? "保存" : "发布"}
+            </Button>
+          </Space>
         </Form.Item>
       </Form>
     </Flex>

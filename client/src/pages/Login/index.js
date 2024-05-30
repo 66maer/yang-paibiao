@@ -1,13 +1,28 @@
-import { Card, Form, Input, Button, message, ConfigProvider } from "antd";
+import {
+  Card,
+  Form,
+  Input,
+  Button,
+  message,
+  ConfigProvider,
+  Alert,
+} from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import "./index.scss";
 import { useDispatch } from "react-redux";
 import { fetchLogin, fetchRegister } from "@/store/modules/user";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { SHA512 } from "crypto-js";
 import React, { useState } from "react";
 
 const Login = () => {
+  useEffect(() => {
+    document.title = "小秧排表 - 花眠 - 登录";
+    const link = document.querySelector("link[rel*='icon']");
+    link.href = "/logo.png";
+  });
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
@@ -91,12 +106,28 @@ const Login = () => {
               </Form>
             ) : (
               <Form onFinish={onFinishRegister} className="register-form">
+                <Alert
+                  message="当前为测试版，产生的所有信息，都可能会被删除。"
+                  type="warning"
+                  showIcon
+                />
+                <Alert
+                  message="虽然让输入QQ号，但不会校验(随便填)，未来可能会录入"
+                  type="info"
+                  showIcon
+                />
+
                 <Form.Item
                   name="qqNumber"
                   rules={[{ required: true, message: "请输入QQ号!" }]}
                 >
                   <Input prefix={<UserOutlined />} placeholder="QQ号" />
                 </Form.Item>
+                <Alert
+                  message="密码会散列化，不会泄露，但不建议用自己的常用密码"
+                  type="info"
+                  showIcon
+                />
                 <Form.Item
                   name="password"
                   rules={[{ required: true, message: "请输入密码" }]}
@@ -126,11 +157,16 @@ const Login = () => {
                     placeholder="确认密码"
                   />
                 </Form.Item>
+                <Alert
+                  message="很重要，目前不可修改(没写)，使用可辨识的昵称"
+                  type="info"
+                  showIcon
+                />
                 <Form.Item
                   name="nickname"
                   rules={[
                     { required: true, message: "请输入昵称" },
-                    { max: 10, message: "昵称最长10个字符" },
+                    { max: 6, message: "昵称最长6个字符" },
                   ]}
                 >
                   <Input

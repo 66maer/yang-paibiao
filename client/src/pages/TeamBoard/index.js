@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Tabs, Button, Empty, Space, Modal, message } from "antd";
+import { Tabs, Button, Empty, Space, Modal, message, Divider } from "antd";
 import { request } from "@/utils";
 import { ShowPanel } from "@/components/TeamPanel";
+import { ShowCard } from "@/components/TeamCard";
 import DateTag from "@/components/DateTag";
 import SingUp from "./SignUp";
 import dayjs from "dayjs";
+import { xinfaInfoTable } from "@/utils/xinfa";
 
 const TeamBoard = () => {
   const [activeTeam, setActiveTeam] = useState([]);
@@ -48,7 +50,6 @@ const TeamBoard = () => {
       </div>
     );
   }
-  console.log("activeTeam", activeTeam);
 
   const onUserCancelSignup = (id) => {
     request
@@ -75,6 +76,33 @@ const TeamBoard = () => {
           message.error("网络错误");
         }
       });
+  };
+
+  const showCondidates = (candidates) => {
+    if (candidates.length === 0) {
+      return <div>无候补人员</div>;
+    }
+
+    return candidates.map((candidate) => {
+      return (
+        <div>
+          <div>
+            <span>{candidate.nickname}</span>
+            <span>[{xinfaInfoTable[candidate.xinfa].nickname[0]}]</span>
+            <span>[{candidate.character_name}]</span>
+
+            <Button
+              type="link"
+              onClick={() => {
+                onUserCancelSignup(candidate._id);
+              }}
+            >
+              (取消报名)
+            </Button>
+          </div>
+        </div>
+      );
+    });
   };
 
   const items = activeTeam.map((team, i) => {
@@ -110,6 +138,8 @@ const TeamBoard = () => {
             slots={team.slots}
             onUserCancelSignup={onUserCancelSignup}
           />
+          <Divider orientation="left">候补人员</Divider>
+          {showCondidates(team.candidates)}
         </>
       ),
     };
