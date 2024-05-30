@@ -30,21 +30,21 @@ const SingUp = ({ activeKey, setSignUpOpen, activeTeam, setActiveTeam }) => {
   const [form] = Form.useForm();
   const [characterList, setCharacterList] = useState([]);
 
-  useEffect(() => {
-    request
-      .post("/getCharacter")
-      .then((res) => {
-        setCharacterList(res);
-      })
-      .catch((err) => {
-        const { response } = err;
-        if (response) {
-          message.error(response.data.message);
-        } else {
-          message.error("网络错误");
-        }
-      });
-  }, []);
+  // useEffect(() => {
+  //   request
+  //     .post("/getCharacter")
+  //     .then((res) => {
+  //       setCharacterList(res);
+  //     })
+  //     .catch((err) => {
+  //       const { response } = err;
+  //       if (response) {
+  //         message.error(response.data.message);
+  //       } else {
+  //         message.error("网络错误");
+  //       }
+  //     });
+  // }, []);
 
   const onFinish = (values) => {
     const { character, xinfa, is_rich, is_wujie, is_proxy } = values;

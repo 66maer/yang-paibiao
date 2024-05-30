@@ -19,7 +19,7 @@ exports.register = async (req, res) => {
       }
 
       const token = jwt.sign(
-        { qqNumber: newUser.qqNumber },
+        { id: newUser._id, qqNumber: newUser.qqNumber },
         process.env.JWT_SECRET
       );
       res.status(201).json({

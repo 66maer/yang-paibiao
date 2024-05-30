@@ -3,6 +3,7 @@ import { Tabs, Button, Empty, Space, Modal, message, Divider } from "antd";
 import { request } from "@/utils";
 import { ShowPanel } from "@/components/TeamPanel";
 import { ShowCard } from "@/components/TeamCard";
+import store from "@/store";
 import DateTag from "@/components/DateTag";
 import SingUp from "./SignUp";
 import dayjs from "dayjs";
@@ -87,18 +88,24 @@ const TeamBoard = () => {
       return (
         <div>
           <div>
-            <span>{candidate.nickname}</span>
-            <span>[{xinfaInfoTable[candidate.xinfa].nickname[0]}]</span>
-            <span>[{candidate.character_name}]</span>
+            <Space>
+              <span>{candidate.nickname}</span>
+              <span>[{xinfaInfoTable[candidate.xinfa].nickname[0]}]</span>
+              <span>[{candidate.character_name}]</span>
+              <span>{candidate.is_proxy ? "[代]" : null}</span>
+              <span>{candidate.tags.map((tag) => `[${tag}]`)}</span>
+            </Space>
 
-            <Button
-              type="link"
-              onClick={() => {
-                onUserCancelSignup(candidate._id);
-              }}
-            >
-              (取消报名)
-            </Button>
+            {store.getState().user.id === candidate.user ? (
+              <Button
+                type="link"
+                onClick={() => {
+                  onUserCancelSignup(candidate._id);
+                }}
+              >
+                (取消报名)
+              </Button>
+            ) : null}
           </div>
         </div>
       );

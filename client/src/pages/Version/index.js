@@ -4,6 +4,15 @@ const { Title, Paragraph, Text } = Typography;
 
 const versionInfo = [
   {
+    version: "0.1.3",
+    content: [
+      "修复 报名时请求角色信息，但返回错误，有红叉",
+      "修复 报名失败，但代报名成功",
+      "修复 成员满了报名会失败但是代报名会加到候补列表里",
+      "修复 候补人员权限不对，所有人都可以把他取消掉",
+    ],
+  },
+  {
     version: "0.1.2",
     content: [
       "新增模板功能",
