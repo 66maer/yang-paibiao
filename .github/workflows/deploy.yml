@@ -39,7 +39,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "./docker-compose.yml"
-          target: "/home/ubuntu/zyhm/"
+          target: "/home/${{ secrets.SSH_USER }}/zyhm/"
 
       - name: 部署到服务器
         uses: appleboy/ssh-action@v0.1.5
@@ -48,7 +48,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/ubuntu/zyhm
+            cd /home/${{ secrets.SSH_USER }}/zyhm
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/zyhm-client:latest
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/zyhm-server:latest
             docker-compose down
