@@ -1,3 +1,5 @@
 .env*
 /db_data
+/psql_db_data
 /.vscode
+/old
