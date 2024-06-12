@@ -103,6 +103,7 @@ CREATE INDEX idx_league_members_uid ON league_members(uid);
 CREATE TABLE teams (
     tid SERIAL PRIMARY KEY,  -- 开团ID, 自增主键
     gid INT NOT NULL,  -- 群组ID, 外键
+    create_uid INT NOT NULL,  -- 创建者ID, 外键
     title VARCHAR(100) NOT NULL,  -- 开团标题
     team_time TIMESTAMP NOT NULL,  -- 开团时间
     dungeons VARCHAR(50) NOT NULL,  -- 副本名称
@@ -110,10 +111,37 @@ CREATE TABLE teams (
     book_yuntie BOOLEAN NOT NULL,  -- 是否有人预定陨铁
     visible BOOLEAN NOT NULL,  -- 是否对外可见
     lock BOOLEAN NOT NULL,  -- 是否锁定
-    rule JSONB,  -- 报名规则
+    rule JSONB NOT NULL,  -- 报名规则
     notice TEXT,  -- 团队告示
-    activity BOOLEAN NOT NULL,  -- 是否是活跃的团队
+    closed BOOLEAN NOT NULL,  -- 是否已被关闭
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
+    close_time TIMESTAMP,  -- 关闭时间
     FOREIGN KEY (gid) REFERENCES leagues(gid) ON DELETE CASCADE  -- 外键关联群组表, 级联删除
 )
+
+-- 添加副本开团表注释
+COMMENT ON TABLE teams IS '副本开团表';
+COMMENT ON COLUMN teams.tid IS '开团ID';
+COMMENT ON COLUMN teams.gid IS '群组ID';
+COMMENT ON COLUMN teams.create_uid IS '创建者ID';
+COMMENT ON COLUMN teams.title IS '开团标题';
+COMMENT ON COLUMN teams.team_time IS '开团时间';
+COMMENT ON COLUMN teams.dungeons IS '副本名称';
+COMMENT ON COLUMN teams.book_xuanjing IS '是否有人预定玄晶';
+COMMENT ON COLUMN teams.book_yuntie IS '是否有人预定陨铁';
+COMMENT ON COLUMN teams.visible IS '是否对外可见';
+COMMENT ON COLUMN teams.lock IS '是否锁定';
+COMMENT ON COLUMN teams.rule IS '报名规则';
+COMMENT ON COLUMN teams.notice IS '团队告示';
+COMMENT ON COLUMN teams.closed IS '是否已被关闭';
+COMMENT ON COLUMN teams.create_time IS '创建时间';
+COMMENT ON COLUMN teams.update_time IS '更新时间';
+COMMENT ON COLUMN teams.close_time IS '关闭时间';
+
+-- 创建副本开团表索引
+CREATE INDEX idx_teams_gid ON teams(gid);
+
+------ 副本报名表 ------
 
 
