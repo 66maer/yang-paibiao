@@ -28,7 +28,7 @@ services:
       - .env.prod
     volumes:
       - ./psql_db_data:/var/lib/postgresql/data
+      - ./sql:/sql
     ports:
       - "5432:5432"
     restart: always
-    
