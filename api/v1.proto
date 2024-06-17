@@ -11,6 +11,7 @@ option go_package = "xiaoyang/api/v1;v1";
 
 // 服务
 service XiaoYang {
+  // ------ 用户相关 ------
   // 注册
   rpc Register(RegisterRequest) returns (RegisterResponse) {
     option (google.api.http) = {
@@ -69,6 +70,18 @@ service XiaoYang {
       description : "修改密码"
     };
   }
+
+  // ------ 管理后台 ------
+  rpc CreateLeague(CreateLeagueRequest) returns (CreateLeagueResponse) {
+    option (google.api.http) = {
+      post : "/v1/create_league"
+      body : "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "创建组织"
+      description : "创建组织"
+    };
+  }
 }
 
 // 注册请求
@@ -119,3 +132,16 @@ message ChangePasswordRequest {
 
 // 修改密码响应
 message ChangePasswordResponse { string qq_number = 1; }
+
+// 创建组织请求
+message CreateLeagueRequest {
+  string group_number = 1;
+  string ukey = 2;
+  string name = 3;
+  string server = 4;
+  string avatar = 5;
+  string leader_qq_number = 6;
+}
+
+// 创建组织响应
+message CreateLeagueResponse { string group_number = 1; }

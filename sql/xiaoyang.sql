@@ -14,7 +14,7 @@ CREATE TABLE users (
     qq_number VARCHAR(20) NOT NULL UNIQUE,  -- QQ号
     password VARCHAR(255) NOT NULL,  -- 密码的哈希值
     nickname VARCHAR(50) NOT NULL,  -- 昵称
-    avatar VARCHAR(100)  -- 头像
+    avatar VARCHAR(100),  -- 头像
     is_admin BOOLEAN DEFAULT FALSE  -- 是否为管理员
 );
 
@@ -88,8 +88,8 @@ CREATE TABLE league_members (
     leader_id INT NOT NULL,  -- 群主ID, 外键
     member_id INT NOT NULL,  -- 成员ID, 外键
     PRIMARY KEY (leader_id, member_id),  -- 联合主键
-    role VARCHAR(20) NOT NULL  -- 角色(群主、管理员、普通成员)
-    group_nickname VARCHAR(50)  -- 群内昵称
+    role VARCHAR(20) NOT NULL,  -- 角色(群主、管理员、普通成员)
+    group_nickname VARCHAR(50),  -- 群内昵称
     FOREIGN KEY (leader_id) REFERENCES users(id) ON DELETE CASCADE,  -- 外键关联用户表, 级联删除
     FOREIGN KEY (member_id) REFERENCES users(id) ON DELETE CASCADE  -- 外键关联用户表, 级联删除
 );
@@ -160,11 +160,11 @@ CREATE TABLE signups (
     signup_character_id INT,  -- 报名角色ID, 外键
     signup_info JSONB,  -- 报名信息(补充信息)
     priority INT NOT NULL,  -- 优先级
-    is_rich BOOLEAN NOT NULL  -- 是否是老板
-    is_proxy BOOLEAN NOT NULL  -- 是否是代报名
-    client_type VARCHAR(20)  -- 客户端类型
-    lock_slot INT  -- 锁定到固定位置
-    is_dove BOOLEAN NOT NULL  -- 是否鸽了
+    is_rich BOOLEAN NOT NULL,  -- 是否是老板
+    is_proxy BOOLEAN NOT NULL,  -- 是否是代报名
+    client_type VARCHAR(20),  -- 客户端类型
+    lock_slot INT,  -- 锁定到固定位置
+    is_dove BOOLEAN NOT NULL,  -- 是否鸽了
     detail JSONB,  -- 报名详情, 未来拓展
     signup_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 报名时间
     cancel_time TIMESTAMP,  -- 取消时间
