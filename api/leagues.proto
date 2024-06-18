@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package api.xiaoyang.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "xiaoyang/api/character/v1;v1";
+
+service Leagues {
+  // 创建组织
+  rpc CreateLeague(CreateLeagueRequest) returns (CreateLeagueResponse) {
+    option (google.api.http) = {
+      post: "/v1/leagues"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "创建组织"
+      description: "创建组织"
+    };
+  }
+
+  // 获取组织列表
+  rpc GetLeagues(GetLeaguesRequest) returns (GetLeaguesResponse) {
+    option (google.api.http) = {
+      get: "/v1/leagues"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取组织列表"
+      description: "获取组织列表"
+    };
+  }
+
+  // 获取用户加入的组织列表
+  rpc GetLeaguesByUser(GetLeaguesByUserRequest) returns (GetLeaguesByUserResponse) {
+    option (google.api.http) = {
+      get: "/v1/users/{qq_number}/leagues"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取用户加入的组织列表"
+      description: "获取用户加入的组织列表"
+    };
+  }
+
+  // 获取组织详情
+  rpc GetLeague(GetLeagueRequest) returns (GetLeagueResponse) {
+    option (google.api.http) = {
+      get: "/v1/leagues/{ukey}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取组织详情"
+      description: "获取组织详情"
+      security: {
+        security_requirement: {
+          key: "bearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取组织成员列表
+  rpc GetLeagueMembers(GetLeagueMembersRequest) returns (GetLeagueMembersResponse) {
+    option (google.api.http) = {
+      get: "/v1/leagues/{ukey}/members"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取组织成员列表"
+      description: "获取组织成员列表"
+    };
+  }
+}

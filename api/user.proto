@@ -1,0 +1,184 @@
+syntax = "proto3";
+
+package api.xiaoyang.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "xiaoyang/api/user/v1;v1";
+
+// clang-format off
+// option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+//   host: "localhost:8080"
+//   base_path: ""
+//   info: {
+//     title: "xiaoyang api docs";
+//     version: "2.0";
+//   };
+//   schemes: HTTP;
+//   schemes: HTTPS;
+//   consumes: "application/json";
+//   produces: "application/json";
+// };
+// clang-format on
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  host: "localhost:8080"
+  base_path: ""
+  info: {
+    title: { value: "xiaoyang api docs" }
+    version: { value: "2.0" }
+  }
+  schemes: HTTP
+  schemes: HTTPS
+  consumes: "application/json"
+  produces: "application/json"
+};
+
+service User {
+  // 注册
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/register"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "注册"
+      description: "注册"
+    };
+  }
+
+  // 登录
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/login"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "登录"
+      description: "登录"
+    };
+  }
+
+  // 登出
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/logout"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "登出"
+      description: "登出"
+      security: {
+        security_requirement: {
+          key: "bearer"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取用户信息
+  rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
+    option (google.api.http) = {
+      get: "/v1/user/{qq_number}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取用户信息"
+      description: "获取用户信息"
+    };
+  }
+
+  // 更新用户信息
+  rpc UpdateUserInfo(UpdateUserInfoRequest) returns (UpdateUserInfoResponse) {
+    option (google.api.http) = {
+      put: "/v1/user/{qq_number}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "更新用户信息"
+      description: "更新用户信息"
+    };
+  }
+
+  // 修改密码
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse) {
+    option (google.api.http) = {
+      put: "/v1/password"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "修改密码"
+      description: "修改密码"
+    };
+  }
+}
+
+// 注册请求
+message RegisterRequest {
+  string qq_number = 1;
+  string password = 2;
+  string nickname = 3;
+}
+
+// 注册响应
+message RegisterResponse {
+  string token = 1;
+}
+
+// 登录请求
+message LoginRequest {
+  string qq_number = 1;
+  string password = 2;
+}
+
+// 登录响应
+message LoginResponse {
+  string token = 1;
+}
+
+// 登出请求
+message LogoutRequest {
+  string qq_number = 1;
+}
+
+// 登出响应
+message LogoutResponse {
+  string qq_number = 1;
+}
+
+// 获取用户信息请求
+message GetUserInfoRequest {
+  string qq_number = 1;
+}
+
+// 获取用户信息响应
+message GetUserInfoResponse {
+  string qq_number = 1;
+  string nickname = 2;
+  string avatar = 3;
+}
+
+// 更新用户信息请求
+message UpdateUserInfoRequest {
+  string qq_number = 1;
+  string nickname = 2;
+  string avatar = 3;
+}
+
+// 更新用户信息响应
+message UpdateUserInfoResponse {
+  string qq_number = 1;
+}
+
+// 修改密码请求
+message ChangePasswordRequest {
+  string qq_number = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+// 修改密码响应
+message ChangePasswordResponse {
+  string qq_number = 1;
+}

@@ -85,9 +85,9 @@ CREATE INDEX idx_leagues_ukey ON leagues(ukey);
 ------ 群组成员关联表 ------
 -- 创建群组成员表
 CREATE TABLE league_members (
+    id SERIAL PRIMARY KEY,  -- 关联ID, 自增主键
     leader_id INT NOT NULL,  -- 群主ID, 外键
     member_id INT NOT NULL,  -- 成员ID, 外键
-    PRIMARY KEY (leader_id, member_id),  -- 联合主键
     role VARCHAR(20) NOT NULL,  -- 角色(群主、管理员、普通成员)
     group_nickname VARCHAR(50),  -- 群内昵称
     FOREIGN KEY (leader_id) REFERENCES users(id) ON DELETE CASCADE,  -- 外键关联用户表, 级联删除
@@ -96,6 +96,7 @@ CREATE TABLE league_members (
 
 -- 添加群组成员表注释
 COMMENT ON TABLE league_members IS '群组成员表';
+COMMENT ON COLUMN league_members.id IS '关联ID';
 COMMENT ON COLUMN league_members.leader_id IS '群主ID';
 COMMENT ON COLUMN league_members.member_id IS '成员ID';
 COMMENT ON COLUMN league_members.role IS '角色';
