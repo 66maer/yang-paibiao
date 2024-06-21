@@ -4,50 +4,24 @@ package api.xiaoyang.v1;
 
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "validate/validate.proto";
 
 option go_package = "xiaoyang/api/user/v1;v1";
 
-// clang-format off
-// option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
-//   host: "localhost:8080"
-//   base_path: ""
-//   info: {
-//     title: "xiaoyang api docs";
-//     version: "2.0";
-//   };
-//   schemes: HTTP;
-//   schemes: HTTPS;
-//   consumes: "application/json";
-//   produces: "application/json";
-// };
-// clang-format on
-
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
-  host: "localhost:8080"
-  base_path: ""
+  host: "localhost:8080",
+  base_path: "",
   info: {
-    title: { value: "xiaoyang api docs" }
-    version: { value: "2.0" }
+    title: "xiaoyang api docs",
+    version: "2.0",
   }
-  schemes: HTTP
-  schemes: HTTPS
-  consumes: "application/json"
-  produces: "application/json"
+  schemes: HTTP,
+  schemes: HTTPS,
+  consumes: "application/json",
+  produces: "application/json",
 };
 
 service User {
-  // 注册
-  rpc Register(RegisterRequest) returns (RegisterResponse) {
-    option (google.api.http) = {
-      post: "/v1/auth/register"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "注册"
-      description: "注册"
-    };
-  }
-
   // 登录
   rpc Login(LoginRequest) returns (LoginResponse) {
     option (google.api.http) = {
@@ -75,6 +49,18 @@ service User {
           value: {}
         }
       }
+    };
+  }
+
+  // 录入用户信息
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/register"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "录入用户信息"
+      description: "录入用户信息"
     };
   }
 
@@ -116,7 +102,7 @@ service User {
 
 // 注册请求
 message RegisterRequest {
-  string qq_number = 1;
+  string qq_number = 1 [(validate.rules).string.min_len = 5, (validate.rules).string.max_len = 20];
   string password = 2;
   string nickname = 3;
 }

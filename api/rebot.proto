@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package api.xiaoyang.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "xiaoyang/api/rebot/v1;v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  host: "localhost:8080",
+  base_path: "",
+  info: {
+    title: "xiaoyang api docs",
+    version: "2.0",
+  }
+  schemes: HTTP,
+  schemes: HTTPS,
+  consumes: "application/json",
+  produces: "application/json",
+};
+
+service RebotService {
+  // 录入用户信息
+  rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/rebot/register"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: [ "rebot" ]
+      summary: "录入用户信息"
+      description: "录入用户信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+}
+
+message RegisterUserRequest {
+  string name = 1;
+  string phone = 2;
+  string email = 3;
+  string password = 4;
+}
