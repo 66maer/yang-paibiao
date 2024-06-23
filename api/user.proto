@@ -22,6 +22,18 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 };
 
 service User {
+  // 注册
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/register"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "注册"
+      description: "注册"
+    };
+  }
+
   // 登录
   rpc Login(LoginRequest) returns (LoginResponse) {
     option (google.api.http) = {
@@ -104,7 +116,7 @@ service User {
 message RegisterRequest {
   string qq_number = 1 [(validate.rules).string.min_len = 5, (validate.rules).string.max_len = 20];
   string password = 2;
-  string nickname = 3;
+  string nickname = 3 [(validate.rules).string.min_len = 1, (validate.rules).string.max_len = 20];
 }
 
 // 注册响应
