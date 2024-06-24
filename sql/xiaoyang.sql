@@ -59,7 +59,7 @@ CREATE INDEX idx_characters_user_id ON characters(user_id);
 CREATE TABLE leagues (
     id SERIAL PRIMARY KEY,  -- 群组ID, 自增主键
     group_number VARCHAR(20) NOT NULL UNIQUE,  -- 群号
-    ukey VARCHAR(20) NOT NULL, -- 群组唯一标识
+    ukey VARCHAR(20) NOT NULL UNIQUE, -- 群组唯一标识
     name VARCHAR(50) NOT NULL,  -- 群组名
     server VARCHAR(30) NOT NULL,  -- 群组所在服务器
     avatar VARCHAR(100),  -- 群组头像
@@ -86,24 +86,24 @@ CREATE INDEX idx_leagues_ukey ON leagues(ukey);
 -- 创建群组成员表
 CREATE TABLE league_members (
     id SERIAL PRIMARY KEY,  -- 关联ID, 自增主键
-    leader_id INT NOT NULL,  -- 群主ID, 外键
+    league_id INT NOT NULL,  -- 群组ID, 外键
     member_id INT NOT NULL,  -- 成员ID, 外键
     role VARCHAR(20) NOT NULL,  -- 角色(群主、管理员、普通成员)
     group_nickname VARCHAR(50),  -- 群内昵称
-    FOREIGN KEY (leader_id) REFERENCES users(id) ON DELETE CASCADE,  -- 外键关联用户表, 级联删除
+    FOREIGN KEY (league_id) REFERENCES leagues(id) ON DELETE CASCADE,  -- 外键关联群组表, 级联删除
     FOREIGN KEY (member_id) REFERENCES users(id) ON DELETE CASCADE  -- 外键关联用户表, 级联删除
 );
 
 -- 添加群组成员表注释
 COMMENT ON TABLE league_members IS '群组成员表';
 COMMENT ON COLUMN league_members.id IS '关联ID';
-COMMENT ON COLUMN league_members.leader_id IS '群主ID';
+COMMENT ON COLUMN league_members.league_id IS '群组ID';
 COMMENT ON COLUMN league_members.member_id IS '成员ID';
 COMMENT ON COLUMN league_members.role IS '角色';
 COMMENT ON COLUMN league_members.group_nickname IS '群内昵称';
 
 -- 创建群组成员表索引
-CREATE INDEX idx_league_members_leader_id ON league_members(leader_id);
+CREATE INDEX idx_league_members_league_id ON league_members(league_id);
 CREATE INDEX idx_league_members_member_id ON league_members(member_id);
 
 ------ 副本开团表 ------

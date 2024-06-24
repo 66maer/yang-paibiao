@@ -57,22 +57,10 @@ service User {
       description: "登出"
       security: {
         security_requirement: {
-          key: "bearer"
+          key: "BearerAuth"
           value: {}
         }
       }
-    };
-  }
-
-  // 录入用户信息
-  rpc Register(RegisterRequest) returns (RegisterResponse) {
-    option (google.api.http) = {
-      post: "/v1/auth/register"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "录入用户信息"
-      description: "录入用户信息"
     };
   }
 
@@ -84,6 +72,12 @@ service User {
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "获取用户信息"
       description: "获取用户信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
     };
   }
 
@@ -96,6 +90,12 @@ service User {
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "更新用户信息"
       description: "更新用户信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
     };
   }
 
@@ -122,17 +122,25 @@ message RegisterRequest {
 // 注册响应
 message RegisterResponse {
   string token = 1;
+  string user_id = 2;
+  string qq_number = 3;
+  string nickname = 4;
+  string avatar = 5;
 }
 
 // 登录请求
 message LoginRequest {
-  string qq_number = 1;
+  string qq_number = 1 [(validate.rules).string.min_len = 5, (validate.rules).string.max_len = 20];
   string password = 2;
 }
 
 // 登录响应
 message LoginResponse {
   string token = 1;
+  string user_id = 2;
+  string qq_number = 3;
+  string nickname = 4;
+  string avatar = 5;
 }
 
 // 登出请求
@@ -141,9 +149,7 @@ message LogoutRequest {
 }
 
 // 登出响应
-message LogoutResponse {
-  string qq_number = 1;
-}
+message LogoutResponse {}
 
 // 获取用户信息请求
 message GetUserInfoRequest {
@@ -152,22 +158,22 @@ message GetUserInfoRequest {
 
 // 获取用户信息响应
 message GetUserInfoResponse {
-  string qq_number = 1;
-  string nickname = 2;
-  string avatar = 3;
+  string user_id = 1;
+  string qq_number = 2;
+  string nickname = 3;
+  string avatar = 4;
 }
 
 // 更新用户信息请求
 message UpdateUserInfoRequest {
-  string qq_number = 1;
-  string nickname = 2;
-  string avatar = 3;
+  string user_id = 1;
+  string qq_number = 2;
+  string nickname = 3;
+  string avatar = 4;
 }
 
 // 更新用户信息响应
-message UpdateUserInfoResponse {
-  string qq_number = 1;
-}
+message UpdateUserInfoResponse {}
 
 // 修改密码请求
 message ChangePasswordRequest {
