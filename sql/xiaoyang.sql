@@ -63,7 +63,7 @@ CREATE TABLE leagues (
     name VARCHAR(50) NOT NULL,  -- 群组名
     server VARCHAR(30) NOT NULL,  -- 群组所在服务器
     avatar VARCHAR(100),  -- 群组头像
-    leader INT NOT NULL,  -- 群主ID, 外键
+    expire_time TIMESTAMP,  -- 过期时间
     preferences JSONB  -- 群组偏好设置
 );
 
@@ -75,7 +75,7 @@ COMMENT ON COLUMN leagues.ukey IS '群组唯一标识';
 COMMENT ON COLUMN leagues.name IS '群组名';
 COMMENT ON COLUMN leagues.server IS '群组所在服务器';
 COMMENT ON COLUMN leagues.avatar IS '群组头像';
-COMMENT ON COLUMN leagues.leader IS '群主ID';
+COMMENT ON COLUMN leagues.expire_time IS '过期时间';
 COMMENT ON COLUMN leagues.preferences IS '群组偏好设置';
 
 -- 创建群组表索引
@@ -149,6 +149,35 @@ COMMENT ON COLUMN teams.close_time IS '关闭时间';
 
 -- 创建副本开团表索引
 CREATE INDEX idx_teams_league_id ON teams(league_id);
+
+------ 开团模板表 ------
+-- 创建开团模板表
+CREATE TABLE team_templates (
+    id SERIAL PRIMARY KEY,  -- 模板ID, 自增主键
+    league_id INT NOT NULL,  -- 群组ID, 外键
+    creater_id INT NOT NULL,  -- 创建者ID, 外键
+    title VARCHAR(100) NOT NULL,  -- 模板标题
+    rule JSONB NOT NULL,  -- 报名规则
+    notice TEXT,  -- 团队告示
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
+    FOREIGN KEY (league_id) REFERENCES leagues(id) ON DELETE CASCADE  -- 外键关联群组表, 级联删除
+);
+
+-- 添加开团模板表注释
+COMMENT ON TABLE team_templates IS '开团模板表';
+COMMENT ON COLUMN team_templates.id IS '模板ID';
+COMMENT ON COLUMN team_templates.league_id IS '群组ID';
+COMMENT ON COLUMN team_templates.creater_id IS '创建者ID';
+COMMENT ON COLUMN team_templates.title IS '模板标题';
+COMMENT ON COLUMN team_templates.rule IS '报名规则';
+COMMENT ON COLUMN team_templates.notice IS '团队告示';
+COMMENT ON COLUMN team_templates.create_time IS '创建时间';
+COMMENT ON COLUMN team_templates.update_time IS '更新时间';
+
+-- 创建开团模板表索引
+CREATE INDEX idx_team_templates_league_id ON team_templates(league_id);
+
 
 ------ 副本报名表 ------
 -- 创建副本报名表

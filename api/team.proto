@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package api.xiaoyang.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "xiaoyang/api/team/v1;v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  host: "localhost:8080",
+  base_path: "",
+  info: {
+    title: "xiaoyang api docs",
+    version: "2.0",
+  }
+  schemes: HTTP,
+  schemes: HTTPS,
+  consumes: "application/json",
+  produces: "application/json",
+};
+
+service TeamService {
+  // 开团
+  rpc CreateTeam(CreateTeamRequest) returns (CreateTeamResponse) {
+    option (google.api.http) = {
+      post: "/v1/team/create"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "开团"
+      description: "开团"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+}
+
+// 开团请求
+message CreateTeamRequest {
+  int64 creater_id = 1;          // 创建者id
+  string creater_qq_number = 2;  // 创建者qq号
+  int64 league_id = 3;           // 组织id
+  string ukey = 4;               // 组织唯一标识
+  string title = 5;              // 开团标题
+  int64 team_time = 6;           // 开团时间
+  string dungeon_name = 7;       // 副本名称
+  bool book_xuanjing = 8;        // 是否有人预定玄晶
+  bool book_yuntie = 9;          // 是否有人预定陨铁
+  bool is_visible = 10;          // 是否对外可见
+  bool is_lock = 11;             // 是否锁定
+  string rule = 12;              // 规则
+  string notice = 13;            // 公告
+}

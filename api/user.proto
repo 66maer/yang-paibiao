@@ -4,7 +4,6 @@ package api.xiaoyang.v1;
 
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
-import "validate/validate.proto";
 
 option go_package = "xiaoyang/api/user/v1;v1";
 
@@ -21,7 +20,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   produces: "application/json",
 };
 
-service User {
+service UserService {
   // 注册
   rpc Register(RegisterRequest) returns (RegisterResponse) {
     option (google.api.http) = {
@@ -102,7 +101,7 @@ service User {
   // 修改密码
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse) {
     option (google.api.http) = {
-      put: "/v1/password"
+      put: "/v1/user/password/{qq_number}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -114,15 +113,15 @@ service User {
 
 // 注册请求
 message RegisterRequest {
-  string qq_number = 1 [(validate.rules).string.min_len = 5, (validate.rules).string.max_len = 20];
+  string qq_number = 1;
   string password = 2;
-  string nickname = 3 [(validate.rules).string.min_len = 1, (validate.rules).string.max_len = 20];
+  string nickname = 3;
 }
 
 // 注册响应
 message RegisterResponse {
   string token = 1;
-  string user_id = 2;
+  int64 user_id = 2;
   string qq_number = 3;
   string nickname = 4;
   string avatar = 5;
@@ -130,14 +129,14 @@ message RegisterResponse {
 
 // 登录请求
 message LoginRequest {
-  string qq_number = 1 [(validate.rules).string.min_len = 5, (validate.rules).string.max_len = 20];
+  string qq_number = 1;
   string password = 2;
 }
 
 // 登录响应
 message LoginResponse {
   string token = 1;
-  string user_id = 2;
+  int64 user_id = 2;
   string qq_number = 3;
   string nickname = 4;
   string avatar = 5;
@@ -158,7 +157,7 @@ message GetUserInfoRequest {
 
 // 获取用户信息响应
 message GetUserInfoResponse {
-  string user_id = 1;
+  int64 user_id = 1;
   string qq_number = 2;
   string nickname = 3;
   string avatar = 4;
@@ -166,7 +165,7 @@ message GetUserInfoResponse {
 
 // 更新用户信息请求
 message UpdateUserInfoRequest {
-  string user_id = 1;
+  int64 user_id = 1;
   string qq_number = 2;
   string nickname = 3;
   string avatar = 4;
@@ -177,12 +176,11 @@ message UpdateUserInfoResponse {}
 
 // 修改密码请求
 message ChangePasswordRequest {
-  string qq_number = 1;
-  string old_password = 2;
-  string new_password = 3;
+  int64 user_id = 1;
+  string qq_number = 2;
+  string old_password = 3;
+  string new_password = 4;
 }
 
 // 修改密码响应
-message ChangePasswordResponse {
-  string qq_number = 1;
-}
+message ChangePasswordResponse {}

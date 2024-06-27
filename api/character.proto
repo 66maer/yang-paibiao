@@ -7,74 +7,106 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "xiaoyang/api/character/v1;v1";
 
-service Character {
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  host: "localhost:8080",
+  base_path: "",
+  info: {
+    title: "xiaoyang api docs",
+    version: "2.0",
+  }
+  schemes: HTTP,
+  schemes: HTTPS,
+  consumes: "application/json",
+  produces: "application/json",
+};
+
+service CharacterService {
   // 创建角色
   rpc CreateCharacter(CreateCharacterRequest) returns (CreateCharacterResponse) {
     option (google.api.http) = {
-      post: "/v1/characters"
+      post: "/v1/character"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "创建角色"
       description: "创建角色"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
     };
   }
 
-  // 获取用户的角色列表(根据QQ号)
-  rpc GetCharacters(GetCharactersRequest) returns (GetCharactersResponse) {
+  // 获取用户的角色列表
+  rpc ListCharacter(ListCharacterRequest) returns (ListCharacterResponse) {
     option (google.api.http) = {
-      get: "/v1/characters/{qq_number}"
+      get: "/v1/character/list"
+      body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "获取用户的角色列表"
       description: "获取用户的角色列表"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
     };
   }
 
-  // 获取角色信息(根据角色ID)
-  rpc GetCharacter(GetCharacterRequest) returns (GetCharacterResponse) {
-    option (google.api.http) = {
-      get: "/v1/characterById/{id}"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "获取角色信息"
-      description: "获取角色信息"
-    };
-  }
-
-  // 删除角色(根据角色ID)
+  // 删除角色
   rpc DeleteCharacter(DeleteCharacterRequest) returns (DeleteCharacterResponse) {
     option (google.api.http) = {
-      delete: "/v1/characters/{id}"
+      delete: "/v1/character/{id}"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "删除角色"
       description: "删除角色"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
     };
   }
 
-
-  // 修改角色信息
+  // 更新角色
   rpc UpdateCharacter(UpdateCharacterRequest) returns (UpdateCharacterResponse) {
     option (google.api.http) = {
-      put: "/v1/characters/{qq_number}"
+      put: "/v1/character/{id}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "修改角色信息"
-      description: "修改角色信息"
+      summary: "更新角色"
+      description: "更新角色"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
     };
   }
+}
 
+// 角色信息
+message CharacterInfo {
+  int64 id = 1;
+  int64 user_id = 2;
+  string qq_number = 3;
+  string name = 4;
+  string server = 5;
+  string xinfa = 6;
+  string remark = 7;
 }
 
 // 创建角色请求
 message CreateCharacterRequest {
-  string qq_number = 1;
-  string name = 2;
-  string server = 3;
-  string xinfa = 4;
-  string remark = 5;
+  CharacterInfo character = 1;
 }
 
 // 创建角色响应
@@ -82,24 +114,15 @@ message CreateCharacterResponse {
   int64 id = 1;
 }
 
-// 获取角色列表请求
-message GetCharactersRequest {
-  string qq_number = 1;
+// 获取用户的角色列表请求
+message ListCharacterRequest {
+  int64 user_id = 1;
+  string qq_number = 2;
 }
 
-// 获取角色列表响应
-message GetCharactersResponse {
-  repeated CharacterInfo characters = 1;
-}
-
-// 获取角色信息请求
-message GetCharacterRequest {
-  int64 id = 1;
-}
-
-// 获取角色信息响应
-message GetCharacterResponse {
-  CharacterInfo character = 1;
+// 获取用户的角色列表响应
+message ListCharacterResponse {
+  repeated CharacterInfo character_list = 1;
 }
 
 // 删除角色请求
@@ -108,28 +131,12 @@ message DeleteCharacterRequest {
 }
 
 // 删除角色响应
-message DeleteCharacterResponse {
-}
+message DeleteCharacterResponse {}
 
-// 修改角色请求
+// 更新角色请求
 message UpdateCharacterRequest {
-  string qq_number = 1;
-  string name = 2;
-  string server = 3;
-  string xinfa = 4;
-  string remark = 5;
+  CharacterInfo character = 1;
 }
 
-// 修改角色响应
-message UpdateCharacterResponse {
-}
-
-// 角色信息
-message CharacterInfo {
-  int64 id = 1;
-  string qq_number = 2;
-  string name = 3;
-  string server = 4;
-  string xinfa = 5;
-  string remark = 6;
-}
+// 更新角色响应
+message UpdateCharacterResponse {}
