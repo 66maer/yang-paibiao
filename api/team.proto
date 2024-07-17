@@ -24,12 +24,171 @@ service TeamService {
   // 开团
   rpc CreateTeam(CreateTeamRequest) returns (CreateTeamResponse) {
     option (google.api.http) = {
-      post: "/v1/team/create"
+      post: "/v1/team"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "开团"
       description: "开团"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取开团列表
+  rpc ListTeam(ListTeamRequest) returns (ListTeamResponse) {
+    option (google.api.http) = {
+      get: "/v1/team/list"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取开团列表"
+      description: "获取开团列表"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取活跃的开团列表
+  rpc ListActiveTeam(ListTeamRequest) returns (ListTeamResponse) {
+    option (google.api.http) = {
+      get: "/v1/team/active"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取活跃的开团列表"
+      description: "获取活跃的开团列表"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 更新开团信息
+  rpc UpdateTeam(UpdateTeamRequest) returns (UpdateTeamResponse) {
+    option (google.api.http) = {
+      put: "/v1/team"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "更新开团信息"
+      description: "更新开团信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 设定开团可见性
+  rpc SetTeamVisible(SetTeamVisibleRequest) returns (SetTeamVisibleResponse) {
+    option (google.api.http) = {
+      post: "/v1/team/visible"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "设定开团可见性"
+      description: "设定开团可见性"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 设定开团锁定状态
+  rpc SetTeamLock(SetTeamVisibleRequest) returns (SetTeamVisibleResponse) {
+    option (google.api.http) = {
+      post: "/v1/team/lock"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "设定开团锁定状态"
+      description: "设定开团锁定状态"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 设定开团关闭状态
+  rpc SetTeamClose(SetTeamVisibleRequest) returns (SetTeamVisibleResponse) {
+    option (google.api.http) = {
+      post: "/v1/team/close"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "设定开团关闭状态"
+      description: "设定开团关闭状态"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 创建开团模板
+  rpc CreateTeamTemplate(CreateTeamTemplateRequest) returns (CreateTeamTemplateResponse) {
+    option (google.api.http) = {
+      post: "/v1/team_template"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "创建开团模板"
+      description: "创建开团模板"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取开团模板列表
+  rpc ListTeamTemplate(ListTeamRequest) returns (ListTeamResponse) {
+    option (google.api.http) = {
+      get: "/v1/team_template/list"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取开团模板列表"
+      description: "获取开团模板列表"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 删除开团模板
+  rpc DeleteTeamTemplate(SetTeamVisibleRequest) returns (SetTeamVisibleResponse) {
+    option (google.api.http) = {
+      delete: "/v1/team_template"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除开团模板"
+      description: "删除开团模板"
       security: {
         security_requirement: {
           key: "BearerAuth"
@@ -55,4 +214,147 @@ message CreateTeamRequest {
   bool is_lock = 11;             // 是否锁定
   string rule = 12;              // 规则
   string notice = 13;            // 公告
+}
+
+// 开团响应
+message CreateTeamResponse {
+  int64 team_id = 1;  // 开团id
+}
+
+// 开团信息
+message TeamInfo {
+  int64 team_id = 1;             // 开团id
+  int64 creater_id = 2;          // 创建者id
+  string creater_qq_number = 3;  // 创建者qq号
+  int64 league_id = 4;           // 组织id
+  string ukey = 5;               // 组织唯一标识
+  string title = 6;              // 开团标题
+  int64 team_time = 7;           // 开团时间
+  string dungeon_name = 8;       // 副本名称
+  bool book_xuanjing = 9;        // 是否有人预定玄晶
+  bool book_yuntie = 10;         // 是否有人预定陨铁
+  bool is_visible = 11;          // 是否对外可见
+  bool is_lock = 12;             // 是否锁定
+  string rule = 13;              // 规则
+  string notice = 14;            // 公告
+  int64 create_time = 15;        // 创建时间
+  int64 update_time = 16;        // 更新时间
+  int64 close_time = 17;         // 关闭时间
+}
+
+// 获取开团列表请求
+message ListTeamRequest {
+  string ukey = 1;       // 组织唯一标识
+  int64 page = 2;        // 页码
+  int64 page_size = 3;   // 每页数量
+  int64 page_count = 4;  // 总页数
+}
+
+// 获取开团列表响应
+message ListTeamResponse {
+  repeated TeamInfo team_infos = 1;  // 开团信息
+}
+
+// 获取活跃的开团列表请求
+message ListActiveTeamRequest {
+  string ukey = 1;  // 组织唯一标识
+}
+
+// 获取活跃的开团列表响应
+message ListActiveTeamResponse {
+  repeated TeamInfo team_infos = 1;  // 开团信息
+}
+
+// 更新开团信息请求
+message UpdateTeamRequest {
+  int64 team_id = 1;        // 开团id
+  int64 league_id = 2;      // 组织id
+  string title = 3;         // 开团标题
+  int64 team_time = 4;      // 开团时间
+  string dungeon_name = 5;  // 副本名称
+  bool book_xuanjing = 6;   // 是否有人预定玄晶
+  bool book_yuntie = 7;     // 是否有人预定陨铁
+  bool is_visible = 8;      // 是否对外可见
+  bool is_lock = 9;         // 是否锁定
+  string rule = 10;         // 规则
+  string notice = 11;       // 公告
+  bool is_close = 12;       // 是否关闭
+}
+
+// 更新开团信息响应
+message UpdateTeamResponse {}
+
+// 设定开团可见性请求
+message SetTeamVisibleRequest {
+  int64 team_id = 1;    // 开团id
+  bool is_visible = 2;  // 是否对外可见
+}
+
+// 设定开团可见性响应
+message SetTeamVisibleResponse {}
+
+// 设定开团锁定状态请求
+message SetTeamLockRequest {
+  int64 team_id = 1;  // 开团id
+  bool is_lock = 2;   // 是否锁定
+}
+
+// 设定开团锁定状态响应
+message SetTeamLockResponse {}
+
+// 设定开团关闭状态请求
+message SetTeamCloseRequest {
+  int64 team_id = 1;  // 开团id
+  bool is_close = 2;  // 是否关闭
+}
+
+// 设定开团关闭状态响应
+message SetTeamCloseResponse {}
+
+// 创建开团模板请求
+message CreateTeamTemplateRequest {
+  int64 creater_id = 1;          // 创建者id
+  string creater_qq_number = 2;  // 创建者qq号
+  int64 league_id = 3;           // 组织id
+  string ukey = 4;               // 组织唯一标识
+  string title = 5;              // 模板标题
+  string rule = 9;               // 规则
+  string notice = 10;            // 公告
+}
+
+// 创建开团模板响应
+message CreateTeamTemplateResponse {
+  int64 template_id = 1;  // 模板id
+}
+
+// 开团模板信息
+message TeamTemplateInfo {
+  int64 template_id = 1;         // 模板id
+  int64 creater_id = 2;          // 创建者id
+  string creater_qq_number = 3;  // 创建者qq号
+  int64 league_id = 4;           // 组织id
+  string ukey = 5;               // 组织唯一标识
+  string title = 6;              // 模板标题
+  string rule = 7;               // 规则
+  string notice = 8;             // 公告
+  int64 create_time = 9;         // 创建时间
+  int64 update_time = 10;        // 更新时间
+}
+
+// 获取开团模板列表请求
+message ListTeamTemplateRequest {
+  string ukey = 1;       // 组织唯一标识
+  int64 page = 2;        // 页码
+  int64 page_size = 3;   // 每页数量
+  int64 page_count = 4;  // 总页数
+}
+
+// 获取开团模板列表响应
+message ListTeamTemplateResponse {
+  repeated TeamTemplateInfo team_template_infos = 1;  // 开团模板信息
+}
+
+// 删除开团模板请求
+message DeleteTeamTemplateRequest {
+  int64 template_id = 1;  // 模板id
 }
