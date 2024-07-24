@@ -1,11 +1,9 @@
 import DateTag from "@/components/DateTag";
+import SlotCard from "@/components/SlotCard";
 const Canvas = () => {
-  const timestamp = new Date();
-  timestamp.setDate(timestamp.getDate() + 1);
-
   return (
     <>
-      <DateTag date={timestamp.getTime()} />
+      <SlotCard />
     </>
   );
 };

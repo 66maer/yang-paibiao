@@ -1,4 +1,4 @@
-const xinfaInfoTable = {
+export const xinfaInfoTable = {
   huajian: {
     name: "花间游",
     nickname: ["花间", "花间游", "草里爬"],
@@ -253,4 +253,24 @@ const xinfaInfoTable = {
   },
 };
 
-export { xinfaInfoTable };
+export const allXinfaList = Object.keys(xinfaInfoTable);
+
+export const dpsXinfaList = allXinfaList.filter((xinfa) =>
+  xinfaInfoTable[xinfa].type.includes("dps")
+);
+
+export const naiXinfaList = allXinfaList.filter((xinfa) =>
+  xinfaInfoTable[xinfa].type.includes("奶妈")
+);
+
+export const tXinfaList = allXinfaList.filter((xinfa) =>
+  xinfaInfoTable[xinfa].type.includes("T")
+);
+
+export const neigongXinfaList = allXinfaList.filter((xinfa) =>
+  xinfaInfoTable[xinfa].type.includes("内功")
+);
+
+export const waigongXinfaList = allXinfaList.filter((xinfa) =>
+  xinfaInfoTable[xinfa].type.includes("外功")
+);
