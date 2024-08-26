@@ -145,7 +145,9 @@ const App = () => {
             textAlign: "center",
           }}
         >
-          小秧排表 ©{new Date().getFullYear()} 丐箩箩 | 蜀ICP备2024079726号-1
+          <a href="https://beian.miit.gov.cn/" target="_blank">
+            小秧排表 ©{new Date().getFullYear()} 丐箩箩 | 蜀ICP备2024079726号-1
+          </a>
         </Footer>
       </Layout>
     </ConfigProvider>
