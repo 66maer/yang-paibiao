@@ -190,6 +190,11 @@ const Login = () => {
             <Button onClick={handleToggleForm}>
               {isRegistering ? "<< 返回登录" : "注册账号 >>"}
             </Button>
+
+            <div>
+              小秧排表 ©{new Date().getFullYear()} 丐箩箩 |
+              蜀ICP备2024079726号-1
+            </div>
           </Card>
         </ConfigProvider>
       </div>
