@@ -251,6 +251,14 @@ const xinfaInfoTable = {
     color: "#ebd773",
     type: ["dps", "外功", "身法"],
   },
+  zhoutian: {
+    name: "周天功",
+    nickname: ["段氏"],
+    menpai: "段氏",
+    icon: "zhoutian.png",
+    color: "#89cf4f",
+    type: ["dps", "内功", "元气"],
+  },
 };
 
 export { xinfaInfoTable };

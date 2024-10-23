@@ -4,6 +4,14 @@ const { Title, Paragraph, Text } = Typography;
 
 const versionInfo = [
   {
+    version: "0.1.4",
+    content: [
+      "新增 段氏",
+      "我记得我要重构来着，但我忘了",
+      "Bug有点多，等过段时间再说吧",
+    ],
+  },
+  {
     version: "0.1.3",
     content: [
       "修复 报名时请求角色信息，但返回错误，有红叉",
