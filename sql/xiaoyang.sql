@@ -12,10 +12,11 @@ BEGIN;
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,  -- 用户ID, 自增主键
     qq_number VARCHAR(20) NOT NULL UNIQUE,  -- QQ号
-    password VARCHAR(255) NOT NULL,  -- 密码的哈希值
+    password VARCHAR(255) NOT NULL,  -- 密码
     nickname VARCHAR(50) NOT NULL,  -- 昵称
     avatar VARCHAR(100),  -- 头像
     is_admin BOOLEAN DEFAULT FALSE  -- 是否为管理员
+    is_bot BOOLEAN DEFAULT FALSE  -- 是否为机器人
     is_reset_password BOOLEAN DEFAULT FALSE  -- 是否需要重置密码
 );
 
@@ -27,6 +28,7 @@ COMMENT ON COLUMN users.password IS '密码的哈希值';
 COMMENT ON COLUMN users.nickname IS '昵称';
 COMMENT ON COLUMN users.avatar IS '头像';
 COMMENT ON COLUMN users.is_admin IS '是否为管理员';
+COMMENT ON COLUMN users.is_bot IS '是否为机器人';
 COMMENT ON COLUMN users.is_reset_password IS '是否需要重置密码';
 
 -- 创建用户表索引
