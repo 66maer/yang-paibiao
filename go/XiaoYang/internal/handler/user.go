@@ -90,25 +90,25 @@ func (h *userServiceHandler) Login(ctx context.Context, req *XiaoYangV1.LoginReq
 	err := req.Validate()
 	if err != nil {
 		logger.Warn("req.Validate error", logger.Err(err), logger.Any("req", req), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrLoginUserService.Err(err.Error())
 	}
 
 	data, err := h.userDao.GetByQqNumber(ctx, req.QqNumber)
 
 	if err != nil {
 		logger.Warn("GetByQqNumber error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrLoginUserService.Err("未注册")
 	}
 
 	if !gocrypto.VerifyPassword(req.Password, data.Password) {
 		logger.Warn("password error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrLoginUserService.Err()
+		return nil, ecode.ErrLoginUserService.Err("密码错误")
 	}
 
 	token, err := jwt.GenerateToken(utils.Uint64ToStr(data.ID))
 	if err != nil {
 		logger.Warn("GenerateToken error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrLoginUserService.Err(err.Error())
 	}
 
 	return &XiaoYangV1.LoginResponse{
