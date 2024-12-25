@@ -1,9 +1,22 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Flex, Layout, Menu, Space, Button, Avatar } from "antd";
+import menuConfig from "./MenuConfig";
+import store from "@/store";
 
 const { Header, Content, Footer, Sider } = Layout;
 
+
 const MainPage = () => {
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    store.dispatch(fetchUserInfo(values));
+    const user = store.getState().user;
+    console.log(user);
+  }, [])
+
+
+
   return (
     <Layout style={{ height: "100vh" }}>
       <Header>
@@ -21,11 +34,8 @@ const MainPage = () => {
               flex: 1,
               minWidth: 0,
             }}
-          >
-            <Menu.Item key="1">nav 1</Menu.Item>
-            <Menu.Item key="2">nav 2</Menu.Item>
-            <Menu.Item key="3">nav 3</Menu.Item>
-          </Menu>
+            items={items}
+          />
           <Space style={{ marginLeft: "auto" }}>
             <Avatar>头像</Avatar>
             <Button>退出登录</Button>

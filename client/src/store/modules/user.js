@@ -10,6 +10,7 @@ const userSlice = createSlice({
     qqNumber: "",
     nickname: "",
     avatar: "",
+    isFetched: false, // 新增标志
   },
   reducers: {
     setToken(state, action) {
@@ -18,7 +19,10 @@ const userSlice = createSlice({
     },
     setUserInfo(state, action) {
       state.id = action.payload.id;
+      state.qqNumber = action.payload.qqNumber;
       state.nickname = action.payload.nickname;
+      state.avatar = action.payload.avatar;
+      state.isFetched = true; // 设置标志为已获取
     },
   },
 });
@@ -61,6 +65,39 @@ const fetchRegister = (registerForm) => {
   };
 };
 
-export { fetchLogin, fetchRegister, setToken, setUserInfo };
+const fetchUserInfo = () => {
+  return async (dispatch, getState) => {
+    const { token, id, isFetched } = getState().user;
+    if (id || isFetched) {
+      return; // 已经有用户信息或已获取过，直接返回
+    }
+    if (!token) {
+      // 没有token，跳转到登录页
+      window.location.href = "/login";
+      return;
+    }
+    try {
+      const res = await request.get("/user/userinfo", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.code !== 0) {
+        throw new Error(res.message);
+      }
+      dispatch(
+        setUserInfo({
+          id: res.data.id,
+          qqNumber: res.data.qqNumber,
+          nickname: res.data.nickname,
+          avatar: res.data.avatar,
+        })
+      );
+    } catch (error) {
+      alert("Token 已过期，请重新登录");
+      window.location.href = "/login";
+    }
+  };
+};
+
+export { fetchLogin, fetchRegister, setToken, setUserInfo, fetchUserInfo };
 
 export default userSlice.reducer;

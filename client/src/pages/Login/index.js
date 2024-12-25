@@ -108,12 +108,6 @@ const RegisterCard = () => {
 };
 
 const LoginPage = () => {
-  useEffect(() => {
-    document.title = "小秧排表 - 花眠 - 登录";
-    const link = document.querySelector("link[rel*='icon']");
-    link.href = "/logo.png";
-  });
-
   const [reg_mode, setRegMode] = useState(false);
   return (
     <Layout style={{ height: "100vh" }}>
