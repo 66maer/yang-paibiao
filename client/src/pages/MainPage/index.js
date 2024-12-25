@@ -1,21 +1,41 @@
 import React, { useState, useEffect } from "react";
-import { Flex, Layout, Menu, Space, Button, Avatar } from "antd";
+import { Flex, Layout, Menu, Space, Button, Avatar, message, Spin } from "antd"; // 添加 Spin 组件
 import menuConfig from "./MenuConfig";
 import store from "@/store";
+import { fetchUserInfo } from "@/store/modules/user";
 
 const { Header, Content, Footer, Sider } = Layout;
 
-
 const MainPage = () => {
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true); // 添加 loading 状态
 
   useEffect(() => {
-    store.dispatch(fetchUserInfo(values));
-    const user = store.getState().user;
-    console.log(user);
-  }, [])
+    const fetchData = async () => {
+      try {
+        await store.dispatch(fetchUserInfo());
+        const user = store.getState().user;
+        console.log(user);
+        // 根据用户权限设置菜单项
+        //setItems(menuConfig(user.permissions));
+      } catch (err) {
+        console.error(err);
+        message.error(err.message);
+      } finally {
+        setLoading(false); // 数据获取完成后设置 loading 为 false
+      }
+    };
 
+    fetchData();
+  }, []);
 
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" style={{ height: "100vh" }}>
+        <Spin size="large" />
+      </Flex>
+    );
+  }
 
   return (
     <Layout style={{ height: "100vh" }}>

@@ -6,7 +6,7 @@ const userSlice = createSlice({
   name: "user",
   initialState: {
     token: getLocalToken() || "",
-    id: "",
+    userId: "",
     qqNumber: "",
     nickname: "",
     avatar: "",
@@ -18,7 +18,7 @@ const userSlice = createSlice({
       setLocalToken(action.payload);
     },
     setUserInfo(state, action) {
-      state.id = action.payload.id;
+      state.userId = action.payload.userId;
       state.qqNumber = action.payload.qqNumber;
       state.nickname = action.payload.nickname;
       state.avatar = action.payload.avatar;
@@ -38,7 +38,7 @@ const fetchLogin = (loginForm) => {
     dispatch(setToken(res.data.token));
     dispatch(
       setUserInfo({
-        id: res.data.id,
+        userId: res.data.userId,
         qqNumber: res.data.qqNumber,
         nickname: res.data.nickname,
         avatar: res.data.avatar,
@@ -56,7 +56,7 @@ const fetchRegister = (registerForm) => {
     dispatch(setToken(res.data.token));
     dispatch(
       setUserInfo({
-        id: res.data.id,
+        userId: res.data.userId,
         qqNumber: res.data.qqNumber,
         nickname: res.data.nickname,
         avatar: res.data.avatar,
@@ -67,8 +67,8 @@ const fetchRegister = (registerForm) => {
 
 const fetchUserInfo = () => {
   return async (dispatch, getState) => {
-    const { token, id, isFetched } = getState().user;
-    if (id || isFetched) {
+    const { token, userId, isFetched } = getState().user;
+    if (userId || isFetched) {
       return; // 已经有用户信息或已获取过，直接返回
     }
     if (!token) {
@@ -76,28 +76,21 @@ const fetchUserInfo = () => {
       window.location.href = "/login";
       return;
     }
-    try {
-      const res = await request.get("/user/userinfo", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.code !== 0) {
-        throw new Error(res.message);
-      }
-      dispatch(
-        setUserInfo({
-          id: res.data.id,
-          qqNumber: res.data.qqNumber,
-          nickname: res.data.nickname,
-          avatar: res.data.avatar,
-        })
-      );
-    } catch (error) {
-      alert("Token 已过期，请重新登录");
-      window.location.href = "/login";
+    const res = await request.get("/user/userinfo");
+    if (res.code !== 0) {
+      throw new Error(res.message);
     }
+    dispatch(
+      setUserInfo({
+        userId: res.data.userId,
+        qqNumber: res.data.qqNumber,
+        nickname: res.data.nickname,
+        avatar: res.data.avatar,
+      })
+    );
   };
 };
 
-export { fetchLogin, fetchRegister, setToken, setUserInfo, fetchUserInfo };
+export { fetchLogin, fetchRegister, fetchUserInfo, setToken, setUserInfo };
 
 export default userSlice.reducer;
