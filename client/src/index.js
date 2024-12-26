@@ -5,7 +5,7 @@ import { Provider } from "react-redux";
 import router from "./router/index";
 import store from "./store/index";
 import "./utils/mock";
-import { ConfigProvider } from "antd";
+import { ConfigProvider, Menu } from "antd";
 import zhCN from "antd/locale/zh_CN";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
@@ -27,6 +27,9 @@ root.render(
               horizontalItemSelectedColor: "#c04851",
               horizontalItemSelectedBg: "#f0c9cf",
               itemBg: "#dc8b9d",
+
+              itemSelectedBg: "#f0c9cf",
+              itemSelectedColor: "#c04851",
             },
           },
         }}
