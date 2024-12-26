@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { Flex, Layout, Menu, Space, Button, Avatar, Spin } from "antd";
+import {
+  Flex,
+  Layout,
+  Menu,
+  Space,
+  Button,
+  Avatar,
+  Spin,
+  Typography,
+} from "antd";
 import { request } from "@/utils/request";
 import SlotCard from "@/components/SlotCard";
+import DateTag from "../../components/DateTag";
+import "./index.scss";
+import SlotPanel from "../../components/SlotPanel";
 
 const { Header, Content, Footer, Sider } = Layout;
+const { Title } = Typography;
 
 const fetchTeamList = async () => {
   const res = await request.get("/team/list");
@@ -45,8 +58,13 @@ const Board = () => {
 
   const items = [
     {
-      key: "1226",
-      label: "2024年12月26日",
+      key: "1227",
+      label: (
+        <Space>
+          12月27日
+          <DateTag date={new Date()} />
+        </Space>
+      ),
       children: [
         {
           key: "122601",
@@ -63,8 +81,15 @@ const Board = () => {
       ],
     },
     {
-      key: "1227",
-      label: "2024年12月27日",
+      key: "1228",
+      label: (
+        <Space>
+          12月28日
+          <DateTag
+            date={new Date(new Date().getTime() + 24 * 60 * 60 * 1000)}
+          />
+        </Space>
+      ),
       children: [
         {
           key: "122701",
@@ -88,25 +113,37 @@ const Board = () => {
         height: "100%",
       }}
     >
-      <Sider>
+      <Sider style={{ overflow: "auto" }}>
         <Menu
+          className="board-menu"
           mode="inline"
           defaultSelectedKeys={["122602"]}
-          defaultOpenKeys={["1226"]}
+          defaultOpenKeys={["1227"]}
           style={{
             background: "#f6e0e0",
             height: "100%",
           }}
           items={items}
+          inlineIndent={16}
         />
       </Sider>
       <Content
         style={{
           background: "#f6eaea",
           padding: 24,
+          overflow: "auto", // 添加此行
         }}
       >
-        <SlotCard />
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <Title>12月27日 第二车</Title>
+          <Space>
+            发车时间: 20:00
+            <Avatar>玄晶</Avatar>
+            <Avatar>陨铁</Avatar>
+          </Space>
+          <br />
+          <SlotPanel />
+        </div>
       </Content>
     </Layout>
   );

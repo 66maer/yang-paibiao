@@ -234,7 +234,9 @@ const SlotCardCanvas = ({ rules = {}, signup_info }) => {
   );
 };
 
-const SlotCard = ({ cardInfo }) => {
+const SlotCard = ({ cardInfo = {} }) => {
+  const { rules = {}, signupInfo = {} } = cardInfo;
+  return <SlotCardCanvas rules={rules} signup_info={signupInfo} />;
   return (
     <>
       <SlotCardCanvas rules={{}} signup_info={{}} />
