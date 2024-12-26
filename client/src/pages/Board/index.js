@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Flex, Layout, Menu, Space, Button, Avatar, Spin } from "antd";
 import { request } from "@/utils/request";
+import SlotCard from "@/components/SlotCard";
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -105,7 +106,7 @@ const Board = () => {
           padding: 24,
         }}
       >
-        Board666
+        <SlotCard />
       </Content>
     </Layout>
   );
