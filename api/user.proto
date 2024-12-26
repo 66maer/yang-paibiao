@@ -1,11 +1,13 @@
 syntax = "proto3";
 
-package api.xiaoyang.v1;
+package api.XiaoYang.v1;
 
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "tagger/tagger.proto";
+import "validate/validate.proto";
 
-option go_package = "xiaoyang/api/xiaoyang/v1;v1";
+option go_package = "XiaoYang/api/XiaoYang/v1;v1";
 
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   host: "localhost:8080",
@@ -77,7 +79,7 @@ service UserService {
   // 获取用户信息
   rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
     option (google.api.http) = {
-      get: "/api/v1/user/{qq_number}"
+      get: "/api/v1/userinfo"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "获取用户信息"
@@ -94,7 +96,7 @@ service UserService {
   // 更新用户信息
   rpc UpdateUserInfo(UpdateUserInfoRequest) returns (UpdateUserInfoResponse) {
     option (google.api.http) = {
-      put: "/v1/user/{qq_number}"
+      put: "/v1/user/userinfo"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -112,7 +114,7 @@ service UserService {
   // 修改密码
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse) {
     option (google.api.http) = {
-      put: "/v1/user/password/{qq_number}"
+      put: "/v1/user/password"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -124,7 +126,7 @@ service UserService {
 
 // 注册请求
 message RegisterRequest {
-  string qq_number = 1;
+  string qqNumber = 1;
   string password = 2;
   string nickname = 3;
 }
@@ -132,52 +134,52 @@ message RegisterRequest {
 // 注册响应
 message RegisterResponse {
   string token = 1;
-  int64 user_id = 2;
-  string qq_number = 3;
+  uint64 userId = 2;
+  string qqNumber = 3;
   string nickname = 4;
   string avatar = 5;
 }
 
 // 登录请求
 message LoginRequest {
-  string qq_number = 1;
+  string qqNumber = 1;
   string password = 2;
 }
 
 // 登录响应
 message LoginResponse {
   string token = 1;
-  int64 user_id = 2;
-  string qq_number = 3;
+  uint64 userId = 2;
+  string qqNumber = 3;
   string nickname = 4;
   string avatar = 5;
+  bool isSuperAdmin = 6;
 }
 
 // 登出请求
 message LogoutRequest {
-  string qq_number = 1;
+  uint64 userId = 1;
 }
 
 // 登出响应
 message LogoutResponse {}
 
 // 获取用户信息请求
-message GetUserInfoRequest {
-  string qq_number = 1;
-}
+message GetUserInfoRequest {}
 
 // 获取用户信息响应
 message GetUserInfoResponse {
-  int64 user_id = 1;
-  string qq_number = 2;
+  uint64 userId = 1;
+  string qqNumber = 2;
   string nickname = 3;
   string avatar = 4;
+  bool isSuperAdmin = 5;
 }
 
 // 更新用户信息请求
 message UpdateUserInfoRequest {
-  int64 user_id = 1;
-  string qq_number = 2;
+  uint64 userId = 1;
+  string qqNumber = 2;
   string nickname = 3;
   string avatar = 4;
 }
@@ -187,10 +189,10 @@ message UpdateUserInfoResponse {}
 
 // 修改密码请求
 message ChangePasswordRequest {
-  int64 user_id = 1;
-  string qq_number = 2;
-  string old_password = 3;
-  string new_password = 4;
+  uint64 userId = 1;
+  string qqNumber = 2;
+  string oldPassword = 3;
+  string newPassword = 4;
 }
 
 // 修改密码响应

@@ -1,25 +1,30 @@
 import React, { useState, useEffect } from "react";
-import { Flex, Layout, Menu, Space, Button, Avatar, message, Spin } from "antd"; // 添加 Spin 组件
+import { Flex, Layout, Menu, Space, Button, Avatar, message, Spin } from "antd";
 import menuConfig from "./MenuConfig";
 import store from "@/store";
 import { fetchUserInfo } from "@/store/modules/user";
+import { fetchGetLeagueRole } from "../../store/modules/guild";
+import { Outlet, useNavigate } from "react-router-dom";
 
 const { Header, Content, Footer, Sider } = Layout;
 
 const MainPage = () => {
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true); // 添加 loading 状态
+  const [loading, setLoading] = useState(true);
+
+  const navigate = useNavigate();
+  const currentPath = window.location.pathname.split("/")[1] || "board";
+
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         await store.dispatch(fetchUserInfo());
-        const user = store.getState().user;
-        console.log(user);
-        // 根据用户权限设置菜单项
-        //setItems(menuConfig(user.permissions));
+        await store.dispatch(fetchGetLeagueRole());
+        const isSuperAdmin = store.getState().user.isSuperAdmin;
+        const role = store.getState().guild.role;
+        setItems(menuConfig(role, isSuperAdmin));
       } catch (err) {
-        console.error(err);
         message.error(err.message);
       } finally {
         setLoading(false); // 数据获取完成后设置 loading 为 false
@@ -37,6 +42,10 @@ const MainPage = () => {
     );
   }
 
+  const onMenuClick = (item) => {
+    navigate(item.key);
+  }
+
   return (
     <Layout style={{ height: "100vh" }}>
       <Header>
@@ -49,7 +58,8 @@ const MainPage = () => {
           />
           <Menu
             mode="horizontal"
-            defaultSelectedKeys={["2"]}
+            defaultSelectedKeys={[currentPath]}
+            onClick={onMenuClick}
             style={{
               flex: 1,
               minWidth: 0,
@@ -62,7 +72,11 @@ const MainPage = () => {
           </Space>
         </Flex>
       </Header>
-      <Content>Content</Content>
+      <Content style={{
+        padding: 20,
+      }}>
+        <Outlet />
+      </Content>
       <Footer style={{ textAlign: "center" }}>
         小秧排表 ©{new Date().getFullYear()} 丐箩箩 | 蜀ICP备2024079726号-1
       </Footer>

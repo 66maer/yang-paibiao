@@ -9,6 +9,7 @@ Mock.mock("http://localhost:8080/api/v1/auth/login", "post", {
     qqNumber: "123456789",
     nickname: "maer",
     avatar: "https://cdn.jsdelivr.net/gh/maerliu/maerliu.github.io/avatar.jpg",
+    isSuperAdmin: false,
   },
 });
 
@@ -33,5 +34,16 @@ Mock.mock("http://localhost:8080/api/v1/user/userinfo", "get", {
     qqNumber: "123456789",
     nickname: "maer",
     avatar: "https://cdn.jsdelivr.net/gh/maerliu/maerliu.github.io/avatar.jpg",
+    isSuperAdmin: false,
+  }
+}).setup({
+  timeout: 0,
+});
+
+Mock.mock("http://localhost:8080/api/v1/guild/zyhm/role", "get", {
+  code: 0,
+  message: "ok",
+  data: {
+    role: "member",
   },
 });

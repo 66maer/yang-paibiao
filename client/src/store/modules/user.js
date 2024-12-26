@@ -10,7 +10,8 @@ const userSlice = createSlice({
     qqNumber: "",
     nickname: "",
     avatar: "",
-    isFetched: false, // 新增标志
+    isSuperAdmin: false,
+    isFetched: false,
   },
   reducers: {
     setToken(state, action) {
@@ -22,6 +23,7 @@ const userSlice = createSlice({
       state.qqNumber = action.payload.qqNumber;
       state.nickname = action.payload.nickname;
       state.avatar = action.payload.avatar;
+      state.isSuperAdmin = action.payload.isSuperAdmin;
       state.isFetched = true; // 设置标志为已获取
     },
   },
@@ -42,6 +44,7 @@ const fetchLogin = (loginForm) => {
         qqNumber: res.data.qqNumber,
         nickname: res.data.nickname,
         avatar: res.data.avatar,
+        isSuperAdmin: res.data.isSuperAdmin,
       })
     );
   };
@@ -86,6 +89,7 @@ const fetchUserInfo = () => {
         qqNumber: res.data.qqNumber,
         nickname: res.data.nickname,
         avatar: res.data.avatar,
+        isSuperAdmin: res.data.isSuperAdmin,
       })
     );
   };
