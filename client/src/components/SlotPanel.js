@@ -64,7 +64,7 @@ const SlotXiaoDui = () => {
 
 const SlotPanel = ({ slots }) => {
   return (
-    <div className="slot-panel" style={{ display: "flex", flexWrap: "wrap" }}>
+    <div className="slot-panel" style={{ display: "flex" }}>
       <SlotXiaoDui />
       <SlotXiaoDui />
       <SlotXiaoDui />
