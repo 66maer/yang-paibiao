@@ -13,6 +13,7 @@ import {
   DatePicker,
   TimePicker,
   Select,
+  Tooltip,
 } from "antd";
 import {
   EditOutlined,
@@ -21,34 +22,103 @@ import {
   ClockCircleOutlined,
   LockOutlined,
   UnlockOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs";
 import SlotPanel from "@/components/SlotPanel";
 import { dungeonsTable } from "@/utils/dungeons";
 
 const { Title, Paragraph } = Typography;
 
+const FormSwitchButton = ({
+  form,
+  fieldName,
+  trueIcon,
+  falseIcon,
+  tooltip,
+}) => {
+  const [, forceUpdate] = useState();
+  return (
+    <Tooltip title={tooltip}>
+      <Button
+        type="primary"
+        shape="circle"
+        icon={form.getFieldValue(fieldName) ? trueIcon : falseIcon}
+        onClick={() => {
+          form.setFieldsValue({
+            [fieldName]: !form.getFieldValue(fieldName),
+          });
+          forceUpdate({}); // 强制更新组件
+        }}
+        style={{
+          backgroundColor: form.getFieldValue(fieldName)
+            ? "#f5222d"
+            : "#52c41a",
+        }}
+      />
+    </Tooltip>
+  );
+};
+
 const BoardEditContent = ({ team = {} }) => {
   const { id, title, teamTime, dungeons, rule, notice } = team;
-  const { bookXuanjing, bookYuntie, isLock, crateTime, updateTime } = team;
+  const {
+    bookXuanjing,
+    bookYuntie,
+    isLock,
+    isVisiable,
+    crateTime,
+    updateTime,
+  } = team;
   const [expanded, setExpanded] = useState(false);
   const [autoTitle, setAutoTitle] = useState(true);
   const [form] = Form.useForm();
-  const [, forceUpdate] = useState(); // 用于强制更新组件
 
   const pageTitle = id ? "编辑团队" : "发布开团";
+
+  const generateTitle = () => {
+    const date = form.getFieldValue("date")?.format("MM月DD日");
+    const dayOfWeek = form.getFieldValue("date")?.format("d");
+    const daysOfWeek = ["日", "一", "二", "三", "四", "五", "六"];
+    const dayOfWeekChinese = daysOfWeek[dayOfWeek];
+    const formattedDate = date ? `${date}(周${dayOfWeekChinese})` : "";
+    const time = form.getFieldValue("time")?.format("HH:mm");
+    const dungeon = form.getFieldValue("dungeons");
+    console.log(date, time, dungeon);
+    if (date && time && dungeon) {
+      return `${formattedDate} ${time} ${dungeon}`;
+    }
+    return "";
+  };
+
+  const onValuesChange = (changedValues, allValues) => {
+    if (autoTitle) {
+      form.setFieldsValue({ title: generateTitle() });
+    }
+  };
 
   const onFinish = (values) => {
     console.log(values);
   };
+
+  console.log(team);
 
   return (
     <div className="board-content">
       <Form
         form={form}
         labelAlign="right"
-        labelCol={{ span: 2 }}
         onFinish={onFinish}
-        initialValues={{ isLock: isLock || false }} // 设置初始值
+        initialValues={{
+          isLock: isLock || false,
+          isVisiable: isVisiable || false,
+          date: id ? dayjs(team.teamTime) : dayjs(),
+          time: id ? dayjs(team.teamTime) : dayjs("19:30", "HH:mm"),
+          dungeons: dungeons || undefined,
+          title: title,
+        }}
+        onValuesChange={onValuesChange}
       >
         <Flex justify="space-between" align="center">
           <Title level={4} className="board-content-title">
@@ -63,66 +133,70 @@ const BoardEditContent = ({ team = {} }) => {
         </Flex>
         <Divider style={{ marginTop: 5 }} />
 
-        <Form.Item name="title" label="开团标题">
-          <Space align="center" size={"large"}>
+        <Space size={20} align="baseline">
+          <Form.Item name="title" label="开团标题">
             <Input
               showCount
-              maxLength={20}
+              maxLength={30}
               disabled={autoTitle}
               style={{
                 width: 800,
               }}
             />
+          </Form.Item>
+          <Form.Item name="isLock">
+            <FormSwitchButton
+              form={form}
+              fieldName="isLock"
+              trueIcon={<LockOutlined />}
+              falseIcon={<UnlockOutlined />}
+              tooltip="锁定团队，不允许自由报名"
+            />
+          </Form.Item>
+          <Form.Item name="isVisiable">
+            <FormSwitchButton
+              form={form}
+              fieldName="isVisiable"
+              trueIcon={<EyeInvisibleOutlined />}
+              falseIcon={<EyeOutlined />}
+              tooltip="隐藏团队，仅管理员可见"
+            />
+          </Form.Item>
+        </Space>
+        <Space size={60} align="baseline">
+          <Form.Item label="发车时间">
+            <Space>
+              <Form.Item name="date" noStyle>
+                <DatePicker />
+              </Form.Item>
+              <Form.Item name="time" noStyle>
+                <TimePicker format="HH:mm" minuteStep={5} />
+              </Form.Item>
+            </Space>
+          </Form.Item>
+          <Form.Item name="dungeons" label="副本">
+            <Select
+              options={dungeonsTable}
+              style={{ width: 150 }}
+              placeholder="请选择副本"
+            />
+          </Form.Item>
+          <Form.Item label="生成标题">
             <Switch
               checkedChildren="自动"
               unCheckedChildren="手动"
               checked={autoTitle}
-              onChange={(checked) => setAutoTitle(checked)}
-            />
-          </Space>
-        </Form.Item>
-        <Form.Item label="发车时间">
-          <Space>
-            <Form.Item name="date" noStyle>
-              <DatePicker />
-            </Form.Item>
-            <Form.Item name="time" noStyle>
-              <TimePicker format="HH:mm" minuteStep={5} />
-            </Form.Item>
-          </Space>
-        </Form.Item>
-        <Form.Item name="dungeons" label="副本">
-          <Select
-            options={dungeonsTable}
-            style={{ width: 150 }}
-            placeholder="请选择副本"
-          />
-        </Form.Item>
-        <Form.Item name="isLock" label="是否锁车">
-          <Space>
-            <Button
-              type="primary"
-              shape="circle"
-              icon={
-                form.getFieldValue("isLock") ? (
-                  <LockOutlined />
-                ) : (
-                  <UnlockOutlined />
-                )
-              }
-              onClick={() => {
-                form.setFieldsValue({ isLock: !form.getFieldValue("isLock") });
-                forceUpdate({}); // 强制更新组件
-              }}
-              style={{
-                backgroundColor: form.getFieldValue("isLock")
-                  ? "#f5222d"
-                  : "#52c41a",
+              onChange={(checked) => {
+                setAutoTitle(checked);
+                if (checked) {
+                  form.setFieldsValue({ title: generateTitle() });
+                }
               }}
             />
-          </Space>
-        </Form.Item>
-        <Form.Item name="notice" label="团队告示">
+          </Form.Item>
+        </Space>
+
+        <Form.Item name="notice" label="团队告示" style={{ width: 800 }}>
           <Input.TextArea
             showCount
             autoSize={{

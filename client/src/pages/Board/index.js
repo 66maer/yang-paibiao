@@ -41,7 +41,7 @@ const teamList = [
   {
     id: "1",
     title: "12月27日 第一车",
-    teamTime: "20:00",
+    teamTime: "2024-12-29T20:00:00+08:00",
     dungeons: "英雄一之窟",
     rule: "规则",
     notice: "这是公告，",
