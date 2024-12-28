@@ -1,8 +1,7 @@
-.board-menu {
-  .ant-menu-submenu-title {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-  }
+.kaituan-button{
+  width: calc(100% - 32px);
+  margin: 16px;
+  word-spacing: 2em;
 }
 
 .team-tag {
@@ -15,4 +14,35 @@
     margin-top: -7px;
     margin-bottom: -3px;
   }
+}
+
+
+.board-layout{
+  height: 100%;
+  
+}
+
+.board-layout-sider {
+  background: #f6e0e0;
+  overflow: auto;
+}
+
+.board-layout-content {
+  background: #f6eaea;
+  padding: 24px;
+  overflow: auto;
+}
+
+.board-content {
+  display: flex;
+  flex-direction: column;
+  width: 1000px;
+}
+
+.board-content-title {
+  margin-top: 5px;
+}
+
+.board-content-avatar {
+  margin-top: -6px;
 }

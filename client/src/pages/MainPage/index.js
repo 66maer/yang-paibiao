@@ -15,7 +15,6 @@ const MainPage = () => {
   const navigate = useNavigate();
   const currentPath = window.location.pathname.split("/")[1] || "board";
 
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -44,7 +43,7 @@ const MainPage = () => {
 
   const onMenuClick = (item) => {
     navigate(item.key);
-  }
+  };
 
   return (
     <Layout style={{ height: "100vh" }}>
@@ -54,7 +53,7 @@ const MainPage = () => {
             src="/logo-title.png"
             alt="logo"
             draggable="false"
-            style={{ marginTop: 4, marginLeft: -30, width: 234, height: 48 }}
+            style={{ marginTop: 4, width: 234, height: 48 }}
           />
           <Menu
             mode="horizontal"
@@ -72,10 +71,16 @@ const MainPage = () => {
           </Space>
         </Flex>
       </Header>
-      <Content style={{
-        padding: 20,
-      }}>
-        <Outlet />
+      <Content
+        style={{
+          padding: 20,
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: "1300px" }}>
+          <Outlet />
+        </div>
       </Content>
       <Footer style={{ textAlign: "center" }}>
         小秧排表 ©{new Date().getFullYear()} 丐箩箩 | 蜀ICP备2024079726号-1
