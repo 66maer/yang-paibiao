@@ -234,11 +234,19 @@ const Board = () => {
 
   return (
     <Layout className="board-layout">
+      <Content className="board-layout-content">
+        <BoardEditContent team={teamList[0]} isAdmin={isAdmin} />
+      </Content>
+    </Layout>
+  );
+
+  return (
+    <Layout className="board-layout">
       <Sider className="board-layout-sider" width={250}>
         <BoardLayoutSider isAdmin={isAdmin} />
       </Sider>
       <Content className="board-layout-content">
-        <BoardEditContent team={teamList[0]} isAdmin={isAdmin} />
+        <BoardContent team={teamList[0]} isAdmin={isAdmin} />
       </Content>
     </Layout>
   );
