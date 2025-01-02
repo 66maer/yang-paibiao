@@ -5,125 +5,105 @@
 // 包含的字段有: 报名日志的id, 报名人id, 姓名username, 游戏角色名characterName, xinfa角色心法，用于匹配规则， 提交者id submit_user_id(存在代报名的情况), 取消人的id cancel_user_id(存在别人代我报名，我自己取消，或者管理员取消的情况)，报名类型sign(常规，代报名，管理员指定)
 // 还有需要返回一个处理后的报名日志描述，每个元素是一个字符串, 因为teamLogs是按照时间记录的对象，而这个数组需要对其处理，比如将报名又取消的情况合并，输出一条"xxx报名(被xxx取消)"的描述
 
-import { xinfaInfoTable } from "../../../old/server/utils/xinfa";
+import { xinfaInfoTable } from "@/utils/xinfa";
 
-// 简单插入，遍历所有的slot，找到第一个符合条件的slot，插入
-const SampleAllocateMember = (teamSlots, signupInfo) => {
-  for (const { rule, member } of teamSlots) {
-    if (member !== null) {
+const SampleAllocate = (rules, slots, signupInfo, last = -1) => {
+  for (let idx = last + 1; idx < rules.length; idx++) {
+    const rule = rules[idx];
+    if (slots[idx] != null) {
       continue; // 这个位置已经有人了
     }
     const { allowRich, allowXinfaList } = rule;
-    if (allowRich === signupInfo.isRich) {
-      member = signupInfo;
-      return true;
+    if (allowRich && signupInfo.isRich && allowRich == signupInfo.isRich) {
+      slots[idx] = signupInfo;
+      return idx;
     }
     if (allowXinfaList.includes(signupInfo.xinfa)) {
-      member = signupInfo;
-      return true;
+      slots[idx] = signupInfo;
+      return idx;
     }
   }
-  return false;
+  return -1;
 };
 
-// 报名重排，按照坑位的规则，尽可能容纳更多的人
-const SlotReallocate = (teamSlots, signupListSlice, candidateList) => {
-  // 统计规则中的心法数量，并将对应的坑位id记录下来
-  const xinfaSlotMap = {};
-  let richSlotList = [];
-  Object.keys(xinfaInfoTable).forEach((xinfa) => {
-    xinfaSlotMap[xinfa] = [];
-  });
-  for (const [idx, slot] of teamSlots.entries()) {
-    if (slot.member?.isLock) {
-      continue; // 这个位置是被钦定的，不参与重排
-    }
-    slot.member = null;
-    const { allowRich, allowXinfaList } = slot.rule;
-    if (allowRich) {
-      richSlotList.push(idx);
-    }
-    allowXinfaList.forEach((xinfa) => {
-      xinfaSlotMap[xinfa].push(idx);
-    });
+const dfs = (resSlots, rules, slots, signupList, candidateList) => {
+  if (signupList.length == 0) {
+    resSlots.splice(0, resSlots.length, ...slots);
+    return true;
   }
-
-  // 一个坑位可能允许多个心法，此方法消耗坑位，所有相关心法都要删除对应坑位id
-  const ConsumeSlot = (slotId) => {
-    const slot = teamSlots[slotId];
-    const { allowRich, allowXinfaList } = slot.rule;
-    if (allowRich) {
-      richSlotList = richSlotList.filter((id) => id !== slotId);
-    }
-    allowXinfaList.forEach((xinfa) => {
-      xinfaSlotMap[xinfa] = xinfaSlotMap[xinfa].filter((id) => id !== slotId);
-    });
-  };
-  // 按照每个心法可用的坑位数量，进行分配
-  const teamSlotsCopy = JSON.parse(JSON.stringify(teamSlots));
-
-  let succ = true;
-  while (signupListSlice.length > 0) {
-    signupListSlice.sort((a, b) => {
-      if (a.isRich) return 1;
-      if (b.isRich) return -1;
-      return xinfaSlotMap[a.xinfa].length - xinfaSlotMap[b.xinfa].length;
-    });
-    const first = signupListSlice.shift();
-    if (first.isRich && richSlotList.length > 0) {
-      const slotId = richSlotList.shift();
-      teamSlotsCopy[slotId].member = first;
-      ConsumeSlot(slotId);
-      continue;
-    }
-    if (!first.isRich && xinfaSlotMap[first.xinfa].length > 0) {
-      const slotId = xinfaSlotMap[first.xinfa].shift();
-      teamSlotsCopy[slotId].member = first;
-      ConsumeSlot(slotId);
-      continue;
-    }
-    if (candidateList.find((item) => item.id === first.id)) {
-      continue; // 已经在候补列表了, 说明在之前的重排中就没有通过, 不再重排
-    }
-    succ = false;
-    break;
-  }
-
-  // 如果成功，将teamSlotsCopy的值赋给teamSlots
-  if (succ) {
-    teamSlots = teamSlotsCopy;
-  }
-};
-
-const SlotAllocate = (teamRules, signupList) => {
-  const teamSlots = teamRules.map((rule) => ({
-    rule: rule,
-    member: null,
-  }));
-  const candidateList = [];
-
   for (const [idx, signupInfo] of signupList.entries()) {
-    if (signupInfo.cancelTime !== null) {
+    if (signupInfo.cancelTime != null) {
       continue; // 已经取消报名的不处理
     }
     if (candidateList.includes(signupInfo)) {
       continue; // 已经在候补列表了, 不再处理
     }
-    if (signupInfo.isLock && signupInfo.lockSlotId !== null) {
-      teamSlots[signupInfo.lockSlotId].member = signupInfo;
+    if (signupInfo.isLock && signupInfo.lockSlotId != null) {
+      slots[signupInfo.lockSlotId] = signupInfo;
+      continue; // 钦定的位置直接插入
+    }
+    let last = -1;
+    while (true) {
+      const newSlots = slots.slice();
+      last = SampleAllocate(rules, newSlots, signupInfo, last);
+      if (last == -1) {
+        return false;
+      }
+      if (
+        dfs(resSlots, rules, newSlots, signupList.slice(idx + 1), candidateList)
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+const SlotAllocate = (teamRules, signupList) => {
+  // const teamSlots = teamRules.map((rule) => ({
+  //   rule: rule,
+  //   member: null,
+  // }));
+
+  const slotMemberList = Array(teamRules.length).fill(null);
+  const candidateList = [];
+  for (const [idx, signupInfo] of signupList.entries()) {
+    if (signupInfo.cancelTime != null) {
+      continue; // 已经取消报名的不处理
+    }
+    if (candidateList.includes(signupInfo)) {
+      continue; // 已经在候补列表了, 不再处理
+    }
+    if (signupInfo.isLock && signupInfo.lockSlotId != null) {
+      slotMemberList[signupInfo.lockSlotId] = signupInfo;
       continue; // 钦定的位置直接插入
     }
 
     // 先进行简单插入
-    if (SampleAllocateMember(teamSlots, signupInfo)) {
+    const resIdx = SampleAllocate(teamRules, slotMemberList, signupInfo);
+    if (resIdx != -1) {
       continue;
     }
 
-    // 如果简单插入失败，将当前与此之前的报名记录进行重排
-    SlotReallocate(
-      teamSlots,
+    // 无法简单插入，尝试回朔重排
+    const newSlotMemberList = Array(teamRules.length).fill(null);
+    const tmpSlotMemberList = newSlotMemberList.slice();
+
+    const res = dfs(
+      newSlotMemberList,
+      teamRules,
+      tmpSlotMemberList,
       signupList.slice(0, idx + 1),
-      candidateList.slice()
+      candidateList
     );
+    if (res) {
+      slotMemberList.splice(0, slotMemberList.length, ...newSlotMemberList);
+    } else {
+      candidateList.push(signupInfo);
+    }
   }
+
+  console.log(slotMemberList, candidateList);
 };
+
+export default SlotAllocate;

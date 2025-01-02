@@ -32,6 +32,7 @@ import {
 import dayjs from "dayjs";
 import SlotPanel from "@/components/SlotPanel";
 import { dungeonsTable } from "@/utils/dungeons";
+import SlotAllocate from "../../components/SlotAllocate";
 
 const { Title, Paragraph } = Typography;
 
@@ -164,6 +165,32 @@ const BoardEditContent = ({ team = {} }) => {
   };
 
   console.log(team);
+
+  const rules = [
+    { allowXinfaList: ["a", "b"], allowRich: false },
+    { allowXinfaList: ["a", "c"], allowRich: false },
+  ];
+
+  const signup = [
+    {
+      id: 1,
+      xinfa: "a",
+      isRich: false,
+    },
+    {
+      id: 2,
+      xinfa: "b",
+      isRich: false,
+    },
+    {
+      id: 3,
+      xinfa: "a",
+      isRich: false,
+    },
+  ];
+
+  console.log("======");
+  SlotAllocate(rules, signup);
 
   return (
     <Flex style={{ height: "100%" }}>
