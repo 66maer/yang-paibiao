@@ -27,7 +27,7 @@ const SampleAllocateMember = (teamSlots, signupInfo) => {
 };
 
 // 报名重排，按照坑位的规则，尽可能容纳更多的人
-const SlotReallocate = (teamSlots, signupListSlice) => {
+const SlotReallocate = (teamSlots, signupListSlice, candidateList) => {
   // 统计规则中的心法数量，并将对应的坑位id记录下来
   const xinfaSlotMap = {};
   let richSlotList = [];
@@ -48,8 +48,21 @@ const SlotReallocate = (teamSlots, signupListSlice) => {
     });
   }
 
+  // 一个坑位可能允许多个心法，此方法消耗坑位，所有相关心法都要删除对应坑位id
+  const ConsumeSlot = (slotId) => {
+    const slot = teamSlots[slotId];
+    const { allowRich, allowXinfaList } = slot.rule;
+    if (allowRich) {
+      richSlotList = richSlotList.filter((id) => id !== slotId);
+    }
+    allowXinfaList.forEach((xinfa) => {
+      xinfaSlotMap[xinfa] = xinfaSlotMap[xinfa].filter((id) => id !== slotId);
+    });
+  };
   // 按照每个心法可用的坑位数量，进行分配
   const teamSlotsCopy = JSON.parse(JSON.stringify(teamSlots));
+
+  let succ = true;
   while (signupListSlice.length > 0) {
     signupListSlice.sort((a, b) => {
       if (a.isRich) return 1;
@@ -57,6 +70,28 @@ const SlotReallocate = (teamSlots, signupListSlice) => {
       return xinfaSlotMap[a.xinfa].length - xinfaSlotMap[b.xinfa].length;
     });
     const first = signupListSlice.shift();
+    if (first.isRich && richSlotList.length > 0) {
+      const slotId = richSlotList.shift();
+      teamSlotsCopy[slotId].member = first;
+      ConsumeSlot(slotId);
+      continue;
+    }
+    if (!first.isRich && xinfaSlotMap[first.xinfa].length > 0) {
+      const slotId = xinfaSlotMap[first.xinfa].shift();
+      teamSlotsCopy[slotId].member = first;
+      ConsumeSlot(slotId);
+      continue;
+    }
+    if (candidateList.find((item) => item.id === first.id)) {
+      continue; // 已经在候补列表了, 说明在之前的重排中就没有通过, 不再重排
+    }
+    succ = false;
+    break;
+  }
+
+  // 如果成功，将teamSlotsCopy的值赋给teamSlots
+  if (succ) {
+    teamSlots = teamSlotsCopy;
   }
 };
 
@@ -65,23 +100,30 @@ const SlotAllocate = (teamRules, signupList) => {
     rule: rule,
     member: null,
   }));
+  const candidateList = [];
 
   for (const [idx, signupInfo] of signupList.entries()) {
     if (signupInfo.cancelTime !== null) {
       continue; // 已经取消报名的不处理
     }
+    if (candidateList.includes(signupInfo)) {
+      continue; // 已经在候补列表了, 不再处理
+    }
     if (signupInfo.isLock && signupInfo.lockSlotId !== null) {
-      teamSlots[signupInfo.lockSlotId].member = signupInfo; // 钦定的位置直接插入
-      continue;
+      teamSlots[signupInfo.lockSlotId].member = signupInfo;
+      continue; // 钦定的位置直接插入
     }
 
     // 先进行简单插入
-    let signSucc = SampleAllocateMember(teamSlots, signupInfo);
-    if (signSucc) {
+    if (SampleAllocateMember(teamSlots, signupInfo)) {
       continue;
     }
 
     // 如果简单插入失败，将当前与此之前的报名记录进行重排
-    signSucc = SlotReallocate(teamSlots, signupList.slice(0, idx + 1));
+    SlotReallocate(
+      teamSlots,
+      signupList.slice(0, idx + 1),
+      candidateList.slice()
+    );
   }
 };
