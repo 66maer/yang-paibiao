@@ -245,7 +245,7 @@ export const xinfaInfoTable = {
   },
   shanhai: {
     name: "山海心诀",
-    nickname: ["万灵", "山海心诀"],
+    nickname: ["万灵", "山海心诀", "弓"],
     menpai: "万灵",
     icon: "shanhai.png",
     color: "#ebd773",
@@ -253,10 +253,10 @@ export const xinfaInfoTable = {
   },
   zhoutian: {
     name: "周天功",
-    nickname: ["段氏"],
+    nickname: ["段氏", "周天功", "扇子", "扇"],
     menpai: "段氏",
     icon: "zhoutian.png",
-    color: "#89cf4f",
+    color: "#5F9BB4",
     type: ["dps", "内功", "元气"],
   },
 };

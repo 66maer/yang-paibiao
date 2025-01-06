@@ -4,11 +4,13 @@ import SlotCard from "./SlotCard";
 import "./SlotPanel.scss";
 import { useState } from "react";
 import {
+  AutoComplete,
   Avatar,
   Button,
   Checkbox,
   Divider,
   Flex,
+  Form,
   Modal,
   Popconfirm,
   Space,
@@ -103,7 +105,35 @@ const EditModalRule = ({ curRule, setCurRule }) => {
   );
 };
 
-const EditModalAssign = () => {};
+const EditModalAssign = () => {
+  const [form] = Form.useForm();
+  const onFinish = (values) => {};
+  const [dataSource, setDataSource] = useState([
+    { value: "张三" },
+    { value: "李四" },
+    { value: "王五" },
+  ]);
+
+  const onUserNicknameFilterOption = (inputValue, option) => {
+    const regex = new RegExp(inputValue.split("").join(".*"));
+    const list = dataSource.map((item) => item.value);
+    return list.some((item) => regex.test(item));
+  };
+
+  return (
+    <Form form={form} onFinish={onFinish}>
+      <Form.Item name="user" label="指定团员">
+        <AutoComplete
+          allowClear
+          backfill
+          placeholder="选择团员或填写编外人员"
+          options={dataSource}
+          filterOption
+        ></AutoComplete>
+      </Form.Item>
+    </Form>
+  );
+};
 
 const EditModal = ({ slot, index, open, setOpen }) => {
   const onEditModalCancel = () => {
@@ -122,11 +152,22 @@ const EditModal = ({ slot, index, open, setOpen }) => {
       label: "规则",
       children: <EditModalRule curRule={curRule} setCurRule={setCurRule} />,
     },
-    { key: "assign", label: "钦定", children: "钦定内容" },
+    { key: "assign", label: "钦定", children: <EditModalAssign /> },
   ];
 
+  const chineseNumbers = ["【一】", "【二】", "【三】", "【四】", "【五】"];
+  const circledNumbers = ["①", "②", "③", "④", "⑤"];
+
   return (
-    <Modal centered open={open} onCancel={onEditModalCancel} footer={null}>
+    <Modal
+      centered
+      open={open}
+      title={`编辑坑位： ${chineseNumbers[Math.floor(index / 5)]}队 · ${
+        circledNumbers[index % 5]
+      }`}
+      onCancel={onEditModalCancel}
+      footer={null}
+    >
       <Tabs
         defaultActiveKey={lastModalTab}
         items={tabs}
@@ -184,7 +225,7 @@ const SlotXiaoDui = ({ slotD, indexD, mode }) => {
     <div className="slot-xiaodui">
       {slotD.map((slot, index) => {
         return mode === "edit" ? (
-          <EditSlotCard slot={slot} index={index} />
+          <EditSlotCard slot={slot} index={indexD * 5 + index} />
         ) : (
           <SlotCard slot={slot} index={index} />
         );
