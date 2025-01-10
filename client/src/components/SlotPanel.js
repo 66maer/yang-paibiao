@@ -13,6 +13,7 @@ import {
   Form,
   Modal,
   Popconfirm,
+  Select,
   Space,
   Tabs,
   Typography,
@@ -45,9 +46,7 @@ const EditModalRule = ({ curRule, setCurRule }) => {
           allow_xinfa_list: [],
         });
       } else {
-        const list = Object.keys(xinfaInfoTable).filter((xinfa) =>
-          xinfaInfoTable[xinfa].type.includes(text)
-        );
+        const list = Object.keys(xinfaInfoTable).filter((xinfa) => xinfaInfoTable[xinfa].type.includes(text));
         setCurRule({
           ...curRule,
           allow_xinfa_list: list,
@@ -108,11 +107,7 @@ const EditModalRule = ({ curRule, setCurRule }) => {
 const EditModalAssign = () => {
   const [form] = Form.useForm();
   const onFinish = (values) => {};
-  const [dataSource, setDataSource] = useState([
-    { value: "张三" },
-    { value: "李四" },
-    { value: "王五" },
-  ]);
+  const [dataSource, setDataSource] = useState([{ value: "张三" }, { value: "李四" }, { value: "王五" }]);
 
   const onUserNicknameFilterOption = (inputValue, option) => {
     const regex = new RegExp(inputValue.split("").join(".*"));
@@ -120,16 +115,64 @@ const EditModalAssign = () => {
     return list.some((item) => regex.test(item));
   };
 
+  const onXinfaFilterOption = (inputValue, option) => {
+    const regex = new RegExp(inputValue.split("").join(".*"));
+    const list = xinfaInfoTable[option.value].nickname;
+    return list.some((item) => regex.test(item));
+  };
+
+  const onUserClear = () => {
+    form.resetFields();
+  };
+
+  const xinfaOptions = Object.keys(xinfaInfoTable).map((xinfa) => {
+    return {
+      label: (
+        <Space key={xinfa}>
+          <Avatar src={`/xinfa/${xinfaInfoTable[xinfa].icon}`} />
+          <Text>{xinfaInfoTable[xinfa].name}</Text>
+        </Space>
+      ),
+      value: xinfa,
+    };
+  });
+
   return (
-    <Form form={form} onFinish={onFinish}>
-      <Form.Item name="user" label="指定团员">
-        <AutoComplete
+    <Form
+      form={form}
+      onFinish={onFinish}
+      labelCol={{
+        span: 4,
+      }}
+    >
+      <Form.Item name="user" label="指定团员" rules={[{ required: true, message: "请填写昵称" }]}>
+        <AutoComplete allowClear backfill placeholder="选择团员或填写编外人员" options={dataSource} filterOption />
+      </Form.Item>
+      <Form.Item name="character_name" label="游戏角色">
+        <AutoComplete allowClear backfill placeholder="" options={dataSource} filterOption />
+      </Form.Item>
+      <Form.Item name="xinfa" label="选择心法" rules={[{ required: true, message: "请选择心法" }]}>
+        <Select
+          showSearch
           allowClear
-          backfill
-          placeholder="选择团员或填写编外人员"
-          options={dataSource}
-          filterOption
-        ></AutoComplete>
+          placeholder="搜索心法"
+          options={xinfaOptions}
+          style={{ width: 300 }}
+          filterOption={onXinfaFilterOption}
+        />
+      </Form.Item>
+
+      <Form.Item>
+        <Flex justify="center">
+          <Space>
+            <Button type="primary" htmlType="submit">
+              锁定
+            </Button>
+            <Button onClick={onUserClear} danger>
+              重置
+            </Button>
+          </Space>
+        </Flex>
       </Form.Item>
     </Form>
   );
@@ -162,9 +205,7 @@ const EditModal = ({ slot, index, open, setOpen }) => {
     <Modal
       centered
       open={open}
-      title={`编辑坑位： ${chineseNumbers[Math.floor(index / 5)]}队 · ${
-        circledNumbers[index % 5]
-      }`}
+      title={`编辑坑位： ${chineseNumbers[Math.floor(index / 5)]}队 · ${circledNumbers[index % 5]}`}
       onCancel={onEditModalCancel}
       footer={null}
     >
@@ -210,12 +251,7 @@ const EditSlotCard = ({ slot, index }) => {
           </div>
         )}
       </div>
-      <EditModal
-        slot={slot}
-        index={index}
-        open={showEditModal}
-        setOpen={setShowEditModal}
-      />
+      <EditModal slot={slot} index={index} open={showEditModal} setOpen={setShowEditModal} />
     </>
   );
 };

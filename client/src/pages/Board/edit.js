@@ -93,13 +93,7 @@ const timelineItems = [
   { color: "#66ccff", children: "王五王五王五王五王五王五" },
 ];
 
-const FormSwitchButton = ({
-  form,
-  fieldName,
-  trueIcon,
-  falseIcon,
-  tooltip,
-}) => {
+const FormSwitchButton = ({ form, fieldName, trueIcon, falseIcon, tooltip }) => {
   const [, forceUpdate] = useState();
   return (
     <Tooltip title={tooltip}>
@@ -114,9 +108,7 @@ const FormSwitchButton = ({
           forceUpdate({}); // 强制更新组件
         }}
         style={{
-          backgroundColor: form.getFieldValue(fieldName)
-            ? "#f5222d"
-            : "#52c41a",
+          backgroundColor: form.getFieldValue(fieldName) ? "#f5222d" : "#52c41a",
         }}
       />
     </Tooltip>
@@ -125,14 +117,7 @@ const FormSwitchButton = ({
 
 const BoardEditContent = ({ team = {} }) => {
   const { id, title, teamTime, dungeons, rule, notice } = team;
-  const {
-    bookXuanjing,
-    bookYuntie,
-    isLock,
-    isVisiable,
-    crateTime,
-    updateTime,
-  } = team;
+  const { bookXuanjing, bookYuntie, isLock, isVisiable, crateTime, updateTime } = team;
   const [expanded, setExpanded] = useState(false);
   const [autoTitle, setAutoTitle] = useState(true);
   const [form] = Form.useForm();
@@ -255,20 +240,16 @@ const BoardEditContent = ({ team = {} }) => {
           <Space size={60} align="baseline">
             <Form.Item label="发车时间">
               <Space>
-                <Form.Item name="date" noStyle>
+                <Form.Item name="date" noStyle rules={[{ required: true }]}>
                   <DatePicker />
                 </Form.Item>
-                <Form.Item name="time" noStyle>
+                <Form.Item name="time" noStyle rules={[{ required: true }]}>
                   <TimePicker format="HH:mm" minuteStep={5} />
                 </Form.Item>
               </Space>
             </Form.Item>
-            <Form.Item name="dungeons" label="副本">
-              <Select
-                options={dungeonsTable}
-                style={{ width: 150 }}
-                placeholder="请选择副本"
-              />
+            <Form.Item name="dungeons" label="副本" rules={[{ required: true }]}>
+              <Select options={dungeonsTable} style={{ width: 150 }} placeholder="请选择副本" />
             </Form.Item>
             <Form.Item label="生成标题">
               <Switch
