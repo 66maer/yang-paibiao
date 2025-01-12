@@ -125,9 +125,9 @@ func (r *userServiceRouter) register() {
 	r.iRouter.Handle("POST", "/api/v1/auth/register", r.withMiddleware("POST", "/api/v1/auth/register", r.Register_0)...)
 	r.iRouter.Handle("POST", "/api/v1/auth/login", r.withMiddleware("POST", "/api/v1/auth/login", r.Login_0)...)
 	r.iRouter.Handle("POST", "/api/v1/auth/logout", r.withMiddleware("POST", "/api/v1/auth/logout", r.Logout_0)...)
-	r.iRouter.Handle("GET", "/api/v1/user/:userId", r.withMiddleware("GET", "/api/v1/user/:userId", r.GetUserInfo_0)...)
-	r.iRouter.Handle("PUT", "/v1/user/:userId", r.withMiddleware("PUT", "/v1/user/:userId", r.UpdateUserInfo_0)...)
-	r.iRouter.Handle("PUT", "/v1/user/password/:userId", r.withMiddleware("PUT", "/v1/user/password/:userId", r.ChangePassword_0)...)
+	r.iRouter.Handle("POST", "/api/v1/user/getUserInfo", r.withMiddleware("POST", "/api/v1/user/getUserInfo", r.GetUserInfo_0)...)
+	r.iRouter.Handle("POST", "/v1/user/updateUserInfo", r.withMiddleware("POST", "/v1/user/updateUserInfo", r.UpdateUserInfo_0)...)
+	r.iRouter.Handle("POST", "/v1/user/changePassword", r.withMiddleware("POST", "/v1/user/changePassword", r.ChangePassword_0)...)
 
 }
 
@@ -249,14 +249,8 @@ func (r *userServiceRouter) GetUserInfo_0(c *gin.Context) {
 	req := &GetUserInfoRequest{}
 	var err error
 
-	if err = c.ShouldBindUri(req); err != nil {
-		r.zapLog.Warn("ShouldBindUri error", zap.Error(err), middleware.GCtxRequestIDField(c))
-		r.iResponse.ParamError(c, err)
-		return
-	}
-
-	if err = c.ShouldBindQuery(req); err != nil {
-		r.zapLog.Warn("ShouldBindQuery error", zap.Error(err), middleware.GCtxRequestIDField(c))
+	if err = c.ShouldBindJSON(req); err != nil {
+		r.zapLog.Warn("ShouldBindJSON error", zap.Error(err), middleware.GCtxRequestIDField(c))
 		r.iResponse.ParamError(c, err)
 		return
 	}
@@ -283,12 +277,6 @@ func (r *userServiceRouter) GetUserInfo_0(c *gin.Context) {
 func (r *userServiceRouter) UpdateUserInfo_0(c *gin.Context) {
 	req := &UpdateUserInfoRequest{}
 	var err error
-
-	if err = c.ShouldBindUri(req); err != nil {
-		r.zapLog.Warn("ShouldBindUri error", zap.Error(err), middleware.GCtxRequestIDField(c))
-		r.iResponse.ParamError(c, err)
-		return
-	}
 
 	if err = c.ShouldBindJSON(req); err != nil {
 		r.zapLog.Warn("ShouldBindJSON error", zap.Error(err), middleware.GCtxRequestIDField(c))
@@ -318,12 +306,6 @@ func (r *userServiceRouter) UpdateUserInfo_0(c *gin.Context) {
 func (r *userServiceRouter) ChangePassword_0(c *gin.Context) {
 	req := &ChangePasswordRequest{}
 	var err error
-
-	if err = c.ShouldBindUri(req); err != nil {
-		r.zapLog.Warn("ShouldBindUri error", zap.Error(err), middleware.GCtxRequestIDField(c))
-		r.iResponse.ParamError(c, err)
-		return
-	}
 
 	if err = c.ShouldBindJSON(req); err != nil {
 		r.zapLog.Warn("ShouldBindJSON error", zap.Error(err), middleware.GCtxRequestIDField(c))

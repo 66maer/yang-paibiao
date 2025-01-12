@@ -5,8 +5,8 @@ package routers
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/zhufuyi/sponge/pkg/gin/middleware"
 	"github.com/zhufuyi/sponge/pkg/logger"
+	//"github.com/zhufuyi/sponge/pkg/middleware"
 
 	XiaoYangV1 "XiaoYang/api/XiaoYang/v1"
 	"XiaoYang/internal/handler"
@@ -50,13 +50,14 @@ func userServiceRouter(
 func userServiceMiddlewares(c *middlewareConfig) {
 	// set up group route middleware, group path is left prefix rules,
 	// if the left prefix is hit, the middleware will take effect, e.g. group route is /api/v1, route /api/v1/userService/:id  will take effect
-	// c.setGroupPath("/api/v1/", middleware.Auth())
+	// c.setGroupPath("/api/v1/userService", middleware.Auth())
 
 	// set up single route middleware, just uncomment the code and fill in the middlewares, nothing else needs to be changed
 	//c.setSinglePath("POST", "/api/v1/auth/register", middleware.Auth())    // Register 注册
 	//c.setSinglePath("POST", "/api/v1/auth/login", middleware.Auth())    // Login 登录
 	//c.setSinglePath("POST", "/api/v1/auth/logout", middleware.Auth())    // Logout 登出
-	c.setSinglePath("GET", "/api/v1/user/:userId", middleware.Auth())      // GetUserInfo 获取用户信息
-	c.setSinglePath("PUT", "/v1/user/:userId", middleware.Auth())          // UpdateUserInfo 更新用户信息
-	c.setSinglePath("PUT", "/v1/user/password/:userId", middleware.Auth()) // ChangePassword 修改密码
+	//c.setSinglePath("POST", "/api/v1/user/getUserInfo", middleware.Auth())    // GetUserInfo 获取用户信息
+	//c.setSinglePath("POST", "/v1/user/updateUserInfo", middleware.Auth())    // UpdateUserInfo 更新用户信息
+	//c.setSinglePath("PUT", "/v1/user/changePassword", middleware.Auth())    // ChangePassword 修改密码
+	//c.setSinglePath("POST", "/v1/user/changePassword", middleware.Auth())    // ChangePassword 修改密码
 }

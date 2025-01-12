@@ -1,0 +1,200 @@
+syntax = "proto3";
+
+package api.XiaoYang.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "tagger/tagger.proto";
+import "validate/validate.proto";
+
+option go_package = "XiaoYang/api/XiaoYang/v1;v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  host: "localhost:8080",
+  base_path: "",
+  info: {
+    title: "xiaoyang api docs",
+    version: "2.0",
+  }
+  schemes: HTTP,
+  schemes: HTTPS,
+  consumes: "application/json",
+  produces: "application/json",
+  security_definitions: {
+    security: {
+      key: "BearerAuth"
+      value: {
+        type: TYPE_API_KEY
+        in: IN_HEADER
+        name: "Authorization"
+        description: "Input a \"Bearer your-jwt-token\" to Value"
+      }
+    }
+  }
+};
+
+service UserService {
+  // 注册
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/register"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "注册"
+      description: "注册"
+    };
+  }
+
+  // 登录
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "登录"
+      description: "登录"
+    };
+  }
+
+  // 登出
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/logout"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "登出"
+      description: "登出"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取用户信息
+  rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/user/getUserInfo"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取用户信息"
+      description: "获取用户信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 更新用户信息
+  rpc UpdateUserInfo(UpdateUserInfoRequest) returns (UpdateUserInfoResponse) {
+    option (google.api.http) = {
+      post: "/v1/user/updateUserInfo"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "更新用户信息"
+      description: "更新用户信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 修改密码
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse) {
+    option (google.api.http) = {
+      put: "/v1/user/changePassword"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "修改密码"
+      description: "修改密码"
+    };
+  }
+}
+
+// 注册请求
+message RegisterRequest {
+  string qqNumber = 1;
+  string password = 2;
+  string nickname = 3;
+}
+
+// 注册响应
+message RegisterResponse {
+  string token = 1;
+  uint64 userId = 2;
+  string qqNumber = 3;
+  string nickname = 4;
+  string avatar = 5;
+}
+
+// 登录请求
+message LoginRequest {
+  string qqNumber = 1;
+  string password = 2;
+}
+
+// 登录响应
+message LoginResponse {
+  string token = 1;
+  uint64 userId = 2;
+  string qqNumber = 3;
+  string nickname = 4;
+  string avatar = 5;
+}
+
+// 登出请求
+message LogoutRequest {
+  uint64 userId = 1;
+}
+
+// 登出响应
+message LogoutResponse {}
+
+// 获取用户信息请求
+message GetUserInfoRequest {
+  uint64 userId = 1;
+}
+
+// 获取用户信息响应
+message GetUserInfoResponse {
+  uint64 userId = 1;
+  string qqNumber = 2;
+  string nickname = 3;
+  string avatar = 4;
+}
+
+// 更新用户信息请求
+message UpdateUserInfoRequest {
+  uint64 userId = 1;
+  string qqNumber = 2;
+  string nickname = 3;
+  string avatar = 4;
+}
+
+// 更新用户信息响应
+message UpdateUserInfoResponse {}
+
+// 修改密码请求
+message ChangePasswordRequest {
+  uint64 userId = 1;
+  string qqNumber = 2;
+  string oldPassword = 3;
+  string newPassword = 4;
+}
+
+// 修改密码响应
+message ChangePasswordResponse {}

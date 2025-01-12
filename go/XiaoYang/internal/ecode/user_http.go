@@ -9,7 +9,7 @@ import (
 // userService business-level http error codes.
 // the userServiceNO value range is 1~100, if the same error code is used, it will cause panic.
 var (
-	userServiceNO       = 7
+	userServiceNO       = 89
 	userServiceName     = "userService"
 	userServiceBaseCode = errcode.HCode(userServiceNO)
 

@@ -29,8 +29,6 @@ type UsersDao interface {
 	CreateByTx(ctx context.Context, tx *gorm.DB, table *model.Users) (uint64, error)
 	DeleteByTx(ctx context.Context, tx *gorm.DB, id uint64) error
 	UpdateByTx(ctx context.Context, tx *gorm.DB, table *model.Users) error
-
-	GetByQqNumber(ctx context.Context, qqNumber string) (*model.Users, error)
 }
 
 type usersDao struct {
@@ -108,6 +106,12 @@ func (d *usersDao) updateDataByID(ctx context.Context, db *gorm.DB, table *model
 	if table.IsAdmin != false /*Warning: if the value itself is false, can't be updated*/ {
 		update["is_admin"] = table.IsAdmin
 	}
+	if table.IsBot != false /*Warning: if the value itself is false, can't be updated*/ {
+		update["is_bot"] = table.IsBot
+	}
+	if table.IsResetPassword != false /*Warning: if the value itself is false, can't be updated*/ {
+		update["is_reset_password"] = table.IsResetPassword
+	}
 
 	return db.WithContext(ctx).Model(table).Updates(update).Error
 }
@@ -164,12 +168,6 @@ func (d *usersDao) GetByID(ctx context.Context, id uint64) (*model.Users, error)
 	}
 
 	return nil, err
-}
-
-func (d *usersDao) GetByQqNumber(ctx context.Context, qqNumber string) (*model.Users, error) {
-	record := &model.Users{}
-	err := d.db.WithContext(ctx).Where("qq_number = ?", qqNumber).First(record).Error
-	return record, err
 }
 
 // GetByColumns get paging records by column information,

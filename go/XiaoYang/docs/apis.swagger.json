@@ -128,8 +128,8 @@
         ]
       }
     },
-    "/api/v1/user/{userId}": {
-      "get": {
+    "/api/v1/user/getUserInfo": {
+      "post": {
         "summary": "获取用户信息",
         "description": "获取用户信息",
         "operationId": "UserService_GetUserInfo",
@@ -149,11 +149,12 @@
         },
         "parameters": [
           {
-            "name": "userId",
-            "in": "path",
+            "name": "body",
+            "in": "body",
             "required": true,
-            "type": "integer",
-            "format": "uint64"
+            "schema": {
+              "$ref": "#/definitions/v1GetUserInfoRequest"
+            }
           }
         ],
         "tags": [
@@ -166,8 +167,8 @@
         ]
       }
     },
-    "/v1/user/password/{userId}": {
-      "put": {
+    "/v1/user/changePassword": {
+      "post": {
         "summary": "修改密码",
         "description": "修改密码",
         "operationId": "UserService_ChangePassword",
@@ -187,18 +188,11 @@
         },
         "parameters": [
           {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "type": "integer",
-            "format": "uint64"
-          },
-          {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/UserServiceChangePasswordBody"
+              "$ref": "#/definitions/v1ChangePasswordRequest"
             }
           }
         ],
@@ -207,8 +201,8 @@
         ]
       }
     },
-    "/v1/user/{userId}": {
-      "put": {
+    "/v1/user/updateUserInfo": {
+      "post": {
         "summary": "更新用户信息",
         "description": "更新用户信息",
         "operationId": "UserService_UpdateUserInfo",
@@ -228,18 +222,11 @@
         },
         "parameters": [
           {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "type": "integer",
-            "format": "uint64"
-          },
-          {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/UserServiceUpdateUserInfoBody"
+              "$ref": "#/definitions/v1UpdateUserInfoRequest"
             }
           }
         ],
@@ -255,36 +242,6 @@
     }
   },
   "definitions": {
-    "UserServiceChangePasswordBody": {
-      "type": "object",
-      "properties": {
-        "qqNumber": {
-          "type": "string"
-        },
-        "oldPassword": {
-          "type": "string"
-        },
-        "newPassword": {
-          "type": "string"
-        }
-      },
-      "title": "修改密码请求"
-    },
-    "UserServiceUpdateUserInfoBody": {
-      "type": "object",
-      "properties": {
-        "qqNumber": {
-          "type": "string"
-        },
-        "nickname": {
-          "type": "string"
-        },
-        "avatar": {
-          "type": "string"
-        }
-      },
-      "title": "更新用户信息请求"
-    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -313,9 +270,38 @@
         }
       }
     },
+    "v1ChangePasswordRequest": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "qqNumber": {
+          "type": "string"
+        },
+        "oldPassword": {
+          "type": "string"
+        },
+        "newPassword": {
+          "type": "string"
+        }
+      },
+      "title": "修改密码请求"
+    },
     "v1ChangePasswordResponse": {
       "type": "object",
       "title": "修改密码响应"
+    },
+    "v1GetUserInfoRequest": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "获取用户信息请求"
     },
     "v1GetUserInfoResponse": {
       "type": "object",
@@ -420,6 +406,25 @@
         }
       },
       "title": "注册响应"
+    },
+    "v1UpdateUserInfoRequest": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "qqNumber": {
+          "type": "string"
+        },
+        "nickname": {
+          "type": "string"
+        },
+        "avatar": {
+          "type": "string"
+        }
+      },
+      "title": "更新用户信息请求"
     },
     "v1UpdateUserInfoResponse": {
       "type": "object",

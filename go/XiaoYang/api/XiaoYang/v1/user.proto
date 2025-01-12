@@ -79,7 +79,8 @@ service UserService {
   // 获取用户信息
   rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
     option (google.api.http) = {
-      get: "/api/v1/user/{userId}"
+      post: "/api/v1/user/getUserInfo"
+      body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "获取用户信息"
@@ -96,7 +97,7 @@ service UserService {
   // 更新用户信息
   rpc UpdateUserInfo(UpdateUserInfoRequest) returns (UpdateUserInfoResponse) {
     option (google.api.http) = {
-      put: "/v1/user/{userId}"
+      post: "/v1/user/updateUserInfo"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -114,7 +115,7 @@ service UserService {
   // 修改密码
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse) {
     option (google.api.http) = {
-      put: "/v1/user/password/{userId}"
+      post: "/v1/user/changePassword"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -165,7 +166,7 @@ message LogoutResponse {}
 
 // 获取用户信息请求
 message GetUserInfoRequest {
-  uint64 userId = 1 [(tagger.tags) = "uri:\"userId\""];
+  uint64 userId = 1;
 }
 
 // 获取用户信息响应

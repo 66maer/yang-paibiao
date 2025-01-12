@@ -9,29 +9,19 @@ import (
 
 	XiaoYangV1 "XiaoYang/api/XiaoYang/v1"
 	"XiaoYang/internal/cache"
-	dao "XiaoYang/internal/dao"
+	"XiaoYang/internal/dao"
 	"XiaoYang/internal/database"
-	"XiaoYang/internal/ecode"
-	"XiaoYang/internal/model"
-
-	"github.com/zhufuyi/sponge/pkg/gin/middleware"
-	"github.com/zhufuyi/sponge/pkg/gocrypto"
-	"github.com/zhufuyi/sponge/pkg/jwt"
-	"github.com/zhufuyi/sponge/pkg/logger"
-	"github.com/zhufuyi/sponge/pkg/utils"
 )
 
 var _ XiaoYangV1.UserServiceLogicer = (*userServiceHandler)(nil)
 
 type userServiceHandler struct {
-	// example:
 	userDao dao.UsersDao
 }
 
 // NewUserServiceHandler create a handler
 func NewUserServiceHandler() XiaoYangV1.UserServiceLogicer {
 	return &userServiceHandler{
-		// example:
 		userDao: dao.NewUsersDao(
 			database.GetDB(),
 			cache.NewUsersCache(database.GetCacheType()),
@@ -41,84 +31,65 @@ func NewUserServiceHandler() XiaoYangV1.UserServiceLogicer {
 
 // Register 注册
 func (h *userServiceHandler) Register(ctx context.Context, req *XiaoYangV1.RegisterRequest) (*XiaoYangV1.RegisterResponse, error) {
-	// panic("implement me")
+	panic("implement me")
 
 	// fill in the business logic code here
 	// example:
 	//
-	println("RRReq.QQNumber", req.QqNumber)
-	err := req.Validate()
-	if err != nil {
-		logger.Warn("req.Validate error", logger.Err(err), logger.Any("req", req), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InvalidParams.Err()
-	}
-
-	pswd, err := gocrypto.HashAndSaltPassword(req.Password)
-	if err != nil {
-		logger.Warn("HashAndSaltPassword error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InternalServerError.Err()
-	}
-
-	data := &model.Users{}
-	data.QqNumber = req.QqNumber
-	data.Password = pswd
-	data.Nickname = req.Nickname
-
-	err = h.userDao.Create(ctx, data)
-	if err != nil {
-		logger.Warn("Register error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InternalServerError.Err()
-	}
-
-	token, err := jwt.GenerateToken(utils.Uint64ToStr(data.ID))
-	if err != nil {
-		logger.Warn("GenerateToken error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InternalServerError.Err()
-	}
-
-	return &XiaoYangV1.RegisterResponse{
-		Token:    token,
-		UserId:   data.ID,
-		QqNumber: data.QqNumber,
-		Nickname: data.Nickname,
-		Avatar:   data.Avatar,
-	}, nil
+	//	    err := req.Validate()
+	//	    if err != nil {
+	//		    logger.Warn("req.Validate error", logger.Err(err), logger.Any("req", req), middleware.CtxRequestIDField(ctx))
+	//		    return nil, ecode.InvalidParams.Err()
+	//	    }
+	//
+	//	    reply, err := h.userServiceDao.Register(ctx, &model.UserService{
+	//     	QqNumber: req.QqNumber,
+	//     	Password: req.Password,
+	//     	Nickname: req.Nickname,
+	//     })
+	//	    if err != nil {
+	//			logger.Warn("Register error", logger.Err(err), middleware.CtxRequestIDField(ctx))
+	//			return nil, ecode.InternalServerError.Err()
+	//		}
+	//
+	//     return &XiaoYangV1.RegisterResponse{
+	//     	Token: reply.Token,
+	//     	UserId: reply.UserId,
+	//     	QqNumber: reply.QqNumber,
+	//     	Nickname: reply.Nickname,
+	//     	Avatar: reply.Avatar,
+	//     }, nil
 }
 
 // Login 登录
 func (h *userServiceHandler) Login(ctx context.Context, req *XiaoYangV1.LoginRequest) (*XiaoYangV1.LoginResponse, error) {
-	err := req.Validate()
-	if err != nil {
-		logger.Warn("req.Validate error", logger.Err(err), logger.Any("req", req), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrLoginUserService.Err(err.Error())
-	}
+	panic("implement me")
 
-	data, err := h.userDao.GetByQqNumber(ctx, req.QqNumber)
-
-	if err != nil {
-		logger.Warn("GetByQqNumber error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrLoginUserService.Err("未注册")
-	}
-
-	if !gocrypto.VerifyPassword(req.Password, data.Password) {
-		logger.Warn("password error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrLoginUserService.Err("密码错误")
-	}
-
-	token, err := jwt.GenerateToken(utils.Uint64ToStr(data.ID))
-	if err != nil {
-		logger.Warn("GenerateToken error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrLoginUserService.Err(err.Error())
-	}
-
-	return &XiaoYangV1.LoginResponse{
-		Token:    token,
-		UserId:   data.ID,
-		QqNumber: data.QqNumber,
-		Nickname: data.Nickname,
-		Avatar:   data.Avatar,
-	}, nil
-
+	// fill in the business logic code here
+	// example:
+	//
+	//	    err := req.Validate()
+	//	    if err != nil {
+	//		    logger.Warn("req.Validate error", logger.Err(err), logger.Any("req", req), middleware.CtxRequestIDField(ctx))
+	//		    return nil, ecode.InvalidParams.Err()
+	//	    }
+	//
+	//	    reply, err := h.userServiceDao.Login(ctx, &model.UserService{
+	//     	QqNumber: req.QqNumber,
+	//     	Password: req.Password,
+	//     })
+	//	    if err != nil {
+	//			logger.Warn("Login error", logger.Err(err), middleware.CtxRequestIDField(ctx))
+	//			return nil, ecode.InternalServerError.Err()
+	//		}
+	//
+	//     return &XiaoYangV1.LoginResponse{
+	//     	Token: reply.Token,
+	//     	UserId: reply.UserId,
+	//     	QqNumber: reply.QqNumber,
+	//     	Nickname: reply.Nickname,
+	//     	Avatar: reply.Avatar,
+	//     }, nil
 }
 
 // Logout 登出
@@ -148,28 +119,31 @@ func (h *userServiceHandler) Logout(ctx context.Context, req *XiaoYangV1.LogoutR
 
 // GetUserInfo 获取用户信息
 func (h *userServiceHandler) GetUserInfo(ctx context.Context, req *XiaoYangV1.GetUserInfoRequest) (*XiaoYangV1.GetUserInfoResponse, error) {
+	panic("implement me")
 
-	logger.Warn("GetUserInfo", middleware.CtxRequestIDField(ctx))
-	logger.Warn("GetUserInfo", logger.Any("req", req))
-	logger.Warn("GetUserInfo", logger.Any("req.UserId", req.UserId))
-	err := req.Validate()
-	if err != nil {
-		logger.Warn("req.Validate error", logger.Err(err), logger.Any("req", req), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InvalidParams.Err()
-	}
-
-	data, err := h.userDao.GetByID(ctx, req.UserId)
-	if err != nil {
-		logger.Warn("GetByID error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InternalServerError.Err()
-	}
-
-	return &XiaoYangV1.GetUserInfoResponse{
-		UserId:   data.ID,
-		QqNumber: data.QqNumber,
-		Nickname: data.Nickname,
-		Avatar:   data.Avatar,
-	}, nil
+	// fill in the business logic code here
+	// example:
+	//
+	//	    err := req.Validate()
+	//	    if err != nil {
+	//		    logger.Warn("req.Validate error", logger.Err(err), logger.Any("req", req), middleware.CtxRequestIDField(ctx))
+	//		    return nil, ecode.InvalidParams.Err()
+	//	    }
+	//
+	//	    reply, err := h.userServiceDao.GetUserInfo(ctx, &model.UserService{
+	//     	UserId: req.UserId,
+	//     })
+	//	    if err != nil {
+	//			logger.Warn("GetUserInfo error", logger.Err(err), middleware.CtxRequestIDField(ctx))
+	//			return nil, ecode.InternalServerError.Err()
+	//		}
+	//
+	//     return &XiaoYangV1.GetUserInfoResponse{
+	//     	UserId: reply.UserId,
+	//     	QqNumber: reply.QqNumber,
+	//     	Nickname: reply.Nickname,
+	//     	Avatar: reply.Avatar,
+	//     }, nil
 }
 
 // UpdateUserInfo 更新用户信息

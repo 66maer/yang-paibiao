@@ -79,7 +79,8 @@ service UserService {
   // 获取用户信息
   rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
     option (google.api.http) = {
-      get: "/api/v1/userinfo"
+      post: "/api/v1/user/getUserInfo"
+      body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "获取用户信息"
@@ -96,7 +97,7 @@ service UserService {
   // 更新用户信息
   rpc UpdateUserInfo(UpdateUserInfoRequest) returns (UpdateUserInfoResponse) {
     option (google.api.http) = {
-      put: "/v1/user/userinfo"
+      post: "/v1/user/updateUserInfo"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -114,7 +115,7 @@ service UserService {
   // 修改密码
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse) {
     option (google.api.http) = {
-      put: "/v1/user/password"
+      post: "/v1/user/changePassword"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -153,7 +154,6 @@ message LoginResponse {
   string qqNumber = 3;
   string nickname = 4;
   string avatar = 5;
-  bool isSuperAdmin = 6;
 }
 
 // 登出请求
@@ -165,7 +165,9 @@ message LogoutRequest {
 message LogoutResponse {}
 
 // 获取用户信息请求
-message GetUserInfoRequest {}
+message GetUserInfoRequest {
+  uint64 userId = 1;
+}
 
 // 获取用户信息响应
 message GetUserInfoResponse {
@@ -173,7 +175,6 @@ message GetUserInfoResponse {
   string qqNumber = 2;
   string nickname = 3;
   string avatar = 4;
-  bool isSuperAdmin = 5;
 }
 
 // 更新用户信息请求
