@@ -8,13 +8,17 @@ import { fetchLogin, fetchRegister } from "@/store/modules/user";
 const LoginCard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const onFinish = async (values) => {
+    setLoading(true);
     try {
       await dispatch(fetchLogin(values));
       navigate("/");
       message.success("登录成功");
     } catch (err) {
       message.error(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -33,7 +37,12 @@ const LoginCard = () => {
         <Input.Password prefix={<LockOutlined />} placeholder="密码" />
       </Form.Item>
       <Form.Item>
-        <Button type="primary" htmlType="submit" style={{ width: "100%" }}>
+        <Button
+          type="primary"
+          htmlType="submit"
+          style={{ width: "100%" }}
+          loading={loading}
+        >
           登录
         </Button>
       </Form.Item>
@@ -44,7 +53,9 @@ const LoginCard = () => {
 const RegisterCard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const onFinish = async (values) => {
+    setLoading(true);
     try {
       delete values.confirmPassword;
       console.log(values);
@@ -53,6 +64,8 @@ const RegisterCard = () => {
       message.success("注册成功，自动登录");
     } catch (err) {
       message.error(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,7 +112,12 @@ const RegisterCard = () => {
       </Form.Item>
 
       <Form.Item>
-        <Button type="primary" htmlType="submit" style={{ width: "100%" }}>
+        <Button
+          type="primary"
+          htmlType="submit"
+          style={{ width: "100%" }}
+          loading={loading}
+        >
           注册
         </Button>
       </Form.Item>

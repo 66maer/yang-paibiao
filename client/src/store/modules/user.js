@@ -19,11 +19,11 @@ const userSlice = createSlice({
       setLocalToken(action.payload);
     },
     setUserInfo(state, action) {
-      state.userId = action.payload.userId;
-      state.qqNumber = action.payload.qqNumber;
-      state.nickname = action.payload.nickname;
-      state.avatar = action.payload.avatar;
-      state.isSuperAdmin = action.payload.isSuperAdmin;
+      state.userId = action.payload.userId || state.userId;
+      state.qqNumber = action.payload.qqNumber || state.qqNumber;
+      state.nickname = action.payload.nickname || state.nickname;
+      state.avatar = action.payload.avatar || state.avatar;
+      state.isSuperAdmin = action.payload.isSuperAdmin ?? state.isSuperAdmin;
       state.isFetched = true; // 设置标志为已获取
     },
   },
@@ -35,7 +35,7 @@ const fetchLogin = (loginForm) => {
   return async (dispatch) => {
     const res = await request.post("/auth/login", loginForm);
     if (res.code !== 0) {
-      throw new Error(res.message);
+      throw new Error(res.msg);
     }
     dispatch(setToken(res.data.token));
     dispatch(
@@ -50,11 +50,27 @@ const fetchLogin = (loginForm) => {
   };
 };
 
+const fetchLogout = () => {
+  return (dispatch) => {
+    dispatch(setToken(""));
+    dispatch(
+      setUserInfo({
+        userId: "",
+        qqNumber: "",
+        nickname: "",
+        avatar: "",
+        isSuperAdmin: false,
+        isFetched: false,
+      })
+    );
+  };
+};
+
 const fetchRegister = (registerForm) => {
   return async (dispatch) => {
     const res = await request.post("/auth/register", registerForm);
     if (res.code !== 0) {
-      throw new Error(res.message);
+      throw new Error(res.msg);
     }
     dispatch(setToken(res.data.token));
     dispatch(
@@ -79,9 +95,9 @@ const fetchUserInfo = () => {
       window.location.href = "/login";
       return;
     }
-    const res = await request.get("/user/userinfo");
+    const res = await request.post("/user/getUserInfo", "{}");
     if (res.code !== 0) {
-      throw new Error(res.message);
+      throw new Error(res.msg);
     }
     dispatch(
       setUserInfo({
@@ -89,12 +105,44 @@ const fetchUserInfo = () => {
         qqNumber: res.data.qqNumber,
         nickname: res.data.nickname,
         avatar: res.data.avatar,
-        isSuperAdmin: res.data.isSuperAdmin,
+        isSuperAdmin: res.data.isAdmin,
       })
     );
   };
 };
 
-export { fetchLogin, fetchRegister, fetchUserInfo, setToken, setUserInfo };
+const fetchChangePassword = (changePasswordForm) => {
+  return async (dispatch) => {
+    const res = await request.post("/user/changePassword", changePasswordForm);
+    if (res.code !== 0) {
+      throw new Error(res.msg);
+    }
+  };
+};
+
+const fetchChangeUserInfo = (changeUserInfoForm) => {
+  return async (dispatch) => {
+    const res = await request.post("/user/updateUserInfo", changeUserInfoForm);
+    if (res.code !== 0) {
+      throw new Error(res.msg);
+    }
+    dispatch(
+      setUserInfo({
+        nickname: changeUserInfoForm.nickname,
+      })
+    );
+  };
+};
+
+export {
+  fetchLogin,
+  fetchLogout,
+  fetchRegister,
+  fetchUserInfo,
+  fetchChangePassword,
+  fetchChangeUserInfo,
+  setToken,
+  setUserInfo,
+};
 
 export default userSlice.reducer;

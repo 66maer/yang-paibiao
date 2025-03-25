@@ -2,7 +2,7 @@ import Mock from "mockjs";
 
 Mock.mock("http://localhost:8080/api/v1/auth/login", "post", {
   code: 0,
-  message: "ok",
+  msg: "ok",
   data: {
     token: "mock token",
     userId: 1,
@@ -15,7 +15,7 @@ Mock.mock("http://localhost:8080/api/v1/auth/login", "post", {
 
 Mock.mock("http://localhost:8080/api/v1/auth/register", "post", {
   code: 0,
-  message: "ok",
+  msg: "ok",
   data: {
     token: "mock token",
     userId: 1,
@@ -27,7 +27,7 @@ Mock.mock("http://localhost:8080/api/v1/auth/register", "post", {
 
 Mock.mock("http://localhost:8080/api/v1/user/userinfo", "get", {
   code: 0,
-  message: "ok",
+  msg: "ok",
   data: {
     token: "mock token",
     userId: 1,
@@ -35,14 +35,14 @@ Mock.mock("http://localhost:8080/api/v1/user/userinfo", "get", {
     nickname: "maer",
     avatar: "https://cdn.jsdelivr.net/gh/maerliu/maerliu.github.io/avatar.jpg",
     isSuperAdmin: false,
-  }
+  },
 }).setup({
   timeout: 0,
 });
 
 Mock.mock("http://localhost:8080/api/v1/guild/zyhm/role", "get", {
   code: 0,
-  message: "ok",
+  msg: "ok",
   data: {
     role: "member",
   },

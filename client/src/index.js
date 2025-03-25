@@ -4,7 +4,7 @@ import { RouterProvider } from "react-router-dom";
 import { Provider } from "react-redux";
 import router from "./router/index";
 import store from "./store/index";
-import "./utils/mock";
+//import "./utils/mock";
 import { ConfigProvider, Menu } from "antd";
 import zhCN from "antd/locale/zh_CN";
 
