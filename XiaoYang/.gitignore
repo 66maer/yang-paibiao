@@ -22,4 +22,5 @@ dist/
 *.iws
 
 cmd/XiaoYang/XiaoYang
+cmd/XiaoYang/__debug_*
 
