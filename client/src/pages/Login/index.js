@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button, Card, Flex, Form, Input, message, Layout } from "antd";
 import { UserOutlined, LockOutlined, SmileOutlined } from "@ant-design/icons";
 import { fetchLogin, fetchRegister } from "@/store/modules/user";
+import store from "@/store";
 
 const LoginCard = () => {
   const dispatch = useDispatch();
@@ -13,8 +14,9 @@ const LoginCard = () => {
     setLoading(true);
     try {
       await dispatch(fetchLogin(values));
+      const nickname = store.getState().user.nickname;
       navigate("/");
-      message.success("登录成功");
+      message.success(`欢迎回来，${nickname}`);
     } catch (err) {
       message.error(err.message);
     } finally {

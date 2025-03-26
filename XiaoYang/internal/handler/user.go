@@ -178,29 +178,6 @@ func (h *userServiceHandler) GetUserInfo(ctx context.Context, req *XiaoYangV1.Ge
 		IsAdmin:  data.IsAdmin,
 	}, nil
 
-	// data := userInfo.(*jwt.Claims)
-
-	// func GetUserIDFromContext(ctx context.Context) (int64, error) {
-	// 	// 从上下文中获取用户 ID
-	// 	userId, ok := ctx.Value(jwt.UserIDKey).(int64)
-	// 	if !ok {
-	// 		return 0, ecode.ErrGetUserIDFromContext.Err()
-	// 	}
-
-	// 	return userId, nil
-	// }
-
-	// // 根据用户 Token 获取用户 ID
-	// userId, err := jwt.GetUserIDFromContext(ctx)
-
-	// 返回用户信息
-	// return &XiaoYangV1.GetUserInfoResponse{
-	// 	UserId:   data.ID,
-	// 	QqNumber: data.QqNumber,
-	// 	Nickname: data.Nickname,
-	// 	Avatar:   data.Avatar,
-	// }, nil
-
 }
 
 // UpdateUserInfo 更新用户信息
