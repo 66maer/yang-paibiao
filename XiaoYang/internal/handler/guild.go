@@ -67,7 +67,7 @@ func ConvertToJSONPtr(s string) *datatypes.JSON {
 func (h *guildServiceHandler) CreateGuild(ctx context.Context, req *XiaoYangV1.CreateGuildRequest) (*XiaoYangV1.CreateGuildResponse, error) {
 	err := req.Validate()
 	if err != nil {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrCreateGuildGuildService.Err("请求参数无效: " + err.Error())
 	}
 
 	guild := &model.Guilds{
@@ -82,7 +82,7 @@ func (h *guildServiceHandler) CreateGuild(ctx context.Context, req *XiaoYangV1.C
 
 	err = h.guildDao.Create(ctx, guild)
 	if err != nil {
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrCreateGuildGuildService.Err("创建群组失败: " + err.Error())
 	}
 
 	return &XiaoYangV1.CreateGuildResponse{
@@ -103,12 +103,12 @@ func (h *guildServiceHandler) CreateGuild(ctx context.Context, req *XiaoYangV1.C
 func (h *guildServiceHandler) DeleteGuild(ctx context.Context, req *XiaoYangV1.DeleteGuildRequest) (*XiaoYangV1.DeleteGuildResponse, error) {
 	err := req.Validate()
 	if err != nil {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrDeleteGuildGuildService.Err("请求参数无效: " + err.Error())
 	}
 
 	err = h.guildDao.DeleteByID(ctx, req.GuildId)
 	if err != nil {
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrDeleteGuildGuildService.Err("删除群组失败: " + err.Error())
 	}
 
 	return &XiaoYangV1.DeleteGuildResponse{
@@ -120,7 +120,7 @@ func (h *guildServiceHandler) DeleteGuild(ctx context.Context, req *XiaoYangV1.D
 func (h *guildServiceHandler) UpdateGuildInfo(ctx context.Context, req *XiaoYangV1.UpdateGuildInfoRequest) (*XiaoYangV1.UpdateGuildInfoResponse, error) {
 	err := req.Validate()
 	if err != nil {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrUpdateGuildInfoGuildService.Err("请求参数无效: " + err.Error())
 	}
 
 	guild := &model.Guilds{
@@ -135,7 +135,7 @@ func (h *guildServiceHandler) UpdateGuildInfo(ctx context.Context, req *XiaoYang
 
 	err = h.guildDao.UpdateByID(ctx, guild)
 	if err != nil {
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrUpdateGuildInfoGuildService.Err("更新群组信息失败: " + err.Error())
 	}
 
 	return &XiaoYangV1.UpdateGuildInfoResponse{
@@ -156,12 +156,12 @@ func (h *guildServiceHandler) UpdateGuildInfo(ctx context.Context, req *XiaoYang
 func (h *guildServiceHandler) GetGuildInfo(ctx context.Context, req *XiaoYangV1.GetGuildInfoRequest) (*XiaoYangV1.GetGuildInfoResponse, error) {
 	err := req.Validate()
 	if err != nil {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrGetGuildInfoGuildService.Err("请求参数无效: " + err.Error())
 	}
 
 	guild, err := h.guildDao.GetByID(ctx, req.GuildId)
 	if err != nil {
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrGetGuildInfoGuildService.Err("获取群组信息失败: " + err.Error())
 	}
 
 	return &XiaoYangV1.GetGuildInfoResponse{
@@ -188,7 +188,7 @@ func (h *guildServiceHandler) ListAllGuilds(ctx context.Context, req *XiaoYangV1
 
 	guilds, _, err := h.guildDao.GetByColumns(ctx, params)
 	if err != nil {
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrListAllGuildsGuildService.Err("获取所有群组失败: " + err.Error())
 	}
 
 	guildInfos := make([]*XiaoYangV1.GuildInfo, len(guilds))
@@ -214,7 +214,7 @@ func (h *guildServiceHandler) ListAllGuilds(ctx context.Context, req *XiaoYangV1
 func (h *guildServiceHandler) ListUserGuilds(ctx context.Context, req *XiaoYangV1.ListUserGuildsRequest) (*XiaoYangV1.ListUserGuildsResponse, error) {
 	err := req.Validate()
 	if err != nil {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrListUserGuildsGuildService.Err("请求参数无效: " + err.Error())
 	}
 
 	params := &query.Params{
@@ -230,14 +230,14 @@ func (h *guildServiceHandler) ListUserGuilds(ctx context.Context, req *XiaoYangV
 
 	guilds, _, err := h.guildMemberDao.GetByColumns(ctx, params)
 	if err != nil {
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrListUserGuildsGuildService.Err("获取用户所在群组失败: " + err.Error())
 	}
 
 	guildInfos := make([]*XiaoYangV1.GuildInfo, len(guilds))
 	for i, guildMember := range guilds {
 		guild, err := h.guildDao.GetByID(ctx, uint64(guildMember.GuildID))
 		if err != nil {
-			return nil, ecode.InternalServerError.Err()
+			return nil, ecode.ErrListUserGuildsGuildService.Err("获取群组信息失败: " + err.Error())
 		}
 		guildInfos[i] = &XiaoYangV1.GuildInfo{
 			GuildId:       uint64(guild.ID),
@@ -260,7 +260,7 @@ func (h *guildServiceHandler) ListUserGuilds(ctx context.Context, req *XiaoYangV
 func (h *guildServiceHandler) ListGuildMembers(ctx context.Context, req *XiaoYangV1.ListGuildMembersRequest) (*XiaoYangV1.ListGuildMembersResponse, error) {
 	err := req.Validate()
 	if err != nil {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrListGuildMembersGuildService.Err("请求参数无效: " + err.Error())
 	}
 
 	params := &query.Params{
@@ -276,14 +276,14 @@ func (h *guildServiceHandler) ListGuildMembers(ctx context.Context, req *XiaoYan
 
 	members, _, err := h.guildMemberDao.GetByColumns(ctx, params)
 	if err != nil {
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrListGuildMembersGuildService.Err("获取群组成员失败: " + err.Error())
 	}
 
 	memberInfos := make([]*XiaoYangV1.GuildMemberInfo, len(members))
 	for i, member := range members {
 		user, err := h.userDao.GetByID(ctx, uint64(member.MemberID))
 		if err != nil {
-			return nil, ecode.InternalServerError.Err()
+			return nil, ecode.ErrListGuildMembersGuildService.Err("获取用户信息失败: " + err.Error())
 		}
 		memberInfos[i] = &XiaoYangV1.GuildMemberInfo{
 			UserId:        uint64(member.MemberID),
@@ -303,13 +303,13 @@ func (h *guildServiceHandler) ListGuildMembers(ctx context.Context, req *XiaoYan
 func (h *guildServiceHandler) AddGuildMember(ctx context.Context, req *XiaoYangV1.AddGuildMemberRequest) (*XiaoYangV1.AddGuildMemberResponse, error) {
 	err := req.Validate()
 	if err != nil {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrAddGuildMemberGuildService.Err("请求参数无效: " + err.Error())
 	}
 
 	// Fetch user information using userDao
 	user, err := h.userDao.GetByID(ctx, req.UserId)
 	if err != nil {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrAddGuildMemberGuildService.Err("获取用户信息失败: " + err.Error())
 	}
 
 	member := &model.GuildMembers{
@@ -321,7 +321,7 @@ func (h *guildServiceHandler) AddGuildMember(ctx context.Context, req *XiaoYangV
 
 	err = h.guildMemberDao.Create(ctx, member)
 	if err != nil {
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrAddGuildMemberGuildService.Err("添加群组成员失败: " + err.Error())
 	}
 
 	return &XiaoYangV1.AddGuildMemberResponse{
@@ -339,7 +339,7 @@ func (h *guildServiceHandler) AddGuildMember(ctx context.Context, req *XiaoYangV
 func (h *guildServiceHandler) RemoveGuildMember(ctx context.Context, req *XiaoYangV1.RemoveGuildMemberRequest) (*XiaoYangV1.RemoveGuildMemberResponse, error) {
 	err := req.Validate()
 	if err != nil {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrRemoveGuildMemberGuildService.Err("请求参数无效: " + err.Error())
 	}
 
 	params := &query.Params{
@@ -357,12 +357,12 @@ func (h *guildServiceHandler) RemoveGuildMember(ctx context.Context, req *XiaoYa
 
 	members, _, err := h.guildMemberDao.GetByColumns(ctx, params)
 	if err != nil || len(members) == 0 {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrRemoveGuildMemberGuildService.Err("成员不存在: " + err.Error())
 	}
 
 	err = h.guildMemberDao.DeleteByID(ctx, members[0].ID)
 	if err != nil {
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrRemoveGuildMemberGuildService.Err("移除群组成员失败: " + err.Error())
 	}
 
 	return &XiaoYangV1.RemoveGuildMemberResponse{
@@ -374,7 +374,7 @@ func (h *guildServiceHandler) RemoveGuildMember(ctx context.Context, req *XiaoYa
 func (h *guildServiceHandler) UpdateGuildMember(ctx context.Context, req *XiaoYangV1.UpdateGuildMemberRequest) (*XiaoYangV1.UpdateGuildMemberResponse, error) {
 	err := req.Validate()
 	if err != nil {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrUpdateGuildMemberGuildService.Err("请求参数无效: " + err.Error())
 	}
 
 	params := &query.Params{
@@ -392,7 +392,7 @@ func (h *guildServiceHandler) UpdateGuildMember(ctx context.Context, req *XiaoYa
 
 	members, _, err := h.guildMemberDao.GetByColumns(ctx, params)
 	if err != nil || len(members) == 0 {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrUpdateGuildMemberGuildService.Err("成员不存在: " + err.Error())
 	}
 
 	member := members[0]
@@ -405,7 +405,7 @@ func (h *guildServiceHandler) UpdateGuildMember(ctx context.Context, req *XiaoYa
 
 	err = h.guildMemberDao.UpdateByID(ctx, member)
 	if err != nil {
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrUpdateGuildMemberGuildService.Err("更新成员信息失败: " + err.Error())
 	}
 
 	return &XiaoYangV1.UpdateGuildMemberResponse{
@@ -421,7 +421,7 @@ func (h *guildServiceHandler) UpdateGuildMember(ctx context.Context, req *XiaoYa
 func (h *guildServiceHandler) GetGuildMember(ctx context.Context, req *XiaoYangV1.GetGuildMemberRequest) (*XiaoYangV1.GetGuildMemberResponse, error) {
 	err := req.Validate()
 	if err != nil {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrGetGuildMemberGuildService.Err("请求参数无效: " + err.Error())
 	}
 
 	params := &query.Params{
@@ -439,13 +439,13 @@ func (h *guildServiceHandler) GetGuildMember(ctx context.Context, req *XiaoYangV
 
 	members, _, err := h.guildMemberDao.GetByColumns(ctx, params)
 	if err != nil || len(members) == 0 {
-		return nil, ecode.InvalidParams.Err()
+		return nil, ecode.ErrGetGuildMemberGuildService.Err("成员不存在: " + err.Error())
 	}
 
 	member := members[0]
 	user, err := h.userDao.GetByID(ctx, uint64(member.MemberID))
 	if err != nil {
-		return nil, ecode.InternalServerError.Err()
+		return nil, ecode.ErrGetGuildMemberGuildService.Err("获取用户信息失败: " + err.Error())
 	}
 
 	return &XiaoYangV1.GetGuildMemberResponse{

@@ -4,6 +4,7 @@ package handler
 
 import (
 	"context"
+	"net/http"
 
 	//"github.com/go-dev-frame/sponge/pkg/gin/middleware"
 
@@ -13,8 +14,8 @@ import (
 	"XiaoYang/internal/database"
 	"XiaoYang/internal/ecode"
 	"XiaoYang/internal/model"
+	"XiaoYang/internal/utils"
 
-	"github.com/go-dev-frame/sponge/pkg/gin/middleware"
 	"github.com/go-dev-frame/sponge/pkg/gocrypto"
 	"github.com/go-dev-frame/sponge/pkg/jwt"
 	"github.com/go-dev-frame/sponge/pkg/logger"
@@ -38,34 +39,30 @@ func NewUserServiceHandler() XiaoYangV1.UserServiceLogicer {
 
 // Register 注册
 func (h *userServiceHandler) Register(ctx context.Context, req *XiaoYangV1.RegisterRequest) (*XiaoYangV1.RegisterResponse, error) {
-	// 参数基础校验
 	err := req.Validate()
 	if err != nil {
-		logger.Warn("req.Validate error", logger.Err(err), logger.Any("req", req), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InvalidParams.Err()
+		logger.Warn("req.Validate error", logger.Err(err))
+		return nil, ecode.ErrRegisterUserService.Err("请求参数无效，请检查输入")
 	}
 
-	// 将密码加密
 	pswd, err := gocrypto.HashAndSaltPassword(req.Password)
 	if err != nil {
-		logger.Warn("HashAndSaltPassword error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InternalServerError.Err()
+		logger.Warn("HashAndSaltPassword error", logger.Err(err))
+		return nil, ecode.InternalServerError.Err("密码加密失败: " + err.Error())
 	}
 
-	// 创建用户对象
-	data := &model.Users{}
-	data.QqNumber = req.QqNumber
-	data.Password = pswd
-	data.Nickname = req.Nickname
+	data := &model.Users{
+		QqNumber: req.QqNumber,
+		Password: pswd,
+		Nickname: req.Nickname,
+	}
 
-	// 创建用户的数据库记录
 	err = h.userDao.Create(ctx, data)
 	if err != nil {
-		logger.Warn("Register error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InternalServerError.Err()
+		logger.Warn("Register error", logger.Err(err))
+		return nil, ecode.ErrRegisterUserService.Err("注册失败: " + err.Error())
 	}
 
-	// 生成 token
 	fields := jwt.KV{
 		"userId":   data.ID,
 		"qqNumber": data.QqNumber,
@@ -75,11 +72,10 @@ func (h *userServiceHandler) Register(ctx context.Context, req *XiaoYangV1.Regis
 	}
 	token, err := jwt.GenerateCustomToken(fields)
 	if err != nil {
-		logger.Warn("GenerateToken error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InternalServerError.Err()
+		logger.Warn("GenerateToken error", logger.Err(err))
+		return nil, ecode.InternalServerError.Err("生成Token失败: " + err.Error())
 	}
 
-	// 返回注册成功的响应
 	return &XiaoYangV1.RegisterResponse{
 		Token:    token,
 		UserId:   data.ID,
@@ -91,27 +87,23 @@ func (h *userServiceHandler) Register(ctx context.Context, req *XiaoYangV1.Regis
 
 // Login 登录
 func (h *userServiceHandler) Login(ctx context.Context, req *XiaoYangV1.LoginRequest) (*XiaoYangV1.LoginResponse, error) {
-	// 参数基础校验
 	err := req.Validate()
 	if err != nil {
-		logger.Warn("req.Validate error", logger.Err(err), logger.Any("req", req), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrLoginUserService.Err(err.Error())
+		logger.Warn("req.Validate error", logger.Err(err))
+		return nil, ecode.ErrLoginUserService.Err("请求参数无效: " + err.Error())
 	}
 
-	// 根据 QQ 号查询用户信息
 	data, err := h.userDao.GetByQqNumber(ctx, req.QqNumber)
 	if err != nil {
-		logger.Warn("GetByQqNumber error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrLoginUserService.Err("未注册")
+		logger.Warn("GetByQqNumber error", logger.Err(err))
+		return nil, ecode.ErrLoginUserService.Err("用户未注册: " + err.Error())
 	}
 
-	// 校验密码
 	if !gocrypto.VerifyPassword(req.Password, data.Password) {
-		logger.Warn("password error", logger.Err(err), middleware.CtxRequestIDField(ctx))
+		logger.Warn("password error", logger.Err(err))
 		return nil, ecode.ErrLoginUserService.Err("密码错误")
 	}
 
-	// 生成 token
 	fields := jwt.KV{
 		"userId":   data.ID,
 		"qqNumber": data.QqNumber,
@@ -121,11 +113,10 @@ func (h *userServiceHandler) Login(ctx context.Context, req *XiaoYangV1.LoginReq
 	}
 	token, err := jwt.GenerateCustomToken(fields)
 	if err != nil {
-		logger.Warn("GenerateToken error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrLoginUserService.Err(err.Error())
+		logger.Warn("GenerateToken error", logger.Err(err))
+		return nil, ecode.ErrLoginUserService.Err("生成Token失败: " + err.Error())
 	}
 
-	// 返回登录成功的响应
 	return &XiaoYangV1.LoginResponse{
 		Token:    token,
 		UserId:   data.ID,
@@ -143,31 +134,23 @@ func (h *userServiceHandler) Logout(ctx context.Context, req *XiaoYangV1.LogoutR
 
 // GetUserInfo 获取用户信息
 func (h *userServiceHandler) GetUserInfo(ctx context.Context, req *XiaoYangV1.GetUserInfoRequest) (*XiaoYangV1.GetUserInfoResponse, error) {
-	// 参数基础校验
 	err := req.Validate()
 	if err != nil {
-		logger.Warn("req.Validate error", logger.Err(err), logger.Any("req", req), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrGetUserInfoUserService.Err(err.Error())
+		logger.Warn("req.Validate error", logger.Err(err))
+		return nil, ecode.ErrGetUserInfoUserService.Err("请求参数无效: " + err.Error())
 	}
 
-	// 获取Token中的用户信息
-	userInfo := ctx.Value("userInfo")
-	if userInfo == nil {
-		logger.Warn("GetUserInfo error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrGetUserInfoUserService.Err("无法获取用户信息")
-	}
-
-	userId, ok := userInfo.(*jwt.CustomClaims).GetUint64("userId")
-	if !ok {
-		logger.Warn("GetUserInfo error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrGetUserInfoUserService.Err("无法获取用户 ID")
-	}
-
-	data, err := h.userDao.GetByID(ctx, userId)
-
+	auth := ctx.Value("request_header_key").(http.Header).Get("Authorization")
+	userInfo, err := utils.ParseToken(auth)
 	if err != nil {
-		logger.Warn("GetUserInfo error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrGetUserInfoUserService.Err(err.Error())
+		logger.Warn("ParseToken error", logger.Err(err))
+		return nil, ecode.ErrGetUserInfoUserService.Err("Token解析失败: " + err.Error())
+	}
+
+	data, err := h.userDao.GetByID(ctx, uint64(userInfo.UserID))
+	if err != nil {
+		logger.Warn("GetUserInfo error", logger.Err(err))
+		return nil, ecode.ErrGetUserInfoUserService.Err("获取用户信息失败: " + err.Error())
 	}
 
 	return &XiaoYangV1.GetUserInfoResponse{
@@ -182,21 +165,18 @@ func (h *userServiceHandler) GetUserInfo(ctx context.Context, req *XiaoYangV1.Ge
 
 // UpdateUserInfo 更新用户信息
 func (h *userServiceHandler) UpdateUserInfo(ctx context.Context, req *XiaoYangV1.UpdateUserInfoRequest) (*XiaoYangV1.UpdateUserInfoResponse, error) {
-	// 参数基础校验
 	err := req.Validate()
 	if err != nil {
-		logger.Warn("req.Validate error", logger.Err(err), logger.Any("req", req), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InvalidParams.Err()
+		logger.Warn("req.Validate error", logger.Err(err))
+		return nil, ecode.ErrUpdateUserInfoUserService.Err("请求参数无效: " + err.Error())
 	}
 
-	// 根据用户 ID 查询用户信息
 	data, err := h.userDao.GetByID(ctx, req.UserId)
 	if err != nil {
-		logger.Warn("GetByID error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrUpdateUserInfoUserService.Err("用户不存在")
+		logger.Warn("GetByID error", logger.Err(err))
+		return nil, ecode.ErrUpdateUserInfoUserService.Err("用户不存在: " + err.Error())
 	}
 
-	// 更新用户信息
 	if req.Nickname != "" {
 		data.Nickname = req.Nickname
 	}
@@ -206,51 +186,44 @@ func (h *userServiceHandler) UpdateUserInfo(ctx context.Context, req *XiaoYangV1
 
 	err = h.userDao.UpdateByID(ctx, data)
 	if err != nil {
-		logger.Warn("UpdateByID error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InternalServerError.Err()
+		logger.Warn("UpdateByID error", logger.Err(err))
+		return nil, ecode.ErrUpdateUserInfoUserService.Err("更新用户信息失败: " + err.Error())
 	}
 
-	// 返回更新成功的响应
 	return &XiaoYangV1.UpdateUserInfoResponse{}, nil
 }
 
 // ChangePassword 修改密码
 func (h *userServiceHandler) ChangePassword(ctx context.Context, req *XiaoYangV1.ChangePasswordRequest) (*XiaoYangV1.ChangePasswordResponse, error) {
-	// 参数基础校验
 	err := req.Validate()
 	if err != nil {
-		logger.Warn("req.Validate error", logger.Err(err), logger.Any("req", req), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InvalidParams.Err()
+		logger.Warn("req.Validate error", logger.Err(err))
+		return nil, ecode.ErrChangePasswordUserService.Err("请求参数无效: " + err.Error())
 	}
 
-	// 根据用户 ID 查询用户信息
 	data, err := h.userDao.GetByID(ctx, req.UserId)
 	if err != nil {
-		logger.Warn("GetByID error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.ErrChangePasswordUserService.Err("用户不存在")
+		logger.Warn("GetByID error", logger.Err(err))
+		return nil, ecode.ErrChangePasswordUserService.Err("用户不存在: " + err.Error())
 	}
 
-	// 校验旧密码
 	if !gocrypto.VerifyPassword(req.OldPassword, data.Password) {
-		logger.Warn("OldPassword error", logger.Err(err), middleware.CtxRequestIDField(ctx))
+		logger.Warn("OldPassword error", logger.Err(err))
 		return nil, ecode.ErrChangePasswordUserService.Err("旧密码错误")
 	}
 
-	// 将新密码加密
 	newPassword, err := gocrypto.HashAndSaltPassword(req.NewPassword)
 	if err != nil {
-		logger.Warn("HashAndSaltPassword error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InternalServerError.Err()
+		logger.Warn("HashAndSaltPassword error", logger.Err(err))
+		return nil, ecode.InternalServerError.Err("密码加密失败: " + err.Error())
 	}
 
-	// 更新用户密码
 	data.Password = newPassword
 	err = h.userDao.UpdateByID(ctx, data)
 	if err != nil {
-		logger.Warn("Update error", logger.Err(err), middleware.CtxRequestIDField(ctx))
-		return nil, ecode.InternalServerError.Err()
+		logger.Warn("Update error", logger.Err(err))
+		return nil, ecode.ErrChangePasswordUserService.Err("更新密码失败: " + err.Error())
 	}
 
-	// 返回修改密码成功的响应
 	return &XiaoYangV1.ChangePasswordResponse{}, nil
 }

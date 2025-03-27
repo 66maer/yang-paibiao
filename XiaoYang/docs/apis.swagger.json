@@ -6,6 +6,9 @@
   },
   "tags": [
     {
+      "name": "CharacterService"
+    },
+    {
       "name": "GuildService"
     },
     {
@@ -128,6 +131,201 @@
         ],
         "tags": [
           "UserService"
+        ]
+      }
+    },
+    "/api/v1/character/createCharacter": {
+      "post": {
+        "summary": "创建角色",
+        "description": "创建新的游戏角色",
+        "operationId": "CharacterService_CreateCharacter",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateCharacterResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateCharacterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "CharacterService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/character/deleteCharacter": {
+      "post": {
+        "summary": "删除角色",
+        "description": "根据角色ID删除游戏角色",
+        "operationId": "CharacterService_DeleteCharacter",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteCharacterResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1DeleteCharacterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "CharacterService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/character/getCharacter": {
+      "post": {
+        "summary": "获取角色详情",
+        "description": "根据角色ID获取游戏角色的详细信息",
+        "operationId": "CharacterService_GetCharacter",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetCharacterResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1GetCharacterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "CharacterService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/character/listUserCharacters": {
+      "post": {
+        "summary": "列出用户所有角色",
+        "description": "获取用户创建的所有游戏角色",
+        "operationId": "CharacterService_ListUserCharacters",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListUserCharactersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ListUserCharactersRequest"
+            }
+          }
+        ],
+        "tags": [
+          "CharacterService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/character/updateCharacter": {
+      "post": {
+        "summary": "更新角色信息",
+        "description": "更新游戏角色的基本信息",
+        "operationId": "CharacterService_UpdateCharacter",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateCharacterResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1UpdateCharacterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "CharacterService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
         ]
       }
     },
@@ -754,6 +952,63 @@
       "type": "object",
       "title": "修改密码响应"
     },
+    "v1CharacterInfo": {
+      "type": "object",
+      "properties": {
+        "characterId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "userId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "server": {
+          "type": "string"
+        },
+        "xinfa": {
+          "type": "string"
+        },
+        "remark": {
+          "type": "string"
+        }
+      },
+      "title": "角色基本信息"
+    },
+    "v1CreateCharacterRequest": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "server": {
+          "type": "string"
+        },
+        "xinfa": {
+          "type": "string"
+        },
+        "remark": {
+          "type": "string"
+        }
+      },
+      "title": "创建角色请求"
+    },
+    "v1CreateCharacterResponse": {
+      "type": "object",
+      "properties": {
+        "characterInfo": {
+          "$ref": "#/definitions/v1CharacterInfo"
+        }
+      },
+      "title": "创建角色响应"
+    },
     "v1CreateGuildRequest": {
       "type": "object",
       "properties": {
@@ -791,6 +1046,25 @@
       },
       "title": "创建群组响应"
     },
+    "v1DeleteCharacterRequest": {
+      "type": "object",
+      "properties": {
+        "characterId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "删除角色请求"
+    },
+    "v1DeleteCharacterResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "删除角色响应"
+    },
     "v1DeleteGuildRequest": {
       "type": "object",
       "properties": {
@@ -809,6 +1083,25 @@
         }
       },
       "title": "删除群组响应"
+    },
+    "v1GetCharacterRequest": {
+      "type": "object",
+      "properties": {
+        "characterId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "获取角色详情请求"
+    },
+    "v1GetCharacterResponse": {
+      "type": "object",
+      "properties": {
+        "characterInfo": {
+          "$ref": "#/definitions/v1CharacterInfo"
+        }
+      },
+      "title": "获取角色详情响应"
     },
     "v1GetGuildInfoRequest": {
       "type": "object",
@@ -974,6 +1267,29 @@
       },
       "title": "获取群组成员响应"
     },
+    "v1ListUserCharactersRequest": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "列出用户所有角色请求"
+    },
+    "v1ListUserCharactersResponse": {
+      "type": "object",
+      "properties": {
+        "characters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1CharacterInfo"
+          }
+        }
+      },
+      "title": "列出用户所有角色响应"
+    },
     "v1ListUserGuildsRequest": {
       "type": "object",
       "properties": {
@@ -1104,6 +1420,37 @@
         }
       },
       "title": "移除成员响应"
+    },
+    "v1UpdateCharacterRequest": {
+      "type": "object",
+      "properties": {
+        "characterId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "server": {
+          "type": "string"
+        },
+        "xinfa": {
+          "type": "string"
+        },
+        "remark": {
+          "type": "string"
+        }
+      },
+      "title": "更新角色请求"
+    },
+    "v1UpdateCharacterResponse": {
+      "type": "object",
+      "properties": {
+        "characterInfo": {
+          "$ref": "#/definitions/v1CharacterInfo"
+        }
+      },
+      "title": "更新角色响应"
     },
     "v1UpdateGuildInfoRequest": {
       "type": "object",

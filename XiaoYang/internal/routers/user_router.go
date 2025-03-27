@@ -3,12 +3,9 @@
 package routers
 
 import (
-	"context"
-
 	"github.com/gin-gonic/gin"
 
 	"github.com/go-dev-frame/sponge/pkg/gin/middleware"
-	"github.com/go-dev-frame/sponge/pkg/jwt"
 	"github.com/go-dev-frame/sponge/pkg/logger"
 
 	//"github.com/go-dev-frame/sponge/pkg/middleware"
@@ -33,20 +30,20 @@ func userServiceRouter(
 	groupPathMiddlewares map[string][]gin.HandlerFunc,
 	singlePathMiddlewares map[string][]gin.HandlerFunc,
 	iService XiaoYangV1.UserServiceLogicer) {
-	ctxFunc := func(c *gin.Context) context.Context {
-		// 解析 token
-		authorization := c.GetHeader("Authorization")
-		if len(authorization) < 7 || authorization[:7] != "Bearer " {
-			return c.Request.Context()
-		}
-		token := authorization[7:] // remove Bearer prefix
-		claims, err := jwt.ParseCustomToken(token)
-		if err != nil {
-			return c.Request.Context()
-		}
-		ctx := context.WithValue(c.Request.Context(), "userInfo", claims)
-		return ctx
-	}
+	// ctxFunc := func(c *gin.Context) context.Context {
+	// 	// 解析 token
+	// 	authorization := c.GetHeader("Authorization")
+	// 	if len(authorization) < 7 || authorization[:7] != "Bearer " {
+	// 		return c.Request.Context()
+	// 	}
+	// 	token := authorization[7:] // remove Bearer prefix
+	// 	claims, err := jwt.ParseCustomToken(token)
+	// 	if err != nil {
+	// 		return c.Request.Context()
+	// 	}
+	// 	ctx := context.WithValue(c.Request.Context(), "userInfo", claims)
+	// 	return ctx
+	// }
 	XiaoYangV1.RegisterUserServiceRouter(
 		r,
 		groupPathMiddlewares,
@@ -60,7 +57,7 @@ func userServiceRouter(
 		// example:
 		// 	ecode.Forbidden, ecode.LimitExceed,
 		),
-		XiaoYangV1.WithUserServiceWrapCtx(ctxFunc),
+		//XiaoYangV1.WithUserServiceWrapCtx(ctxFunc),
 	)
 }
 
