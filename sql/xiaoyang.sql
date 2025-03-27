@@ -125,6 +125,7 @@ CREATE TABLE teams (
     is_lock BOOLEAN NOT NULL,  -- 是否锁定
     rule JSONB NOT NULL,  -- 报名规则
     notice TEXT,  -- 团队告示
+    summary JSONB,  -- 团队总结
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
     close_time TIMESTAMP,  -- 关闭时间
@@ -146,6 +147,7 @@ COMMENT ON COLUMN teams.is_visible IS '是否对外可见';
 COMMENT ON COLUMN teams.is_lock IS '是否锁定';
 COMMENT ON COLUMN teams.rule IS '报名规则';
 COMMENT ON COLUMN teams.notice IS '团队告示';
+COMMENT ON COLUMN teams.summary IS '团队总结';
 COMMENT ON COLUMN teams.create_time IS '创建时间';
 COMMENT ON COLUMN teams.update_time IS '更新时间';
 COMMENT ON COLUMN teams.close_time IS '关闭时间';
