@@ -6,6 +6,9 @@
   },
   "tags": [
     {
+      "name": "GuildService"
+    },
+    {
       "name": "UserService"
     }
   ],
@@ -125,6 +128,435 @@
         ],
         "tags": [
           "UserService"
+        ]
+      }
+    },
+    "/api/v1/guild/addGuildMember": {
+      "post": {
+        "summary": "添加成员",
+        "description": "添加用户到群组",
+        "operationId": "GuildService_AddGuildMember",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddGuildMemberResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1AddGuildMemberRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GuildService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/guild/createGuild": {
+      "post": {
+        "summary": "创建群组",
+        "description": "创建新群组",
+        "operationId": "GuildService_CreateGuild",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateGuildResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateGuildRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GuildService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/guild/deleteGuild": {
+      "post": {
+        "summary": "删除群组",
+        "description": "根据ukey删除群组",
+        "operationId": "GuildService_DeleteGuild",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteGuildResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1DeleteGuildRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GuildService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/guild/getGuildInfo": {
+      "post": {
+        "summary": "获取群组详情",
+        "description": "根据ukey获取群组详细信息",
+        "operationId": "GuildService_GetGuildInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetGuildInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1GetGuildInfoRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GuildService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/guild/getGuildMember": {
+      "post": {
+        "summary": "查询成员信息",
+        "description": "根据用户ID和群组ukey查询成员详情",
+        "operationId": "GuildService_GetGuildMember",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetGuildMemberResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1GetGuildMemberRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GuildService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/guild/listAllGuilds": {
+      "post": {
+        "summary": "获取所有群组",
+        "description": "获取平台全部群组信息",
+        "operationId": "GuildService_ListAllGuilds",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListAllGuildsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ListAllGuildsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GuildService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/guild/listGuildMembers": {
+      "post": {
+        "summary": "获取群组成员",
+        "description": "根据ukey获取群组全部成员信息",
+        "operationId": "GuildService_ListGuildMembers",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListGuildMembersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ListGuildMembersRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GuildService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/guild/listUserGuilds": {
+      "post": {
+        "summary": "获取用户群组",
+        "description": "根据QQ号获取用户加入的所有群组",
+        "operationId": "GuildService_ListUserGuilds",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListUserGuildsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ListUserGuildsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GuildService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/guild/removeGuildMember": {
+      "post": {
+        "summary": "移除成员",
+        "description": "从群组中移除用户",
+        "operationId": "GuildService_RemoveGuildMember",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RemoveGuildMemberResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1RemoveGuildMemberRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GuildService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/guild/updateGuildInfo": {
+      "post": {
+        "summary": "更新群组信息",
+        "description": "更新群组基本信息",
+        "operationId": "GuildService_UpdateGuildInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateGuildInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1UpdateGuildInfoRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GuildService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/guild/updateGuildMember": {
+      "post": {
+        "summary": "更新成员信息",
+        "description": "修改成员角色或群昵称",
+        "operationId": "GuildService_UpdateGuildMember",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateGuildMemberResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1UpdateGuildMemberRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GuildService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
         ]
       }
     },
@@ -270,6 +702,35 @@
         }
       }
     },
+    "v1AddGuildMemberRequest": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "userId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "role": {
+          "type": "string"
+        },
+        "groupNickname": {
+          "type": "string"
+        }
+      },
+      "title": "添加成员请求"
+    },
+    "v1AddGuildMemberResponse": {
+      "type": "object",
+      "properties": {
+        "memberInfo": {
+          "$ref": "#/definitions/v1GuildMemberInfo"
+        }
+      },
+      "title": "添加成员响应"
+    },
     "v1ChangePasswordRequest": {
       "type": "object",
       "properties": {
@@ -292,6 +753,104 @@
     "v1ChangePasswordResponse": {
       "type": "object",
       "title": "修改密码响应"
+    },
+    "v1CreateGuildRequest": {
+      "type": "object",
+      "properties": {
+        "guildQqNumber": {
+          "type": "string"
+        },
+        "ukey": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "server": {
+          "type": "string"
+        },
+        "avatar": {
+          "type": "string"
+        },
+        "expireTime": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "preferences": {
+          "type": "string"
+        }
+      },
+      "title": "创建群组请求"
+    },
+    "v1CreateGuildResponse": {
+      "type": "object",
+      "properties": {
+        "guildInfo": {
+          "$ref": "#/definitions/v1GuildInfo"
+        }
+      },
+      "title": "创建群组响应"
+    },
+    "v1DeleteGuildRequest": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "删除群组请求"
+    },
+    "v1DeleteGuildResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "删除群组响应"
+    },
+    "v1GetGuildInfoRequest": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "获取群组信息请求"
+    },
+    "v1GetGuildInfoResponse": {
+      "type": "object",
+      "properties": {
+        "guildInfo": {
+          "$ref": "#/definitions/v1GuildInfo"
+        }
+      },
+      "title": "获取群组信息响应"
+    },
+    "v1GetGuildMemberRequest": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "userId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "获取成员请求"
+    },
+    "v1GetGuildMemberResponse": {
+      "type": "object",
+      "properties": {
+        "memberInfo": {
+          "$ref": "#/definitions/v1GuildMemberInfo"
+        }
+      },
+      "title": "获取成员响应"
     },
     "v1GetUserInfoRequest": {
       "type": "object",
@@ -318,6 +877,125 @@
         }
       },
       "title": "获取用户信息响应"
+    },
+    "v1GuildInfo": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "guildQqNumber": {
+          "type": "string"
+        },
+        "ukey": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "server": {
+          "type": "string"
+        },
+        "avatar": {
+          "type": "string"
+        },
+        "expireTime": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "preferences": {
+          "type": "string"
+        }
+      },
+      "title": "群组基本信息"
+    },
+    "v1GuildMemberInfo": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "qqNumber": {
+          "type": "string"
+        },
+        "groupRole": {
+          "type": "string"
+        },
+        "groupNickname": {
+          "type": "string",
+          "title": "群昵称"
+        },
+        "nickname": {
+          "type": "string",
+          "title": "用户昵称"
+        }
+      },
+      "title": "成员基本信息"
+    },
+    "v1ListAllGuildsRequest": {
+      "type": "object",
+      "title": "获取所有群组请求"
+    },
+    "v1ListAllGuildsResponse": {
+      "type": "object",
+      "properties": {
+        "guilds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1GuildInfo"
+          }
+        }
+      },
+      "title": "获取所有群组响应"
+    },
+    "v1ListGuildMembersRequest": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "获取群组成员请求"
+    },
+    "v1ListGuildMembersResponse": {
+      "type": "object",
+      "properties": {
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1GuildMemberInfo"
+          }
+        }
+      },
+      "title": "获取群组成员响应"
+    },
+    "v1ListUserGuildsRequest": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "用户群组列表请求"
+    },
+    "v1ListUserGuildsResponse": {
+      "type": "object",
+      "properties": {
+        "guilds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1GuildInfo"
+          }
+        }
+      },
+      "title": "获取用户群组响应"
     },
     "v1LoginRequest": {
       "type": "object",
@@ -403,6 +1081,96 @@
         }
       },
       "title": "注册响应"
+    },
+    "v1RemoveGuildMemberRequest": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "userId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "移除成员请求"
+    },
+    "v1RemoveGuildMemberResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "移除成员响应"
+    },
+    "v1UpdateGuildInfoRequest": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "ukey": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "server": {
+          "type": "string"
+        },
+        "avatar": {
+          "type": "string"
+        },
+        "expireTime": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "preferences": {
+          "type": "string"
+        }
+      },
+      "title": "更新群组请求"
+    },
+    "v1UpdateGuildInfoResponse": {
+      "type": "object",
+      "properties": {
+        "guildInfo": {
+          "$ref": "#/definitions/v1GuildInfo"
+        }
+      },
+      "title": "更新群组响应"
+    },
+    "v1UpdateGuildMemberRequest": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "userId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "role": {
+          "type": "string"
+        },
+        "groupNickname": {
+          "type": "string"
+        }
+      },
+      "title": "更新成员请求"
+    },
+    "v1UpdateGuildMemberResponse": {
+      "type": "object",
+      "properties": {
+        "memberInfo": {
+          "$ref": "#/definitions/v1GuildMemberInfo"
+        }
+      },
+      "title": "更新成员响应"
     },
     "v1UpdateUserInfoRequest": {
       "type": "object",
