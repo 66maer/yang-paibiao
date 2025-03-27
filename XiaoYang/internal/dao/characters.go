@@ -34,7 +34,7 @@ type CharactersDao interface {
 type charactersDao struct {
 	db    *gorm.DB
 	cache cache.CharactersCache // if nil, the cache is not used.
-	sfg   *singleflight.Group    // if cache is nil, the sfg is not used.
+	sfg   *singleflight.Group   // if cache is nil, the sfg is not used.
 }
 
 // NewCharactersDao creating the dao interface
@@ -90,7 +90,7 @@ func (d *charactersDao) updateDataByID(ctx context.Context, db *gorm.DB, table *
 	}
 
 	update := map[string]interface{}{}
-	
+
 	if table.UserID != 0 {
 		update["user_id"] = table.UserID
 	}
@@ -106,7 +106,6 @@ func (d *charactersDao) updateDataByID(ctx context.Context, db *gorm.DB, table *
 	if table.Remark != "" {
 		update["remark"] = table.Remark
 	}
-	
 
 	return db.WithContext(ctx).Model(table).Updates(update).Error
 }

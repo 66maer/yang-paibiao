@@ -8,5 +8,3 @@ type Characters struct {
 	Xinfa  string `gorm:"column:xinfa;type:varchar(20);not null" json:"xinfa"`   // 角色心法
 	Remark string `gorm:"column:remark;type:text" json:"remark"`                 // 角色备注
 }
-
-

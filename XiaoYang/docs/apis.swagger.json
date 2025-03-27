@@ -12,6 +12,9 @@
       "name": "GuildService"
     },
     {
+      "name": "TeamService"
+    },
+    {
       "name": "UserService"
     }
   ],
@@ -758,6 +761,396 @@
         ]
       }
     },
+    "/api/v1/team/closeTeam": {
+      "post": {
+        "summary": "关闭团队",
+        "description": "关闭指定的团队",
+        "operationId": "TeamService_CloseTeam",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CloseTeamResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CloseTeamRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TeamService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/createTeam": {
+      "post": {
+        "summary": "开团",
+        "description": "创建新的开团",
+        "operationId": "TeamService_CreateTeam",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateTeamResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateTeamRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TeamService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/getTeam": {
+      "post": {
+        "summary": "获取开团信息",
+        "description": "根据开团ID获取开团信息",
+        "operationId": "TeamService_GetTeam",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetTeamResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1GetTeamRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TeamService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/listTeams": {
+      "post": {
+        "summary": "获取所有开团信息",
+        "description": "根据群组ID获取所有开团信息",
+        "operationId": "TeamService_ListTeams",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListTeamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ListTeamsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TeamService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/updateTeam": {
+      "post": {
+        "summary": "修改开团信息",
+        "description": "更新开团的基本信息",
+        "operationId": "TeamService_UpdateTeam",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateTeamResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1UpdateTeamRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TeamService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/template/createTemplate": {
+      "post": {
+        "summary": "新增模板",
+        "description": "创建新的开团模板",
+        "operationId": "TeamService_CreateTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateTemplateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateTemplateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TeamService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/template/deleteTemplate": {
+      "post": {
+        "summary": "删除模板",
+        "description": "删除指定的开团模板",
+        "operationId": "TeamService_DeleteTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteTemplateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1DeleteTemplateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TeamService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/template/getTemplate": {
+      "post": {
+        "summary": "获取模板信息",
+        "description": "根据模板ID获取模板信息",
+        "operationId": "TeamService_GetTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetTemplateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1GetTemplateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TeamService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/template/listTemplates": {
+      "post": {
+        "summary": "获取所有模板信息",
+        "description": "根据群组ID获取所有模板信息",
+        "operationId": "TeamService_ListTemplates",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListTemplatesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ListTemplatesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TeamService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/template/updateTemplate": {
+      "post": {
+        "summary": "修改模板",
+        "description": "更新开团模板的信息",
+        "operationId": "TeamService_UpdateTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateTemplateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1UpdateTemplateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TeamService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/user/changePassword": {
       "post": {
         "summary": "修改密码",
@@ -978,6 +1371,29 @@
       },
       "title": "角色基本信息"
     },
+    "v1CloseTeamRequest": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "closeId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "关闭团队请求"
+    },
+    "v1CloseTeamResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "关闭团队响应"
+    },
     "v1CreateCharacterRequest": {
       "type": "object",
       "properties": {
@@ -1028,8 +1444,8 @@
           "type": "string"
         },
         "expireTime": {
-          "type": "integer",
-          "format": "uint64"
+          "type": "string",
+          "title": "ISO8601 格式"
         },
         "preferences": {
           "type": "string"
@@ -1045,6 +1461,91 @@
         }
       },
       "title": "创建群组响应"
+    },
+    "v1CreateTeamRequest": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "createrId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "title": {
+          "type": "string"
+        },
+        "dungeons": {
+          "type": "string"
+        },
+        "bookXuanjing": {
+          "type": "boolean"
+        },
+        "bookYuntie": {
+          "type": "boolean"
+        },
+        "isVisible": {
+          "type": "boolean"
+        },
+        "isLock": {
+          "type": "boolean"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "notice": {
+          "type": "string"
+        },
+        "teamTime": {
+          "type": "string",
+          "title": "ISO8601 格式"
+        }
+      },
+      "title": "创建开团请求"
+    },
+    "v1CreateTeamResponse": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "创建开团响应"
+    },
+    "v1CreateTemplateRequest": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "createrId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "title": {
+          "type": "string"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "notice": {
+          "type": "string"
+        }
+      },
+      "title": "新增模板请求"
+    },
+    "v1CreateTemplateResponse": {
+      "type": "object",
+      "properties": {
+        "templateId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "新增模板响应"
     },
     "v1DeleteCharacterRequest": {
       "type": "object",
@@ -1083,6 +1584,25 @@
         }
       },
       "title": "删除群组响应"
+    },
+    "v1DeleteTemplateRequest": {
+      "type": "object",
+      "properties": {
+        "templateId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "删除模板请求"
+    },
+    "v1DeleteTemplateResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "删除模板响应"
     },
     "v1GetCharacterRequest": {
       "type": "object",
@@ -1145,6 +1665,44 @@
       },
       "title": "获取成员响应"
     },
+    "v1GetTeamRequest": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "查找开团请求"
+    },
+    "v1GetTeamResponse": {
+      "type": "object",
+      "properties": {
+        "teamInfo": {
+          "$ref": "#/definitions/v1TeamInfo"
+        }
+      },
+      "title": "查找开团响应"
+    },
+    "v1GetTemplateRequest": {
+      "type": "object",
+      "properties": {
+        "templateId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "查找模板请求"
+    },
+    "v1GetTemplateResponse": {
+      "type": "object",
+      "properties": {
+        "templateInfo": {
+          "$ref": "#/definitions/v1TemplateInfo"
+        }
+      },
+      "title": "查找模板响应"
+    },
     "v1GetUserInfoRequest": {
       "type": "object",
       "title": "获取用户信息请求"
@@ -1194,8 +1752,8 @@
           "type": "string"
         },
         "expireTime": {
-          "type": "integer",
-          "format": "uint64"
+          "type": "string",
+          "title": "ISO8601 格式"
         },
         "preferences": {
           "type": "string"
@@ -1266,6 +1824,52 @@
         }
       },
       "title": "获取群组成员响应"
+    },
+    "v1ListTeamsRequest": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "批量查找开团请求"
+    },
+    "v1ListTeamsResponse": {
+      "type": "object",
+      "properties": {
+        "teams": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1TeamInfo"
+          }
+        }
+      },
+      "title": "批量查找开团响应"
+    },
+    "v1ListTemplatesRequest": {
+      "type": "object",
+      "properties": {
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "批量查找模板请求"
+    },
+    "v1ListTemplatesResponse": {
+      "type": "object",
+      "properties": {
+        "templates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1TemplateInfo"
+          }
+        }
+      },
+      "title": "批量查找模板响应"
     },
     "v1ListUserCharactersRequest": {
       "type": "object",
@@ -1421,6 +2025,107 @@
       },
       "title": "移除成员响应"
     },
+    "v1TeamInfo": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "createrId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "title": {
+          "type": "string"
+        },
+        "dungeons": {
+          "type": "string"
+        },
+        "bookXuanjing": {
+          "type": "boolean"
+        },
+        "bookYuntie": {
+          "type": "boolean"
+        },
+        "isVisible": {
+          "type": "boolean"
+        },
+        "isLock": {
+          "type": "boolean"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "notice": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string",
+          "title": "团队总结"
+        },
+        "teamTime": {
+          "type": "string",
+          "title": "ISO8601 格式"
+        },
+        "createTime": {
+          "type": "string",
+          "title": "ISO8601 格式"
+        },
+        "updateTime": {
+          "type": "string",
+          "title": "ISO8601 格式"
+        },
+        "closeTime": {
+          "type": "string",
+          "title": "ISO8601 格式"
+        },
+        "closeId": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "title": "开团信息"
+    },
+    "v1TemplateInfo": {
+      "type": "object",
+      "properties": {
+        "templateId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "guildId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "createrId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "title": {
+          "type": "string"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "notice": {
+          "type": "string"
+        },
+        "createTime": {
+          "type": "string",
+          "title": "ISO8601 格式"
+        },
+        "updateTime": {
+          "type": "string",
+          "title": "ISO8601 格式"
+        }
+      },
+      "title": "模板信息"
+    },
     "v1UpdateCharacterRequest": {
       "type": "object",
       "properties": {
@@ -1472,8 +2177,8 @@
           "type": "string"
         },
         "expireTime": {
-          "type": "integer",
-          "format": "uint64"
+          "type": "string",
+          "title": "ISO8601 格式"
         },
         "preferences": {
           "type": "string"
@@ -1518,6 +2223,81 @@
         }
       },
       "title": "更新成员响应"
+    },
+    "v1UpdateTeamRequest": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "title": {
+          "type": "string"
+        },
+        "dungeons": {
+          "type": "string"
+        },
+        "bookXuanjing": {
+          "type": "boolean"
+        },
+        "bookYuntie": {
+          "type": "boolean"
+        },
+        "isVisible": {
+          "type": "boolean"
+        },
+        "isLock": {
+          "type": "boolean"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "notice": {
+          "type": "string"
+        },
+        "teamTime": {
+          "type": "string",
+          "title": "ISO8601 格式"
+        }
+      },
+      "title": "修改开团信息请求"
+    },
+    "v1UpdateTeamResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "修改开团信息响应"
+    },
+    "v1UpdateTemplateRequest": {
+      "type": "object",
+      "properties": {
+        "templateId": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "title": {
+          "type": "string"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "notice": {
+          "type": "string"
+        }
+      },
+      "title": "修改模板请求"
+    },
+    "v1UpdateTemplateResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "修改模板响应"
     },
     "v1UpdateUserInfoRequest": {
       "type": "object",

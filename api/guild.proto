@@ -241,7 +241,7 @@ message GuildInfo {
   string name = 4;
   string server = 5;
   string avatar = 6;
-  uint64 expireTime = 7;
+  string expireTime = 7;  // ISO8601 格式
   string preferences = 8;
 }
 
@@ -252,7 +252,7 @@ message CreateGuildRequest {
   string name = 3;
   string server = 4;
   string avatar = 5;
-  uint64 expireTime = 6;
+  string expireTime = 6;  // ISO8601 格式
   string preferences = 7;
 }
 
@@ -278,7 +278,7 @@ message UpdateGuildInfoRequest {
   string name = 3;
   string server = 4;
   string avatar = 5;
-  uint64 expireTime = 6;
+  string expireTime = 6;  // ISO8601 格式
   string preferences = 7;
 }
 

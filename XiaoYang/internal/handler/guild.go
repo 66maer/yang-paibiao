@@ -138,16 +138,21 @@ func (h *guildServiceHandler) UpdateGuildInfo(ctx context.Context, req *XiaoYang
 		return nil, ecode.ErrUpdateGuildInfoGuildService.Err("更新群组信息失败: " + err.Error())
 	}
 
+	updatedGuild, err := h.guildDao.GetByID(ctx, guild.ID)
+	if err != nil {
+		return nil, ecode.ErrUpdateGuildInfoGuildService.Err("获取更新后的群组信息失败: " + err.Error())
+	}
+
 	return &XiaoYangV1.UpdateGuildInfoResponse{
 		GuildInfo: &XiaoYangV1.GuildInfo{
-			GuildId:       guild.ID,
-			GuildQqNumber: guild.GuildQqNumber,
-			Ukey:          guild.Ukey,
-			Name:          guild.Name,
-			Server:        guild.Server,
-			Avatar:        guild.Avatar,
-			ExpireTime:    guild.GetExpireTime(),
-			Preferences:   guild.GetPreferences(),
+			GuildId:       updatedGuild.ID,
+			GuildQqNumber: updatedGuild.GuildQqNumber,
+			Ukey:          updatedGuild.Ukey,
+			Name:          updatedGuild.Name,
+			Server:        updatedGuild.Server,
+			Avatar:        updatedGuild.Avatar,
+			ExpireTime:    updatedGuild.GetExpireTime(),
+			Preferences:   updatedGuild.GetPreferences(),
 		},
 	}, nil
 }

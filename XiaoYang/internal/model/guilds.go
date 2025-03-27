@@ -18,14 +18,14 @@ type Guilds struct {
 	Preferences   *datatypes.JSON `gorm:"column:preferences;type:jsonb" json:"-"`                                // 群组偏好设置
 }
 
-// GetExpireTime 获取过期时间（uint64 格式）
-func (g *Guilds) GetExpireTime() uint64 {
-	return utils.TimePtrToUint64(g.ExpireTime)
+// GetExpireTime 获取过期时间（ISO8601 格式）
+func (g *Guilds) GetExpireTime() string {
+	return utils.TimePtrToISO8601(g.ExpireTime)
 }
 
-// SetExpireTime 设置过期时间（uint64 格式）
-func (g *Guilds) SetExpireTime(t uint64) {
-	g.ExpireTime = utils.Uint64ToTimePtr(t)
+// SetExpireTime 设置过期时间（ISO8601 格式）
+func (g *Guilds) SetExpireTime(t string) {
+	g.ExpireTime = utils.ISO8601ToTimePtr(t)
 }
 
 // GetPreferences 获取偏好设置（string 格式）

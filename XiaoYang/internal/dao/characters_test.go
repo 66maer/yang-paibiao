@@ -59,7 +59,6 @@ func Test_charactersDao_DeleteByID(t *testing.T) {
 	defer d.Close()
 	testData := d.TestData.(*model.Characters)
 	expectedSQLForDeletion := "DELETE .*"
-	
 
 	d.SQLMock.ExpectBegin()
 	d.SQLMock.ExpectExec(expectedSQLForDeletion).
@@ -96,7 +95,7 @@ func Test_charactersDao_UpdateByID(t *testing.T) {
 	// zero id error
 	err = d.IDao.(CharactersDao).UpdateByID(d.Ctx, &model.Characters{})
 	assert.Error(t, err)
-	
+
 }
 
 func Test_charactersDao_GetByID(t *testing.T) {
@@ -203,7 +202,6 @@ func Test_charactersDao_DeleteByTx(t *testing.T) {
 	defer d.Close()
 	testData := d.TestData.(*model.Characters)
 	expectedSQLForDeletion := "DELETE .*"
-	
 
 	d.SQLMock.ExpectBegin()
 	d.SQLMock.ExpectExec(expectedSQLForDeletion).
