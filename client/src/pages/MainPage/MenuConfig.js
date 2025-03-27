@@ -24,6 +24,12 @@ const menuConfig = (role, isSuperAdmin) => {
       allowedRoles: ["owner"],
       content: "members",
     },
+    {
+      key: "characters",
+      label: "我的角色",
+      icon: <AppstoreAddOutlined />,
+      content: "characters",
+    },
   ];
 
   const filteredMenu = menu.filter((item) => {
