@@ -26,7 +26,7 @@ const routers = [
         element: <Navigate to="board" />,
       },
       {
-        path: "board",
+        path: "board/:teamId?",
         element: <BoardPage />,
       },
       {

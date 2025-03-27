@@ -9,6 +9,7 @@ import {
   Spin,
   Typography,
   Tag,
+  Empty,
 } from "antd";
 import { request } from "@/utils/request";
 import SlotCard from "@/components/SlotCard";
@@ -24,85 +25,28 @@ import {
 } from "@ant-design/icons";
 import store from "@/store";
 import BoardEditContent from "./edit";
+import { useNavigate, useParams } from "react-router-dom";
 
 const { Header, Content, Footer, Sider } = Layout;
 const { Text, Title, Paragraph } = Typography;
 
 const fetchTeamList = async () => {
-  const res = await request.get("/team/list");
-  console.log(res);
-  if (res.code !== 0) {
-    throw new Error(res.message);
+  try {
+    const res = await request.post("/team/listTeams", {
+      guildId: store.getState().guild.guildId,
+      includeClose: false,
+      page: 0,
+      pageSize: 100,
+    });
+    if (res.code !== 0) {
+      throw new Error(res.message);
+    }
+    return res.data.teams;
+  } catch (error) {
+    console.error("Failed to fetch team list:", error);
+    return [];
   }
-  return res.data;
 };
-
-const teamList = [
-  {
-    id: "1",
-    title: "12月27日 第一车",
-    teamTime: "2024-12-29T20:00:00+08:00",
-    dungeons: "英雄一之窟",
-    rule: "规则",
-    notice: "这是公告，",
-    bookXuanjing: false,
-    bookYuntie: true,
-    isLock: false,
-    crateTime: "2021-12-27T12:00:00",
-    updateTime: "2021-12-27T12:00:00",
-  },
-];
-
-const items = [
-  {
-    key: "1227",
-    label: (
-      <Space>
-        12月27日
-        <DateTag date={new Date()} />
-      </Space>
-    ),
-    children: [
-      {
-        key: "122601",
-        label: "第一车",
-      },
-      {
-        key: "122602",
-        label: "第二车",
-      },
-      {
-        key: "122603",
-        label: "第三车",
-      },
-    ],
-  },
-  {
-    key: "1228",
-    label: (
-      <Space>
-        12月28日
-        <DateTag
-          date={new Date(new Date().getTime() + -3 * 24 * 60 * 60 * 1000)}
-        />
-      </Space>
-    ),
-    children: [
-      {
-        key: "122701",
-        label: "第一车",
-      },
-      {
-        key: "122702",
-        label: "第二车",
-      },
-      {
-        key: "122703",
-        label: "第三车",
-      },
-    ],
-  },
-];
 
 const BoardContent = ({ team = {}, isAdmin }) => {
   const { id, title, teamTime, dungeons, rule, notice } = team;
@@ -139,18 +83,18 @@ const BoardContent = ({ team = {}, isAdmin }) => {
             {dungeons}
           </Tag>
           <Tag icon={<ClockCircleOutlined />} className="team-tag" color="cyan">
-            {teamTime}
+            {new Date(teamTime).toLocaleString()}
           </Tag>
           <Tag
             className="team-tag"
-            icon={<img src={"玄晶.png"} alt="玄晶" />}
+            icon={<img src="/玄晶.png" alt="玄晶" />}
             color={bookXuanjing ? "#f50" : "#5a0"}
           >
             {bookXuanjing ? "大铁已包" : "大铁尚在"}
           </Tag>
           <Tag
             className="team-tag"
-            icon={<img src={"陨铁.png"} alt="陨铁" />}
+            icon={<img src="/陨铁.png" alt="陨铁" />}
             color={bookYuntie ? "#f50" : "#5a0"}
           >
             {bookYuntie ? "小铁已包" : "小铁尚在"}
@@ -164,7 +108,7 @@ const BoardContent = ({ team = {}, isAdmin }) => {
                 onExpand: (_, info) => setExpanded(info.expanded),
               }}
             >
-              {notice.repeat(200)}
+              {notice}
             </Paragraph>
           </blockquote>
         </pre>
@@ -174,7 +118,41 @@ const BoardContent = ({ team = {}, isAdmin }) => {
   );
 };
 
-const BoardLayoutSider = ({ isAdmin }) => {
+const BoardLayoutSider = ({ isAdmin, teamList, teamId }) => {
+  const navigate = useNavigate();
+
+  const groupedTeams = teamList
+    .sort((a, b) => new Date(a.teamTime) - new Date(b.teamTime))
+    .reduce((acc, team) => {
+      const dateKey = new Date(team.teamTime).toLocaleDateString("zh-CN", {
+        month: "long",
+        day: "numeric",
+      });
+      if (!acc[dateKey]) acc[dateKey] = [];
+      acc[dateKey].push(team);
+      return acc;
+    }, {});
+
+  const menuItems = Object.entries(groupedTeams).map(([date, teams]) => ({
+    key: date,
+    label: (
+      <Space>
+        {date}
+        <DateTag date={new Date(teams[0].teamTime)} />
+      </Space>
+    ),
+    children: teams.map((team, index) => ({
+      key: `${team.teamId}`,
+      label: `第${index + 1}车`,
+    })),
+  }));
+
+  const handleMenuClick = ({ key }) => {
+    navigate(`/board/${key}`);
+  };
+
+  const defaultSelectedKey = String(teamId || (teamList[0]?.teamId ?? null));
+
   return (
     <div style={{ height: "100%" }}>
       {isAdmin && (
@@ -187,24 +165,38 @@ const BoardLayoutSider = ({ isAdmin }) => {
           开 团
         </Button>
       )}
+
       <Menu
         mode="inline"
-        defaultSelectedKeys={["122602"]}
-        defaultOpenKeys={["1227"]}
-        items={items}
+        defaultSelectedKeys={[defaultSelectedKey]}
+        defaultOpenKeys={menuItems
+          .filter((item) =>
+            item.children.some((child) => child.key === defaultSelectedKey)
+          )
+          .map((item) => item.key)}
+        items={menuItems}
         style={{ background: "#f6e0e0" }}
         inlineIndent={16}
+        onClick={handleMenuClick}
       />
     </div>
   );
 };
 
 const Board = () => {
+  const [teamList, setTeamList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { teamId } = useParams();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        await fetchTeamList();
+        const teams = await fetchTeamList();
+        setTeamList(teams);
+        if (teams.length > 0 && !teamId) {
+          navigate(`/board/${teams[0].teamId}`);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -212,9 +204,8 @@ const Board = () => {
       }
     };
 
-    setLoading(false);
-    //fetchData();
-  }, []);
+    fetchData();
+  }, [teamId, navigate]);
 
   if (loading) {
     return (
@@ -227,26 +218,38 @@ const Board = () => {
   const isAdmin = (() => {
     const { isSuperAdmin } = store.getState().user;
     const { role } = store.getState().guild;
-    console.log(isSuperAdmin, role);
-    return true;
-    return isSuperAdmin || role === "admin" || role === "assistant";
+    return isSuperAdmin || role === "owner" || role === "helper";
   })();
 
-  // return (
-  //   <Layout className="board-layout">
-  //     <Content className="board-layout-content">
-  //       <BoardEditContent team={teamList[0]} isAdmin={isAdmin} />
-  //     </Content>
-  //   </Layout>
-  // );
+  const selectedTeam = teamList.find((team) => team.teamId == teamId);
 
   return (
     <Layout className="board-layout">
       <Sider className="board-layout-sider" width={250}>
-        <BoardLayoutSider isAdmin={isAdmin} />
+        <BoardLayoutSider
+          isAdmin={isAdmin}
+          teamList={teamList}
+          teamId={teamId}
+        />
       </Sider>
       <Content className="board-layout-content">
-        <BoardContent team={teamList[0]} isAdmin={isAdmin} />
+        {selectedTeam ? (
+          <BoardContent team={selectedTeam} isAdmin={isAdmin} />
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "100%",
+            }}
+          >
+            <Empty
+              style={{}}
+              description="最近没开团，别急，尊重夕阳红命运..."
+            />
+          </div>
+        )}
       </Content>
     </Layout>
   );

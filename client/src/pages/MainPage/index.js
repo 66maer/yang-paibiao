@@ -220,6 +220,18 @@ const MainPage = () => {
     const fetchData = async () => {
       try {
         await store.dispatch(fetchUserInfo());
+        console.log("userInfo", store.getState().user.userInfo);
+        if (!store.getState().user.userId) {
+          message.error("未获取到用户信息，请重新登录");
+          navigate("/login");
+          return;
+        }
+      } catch (err) {
+        message.error("获取用户信息失败，请重新登录");
+        navigate("/login");
+        return;
+      }
+      try {
         await store.dispatch(fetchGetLeagueRole(store.getState().user.userId));
         const isSuperAdmin = store.getState().user.isSuperAdmin;
         const role = store.getState().guild.role;

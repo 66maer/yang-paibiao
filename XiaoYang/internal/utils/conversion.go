@@ -59,3 +59,9 @@ func ISO8601ToTimePtr(s string) *time.Time {
 	}
 	return &tt
 }
+
+// CurrentTimePtr 返回当前时间的指针
+func CurrentTimePtr() *time.Time {
+	t := time.Now()
+	return &t
+}

@@ -444,7 +444,7 @@ func (h *guildServiceHandler) GetGuildMember(ctx context.Context, req *XiaoYangV
 
 	members, _, err := h.guildMemberDao.GetByColumns(ctx, params)
 	if err != nil || len(members) == 0 {
-		return nil, ecode.ErrGetGuildMemberGuildService.Err("成员不存在: " + err.Error())
+		return nil, ecode.ErrGetGuildMemberGuildService.Err("成员不存在")
 	}
 
 	member := members[0]

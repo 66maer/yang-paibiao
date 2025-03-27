@@ -6,7 +6,7 @@ const guildSlice = createSlice({
   initialState: {
     guildId: 1, // 当前群组ID (目前不考虑做多群组，只有一个)
     ukey: "zyhm", // 当前群组 (目前不考虑做多群组，只有一个)
-    role: "普通成员", // 当前群组中的角色
+    role: "member", // 当前群组中的角色
     guilds: ["zyhm"], // 当前用户所在的所有群组
   },
   reducers: {
@@ -31,11 +31,10 @@ const fetchGetLeagueRole = (userId) => {
       userId: userId,
     };
     const res = await request.post(`/guild/getGuildMember`, field);
-    console.log(res);
     if (res.code !== 0) {
-      throw new Error(res.message);
+      throw new Error(res.msg);
     }
-    dispatch(setRole(res.data.role));
+    dispatch(setRole(res.data.memberInfo.groupRole));
   };
 };
 
@@ -43,9 +42,9 @@ const fetchGuildMembers = (guildId) => {
   return async (dispatch) => {
     const res = await request.post("/guild/listGuildMembers", { guildId });
     if (res.code !== 0) {
-      throw new Error(res.message);
+      throw new Error(res.msg);
     }
-    return res.data.members;
+    return res.data.memberInfo;
   };
 };
 

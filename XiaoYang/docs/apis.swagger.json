@@ -1831,6 +1831,17 @@
         "guildId": {
           "type": "integer",
           "format": "uint64"
+        },
+        "includeClose": {
+          "type": "boolean"
+        },
+        "page": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageSize": {
+          "type": "integer",
+          "format": "int32"
         }
       },
       "title": "批量查找开团请求"
