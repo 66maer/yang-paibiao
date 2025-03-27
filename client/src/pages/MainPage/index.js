@@ -220,7 +220,7 @@ const MainPage = () => {
     const fetchData = async () => {
       try {
         await store.dispatch(fetchUserInfo());
-        await store.dispatch(fetchGetLeagueRole());
+        await store.dispatch(fetchGetLeagueRole(store.getState().user.userId));
         const isSuperAdmin = store.getState().user.isSuperAdmin;
         const role = store.getState().guild.role;
         setItems(menuConfig(role, isSuperAdmin));

@@ -1,0 +1,383 @@
+syntax = "proto3";
+
+package api.XiaoYang.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "tagger/tagger.proto";
+import "validate/validate.proto";
+
+option go_package = "XiaoYang/api/XiaoYang/v1;v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  host: "localhost:8080",
+  base_path: "",
+  info: {
+    title: "xiaoyang api docs",
+    version: "2.0",
+  }
+  schemes: HTTP,
+  schemes: HTTPS,
+  consumes: "application/json",
+  produces: "application/json",
+  security_definitions: {
+    security: {
+      key: "BearerAuth"
+      value: {
+        type: TYPE_API_KEY
+        in: IN_HEADER
+        name: "Authorization"
+        description: "Input a \"Bearer your-jwt-token\" to Value"
+      }
+    }
+  }
+};
+
+service GuildService {
+  // 创建群组
+  rpc CreateGuild(CreateGuildRequest) returns (CreateGuildResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/guild/createGuild"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "创建群组"
+      description: "创建新群组"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 删除群组
+  rpc DeleteGuild(DeleteGuildRequest) returns (DeleteGuildResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/guild/deleteGuild"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除群组"
+      description: "根据ukey删除群组"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 更新群组信息
+  rpc UpdateGuildInfo(UpdateGuildInfoRequest) returns (UpdateGuildInfoResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/guild/updateGuildInfo"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "更新群组信息"
+      description: "更新群组基本信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取群组信息
+  rpc GetGuildInfo(GetGuildInfoRequest) returns (GetGuildInfoResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/guild/getGuildInfo"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取群组详情"
+      description: "根据ukey获取群组详细信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取所有群组
+  rpc ListAllGuilds(ListAllGuildsRequest) returns (ListAllGuildsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/guild/listAllGuilds"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取所有群组"
+      description: "获取平台全部群组信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取用户所在群组
+  rpc ListUserGuilds(ListUserGuildsRequest) returns (ListUserGuildsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/guild/listUserGuilds"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取用户群组"
+      description: "根据QQ号获取用户加入的所有群组"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取群组全部成员
+  rpc ListGuildMembers(ListGuildMembersRequest) returns (ListGuildMembersResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/guild/listGuildMembers"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取群组成员"
+      description: "根据ukey获取群组全部成员信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 添加群组成员
+  rpc AddGuildMember(AddGuildMemberRequest) returns (AddGuildMemberResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/guild/addGuildMember"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "添加成员"
+      description: "添加用户到群组"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 移除群组成员
+  rpc RemoveGuildMember(RemoveGuildMemberRequest) returns (RemoveGuildMemberResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/guild/removeGuildMember"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "移除成员"
+      description: "从群组中移除用户"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 更新成员信息
+  rpc UpdateGuildMember(UpdateGuildMemberRequest) returns (UpdateGuildMemberResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/guild/updateGuildMember"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "更新成员信息"
+      description: "修改成员角色或群昵称"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取成员信息
+  rpc GetGuildMember(GetGuildMemberRequest) returns (GetGuildMemberResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/guild/getGuildMember"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "查询成员信息"
+      description: "根据用户ID和群组ukey查询成员详情"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+}
+
+// 群组基本信息
+message GuildInfo {
+  uint64 guildId = 1;
+  string guildQqNumber = 2;
+  string ukey = 3;
+  string name = 4;
+  string server = 5;
+  string avatar = 6;
+  uint64 expireTime = 7;
+  string preferences = 8;
+}
+
+// 创建群组请求
+message CreateGuildRequest {
+  string guildQqNumber = 1;
+  string ukey = 2;
+  string name = 3;
+  string server = 4;
+  string avatar = 5;
+  uint64 expireTime = 6;
+  string preferences = 7;
+}
+
+// 创建群组响应
+message CreateGuildResponse {
+  GuildInfo guildInfo = 1;
+}
+
+// 删除群组请求
+message DeleteGuildRequest {
+  uint64 guildId = 1;
+}
+
+// 删除群组响应
+message DeleteGuildResponse {
+  bool success = 1;
+}
+
+// 更新群组请求
+message UpdateGuildInfoRequest {
+  uint64 guildId = 1;
+  string ukey = 2;
+  string name = 3;
+  string server = 4;
+  string avatar = 5;
+  uint64 expireTime = 6;
+  string preferences = 7;
+}
+
+// 更新群组响应
+message UpdateGuildInfoResponse {
+  GuildInfo guildInfo = 1;
+}
+
+// 获取群组信息请求
+message GetGuildInfoRequest {
+  uint64 guildId = 1;
+}
+
+// 获取群组信息响应
+message GetGuildInfoResponse {
+  GuildInfo guildInfo = 1;
+}
+
+// 获取所有群组请求
+message ListAllGuildsRequest {}
+
+// 获取所有群组响应
+message ListAllGuildsResponse {
+  repeated GuildInfo guilds = 1;
+}
+
+// 用户群组列表请求
+message ListUserGuildsRequest {
+  uint64 userId = 1;
+}
+
+// 获取用户群组响应
+message ListUserGuildsResponse {
+  repeated GuildInfo guilds = 1;
+}
+
+// 成员基本信息
+message GuildMemberInfo {
+  uint64 userId = 1;
+  string qqNumber = 2;
+  string groupRole = 3;
+  string groupNickname = 4;  // 群昵称
+  string nickname = 5;       // 用户昵称
+}
+
+// 获取群组成员请求
+message ListGuildMembersRequest {
+  uint64 guildId = 1;
+}
+
+// 获取群组成员响应
+message ListGuildMembersResponse {
+  repeated GuildMemberInfo members = 1;
+}
+
+// 添加成员请求
+message AddGuildMemberRequest {
+  uint64 guildId = 1;
+  uint64 userId = 2;
+  string role = 3;
+  string groupNickname = 4;
+}
+
+// 添加成员响应
+message AddGuildMemberResponse {
+  GuildMemberInfo memberInfo = 1;
+}
+
+// 移除成员请求
+message RemoveGuildMemberRequest {
+  uint64 guildId = 1;
+  uint64 userId = 2;
+}
+
+// 移除成员响应
+message RemoveGuildMemberResponse {
+  bool success = 1;
+}
+
+// 更新成员请求
+message UpdateGuildMemberRequest {
+  uint64 guildId = 1;
+  uint64 userId = 2;
+  string role = 3;
+  string groupNickname = 4;
+}
+
+// 更新成员响应
+message UpdateGuildMemberResponse {
+  GuildMemberInfo memberInfo = 1;
+}
+
+// 获取成员请求
+message GetGuildMemberRequest {
+  uint64 guildId = 1;
+  uint64 userId = 2;
+}
+
+// 获取成员响应
+message GetGuildMemberResponse {
+  GuildMemberInfo memberInfo = 1;
+}

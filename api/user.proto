@@ -97,7 +97,7 @@ service UserService {
   // 更新用户信息
   rpc UpdateUserInfo(UpdateUserInfoRequest) returns (UpdateUserInfoResponse) {
     option (google.api.http) = {
-      post: "/v1/user/updateUserInfo"
+      post: "/api/v1/user/updateUserInfo"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -115,7 +115,7 @@ service UserService {
   // 修改密码
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse) {
     option (google.api.http) = {
-      post: "/v1/user/changePassword"
+      post: "/api/v1/user/changePassword"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -173,6 +173,7 @@ message GetUserInfoResponse {
   string qqNumber = 2;
   string nickname = 3;
   string avatar = 4;
+  bool isAdmin = 5;
 }
 
 // 更新用户信息请求

@@ -5,6 +5,7 @@ import LoginPage from "../pages/Login";
 import { AuthRoute } from "@/components/AuthRoute";
 import { Navigate } from "react-router-dom";
 import BoardPage from "../pages/Board";
+import GuildMember from "@/pages/GuildMember";
 
 const routers = [
   {
@@ -26,6 +27,10 @@ const routers = [
       {
         path: "board",
         element: <BoardPage />,
+      },
+      {
+        path: "members",
+        element: <GuildMember />,
       },
       // 可以在这里添加更多需要登录校验的子路由
     ],

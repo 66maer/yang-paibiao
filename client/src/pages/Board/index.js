@@ -232,13 +232,13 @@ const Board = () => {
     return isSuperAdmin || role === "admin" || role === "assistant";
   })();
 
-  return (
-    <Layout className="board-layout">
-      <Content className="board-layout-content">
-        <BoardEditContent team={teamList[0]} isAdmin={isAdmin} />
-      </Content>
-    </Layout>
-  );
+  // return (
+  //   <Layout className="board-layout">
+  //     <Content className="board-layout-content">
+  //       <BoardEditContent team={teamList[0]} isAdmin={isAdmin} />
+  //     </Content>
+  //   </Layout>
+  // );
 
   return (
     <Layout className="board-layout">

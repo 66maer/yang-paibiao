@@ -15,14 +15,14 @@ const menuConfig = (role, isSuperAdmin) => {
       key: "board",
       label: "开团看板",
       icon: <InsertRowAboveOutlined />,
-      content: "Board",
+      content: "board",
     },
     {
-      key: "edit",
-      label: "看板编辑",
-      icon: <InsertRowAboveOutlined />,
-      allowedRoles: ["admin"],
-      content: "Edit",
+      key: "members",
+      label: "成员管理",
+      icon: <UserOutlined />,
+      allowedRoles: ["owner"],
+      content: "members",
     },
   ];
 
