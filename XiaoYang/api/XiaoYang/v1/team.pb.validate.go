@@ -1590,7 +1590,7 @@ func (m *ListTeamsRequest) validate(all bool) error {
 
 	// no validation rules for GuildId
 
-	// no validation rules for IncludeClose
+	// no validation rules for Filter
 
 	// no validation rules for Page
 
@@ -2340,6 +2340,10 @@ func (m *TeamInfo) validate(all bool) error {
 	// no validation rules for CloseTime
 
 	// no validation rules for CloseId
+
+	// no validation rules for CreaterNickname
+
+	// no validation rules for CloseNickname
 
 	if len(errors) > 0 {
 		return TeamInfoMultiError(errors)

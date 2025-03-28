@@ -315,7 +315,7 @@ message GetTeamResponse {
 // 批量查找开团请求
 message ListTeamsRequest {
   uint64 guildId = 1;
-  bool includeClose = 2;
+  string filter = 2;
   int32 page = 3;
   int32 pageSize = 4;
 }
@@ -364,6 +364,8 @@ message TeamInfo {
   string updateTime = 15;  // ISO8601 格式
   string closeTime = 16;   // ISO8601 格式
   uint64 closeId = 17;
+  string createrNickname = 18;
+  string closeNickname = 19;
 }
 
 // 模板信息

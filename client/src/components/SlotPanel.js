@@ -17,6 +17,7 @@ import {
   Space,
   Tabs,
   Typography,
+  Input,
 } from "antd";
 import { xinfaInfoTable } from "../utils/xinfa";
 
@@ -46,7 +47,9 @@ const EditModalRule = ({ curRule, setCurRule }) => {
           allow_xinfa_list: [],
         });
       } else {
-        const list = Object.keys(xinfaInfoTable).filter((xinfa) => xinfaInfoTable[xinfa].type.includes(text));
+        const list = Object.keys(xinfaInfoTable).filter((xinfa) =>
+          xinfaInfoTable[xinfa].type.includes(text)
+        );
         setCurRule({
           ...curRule,
           allow_xinfa_list: list,
@@ -107,7 +110,11 @@ const EditModalRule = ({ curRule, setCurRule }) => {
 const EditModalAssign = () => {
   const [form] = Form.useForm();
   const onFinish = (values) => {};
-  const [dataSource, setDataSource] = useState([{ value: "张三" }, { value: "李四" }, { value: "王五" }]);
+  const [dataSource, setDataSource] = useState([
+    { value: "张三" },
+    { value: "李四" },
+    { value: "王五" },
+  ]);
 
   const onUserNicknameFilterOption = (inputValue, option) => {
     const regex = new RegExp(inputValue.split("").join(".*"));
@@ -145,13 +152,33 @@ const EditModalAssign = () => {
         span: 4,
       }}
     >
-      <Form.Item name="user" label="指定团员" rules={[{ required: true, message: "请填写昵称" }]}>
-        <AutoComplete allowClear backfill placeholder="选择团员或填写编外人员" options={dataSource} filterOption />
+      <Form.Item
+        name="user"
+        label="指定团员"
+        rules={[{ required: true, message: "请填写昵称" }]}
+      >
+        <AutoComplete
+          allowClear
+          backfill
+          placeholder="选择团员或填写编外人员"
+          options={dataSource}
+          filterOption
+        />
       </Form.Item>
       <Form.Item name="character_name" label="游戏角色">
-        <AutoComplete allowClear backfill placeholder="" options={dataSource} filterOption />
+        <AutoComplete
+          allowClear
+          backfill
+          placeholder=""
+          options={dataSource}
+          filterOption
+        />
       </Form.Item>
-      <Form.Item name="xinfa" label="选择心法" rules={[{ required: true, message: "请选择心法" }]}>
+      <Form.Item
+        name="xinfa"
+        label="选择心法"
+        rules={[{ required: true, message: "请选择心法" }]}
+      >
         <Select
           showSearch
           allowClear
@@ -178,8 +205,31 @@ const EditModalAssign = () => {
   );
 };
 
-const EditModal = ({ slot, index, open, setOpen }) => {
+const EditModal = ({
+  slot,
+  index,
+  open,
+  setOpen,
+  onlyRule = false,
+  updateSlot,
+}) => {
+  const [curRule, setCurRule] = useState(
+    slot.rules || {
+      allow_rich: false,
+      allow_xinfa_list: [],
+    }
+  );
+
   const onEditModalCancel = () => {
+    setOpen(false);
+  };
+
+  const onSave = () => {
+    slot = {
+      ...slot,
+      rules: curRule,
+    };
+    updateSlot(index, slot);
     setOpen(false);
   };
 
@@ -187,15 +237,17 @@ const EditModal = ({ slot, index, open, setOpen }) => {
     lastModalTab = key;
   };
 
-  const [curRule, setCurRule] = useState({});
-
   const tabs = [
     {
       key: "rule",
       label: "规则",
       children: <EditModalRule curRule={curRule} setCurRule={setCurRule} />,
     },
-    { key: "assign", label: "钦定", children: <EditModalAssign /> },
+    onlyRule || {
+      key: "assign",
+      label: "钦定",
+      children: <EditModalAssign />,
+    },
   ];
 
   const chineseNumbers = ["【一】", "【二】", "【三】", "【四】", "【五】"];
@@ -205,9 +257,15 @@ const EditModal = ({ slot, index, open, setOpen }) => {
     <Modal
       centered
       open={open}
-      title={`编辑坑位： ${chineseNumbers[Math.floor(index / 5)]}队 · ${circledNumbers[index % 5]}`}
+      title={`编辑坑位： ${chineseNumbers[Math.floor(index / 5)]}队 · ${
+        circledNumbers[index % 5]
+      }`}
       onCancel={onEditModalCancel}
-      footer={null}
+      footer={
+        <Button type="primary" onClick={onSave}>
+          保存
+        </Button>
+      }
     >
       <Tabs
         defaultActiveKey={lastModalTab}
@@ -221,7 +279,7 @@ const EditModal = ({ slot, index, open, setOpen }) => {
   );
 };
 
-const EditSlotCard = ({ slot, index }) => {
+const EditSlotCard = ({ slot, index, onlyRule, updateSlot }) => {
   const [showEditMask, setShowEditMask] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -229,53 +287,89 @@ const EditSlotCard = ({ slot, index }) => {
     setShowEditModal(true);
   };
 
-  const onEditMaskMouseEnter = () => {
-    setShowEditMask(true);
-  };
-  const onEditMaskMouseLeave = () => {
-    setShowEditMask(false);
-  };
-
   return (
     <>
       <div
         className="slot-card"
         onClick={onEditMaskClick}
-        onMouseEnter={onEditMaskMouseEnter}
-        onMouseLeave={onEditMaskMouseLeave}
+        onMouseEnter={() => setShowEditMask(true)}
+        onMouseLeave={() => setShowEditMask(false)}
       >
-        <SlotCard slot={slot} index={index} />
+        <SlotCard cardInfo={slot} index={index} />
         {showEditMask && (
           <div className="mask">
             <EditOutlined className="mask-icon" />
           </div>
         )}
       </div>
-      <EditModal slot={slot} index={index} open={showEditModal} setOpen={setShowEditModal} />
+      <EditModal
+        slot={slot}
+        index={index}
+        open={showEditModal}
+        setOpen={setShowEditModal}
+        onlyRule={onlyRule}
+        updateSlot={updateSlot}
+      />
     </>
   );
 };
 
-const SlotXiaoDui = ({ slotD, indexD, mode }) => {
+const SlotXiaoDui = ({ slotD, indexD, mode, updateSlot }) => {
   return (
     <div className="slot-xiaodui">
       {slotD.map((slot, index) => {
         return mode === "edit" ? (
-          <EditSlotCard slot={slot} index={indexD * 5 + index} />
+          <EditSlotCard
+            slot={slot}
+            index={indexD * 5 + index}
+            updateSlot={updateSlot}
+          />
+        ) : mode === "edit-only-rule" ? (
+          <EditSlotCard
+            slot={slot}
+            index={indexD * 5 + index}
+            updateSlot={updateSlot}
+            onlyRule={true}
+          />
         ) : (
-          <SlotCard slot={slot} index={index} />
+          <SlotCard cardInfo={slot} index={indexD * 5 + index} />
         );
       })}
     </div>
   );
 };
 
-const SlotPanel = ({ slotsT, mode = "show" }) => {
-  slotsT = slotsT || Array(5).fill(Array(5).fill({}));
+const SlotPanel = ({ initialSlotsT, mode = "show", onSlotChange }) => {
+  console.log("SlotPanel", initialSlotsT);
+  const [slotsT, setSlotsT] = useState(
+    initialSlotsT || Array(5).fill(Array(5).fill({}))
+  );
+
+  const updateSlot = (index, updatedSlot) => {
+    console.log("updateSlot", index, updatedSlot);
+    const teamIndex = Math.floor(index / 5);
+    const slotIndex = index % 5;
+    const updatedSlotsT = [...slotsT];
+    console.log("updateSlotT", index, updatedSlotsT);
+    updatedSlotsT[teamIndex] = [...updatedSlotsT[teamIndex]];
+    updatedSlotsT[teamIndex][slotIndex] = updatedSlot;
+    setSlotsT(updatedSlotsT);
+    if (onSlotChange) {
+      onSlotChange(updatedSlotsT); // 调用回调函数，将更新后的数据传递给父组件
+    }
+  };
+
   return (
     <div className="slot-panel" style={{ display: "flex" }}>
       {slotsT.map((slotD, indexD) => {
-        return <SlotXiaoDui slotD={slotD} indexD={indexD} mode={mode} />;
+        return (
+          <SlotXiaoDui
+            slotD={slotD}
+            indexD={indexD}
+            mode={mode}
+            updateSlot={updateSlot}
+          />
+        );
       })}
     </div>
   );

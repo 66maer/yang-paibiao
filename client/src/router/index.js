@@ -7,6 +7,8 @@ import { Navigate } from "react-router-dom";
 import BoardPage from "../pages/Board";
 import GuildMember from "@/pages/GuildMember";
 import Character from "@/pages/Character";
+import BoardEditContent from "../pages/Board/edit"; // 导入编辑页面组件
+import TeamTemplate from "@/pages/TeamTemplete";
 
 const routers = [
   {
@@ -30,12 +32,20 @@ const routers = [
         element: <BoardPage />,
       },
       {
+        path: "board/edit/:teamId?", // 修复编辑页面路由
+        element: <BoardEditContent />,
+      },
+      {
         path: "members",
         element: <GuildMember />,
       },
       {
         path: "characters",
         element: <Character />,
+      },
+      {
+        path: "team-template",
+        element: <TeamTemplate />,
       },
       // 可以在这里添加更多需要登录校验的子路由
     ],

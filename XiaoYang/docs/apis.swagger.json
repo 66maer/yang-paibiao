@@ -1832,8 +1832,8 @@
           "type": "integer",
           "format": "uint64"
         },
-        "includeClose": {
-          "type": "boolean"
+        "filter": {
+          "type": "string"
         },
         "page": {
           "type": "integer",
@@ -2098,6 +2098,12 @@
         "closeId": {
           "type": "integer",
           "format": "uint64"
+        },
+        "createrNickname": {
+          "type": "string"
+        },
+        "closeNickname": {
+          "type": "string"
         }
       },
       "title": "开团信息"

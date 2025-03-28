@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Avatar,
   Button,
@@ -16,6 +16,8 @@ import {
   Tooltip,
   Timeline,
   Collapse,
+  Layout,
+  message,
 } from "antd";
 import {
   EditOutlined,
@@ -33,8 +35,11 @@ import dayjs from "dayjs";
 import SlotPanel from "@/components/SlotPanel";
 import { dungeonsTable } from "@/utils/dungeons";
 import SlotAllocate from "../../components/SlotAllocate";
+import { useParams } from "react-router-dom";
+import { request } from "@/utils/request";
 
 const { Title, Paragraph } = Typography;
+const { Content } = Layout;
 
 const timelineItems = [
   { color: "green", children: "张三1" },
@@ -76,24 +81,15 @@ const timelineItems = [
   { color: "green", children: "张三1" },
   { color: "red", children: "李四2" },
   { color: "#66ccff", children: "王五王五王五王五王五王五" },
-  { color: "green", children: "张三1" },
-  { color: "red", children: "李四2" },
-  { color: "#66ccff", children: "王五王五王五王五王五王五" },
-  { color: "green", children: "张三1" },
-  { color: "red", children: "李四2" },
-  { color: "#66ccff", children: "王五王五王五王五王五王五" },
-  { color: "green", children: "张三1" },
-  { color: "red", children: "李四2" },
-  { color: "#66ccff", children: "王五王五王五王五王五王五" },
-  { color: "green", children: "张三1" },
-  { color: "red", children: "李四2" },
-  { color: "#66ccff", children: "王五王五王五王五王五王五" },
-  { color: "green", children: "张三1" },
-  { color: "red", children: "李四2" },
-  { color: "#66ccff", children: "王五王五王五王五王五王五" },
 ];
 
-const FormSwitchButton = ({ form, fieldName, trueIcon, falseIcon, tooltip }) => {
+const FormSwitchButton = ({
+  form,
+  fieldName,
+  trueIcon,
+  falseIcon,
+  tooltip,
+}) => {
   const [, forceUpdate] = useState();
   return (
     <Tooltip title={tooltip}>
@@ -108,7 +104,9 @@ const FormSwitchButton = ({ form, fieldName, trueIcon, falseIcon, tooltip }) => 
           forceUpdate({}); // 强制更新组件
         }}
         style={{
-          backgroundColor: form.getFieldValue(fieldName) ? "#f5222d" : "#52c41a",
+          backgroundColor: form.getFieldValue(fieldName)
+            ? "#f5222d"
+            : "#52c41a",
         }}
       />
     </Tooltip>
@@ -116,13 +114,30 @@ const FormSwitchButton = ({ form, fieldName, trueIcon, falseIcon, tooltip }) => 
 };
 
 const BoardEditContent = ({ team = {} }) => {
-  const { id, title, teamTime, dungeons, rule, notice } = team;
-  const { bookXuanjing, bookYuntie, isLock, isVisiable, crateTime, updateTime } = team;
+  console.log("BoardEditContent", team);
+  const { teamId, title, teamTime, dungeons, rule, notice } = team;
+  const { isLock, isVisiable, crateTime, updateTime } = team;
   const [expanded, setExpanded] = useState(false);
   const [autoTitle, setAutoTitle] = useState(true);
+  const [bookXuanjing, setBookXuanjing] = useState(team.bookXuanjing || false);
+  const [bookYuntie, setBookYuntie] = useState(team.bookYuntie || false);
   const [form] = Form.useForm();
 
-  const pageTitle = id ? "编辑团队" : "发布开团";
+  useEffect(() => {
+    if (team.teamId) {
+      form.setFieldsValue({
+        title: team.title,
+        date: dayjs(team.teamTime),
+        time: dayjs(team.teamTime),
+        dungeons: team.dungeons,
+        isLock: team.isLock || false,
+        isVisiable: team.isVisiable || false,
+        notice: team.notice,
+      });
+    }
+  }, [team, form]); // 监听 team 的变化
+
+  const pageTitle = teamId ? "编辑团队" : "发布开团";
 
   const generateTitle = () => {
     const date = form.getFieldValue("date")?.format("MM月DD日");
@@ -187,8 +202,8 @@ const BoardEditContent = ({ team = {} }) => {
           initialValues={{
             isLock: isLock || false,
             isVisiable: isVisiable || false,
-            date: id ? dayjs(team.teamTime) : dayjs(),
-            time: id ? dayjs(team.teamTime) : dayjs("19:30", "HH:mm"),
+            date: teamId ? dayjs(team.teamTime) : dayjs(),
+            time: teamId ? dayjs(team.teamTime) : dayjs("19:30", "HH:mm"),
             dungeons: dungeons || undefined,
             title: title,
           }}
@@ -248,8 +263,16 @@ const BoardEditContent = ({ team = {} }) => {
                 </Form.Item>
               </Space>
             </Form.Item>
-            <Form.Item name="dungeons" label="副本" rules={[{ required: true }]}>
-              <Select options={dungeonsTable} style={{ width: 150 }} placeholder="请选择副本" />
+            <Form.Item
+              name="dungeons"
+              label="副本"
+              rules={[{ required: true }]}
+            >
+              <Select
+                options={dungeonsTable}
+                style={{ width: 150 }}
+                placeholder="请选择副本"
+              />
             </Form.Item>
             <Form.Item label="生成标题">
               <Switch
@@ -266,6 +289,35 @@ const BoardEditContent = ({ team = {} }) => {
             </Form.Item>
           </Space>
 
+          <Space size={20} align="baseline">
+            <Form.Item name="bookXuanjing" label="大铁标记">
+              <Switch
+                checkedChildren="大包"
+                unCheckedChildren="大拍"
+                checked={bookXuanjing}
+                onChange={(checked) => setBookXuanjing(checked)}
+              />
+            </Form.Item>
+            <Form.Item name="bookYuntie" label="小铁标记">
+              <Switch
+                checkedChildren="小包"
+                unCheckedChildren="小拍"
+                checked={bookYuntie}
+                onChange={(checked) => setBookYuntie(checked)}
+              />
+            </Form.Item>
+          </Space>
+
+          <Form.Item label="使用模板">
+            <Space>
+              <Select style={{ width: 200 }}></Select>
+              <Button type="primary" icon={<DownloadOutlined />}>
+                应用模板
+              </Button>
+              <Button icon={<SaveOutlined />}>保存为模板</Button>
+            </Space>
+          </Form.Item>
+
           <Form.Item name="notice" label="团队告示" style={{ width: 800 }}>
             <Input.TextArea
               showCount
@@ -276,15 +328,6 @@ const BoardEditContent = ({ team = {} }) => {
             />
           </Form.Item>
           <Divider />
-          <Form.Item label="使用模板">
-            <Space>
-              <Select style={{ width: 200 }}></Select>
-              <Button type="primary" icon={<DownloadOutlined />}>
-                应用模板
-              </Button>
-              <Button icon={<SaveOutlined />}>保存为模板</Button>
-            </Space>
-          </Form.Item>
         </Form>
 
         <SlotPanel mode="edit" />
@@ -333,4 +376,38 @@ const BoardEditContent = ({ team = {} }) => {
   );
 };
 
-export default BoardEditContent;
+const BoardEditPage = () => {
+  const { teamId } = useParams(); // 获取路由参数
+  const [team, setTeam] = useState(null);
+
+  useEffect(() => {
+    const fetchTeam = async () => {
+      if (teamId) {
+        try {
+          const res = await request.post("/team/getTeam", {
+            teamId: Number(teamId),
+          });
+          if (res.code === 0) {
+            setTeam(res.data.teamInfo);
+          } else {
+            message.error(res.msg);
+          }
+        } catch (error) {
+          message.error("获取团队信息失败", error.msg);
+        }
+      }
+    };
+
+    fetchTeam();
+  }, [teamId]);
+
+  return (
+    <Layout className="board-layout">
+      <Content className="board-layout-content">
+        <BoardEditContent team={team || {}} /> {/* 传入 team 数据 */}
+      </Content>
+    </Layout>
+  );
+};
+
+export default BoardEditPage;

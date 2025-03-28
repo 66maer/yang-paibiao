@@ -34,7 +34,7 @@ const fetchTeamList = async () => {
   try {
     const res = await request.post("/team/listTeams", {
       guildId: store.getState().guild.guildId,
-      includeClose: false,
+      filter: "open",
       page: 0,
       pageSize: 100,
     });
@@ -49,9 +49,17 @@ const fetchTeamList = async () => {
 };
 
 const BoardContent = ({ team = {}, isAdmin }) => {
-  const { id, title, teamTime, dungeons, rule, notice } = team;
-  const { bookXuanjing, bookYuntie, isLock, crateTime, updateTime } = team;
+  const { teamId, title, teamTime, dungeons, rule, notice } = team;
+  const {
+    bookXuanjing,
+    bookYuntie,
+    isLock,
+    createTime,
+    updateTime,
+    createrNickname,
+  } = team;
   const [expanded, setExpanded] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="board-content">
@@ -72,7 +80,13 @@ const BoardContent = ({ team = {}, isAdmin }) => {
           </Space>
         </div>
         <Space>
-          {isAdmin && <Button shape="circle" icon={<EditOutlined />} />}
+          {isAdmin && (
+            <Button
+              shape="circle"
+              icon={<EditOutlined />}
+              onClick={() => navigate(`/board/edit/${teamId}`)} // 修复导航路径
+            />
+          )}
           {isAdmin && <Button shape="circle" icon={<CloseCircleOutlined />} />}
           <Button type="primary">报名</Button>
         </Space>
@@ -111,6 +125,17 @@ const BoardContent = ({ team = {}, isAdmin }) => {
               {notice}
             </Paragraph>
           </blockquote>
+          <div
+            style={{
+              textAlign: "right",
+              fontSize: "12px",
+              color: "#888",
+            }}
+          >
+            由 {createrNickname || "未知"} 创建于{" "}
+            {new Date(createTime).toLocaleString()}， 最后更新时间{" "}
+            {new Date(updateTime).toLocaleString()}
+          </div>
         </pre>
       </Paragraph>
       <SlotPanel />
@@ -161,6 +186,7 @@ const BoardLayoutSider = ({ isAdmin, teamList, teamId }) => {
           type="primary"
           variant="link"
           icon={<AntDesignOutlined />}
+          onClick={() => navigate("/board/edit")} // 修复导航路径
         >
           开 团
         </Button>

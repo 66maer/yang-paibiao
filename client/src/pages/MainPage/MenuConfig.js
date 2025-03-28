@@ -7,6 +7,7 @@ import {
   ProductOutlined,
   SnippetsOutlined,
   CloudSyncOutlined,
+  CoffeeOutlined,
 } from "@ant-design/icons";
 
 const menuConfig = (role, isSuperAdmin) => {
@@ -27,8 +28,15 @@ const menuConfig = (role, isSuperAdmin) => {
     {
       key: "characters",
       label: "我的角色",
-      icon: <AppstoreAddOutlined />,
+      icon: <CoffeeOutlined />,
       content: "characters",
+    },
+    {
+      key: "team-template",
+      label: "开团模板",
+      icon: <ProductOutlined />,
+      allowedRoles: ["owner", "helper"],
+      content: "team-template",
     },
   ];
 

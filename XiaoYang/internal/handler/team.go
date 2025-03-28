@@ -4,6 +4,7 @@ package handler
 
 import (
 	"context"
+	"time"
 
 	//"github.com/go-dev-frame/sponge/pkg/gin/middleware"
 
@@ -22,6 +23,7 @@ import (
 var _ XiaoYangV1.TeamServiceLogicer = (*teamServiceHandler)(nil)
 
 type teamServiceHandler struct {
+	userDao         dao.UsersDao
 	teamServiceDao  dao.TeamsDao
 	teamTemplateDao dao.TeamTemplatesDao
 }
@@ -29,6 +31,10 @@ type teamServiceHandler struct {
 // NewTeamServiceHandler create a handler
 func NewTeamServiceHandler() XiaoYangV1.TeamServiceLogicer {
 	return &teamServiceHandler{
+		userDao: dao.NewUsersDao(
+			database.GetDB(),
+			cache.NewUsersCache(database.GetCacheType()),
+		),
 		teamServiceDao: dao.NewTeamsDao(
 			database.GetDB(),
 			cache.NewTeamsCache(database.GetCacheType()),
@@ -223,25 +229,32 @@ func (h *teamServiceHandler) GetTeam(ctx context.Context, req *XiaoYangV1.GetTea
 		return nil, ecode.ErrGetTeamTeamService.Err("获取团队信息失败: " + err.Error())
 	}
 
+	createrNickname, closeNickname, err := h.getNicknames(ctx, data.CreaterID, data.CloseID, data.CloseTime)
+	if err != nil {
+		return nil, ecode.ErrGetTeamTeamService.Err("获取用户信息失败: " + err.Error())
+	}
+
 	return &XiaoYangV1.GetTeamResponse{
 		TeamInfo: &XiaoYangV1.TeamInfo{
-			TeamId:       data.ID,
-			GuildId:      uint64(data.GuildID),
-			CreaterId:    uint64(data.CreaterID),
-			Title:        data.Title,
-			Dungeons:     data.Dungeons,
-			BookXuanjing: data.BookXuanjing,
-			BookYuntie:   data.BookYuntie,
-			IsVisible:    data.IsVisible,
-			IsLock:       data.IsLock,
-			Rule:         utils.JSONPtrToString(data.Rule),
-			Notice:       data.Notice,
-			Summary:      utils.JSONPtrToString(data.Summary),
-			TeamTime:     utils.TimePtrToISO8601(data.TeamTime),
-			CreateTime:   utils.TimePtrToISO8601(data.CreateTime),
-			UpdateTime:   utils.TimePtrToISO8601(data.UpdateTime),
-			CloseTime:    utils.TimePtrToISO8601(data.CloseTime),
-			CloseId:      uint64(data.CloseID),
+			TeamId:          data.ID,
+			GuildId:         uint64(data.GuildID),
+			CreaterId:       uint64(data.CreaterID),
+			CreaterNickname: createrNickname,
+			Title:           data.Title,
+			Dungeons:        data.Dungeons,
+			BookXuanjing:    data.BookXuanjing,
+			BookYuntie:      data.BookYuntie,
+			IsVisible:       data.IsVisible,
+			IsLock:          data.IsLock,
+			Rule:            utils.JSONPtrToString(data.Rule),
+			Notice:          data.Notice,
+			Summary:         utils.JSONPtrToString(data.Summary),
+			TeamTime:        utils.TimePtrToISO8601(data.TeamTime),
+			CreateTime:      utils.TimePtrToISO8601(data.CreateTime),
+			UpdateTime:      utils.TimePtrToISO8601(data.UpdateTime),
+			CloseTime:       utils.TimePtrToISO8601(data.CloseTime),
+			CloseId:         uint64(data.CloseID),
+			CloseNickname:   closeNickname,
 		},
 	}, nil
 }
@@ -265,10 +278,15 @@ func (h *teamServiceHandler) ListTeams(ctx context.Context, req *XiaoYangV1.List
 		Limit: int(req.PageSize),
 	}
 
-	if !req.IncludeClose {
+	if req.Filter == "only_open" {
 		params.Columns = append(params.Columns, query.Column{
 			Name: "close_time",
-			Exp:  query.IsNull, // 使用 IsNull 表达式
+			Exp:  query.IsNull,
+		})
+	} else if req.Filter == "only_close" {
+		params.Columns = append(params.Columns, query.Column{
+			Name: "close_time",
+			Exp:  query.IsNotNull,
 		})
 	}
 
@@ -280,24 +298,31 @@ func (h *teamServiceHandler) ListTeams(ctx context.Context, req *XiaoYangV1.List
 
 	teams := make([]*XiaoYangV1.TeamInfo, len(data))
 	for i, team := range data {
+		createrNickname, closeNickname, err := h.getNicknames(ctx, team.CreaterID, team.CloseID, team.CloseTime)
+		if err != nil {
+			return nil, ecode.ErrListTeamsTeamService.Err("获取用户信息失败: " + err.Error())
+		}
+
 		teams[i] = &XiaoYangV1.TeamInfo{
-			TeamId:       team.ID,
-			GuildId:      uint64(team.GuildID),
-			CreaterId:    uint64(team.CreaterID),
-			Title:        team.Title,
-			Dungeons:     team.Dungeons,
-			BookXuanjing: team.BookXuanjing,
-			BookYuntie:   team.BookYuntie,
-			IsVisible:    team.IsVisible,
-			IsLock:       team.IsLock,
-			Rule:         utils.JSONPtrToString(team.Rule),
-			Notice:       team.Notice,
-			Summary:      utils.JSONPtrToString(team.Summary),
-			TeamTime:     utils.TimePtrToISO8601(team.TeamTime),
-			CreateTime:   utils.TimePtrToISO8601(team.CreateTime),
-			UpdateTime:   utils.TimePtrToISO8601(team.UpdateTime),
-			CloseTime:    utils.TimePtrToISO8601(team.CloseTime),
-			CloseId:      uint64(team.CloseID),
+			TeamId:          team.ID,
+			GuildId:         uint64(team.GuildID),
+			CreaterId:       uint64(team.CreaterID),
+			CreaterNickname: createrNickname,
+			Title:           team.Title,
+			Dungeons:        team.Dungeons,
+			BookXuanjing:    team.BookXuanjing,
+			BookYuntie:      team.BookYuntie,
+			IsVisible:       team.IsVisible,
+			IsLock:          team.IsLock,
+			Rule:            utils.JSONPtrToString(team.Rule),
+			Notice:          team.Notice,
+			Summary:         utils.JSONPtrToString(team.Summary),
+			TeamTime:        utils.TimePtrToISO8601(team.TeamTime),
+			CreateTime:      utils.TimePtrToISO8601(team.CreateTime),
+			UpdateTime:      utils.TimePtrToISO8601(team.UpdateTime),
+			CloseTime:       utils.TimePtrToISO8601(team.CloseTime),
+			CloseId:         uint64(team.CloseID),
+			CloseNickname:   closeNickname,
 		}
 	}
 
@@ -368,4 +393,31 @@ func (h *teamServiceHandler) ListTemplates(ctx context.Context, req *XiaoYangV1.
 	}
 
 	return &XiaoYangV1.ListTemplatesResponse{Templates: templates}, nil
+}
+
+func (h *teamServiceHandler) getNicknames(ctx context.Context, createrID, closeID int, closeTime *time.Time) (string, string, error) {
+	createrUserInfo, err := h.userDao.GetByID(ctx, uint64(createrID))
+	if err != nil {
+		logger.Warn("GetUserByID error", logger.Err(err))
+		return "", "", err
+	}
+
+	createrNickname := ""
+	if createrUserInfo != nil {
+		createrNickname = createrUserInfo.Nickname
+	}
+
+	closeNickname := ""
+	if closeTime != nil {
+		closeUserInfo, err := h.userDao.GetByID(ctx, uint64(closeID))
+		if err != nil {
+			logger.Warn("GetUserByID error", logger.Err(err))
+			return "", "", err
+		}
+		if closeUserInfo != nil {
+			closeNickname = closeUserInfo.Nickname
+		}
+	}
+
+	return createrNickname, closeNickname, nil
 }
