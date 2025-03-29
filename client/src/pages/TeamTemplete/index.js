@@ -9,7 +9,7 @@ const TeamTemplate = () => {
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
-  const [slotData, setSlotData] = useState(Array(5).fill(Array(5).fill({})));
+  const [rules, setRules] = useState(Array(25).fill({}));
 
   const fetchTemplateList = async () => {
     try {
@@ -28,8 +28,8 @@ const TeamTemplate = () => {
     fetchTemplateList();
   }, []);
 
-  const handleSlotDataChange = (updatedSlots) => {
-    setSlotData(updatedSlots);
+  const handleRulesChange = (updatedRules) => {
+    setRules(updatedRules);
   };
 
   const handleSave = async (values) => {
@@ -39,7 +39,7 @@ const TeamTemplate = () => {
         : "/template/createTemplate";
       var payload = {
         ...values,
-        rule: JSON.stringify(slotData),
+        rule: JSON.stringify(rules),
       };
 
       if (editingTemplate) {
@@ -64,7 +64,7 @@ const TeamTemplate = () => {
       setIsModalVisible(false);
       setEditingTemplate(null);
       form.resetFields();
-      setSlotData(Array(5).fill(Array(5).fill({}))); // 重置 slotData
+      setRules(Array(25).fill({})); // 重置 rules
 
       await fetchTemplateList(); // 调用抽取的函数获取模板列表
     } catch (err) {
@@ -95,11 +95,10 @@ const TeamTemplate = () => {
 
     console.log("handleEdit", template);
     try {
-      const parsedSlots = JSON.parse(template.rule);
-      setSlotData(parsedSlots);
+      const parsedRules = JSON.parse(template.rule);
+      setRules(parsedRules);
     } catch (err) {
       console.error("Failed to parse rule:", err);
-      //setSlotData([]);
     }
 
     setIsModalVisible(true);
@@ -165,8 +164,8 @@ const TeamTemplate = () => {
             <div className="board-content">
               <SlotPanel
                 mode="edit-only-rule"
-                slots={slotData}
-                onSlotChange={handleSlotDataChange}
+                rules={rules}
+                onRulesChange={handleRulesChange}
               />
             </div>
           </Form.Item>

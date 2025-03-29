@@ -113,7 +113,6 @@ const FormSwitchButton = ({
 };
 
 const BoardEditContent = ({ team = {} }) => {
-  console.log("BoardEditContent", team);
   const { teamId, title, teamTime, dungeons, rule, notice } = team;
   const { isLock, isVisiable, crateTime, updateTime } = team;
   const [expanded, setExpanded] = useState(false);
@@ -123,8 +122,9 @@ const BoardEditContent = ({ team = {} }) => {
   const [form] = Form.useForm();
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [slotData, setSlotData] = useState(
-    team.rule?.slots || Array(5).fill(Array(5).fill({}))
+  const [rules, setRules] = useState(team.rule?.slots || Array(25).fill({}));
+  const [signupInfos, setSignupInfos] = useState(
+    team.signupInfos || Array(25).fill({})
   );
 
   useEffect(() => {
@@ -161,17 +161,16 @@ const BoardEditContent = ({ team = {} }) => {
     if (template) {
       Modal.confirm({
         title: "应用模板",
-        content: "应用模板将覆盖当前内容，是否继续？",
+        content: "应用模板将覆盖当前团队面板与团队告示，是否继续？",
         onOk: () => {
           try {
             const parsedRule = JSON.parse(template.rule);
-            setBookXuanjing(parsedRule.bookXuanjing || false);
-            setBookYuntie(parsedRule.bookYuntie || false);
-            setSlotData(parsedRule.slots || Array(5).fill(Array(5).fill({})));
-            form.setFieldsValue({
-              title: template.title,
-              notice: template.notice,
-            });
+            setRules(parsedRule);
+            if (template.notice) {
+              form.setFieldsValue({
+                notice: template.notice,
+              });
+            }
             message.success("模板应用成功");
           } catch (error) {
             message.error("模板解析失败");
@@ -184,23 +183,44 @@ const BoardEditContent = ({ team = {} }) => {
   const saveAsTemplate = async () => {
     try {
       const values = await form.validateFields();
-      const payload = {
-        title: values.title,
-        notice: values.notice,
-        rule: JSON.stringify({
-          bookXuanjing,
-          bookYuntie,
-          slots: slotData,
-        }),
-        guildId: store.getState().guild.guildId,
-        createrId: store.getState().user.userId,
-      };
-      const res = await request.post("/template/createTemplate", payload);
-      if (res.code === 0) {
-        message.success("模板保存成功");
-      } else {
-        message.error(res.msg);
-      }
+      Modal.confirm({
+        title: "保存模板",
+        content: (
+          <>
+            <p>会保存当前团队面板与团队告示信息。</p>
+            <Form
+              form={form}
+              initialValues={{ templateTitle: "" }}
+              layout="vertical"
+            >
+              <Form.Item
+                name="templateTitle"
+                label="模板标题"
+                rules={[{ required: true, message: "请输入模板标题" }]}
+              >
+                <Input placeholder="请输入模板标题" />
+              </Form.Item>
+            </Form>
+          </>
+        ),
+        onOk: async () => {
+          const templateTitle = form.getFieldValue("templateTitle");
+          const payload = {
+            title: templateTitle,
+            notice: values.notice,
+            rule: JSON.stringify(rules),
+            guildId: store.getState().guild.guildId,
+            createrId: store.getState().user.userId,
+          };
+          const res = await request.post("/template/createTemplate", payload);
+          if (res.code === 0) {
+            message.success("模板保存成功");
+            await fetchTemplates(); // 刷新模板列表
+          } else {
+            message.error(res.msg);
+          }
+        },
+      });
     } catch (error) {
       message.error("保存模板失败");
     }
@@ -237,8 +257,9 @@ const BoardEditContent = ({ team = {} }) => {
     console.log(values);
   };
 
-  const handleSlotDataChange = (updatedSlots) => {
-    setSlotData(updatedSlots);
+  const handleRulesChange = (updatedRules) => {
+    console.log("Updated rules:", updatedRules);
+    setRules(updatedRules);
   };
 
   return (
@@ -394,8 +415,9 @@ const BoardEditContent = ({ team = {} }) => {
 
         <SlotPanel
           mode="edit"
-          slots={slotData}
-          onSlotChange={handleSlotDataChange}
+          rules={rules}
+          signup_infos={signupInfos}
+          onRulesChange={handleRulesChange}
         />
       </div>
       <div

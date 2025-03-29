@@ -1,4 +1,4 @@
-import { EditOutlined } from "@ant-design/icons";
+import { SlidersOutlined, UserAddOutlined } from "@ant-design/icons";
 import { dpsXinfaList, naiXinfaList } from "../utils/xinfa";
 import SlotCard from "./SlotCard";
 import "./SlotPanel.scss";
@@ -25,7 +25,24 @@ import { request } from "@/utils/request"; // 引入请求工具
 import store from "@/store"; // 引入 Redux store
 
 const { Text, Paragraph } = Typography;
-var lastModalTab = "rule";
+
+const EditModalBase = ({ title, open, setOpen, children, onSave }) => {
+  return (
+    <Modal
+      centered
+      open={open}
+      title={title}
+      onCancel={() => setOpen(false)}
+      footer={
+        <Button type="primary" onClick={onSave}>
+          保存
+        </Button>
+      }
+    >
+      {children}
+    </Modal>
+  );
+};
 
 const EditModalRule = ({ curRule, setCurRule }) => {
   const { allow_rich = false, allow_xinfa_list = [] } = curRule;
@@ -68,6 +85,9 @@ const EditModalRule = ({ curRule, setCurRule }) => {
 
   return (
     <Flex vertical>
+      <Divider orientation="left" plain>
+        （若想只允许老板，勾选后需要清空心法选择）
+      </Divider>
       <Checkbox
         checked={allow_rich}
         onChange={(e) => {
@@ -110,7 +130,7 @@ const EditModalRule = ({ curRule, setCurRule }) => {
   );
 };
 
-const EditModalAssign = ({ onSaveAssign }) => {
+const EditModalAssign = ({ onSaveAssign, open, setOpen, title }) => {
   const [form] = Form.useForm();
   const [members, setMembers] = useState([]);
   const [characters, setCharacters] = useState([]);
@@ -187,167 +207,150 @@ const EditModalAssign = ({ onSaveAssign }) => {
   }));
 
   return (
-    <Form
-      form={form}
-      onFinish={(values) => onSaveAssign(values)}
-      labelCol={{
-        span: 4,
-      }}
+    <EditModalBase
+      title={title}
+      open={open}
+      setOpen={setOpen}
+      onSave={() => form.submit()}
     >
-      <Form.Item
-        name="user"
-        label="指定团员"
-        rules={[{ required: true, message: "请选择团员" }]}
+      <Form
+        form={form}
+        onFinish={(values) => {
+          onSaveAssign(values);
+          setOpen(false);
+        }}
+        labelCol={{
+          span: 4,
+        }}
       >
-        <AutoComplete
-          allowClear
-          placeholder="选择团员"
-          options={memberOptions}
-          onSelect={onMemberSelect}
-          onChange={onMemberChange}
-        />
-      </Form.Item>
-      <Form.Item name="character_name" label="游戏角色">
-        <AutoComplete
-          allowClear
-          placeholder="选择角色"
-          options={xinfaOptions}
-          onSelect={onCharacterSelect}
-        />
-      </Form.Item>
-      <Form.Item
-        name="xinfa"
-        label="心法"
-        rules={[{ required: true, message: "请选择心法" }]}
-      >
-        <Select
-          showSearch
-          allowClear
-          placeholder="心法"
-          options={Object.keys(xinfaInfoTable).map((xinfa) => ({
-            label: (
-              <Space>
-                <Avatar src={`/xinfa/${xinfaInfoTable[xinfa].icon}`} />
-                <Text>{xinfaInfoTable[xinfa].name}</Text>
-              </Space>
-            ),
-            value: xinfa,
-          }))}
-        />
-      </Form.Item>
-    </Form>
+        <Form.Item
+          name="user"
+          label="指定团员"
+          rules={[{ required: true, message: "请选择团员" }]}
+        >
+          <AutoComplete
+            allowClear
+            placeholder="选择团员"
+            options={memberOptions}
+            onSelect={onMemberSelect}
+            onChange={onMemberChange}
+          />
+        </Form.Item>
+        <Form.Item name="character_name" label="游戏角色">
+          <AutoComplete
+            allowClear
+            placeholder="选择角色"
+            options={xinfaOptions}
+            onSelect={onCharacterSelect}
+          />
+        </Form.Item>
+        <Form.Item
+          name="xinfa"
+          label="心法"
+          rules={[{ required: true, message: "请选择心法" }]}
+        >
+          <Select
+            showSearch
+            allowClear
+            placeholder="心法"
+            options={Object.keys(xinfaInfoTable).map((xinfa) => ({
+              label: (
+                <Space>
+                  <Avatar src={`/xinfa/${xinfaInfoTable[xinfa].icon}`} />
+                  <Text>{xinfaInfoTable[xinfa].name}</Text>
+                </Space>
+              ),
+              value: xinfa,
+            }))}
+          />
+        </Form.Item>
+      </Form>
+    </EditModalBase>
   );
 };
 
-const EditModal = ({
+const EditSlotCard = ({
   rule,
   signupInfo,
   index,
-  open,
-  setOpen,
-  onlyRule = false,
   updateRule,
+  onlyRule = false,
 }) => {
-  const [curRule, setCurRule] = useState(
-    rule || { allow_rich: false, allow_xinfa_list: [] }
-  );
-  const [assignData, setAssignData] = useState(
-    signupInfo || { user: null, character_name: null, xinfa: null }
-  );
+  const [showEditMask, setShowEditMask] = useState(false);
+  const [showRuleModal, setShowRuleModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
 
-  const onEditModalCancel = () => {
-    setOpen(false);
+  const onRuleClick = () => {
+    setShowRuleModal(true);
   };
 
-  const onSave = () => {
-    updateRule(index, curRule); // 仅更新规则
-    setOpen(false);
+  const onAssignClick = () => {
+    setShowAssignModal(true);
   };
-
-  const onTabChange = (key) => {
-    lastModalTab = key;
-  };
-
-  const tabs = [
-    {
-      key: "rule",
-      label: "规则",
-      children: <EditModalRule curRule={curRule} setCurRule={setCurRule} />,
-    },
-    onlyRule || {
-      key: "assign",
-      label: "钦定",
-      children: (
-        <EditModalAssign
-          onSaveAssign={(data) => {
-            setAssignData(data);
-          }}
-        />
-      ),
-    },
-  ];
 
   const chineseNumbers = ["【一】", "【二】", "【三】", "【四】", "【五】"];
   const circledNumbers = ["①", "②", "③", "④", "⑤"];
 
-  return (
-    <Modal
-      centered
-      open={open}
-      title={`编辑坑位： ${chineseNumbers[Math.floor(index / 5)]}队 · ${
-        circledNumbers[index % 5]
-      }`}
-      onCancel={onEditModalCancel}
-      footer={
-        <Button type="primary" onClick={onSave}>
-          保存
-        </Button>
-      }
-    >
-      <Tabs
-        defaultActiveKey={lastModalTab}
-        items={tabs}
-        size="large"
-        centered
-        tabBarGutter={100}
-        onChange={onTabChange}
-      />
-    </Modal>
+  const ruleTitle = `编辑规则： ${chineseNumbers[Math.floor(index / 5)]}队 · ${
+    circledNumbers[index % 5]
+  }`;
+  const assignTitle = `编辑报名信息： ${
+    chineseNumbers[Math.floor(index / 5)]
+  }队 · ${circledNumbers[index % 5]}`;
+
+  const [curRule, setCurRule] = useState(
+    rule || { allow_rich: false, allow_xinfa_list: [] }
   );
-};
 
-const EditSlotCard = ({ rule, signupInfo, index, onlyRule, updateRule }) => {
-  const [showEditMask, setShowEditMask] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-
-  const onEditMaskClick = () => {
-    setShowEditModal(true);
+  const onSaveRule = () => {
+    updateRule(index, curRule);
+    setShowRuleModal(false);
   };
 
   return (
     <>
       <div
         className="slot-card"
-        onClick={onEditMaskClick}
         onMouseEnter={() => setShowEditMask(true)}
         onMouseLeave={() => setShowEditMask(false)}
       >
-        <SlotCard cardInfo={{ rule, signupInfo }} index={index} />
+        <SlotCard cardInfo={{ rules: rule, signupInfo }} index={index} />
         {showEditMask && (
           <div className="mask">
-            <EditOutlined className="mask-icon" />
+            <div
+              className={`mask-button mask-rule ${onlyRule ? "full-mask" : ""}`}
+              onClick={onRuleClick}
+            >
+              <SlidersOutlined className="mask-icon" />
+              <span className="mask-text">报名规则</span>
+            </div>
+            {!onlyRule && (
+              <div className="mask-button mask-assign" onClick={onAssignClick}>
+                <UserAddOutlined className="mask-icon" />
+                <span className="mask-text">团长钦定</span>
+              </div>
+            )}
           </div>
         )}
       </div>
-      <EditModal
-        rule={rule}
-        signupInfo={signupInfo}
-        index={index}
-        open={showEditModal}
-        setOpen={setShowEditModal}
-        onlyRule={onlyRule}
-        updateRule={updateRule}
-      />
+      <EditModalBase
+        title={ruleTitle}
+        open={showRuleModal}
+        setOpen={setShowRuleModal}
+        onSave={onSaveRule}
+      >
+        <EditModalRule curRule={curRule} setCurRule={setCurRule} />
+      </EditModalBase>
+      {!onlyRule && (
+        <EditModalAssign
+          open={showAssignModal}
+          setOpen={setShowAssignModal}
+          onSaveAssign={(data) => {
+            // Handle saving assign data here if needed
+          }}
+          title={assignTitle}
+        />
+      )}
     </>
   );
 };
@@ -355,6 +358,7 @@ const EditSlotCard = ({ rule, signupInfo, index, onlyRule, updateRule }) => {
 const SlotXiaoDui = ({ rules, signupInfos, indexD, mode, updateRule }) => {
   const cardFactory = (mode, globalIndex, rule, signupInfo) => {
     const baseProps = {
+      key: globalIndex,
       rule,
       signupInfo,
       index: globalIndex,
@@ -366,7 +370,13 @@ const SlotXiaoDui = ({ rules, signupInfos, indexD, mode, updateRule }) => {
       case "edit-only-rule":
         return <EditSlotCard {...baseProps} onlyRule={true} />;
       default:
-        return <SlotCard cardInfo={{ rule, signupInfo }} index={globalIndex} />;
+        return (
+          <SlotCard
+            key={globalIndex}
+            cardInfo={{ rule, signupInfo }}
+            index={globalIndex}
+          />
+        );
     }
   };
 
