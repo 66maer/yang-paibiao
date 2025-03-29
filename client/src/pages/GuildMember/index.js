@@ -30,7 +30,7 @@ const GuildMember = () => {
           guildId: store.getState().guild.guildId,
         });
         if (res.code !== 0) {
-          throw new Error(res.message);
+          throw new Error(res.msg);
         }
         setMembers(res.data.members);
         setOriginalMembers(res.data.members); // 保存原始数据
@@ -50,7 +50,7 @@ const GuildMember = () => {
         role: record.groupRole,
       });
       if (res.code !== 0) {
-        throw new Error(res.message);
+        throw new Error(res.msg);
       }
       message.success("更新成功");
       setEditing((prev) => ({ ...prev, [record.userId]: false }));
@@ -134,11 +134,17 @@ const GuildMember = () => {
               )
             }
             style={{ width: "100%" }} // 确保下拉框宽度一致
+            disabled={record.groupRole === "owner"} // 禁用群主的下拉框
           >
-            <Option value="owner">群主</Option>
-            <Option value="helper">管理员</Option>
-            <Option value="member">群员</Option>
-            <Option value="blacklist">黑名单</Option>
+            {record.groupRole === "owner" ? (
+              <Option value="owner">群主</Option>
+            ) : (
+              <>
+                <Option value="helper">管理员</Option>
+                <Option value="member">群员</Option>
+                <Option value="blacklist">黑名单</Option>
+              </>
+            )}
           </Select>
         ) : (
           <Tag color={getTagColor(text)}>{getRoleLabel(text)}</Tag>

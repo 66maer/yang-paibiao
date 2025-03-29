@@ -31,7 +31,7 @@ const Character = () => {
           userId: store.getState().user.userId,
         });
         if (res.code !== 0) {
-          throw new Error(res.message);
+          throw new Error(res.msg);
         }
         setCharacters(res.data.characters);
         setOriginalCharacters(res.data.characters);
@@ -52,7 +52,7 @@ const Character = () => {
         remark: record.remark,
       });
       if (res.code !== 0) {
-        throw new Error(res.message);
+        throw new Error(res.msg);
       }
       message.success("更新成功");
       setEditing((prev) => ({ ...prev, [record.characterId]: false }));
@@ -67,7 +67,7 @@ const Character = () => {
         characterId,
       });
       if (res.code !== 0) {
-        throw new Error(res.message);
+        throw new Error(res.msg);
       }
       message.success("删除成功");
       setCharacters((prev) =>
@@ -98,7 +98,7 @@ const Character = () => {
         ...values,
       });
       if (res.code !== 0) {
-        throw new Error(res.message);
+        throw new Error(res.msg);
       }
       message.success("添加成功");
 

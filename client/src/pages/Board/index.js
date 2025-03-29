@@ -39,7 +39,7 @@ const fetchTeamList = async () => {
       pageSize: 100,
     });
     if (res.code !== 0) {
-      throw new Error(res.message);
+      throw new Error(res.msg);
     }
     return res.data.teams;
   } catch (error) {

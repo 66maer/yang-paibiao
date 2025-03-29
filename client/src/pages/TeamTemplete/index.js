@@ -2,33 +2,34 @@ import React, { useState, useEffect } from "react";
 import { Table, Button, Modal, Form, Input, Space, message } from "antd";
 import { request } from "@/utils/request";
 import SlotPanel from "@/components/SlotPanel";
+import store from "@/store";
 
 const TeamTemplate = () => {
   const [templates, setTemplates] = useState([]);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
-  const [slotData, setSlotData] = useState(null); // 新增状态，用于存储 SlotPanel 数据
+  const [slotData, setSlotData] = useState(Array(5).fill(Array(5).fill({})));
+
+  const fetchTemplateList = async () => {
+    try {
+      const guildId = store.getState().guild.guildId; // 从 store 获取 guildId
+      const res = await request.post("/template/listTemplates", { guildId });
+      if (res.code !== 0) {
+        throw new Error(res.msg);
+      }
+      setTemplates(res.data.templates);
+    } catch (err) {
+      message.error(err.message);
+    }
+  };
 
   useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const res = await request.post("/template/listTemplates", {
-          guildId: 1, // Replace with actual guildId
-        });
-        if (res.code !== 0) {
-          throw new Error(res.message);
-        }
-        setTemplates(res.data.templates);
-      } catch (err) {
-        message.error(err.message);
-      }
-    };
-    fetchTemplates();
+    fetchTemplateList();
   }, []);
 
   const handleSlotDataChange = (updatedSlots) => {
-    setSlotData(updatedSlots); // 更新 slotData
+    setSlotData(updatedSlots);
   };
 
   const handleSave = async (values) => {
@@ -36,30 +37,36 @@ const TeamTemplate = () => {
       const api = editingTemplate
         ? "/template/updateTemplate"
         : "/template/createTemplate";
-      const payload = {
+      var payload = {
         ...values,
-        slots: slotData, // 将 SlotPanel 数据加入 payload
-        ...(editingTemplate && { templateId: editingTemplate.templateId }),
+        rule: JSON.stringify(slotData),
       };
+
+      if (editingTemplate) {
+        payload = {
+          ...payload,
+          templateId: editingTemplate.templateId,
+        };
+      } else {
+        payload = {
+          ...payload,
+          guildId: store.getState().guild.guildId,
+          createrId: store.getState().user.userId,
+        };
+      }
 
       const res = await request.post(api, payload);
       if (res.code !== 0) {
-        throw new Error(res.message);
+        throw new Error(res.msg);
       }
 
       message.success(editingTemplate ? "更新成功" : "新增成功");
       setIsModalVisible(false);
       setEditingTemplate(null);
       form.resetFields();
-      setTemplates((prev) =>
-        editingTemplate
-          ? prev.map((tpl) =>
-              tpl.templateId === editingTemplate.templateId
-                ? { ...tpl, ...values }
-                : tpl
-            )
-          : [...prev, res.data.templateInfo]
-      );
+      setSlotData(Array(5).fill(Array(5).fill({}))); // 重置 slotData
+
+      await fetchTemplateList(); // 调用抽取的函数获取模板列表
     } catch (err) {
       message.error(err.message);
     }
@@ -71,7 +78,7 @@ const TeamTemplate = () => {
         templateId,
       });
       if (res.code !== 0) {
-        throw new Error(res.message);
+        throw new Error(res.msg);
       }
       message.success("删除成功");
       setTemplates((prev) =>
@@ -84,20 +91,17 @@ const TeamTemplate = () => {
 
   const handleEdit = (template) => {
     setEditingTemplate(template);
-    form.setFieldsValue({
-      ...template, // 确保包括 notice 字段
-    });
+    form.setFieldsValue({ ...template });
 
-    // 简单解析 rule 字段
-    let parsedSlots = null;
+    console.log("handleEdit", template);
     try {
-      parsedSlots = JSON.parse(template.rule); // 直接解析为 JSON
+      const parsedSlots = JSON.parse(template.rule);
+      setSlotData(parsedSlots);
     } catch (err) {
       console.error("Failed to parse rule:", err);
-      parsedSlots = null; // 如果解析失败，使用空数组
+      //setSlotData([]);
     }
 
-    setSlotData(parsedSlots); // 设置初始 slots 数据
     setIsModalVisible(true);
   };
 
@@ -161,7 +165,7 @@ const TeamTemplate = () => {
             <div className="board-content">
               <SlotPanel
                 mode="edit-only-rule"
-                initialSlotsT={slotData} // 传递初始数据
+                slots={slotData}
                 onSlotChange={handleSlotDataChange}
               />
             </div>

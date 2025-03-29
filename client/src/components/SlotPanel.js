@@ -2,7 +2,7 @@ import { EditOutlined } from "@ant-design/icons";
 import { dpsXinfaList, naiXinfaList } from "../utils/xinfa";
 import SlotCard from "./SlotCard";
 import "./SlotPanel.scss";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AutoComplete,
   Avatar,
@@ -18,8 +18,11 @@ import {
   Tabs,
   Typography,
   Input,
+  message,
 } from "antd";
 import { xinfaInfoTable } from "../utils/xinfa";
+import { request } from "@/utils/request"; // 引入请求工具
+import store from "@/store"; // 引入 Redux store
 
 const { Text, Paragraph } = Typography;
 var lastModalTab = "rule";
@@ -107,47 +110,86 @@ const EditModalRule = ({ curRule, setCurRule }) => {
   );
 };
 
-const EditModalAssign = () => {
+const EditModalAssign = ({ onSaveAssign }) => {
   const [form] = Form.useForm();
-  const onFinish = (values) => {};
-  const [dataSource, setDataSource] = useState([
-    { value: "张三" },
-    { value: "李四" },
-    { value: "王五" },
-  ]);
+  const [members, setMembers] = useState([]);
+  const [characters, setCharacters] = useState([]);
+  const [selectedCharacter, setSelectedCharacter] = useState(null);
 
-  const onUserNicknameFilterOption = (inputValue, option) => {
-    const regex = new RegExp(inputValue.split("").join(".*"));
-    const list = dataSource.map((item) => item.value);
-    return list.some((item) => regex.test(item));
-  };
-
-  const onXinfaFilterOption = (inputValue, option) => {
-    const regex = new RegExp(inputValue.split("").join(".*"));
-    const list = xinfaInfoTable[option.value].nickname;
-    return list.some((item) => regex.test(item));
-  };
-
-  const onUserClear = () => {
-    form.resetFields();
-  };
-
-  const xinfaOptions = Object.keys(xinfaInfoTable).map((xinfa) => {
-    return {
-      label: (
-        <Space key={xinfa}>
-          <Avatar src={`/xinfa/${xinfaInfoTable[xinfa].icon}`} />
-          <Text>{xinfaInfoTable[xinfa].name}</Text>
-        </Space>
-      ),
-      value: xinfa,
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const res = await request.post("/guild/listGuildMembers", {
+          guildId: store.getState().guild.guildId,
+        });
+        if (res.code !== 0) {
+          throw new Error(res.msg);
+        }
+        setMembers(res.data.members);
+      } catch (err) {
+        message.error(err.message);
+      }
     };
-  });
+    fetchMembers();
+  }, []);
+
+  const fetchCharacters = async (userId) => {
+    try {
+      const res = await request.post("/character/listUserCharacters", {
+        userId,
+      });
+      if (res.code !== 0) {
+        throw new Error(res.msg);
+      }
+      setCharacters(res.data.characters);
+    } catch (err) {
+      message.error(err.message);
+    }
+  };
+
+  const onMemberSelect = (value, option) => {
+    const userId = option.key;
+    fetchCharacters(userId);
+    form.setFieldsValue({ character_name: null, xinfa: null });
+  };
+
+  const onMemberChange = (value) => {
+    const selectedMember = members.find(
+      (member) => member.groupNickname === value
+    );
+    if (!selectedMember) {
+      setCharacters([]);
+      form.setFieldsValue({ character_name: null, xinfa: null });
+    }
+  };
+
+  const onCharacterSelect = (value, option) => {
+    const selected = characters.find((char) => char.characterId === option.key);
+    setSelectedCharacter(selected);
+    form.setFieldsValue({ xinfa: selected?.xinfa });
+  };
+
+  const xinfaOptions = characters.map((char) => ({
+    label: (
+      <Space key={char.characterId}>
+        <Avatar src={`/xinfa/${xinfaInfoTable[char.xinfa].icon}`} />
+        <Text>{char.name}</Text>
+      </Space>
+    ),
+    value: char.name,
+    key: char.characterId,
+  }));
+
+  const memberOptions = members.map((member) => ({
+    label: member.groupNickname,
+    value: member.groupNickname,
+    key: member.userId,
+  }));
 
   return (
     <Form
       form={form}
-      onFinish={onFinish}
+      onFinish={(values) => onSaveAssign(values)}
       labelCol={{
         span: 4,
       }}
@@ -155,69 +197,62 @@ const EditModalAssign = () => {
       <Form.Item
         name="user"
         label="指定团员"
-        rules={[{ required: true, message: "请填写昵称" }]}
+        rules={[{ required: true, message: "请选择团员" }]}
       >
         <AutoComplete
           allowClear
-          backfill
-          placeholder="选择团员或填写编外人员"
-          options={dataSource}
-          filterOption
+          placeholder="选择团员"
+          options={memberOptions}
+          onSelect={onMemberSelect}
+          onChange={onMemberChange}
         />
       </Form.Item>
       <Form.Item name="character_name" label="游戏角色">
         <AutoComplete
           allowClear
-          backfill
-          placeholder=""
-          options={dataSource}
-          filterOption
+          placeholder="选择角色"
+          options={xinfaOptions}
+          onSelect={onCharacterSelect}
         />
       </Form.Item>
       <Form.Item
         name="xinfa"
-        label="选择心法"
+        label="心法"
         rules={[{ required: true, message: "请选择心法" }]}
       >
         <Select
           showSearch
           allowClear
-          placeholder="搜索心法"
-          options={xinfaOptions}
-          style={{ width: 300 }}
-          filterOption={onXinfaFilterOption}
+          placeholder="心法"
+          options={Object.keys(xinfaInfoTable).map((xinfa) => ({
+            label: (
+              <Space>
+                <Avatar src={`/xinfa/${xinfaInfoTable[xinfa].icon}`} />
+                <Text>{xinfaInfoTable[xinfa].name}</Text>
+              </Space>
+            ),
+            value: xinfa,
+          }))}
         />
-      </Form.Item>
-
-      <Form.Item>
-        <Flex justify="center">
-          <Space>
-            <Button type="primary" htmlType="submit">
-              锁定
-            </Button>
-            <Button onClick={onUserClear} danger>
-              重置
-            </Button>
-          </Space>
-        </Flex>
       </Form.Item>
     </Form>
   );
 };
 
 const EditModal = ({
-  slot,
+  rule,
+  signupInfo,
   index,
   open,
   setOpen,
   onlyRule = false,
-  updateSlot,
+  updateRule,
 }) => {
   const [curRule, setCurRule] = useState(
-    slot.rules || {
-      allow_rich: false,
-      allow_xinfa_list: [],
-    }
+    rule || { allow_rich: false, allow_xinfa_list: [] }
+  );
+  const [assignData, setAssignData] = useState(
+    signupInfo || { user: null, character_name: null, xinfa: null }
   );
 
   const onEditModalCancel = () => {
@@ -225,11 +260,7 @@ const EditModal = ({
   };
 
   const onSave = () => {
-    slot = {
-      ...slot,
-      rules: curRule,
-    };
-    updateSlot(index, slot);
+    updateRule(index, curRule); // 仅更新规则
     setOpen(false);
   };
 
@@ -246,7 +277,13 @@ const EditModal = ({
     onlyRule || {
       key: "assign",
       label: "钦定",
-      children: <EditModalAssign />,
+      children: (
+        <EditModalAssign
+          onSaveAssign={(data) => {
+            setAssignData(data);
+          }}
+        />
+      ),
     },
   ];
 
@@ -279,7 +316,7 @@ const EditModal = ({
   );
 };
 
-const EditSlotCard = ({ slot, index, onlyRule, updateSlot }) => {
+const EditSlotCard = ({ rule, signupInfo, index, onlyRule, updateRule }) => {
   const [showEditMask, setShowEditMask] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -295,7 +332,7 @@ const EditSlotCard = ({ slot, index, onlyRule, updateSlot }) => {
         onMouseEnter={() => setShowEditMask(true)}
         onMouseLeave={() => setShowEditMask(false)}
       >
-        <SlotCard cardInfo={slot} index={index} />
+        <SlotCard cardInfo={{ rule, signupInfo }} index={index} />
         {showEditMask && (
           <div className="mask">
             <EditOutlined className="mask-icon" />
@@ -303,74 +340,72 @@ const EditSlotCard = ({ slot, index, onlyRule, updateSlot }) => {
         )}
       </div>
       <EditModal
-        slot={slot}
+        rule={rule}
+        signupInfo={signupInfo}
         index={index}
         open={showEditModal}
         setOpen={setShowEditModal}
         onlyRule={onlyRule}
-        updateSlot={updateSlot}
+        updateRule={updateRule}
       />
     </>
   );
 };
 
-const SlotXiaoDui = ({ slotD, indexD, mode, updateSlot }) => {
+const SlotXiaoDui = ({ rules, signupInfos, indexD, mode, updateRule }) => {
+  const cardFactory = (mode, globalIndex, rule, signupInfo) => {
+    const baseProps = {
+      rule,
+      signupInfo,
+      index: globalIndex,
+      updateRule,
+    };
+    switch (mode) {
+      case "edit":
+        return <EditSlotCard {...baseProps} />;
+      case "edit-only-rule":
+        return <EditSlotCard {...baseProps} onlyRule={true} />;
+      default:
+        return <SlotCard cardInfo={{ rule, signupInfo }} index={globalIndex} />;
+    }
+  };
+
   return (
     <div className="slot-xiaodui">
-      {slotD.map((slot, index) => {
-        return mode === "edit" ? (
-          <EditSlotCard
-            slot={slot}
-            index={indexD * 5 + index}
-            updateSlot={updateSlot}
-          />
-        ) : mode === "edit-only-rule" ? (
-          <EditSlotCard
-            slot={slot}
-            index={indexD * 5 + index}
-            updateSlot={updateSlot}
-            onlyRule={true}
-          />
-        ) : (
-          <SlotCard cardInfo={slot} index={indexD * 5 + index} />
-        );
+      {rules.slice(indexD * 5, indexD * 5 + 5).map((rule, index) => {
+        const globalIndex = indexD * 5 + index;
+        return cardFactory(mode, globalIndex, rule, signupInfos[globalIndex]);
       })}
     </div>
   );
 };
 
-const SlotPanel = ({ initialSlotsT, mode = "show", onSlotChange }) => {
-  console.log("SlotPanel", initialSlotsT);
-  const [slotsT, setSlotsT] = useState(
-    initialSlotsT || Array(5).fill(Array(5).fill({}))
-  );
+const SlotPanel = ({
+  rules = Array(25).fill({}),
+  signup_infos = Array(25).fill({}),
+  mode = "show",
+  onRulesChange,
+}) => {
+  const updateRule = (index, updatedRule) => {
+    const updatedRules = [...rules];
+    updatedRules[index] = updatedRule;
 
-  const updateSlot = (index, updatedSlot) => {
-    console.log("updateSlot", index, updatedSlot);
-    const teamIndex = Math.floor(index / 5);
-    const slotIndex = index % 5;
-    const updatedSlotsT = [...slotsT];
-    console.log("updateSlotT", index, updatedSlotsT);
-    updatedSlotsT[teamIndex] = [...updatedSlotsT[teamIndex]];
-    updatedSlotsT[teamIndex][slotIndex] = updatedSlot;
-    setSlotsT(updatedSlotsT);
-    if (onSlotChange) {
-      onSlotChange(updatedSlotsT); // 调用回调函数，将更新后的数据传递给父组件
+    if (onRulesChange) {
+      onRulesChange(updatedRules);
     }
   };
 
   return (
     <div className="slot-panel" style={{ display: "flex" }}>
-      {slotsT.map((slotD, indexD) => {
-        return (
-          <SlotXiaoDui
-            slotD={slotD}
-            indexD={indexD}
-            mode={mode}
-            updateSlot={updateSlot}
-          />
-        );
-      })}
+      {Array.from({ length: 5 }, (_, indexD) => (
+        <SlotXiaoDui
+          rules={rules}
+          signupInfos={signup_infos}
+          indexD={indexD}
+          mode={mode}
+          updateRule={updateRule}
+        />
+      ))}
     </div>
   );
 };

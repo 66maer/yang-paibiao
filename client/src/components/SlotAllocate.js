@@ -40,7 +40,9 @@ const DFS = (resSlots, rules, slots, signupList, candidateList) => {
       if (last == -1) {
         return false;
       }
-      if (DFS(resSlots, rules, newSlots, signupList.slice(idx + 1), candidateList)) {
+      if (
+        DFS(resSlots, rules, newSlots, signupList.slice(idx + 1), candidateList)
+      ) {
         return true;
       }
     }
@@ -51,7 +53,14 @@ const DFS = (resSlots, rules, slots, signupList, candidateList) => {
 const SlotAllocate = (teamRules, signupList) => {
   const slotMemberList = Array(teamRules.length).fill(null);
   const candidateList = [];
-  for (const [idx, signupInfo] of signupList.entries()) {
+
+  // 对 signupList 进行排序，将 isLock 的元素提到前面
+  const sortedSignupList = [
+    ...signupList.filter((signupInfo) => signupInfo.isLock),
+    ...signupList.filter((signupInfo) => !signupInfo.isLock),
+  ];
+
+  for (const [idx, signupInfo] of sortedSignupList.entries()) {
     if (signupInfo.cancelTime != null) {
       continue; // 已经取消报名的不处理
     }
@@ -73,7 +82,13 @@ const SlotAllocate = (teamRules, signupList) => {
     const newSlotMemberList = Array(teamRules.length).fill(null);
     const tmpSlotMemberList = newSlotMemberList.slice();
 
-    const res = DFS(newSlotMemberList, teamRules, tmpSlotMemberList, signupList.slice(0, idx + 1), candidateList);
+    const res = DFS(
+      newSlotMemberList,
+      teamRules,
+      tmpSlotMemberList,
+      signupList.slice(0, idx + 1),
+      candidateList
+    );
     if (res) {
       slotMemberList.splice(0, slotMemberList.length, ...newSlotMemberList);
     } else {

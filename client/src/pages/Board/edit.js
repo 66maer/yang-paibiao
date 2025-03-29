@@ -18,6 +18,7 @@ import {
   Collapse,
   Layout,
   message,
+  Modal,
 } from "antd";
 import {
   EditOutlined,
@@ -37,14 +38,12 @@ import { dungeonsTable } from "@/utils/dungeons";
 import SlotAllocate from "../../components/SlotAllocate";
 import { useParams } from "react-router-dom";
 import { request } from "@/utils/request";
+import store from "@/store";
 
 const { Title, Paragraph } = Typography;
 const { Content } = Layout;
 
 const timelineItems = [
-  { color: "green", children: "张三1" },
-  { color: "red", children: "李四2" },
-  { color: "#66ccff", children: "王五王五王五王五王五王五" },
   { color: "green", children: "张三1" },
   { color: "red", children: "李四2" },
   { color: "#66ccff", children: "王五王五王五王五王五王五" },
@@ -122,6 +121,11 @@ const BoardEditContent = ({ team = {} }) => {
   const [bookXuanjing, setBookXuanjing] = useState(team.bookXuanjing || false);
   const [bookYuntie, setBookYuntie] = useState(team.bookYuntie || false);
   const [form] = Form.useForm();
+  const [templates, setTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [slotData, setSlotData] = useState(
+    team.rule?.slots || Array(5).fill(Array(5).fill({}))
+  );
 
   useEffect(() => {
     if (team.teamId) {
@@ -136,6 +140,75 @@ const BoardEditContent = ({ team = {} }) => {
       });
     }
   }, [team, form]); // 监听 team 的变化
+
+  const fetchTemplates = async () => {
+    try {
+      const res = await request.post("/template/listTemplates", {
+        guildId: store.getState().guild.guildId,
+      });
+      if (res.code === 0) {
+        setTemplates(res.data.templates);
+      } else {
+        message.error(res.msg);
+      }
+    } catch (error) {
+      message.error("获取模板列表失败");
+    }
+  };
+
+  const applyTemplate = (templateId) => {
+    const template = templates.find((tpl) => tpl.templateId === templateId);
+    if (template) {
+      Modal.confirm({
+        title: "应用模板",
+        content: "应用模板将覆盖当前内容，是否继续？",
+        onOk: () => {
+          try {
+            const parsedRule = JSON.parse(template.rule);
+            setBookXuanjing(parsedRule.bookXuanjing || false);
+            setBookYuntie(parsedRule.bookYuntie || false);
+            setSlotData(parsedRule.slots || Array(5).fill(Array(5).fill({})));
+            form.setFieldsValue({
+              title: template.title,
+              notice: template.notice,
+            });
+            message.success("模板应用成功");
+          } catch (error) {
+            message.error("模板解析失败");
+          }
+        },
+      });
+    }
+  };
+
+  const saveAsTemplate = async () => {
+    try {
+      const values = await form.validateFields();
+      const payload = {
+        title: values.title,
+        notice: values.notice,
+        rule: JSON.stringify({
+          bookXuanjing,
+          bookYuntie,
+          slots: slotData,
+        }),
+        guildId: store.getState().guild.guildId,
+        createrId: store.getState().user.userId,
+      };
+      const res = await request.post("/template/createTemplate", payload);
+      if (res.code === 0) {
+        message.success("模板保存成功");
+      } else {
+        message.error(res.msg);
+      }
+    } catch (error) {
+      message.error("保存模板失败");
+    }
+  };
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
 
   const pageTitle = teamId ? "编辑团队" : "发布开团";
 
@@ -164,33 +237,9 @@ const BoardEditContent = ({ team = {} }) => {
     console.log(values);
   };
 
-  console.log(team);
-
-  const rules = [
-    { allowXinfaList: ["a", "b"], allowRich: false },
-    { allowXinfaList: ["a", "c"], allowRich: false },
-  ];
-
-  const signup = [
-    {
-      id: 1,
-      xinfa: "a",
-      isRich: false,
-    },
-    {
-      id: 2,
-      xinfa: "b",
-      isRich: false,
-    },
-    {
-      id: 3,
-      xinfa: "a",
-      isRich: false,
-    },
-  ];
-
-  console.log("======");
-  SlotAllocate(rules, signup);
+  const handleSlotDataChange = (updatedSlots) => {
+    setSlotData(updatedSlots);
+  };
 
   return (
     <Flex style={{ height: "100%" }}>
@@ -310,11 +359,24 @@ const BoardEditContent = ({ team = {} }) => {
 
           <Form.Item label="使用模板">
             <Space>
-              <Select style={{ width: 200 }}></Select>
-              <Button type="primary" icon={<DownloadOutlined />}>
+              <Select
+                style={{ width: 200 }}
+                options={templates.map((tpl) => ({
+                  label: tpl.title,
+                  value: tpl.templateId,
+                }))}
+                onChange={(value) => setSelectedTemplate(value)}
+              />
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                onClick={() => applyTemplate(selectedTemplate)}
+              >
                 应用模板
               </Button>
-              <Button icon={<SaveOutlined />}>保存为模板</Button>
+              <Button icon={<SaveOutlined />} onClick={saveAsTemplate}>
+                保存为模板
+              </Button>
             </Space>
           </Form.Item>
 
@@ -330,7 +392,11 @@ const BoardEditContent = ({ team = {} }) => {
           <Divider />
         </Form>
 
-        <SlotPanel mode="edit" />
+        <SlotPanel
+          mode="edit"
+          slots={slotData}
+          onSlotChange={handleSlotDataChange}
+        />
       </div>
       <div
         style={{
