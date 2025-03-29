@@ -19,6 +19,7 @@ import {
   Layout,
   message,
   Modal,
+  Spin,
 } from "antd";
 import {
   EditOutlined,
@@ -36,7 +37,7 @@ import dayjs from "dayjs";
 import SlotPanel from "@/components/SlotPanel";
 import { dungeonsTable } from "@/utils/dungeons";
 import SlotAllocate from "../../components/SlotAllocate";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { request } from "@/utils/request";
 import store from "@/store";
 
@@ -44,9 +45,6 @@ const { Title, Paragraph } = Typography;
 const { Content } = Layout;
 
 const timelineItems = [
-  { color: "green", children: "张三1" },
-  { color: "red", children: "李四2" },
-  { color: "#66ccff", children: "王五王五王五王五王五王五" },
   { color: "green", children: "张三1" },
   { color: "red", children: "李四2" },
   { color: "#66ccff", children: "王五王五王五王五王五王五" },
@@ -112,20 +110,18 @@ const FormSwitchButton = ({
   );
 };
 
-const BoardEditContent = ({ team = {} }) => {
-  const { teamId, title, teamTime, dungeons, rule, notice } = team;
-  const { isLock, isVisiable, crateTime, updateTime } = team;
-  const [expanded, setExpanded] = useState(false);
-  const [autoTitle, setAutoTitle] = useState(true);
-  const [bookXuanjing, setBookXuanjing] = useState(team.bookXuanjing || false);
-  const [bookYuntie, setBookYuntie] = useState(team.bookYuntie || false);
+const BoardEditContent = ({ team = {}, onBack }) => {
+  const { teamId, title, dungeons } = team;
+  const { isLock, isVisiable } = team;
+  const [autoTitle, setAutoTitle] = useState(!teamId); // 根据 teamId 判断默认值
   const [form] = Form.useForm();
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [rules, setRules] = useState(team.rule?.slots || Array(25).fill({}));
+  const [rules, setRules] = useState(team.rule || Array(25).fill({}));
   const [signupInfos, setSignupInfos] = useState(
     team.signupInfos || Array(25).fill({})
   );
+  const [loading, setLoading] = useState(true); // 添加加载状态
 
   useEffect(() => {
     if (team.teamId) {
@@ -136,9 +132,13 @@ const BoardEditContent = ({ team = {} }) => {
         dungeons: team.dungeons,
         isLock: team.isLock || false,
         isVisiable: team.isVisiable || false,
+        bookXuanjing: team.bookXuanjing || false,
+        bookYuntie: team.bookYuntie || false,
         notice: team.notice,
       });
+      setAutoTitle(false); // 编辑模式下关闭自动生成标题
     }
+    setLoading(false); // 数据加载完成后设置为 false
   }, [team, form]); // 监听 team 的变化
 
   const fetchTemplates = async () => {
@@ -264,162 +264,167 @@ const BoardEditContent = ({ team = {} }) => {
 
   return (
     <Flex style={{ height: "100%" }}>
-      <div className="board-content">
-        <Form
-          form={form}
-          labelAlign="right"
-          onFinish={onFinish}
-          initialValues={{
-            isLock: isLock || false,
-            isVisiable: isVisiable || false,
-            date: teamId ? dayjs(team.teamTime) : dayjs(),
-            time: teamId ? dayjs(team.teamTime) : dayjs("19:30", "HH:mm"),
-            dungeons: dungeons || undefined,
-            title: title,
-          }}
-          onValuesChange={onValuesChange}
-        >
-          <Flex justify="space-between" align="center">
-            <Title level={3} className="board-content-title">
-              {pageTitle}
-            </Title>
-            <Space>
-              <Button>返回</Button>
-              <Button type="primary" htmlType="submit">
-                保存
-              </Button>
-            </Space>
-          </Flex>
-          <Divider style={{ marginTop: 5 }} />
+      {loading ? ( // 如果正在加载，显示 Spin
+        <Spin style={{ margin: "auto" }} size="large" />
+      ) : (
+        <div className="board-content">
+          <Form
+            form={form}
+            labelAlign="right"
+            onFinish={onFinish}
+            initialValues={{
+              isLock: isLock || false,
+              isVisiable: isVisiable || false,
+              date: teamId ? dayjs(team.teamTime) : dayjs(),
+              time: teamId ? dayjs(team.teamTime) : dayjs("19:30", "HH:mm"),
+              dungeons: dungeons || undefined,
+              title: title,
+            }}
+            onValuesChange={onValuesChange}
+          >
+            {/* 确保加载完成后再渲染开关 */}
+            <>
+              <Flex justify="space-between" align="center">
+                <Title level={3} className="board-content-title">
+                  {pageTitle}
+                </Title>
+                <Space>
+                  <Button onClick={onBack}>返回</Button>
+                  <Button type="primary" htmlType="submit">
+                    保存
+                  </Button>
+                </Space>
+              </Flex>
+              <Divider style={{ marginTop: 5 }} />
 
-          <Space size={20} align="baseline">
-            <Form.Item name="title" label="开团标题">
-              <Input
-                showCount
-                maxLength={30}
-                disabled={autoTitle}
-                style={{
-                  width: 800,
-                }}
-              />
-            </Form.Item>
-            <Form.Item name="isLock">
-              <FormSwitchButton
-                form={form}
-                fieldName="isLock"
-                trueIcon={<LockOutlined />}
-                falseIcon={<UnlockOutlined />}
-                tooltip="锁定团队，不允许自由报名"
-              />
-            </Form.Item>
-            <Form.Item name="isVisiable">
-              <FormSwitchButton
-                form={form}
-                fieldName="isVisiable"
-                trueIcon={<EyeInvisibleOutlined />}
-                falseIcon={<EyeOutlined />}
-                tooltip="隐藏团队，仅管理员可见"
-              />
-            </Form.Item>
-          </Space>
-          <Space size={60} align="baseline">
-            <Form.Item label="发车时间">
-              <Space>
-                <Form.Item name="date" noStyle rules={[{ required: true }]}>
-                  <DatePicker />
+              <Space size={20} align="baseline">
+                <Form.Item name="title" label="开团标题">
+                  <Input
+                    showCount
+                    maxLength={30}
+                    disabled={autoTitle}
+                    style={{
+                      width: 800,
+                    }}
+                  />
                 </Form.Item>
-                <Form.Item name="time" noStyle rules={[{ required: true }]}>
-                  <TimePicker format="HH:mm" minuteStep={5} />
+                <Form.Item name="isLock">
+                  <FormSwitchButton
+                    form={form}
+                    fieldName="isLock"
+                    trueIcon={<LockOutlined />}
+                    falseIcon={<UnlockOutlined />}
+                    tooltip="锁定团队，不允许自由报名"
+                  />
+                </Form.Item>
+                <Form.Item name="isVisiable">
+                  <FormSwitchButton
+                    form={form}
+                    fieldName="isVisiable"
+                    trueIcon={<EyeInvisibleOutlined />}
+                    falseIcon={<EyeOutlined />}
+                    tooltip="隐藏团队，仅管理员可见"
+                  />
                 </Form.Item>
               </Space>
-            </Form.Item>
-            <Form.Item
-              name="dungeons"
-              label="副本"
-              rules={[{ required: true }]}
-            >
-              <Select
-                options={dungeonsTable}
-                style={{ width: 150 }}
-                placeholder="请选择副本"
-              />
-            </Form.Item>
-            <Form.Item label="生成标题">
-              <Switch
-                checkedChildren="自动"
-                unCheckedChildren="手动"
-                checked={autoTitle}
-                onChange={(checked) => {
-                  setAutoTitle(checked);
-                  if (checked) {
-                    form.setFieldsValue({ title: generateTitle() });
-                  }
-                }}
-              />
-            </Form.Item>
-          </Space>
+              <Space size={60} align="baseline">
+                <Form.Item label="发车时间">
+                  <Space>
+                    <Form.Item name="date" noStyle rules={[{ required: true }]}>
+                      <DatePicker />
+                    </Form.Item>
+                    <Form.Item name="time" noStyle rules={[{ required: true }]}>
+                      <TimePicker format="HH:mm" minuteStep={5} />
+                    </Form.Item>
+                  </Space>
+                </Form.Item>
+                <Form.Item
+                  name="dungeons"
+                  label="副本"
+                  rules={[{ required: true }]}
+                >
+                  <Select
+                    options={dungeonsTable}
+                    style={{ width: 150 }}
+                    placeholder="请选择副本"
+                  />
+                </Form.Item>
+                <Form.Item label="生成标题">
+                  <Switch
+                    checkedChildren="自动"
+                    unCheckedChildren="手动"
+                    checked={autoTitle}
+                    onChange={(checked) => {
+                      setAutoTitle(checked);
+                      if (checked) {
+                        form.setFieldsValue({ title: generateTitle() });
+                      }
+                    }}
+                  />
+                </Form.Item>
+              </Space>
 
-          <Space size={20} align="baseline">
-            <Form.Item name="bookXuanjing" label="大铁标记">
-              <Switch
-                checkedChildren="大包"
-                unCheckedChildren="大拍"
-                checked={bookXuanjing}
-                onChange={(checked) => setBookXuanjing(checked)}
-              />
-            </Form.Item>
-            <Form.Item name="bookYuntie" label="小铁标记">
-              <Switch
-                checkedChildren="小包"
-                unCheckedChildren="小拍"
-                checked={bookYuntie}
-                onChange={(checked) => setBookYuntie(checked)}
-              />
-            </Form.Item>
-          </Space>
+              <Space size={20} align="baseline">
+                <Form.Item
+                  name="bookXuanjing"
+                  label="大铁标记"
+                  valuePropName="checked"
+                >
+                  <Switch checkedChildren="大包" unCheckedChildren="大拍" />
+                </Form.Item>
+                <Form.Item
+                  name="bookYuntie"
+                  label="小铁标记"
+                  valuePropName="checked"
+                >
+                  <Switch checkedChildren="小包" unCheckedChildren="小拍" />
+                </Form.Item>
+              </Space>
 
-          <Form.Item label="使用模板">
-            <Space>
-              <Select
-                style={{ width: 200 }}
-                options={templates.map((tpl) => ({
-                  label: tpl.title,
-                  value: tpl.templateId,
-                }))}
-                onChange={(value) => setSelectedTemplate(value)}
-              />
-              <Button
-                type="primary"
-                icon={<DownloadOutlined />}
-                onClick={() => applyTemplate(selectedTemplate)}
-              >
-                应用模板
-              </Button>
-              <Button icon={<SaveOutlined />} onClick={saveAsTemplate}>
-                保存为模板
-              </Button>
-            </Space>
-          </Form.Item>
+              <Form.Item label="使用模板">
+                <Space>
+                  <Select
+                    style={{ width: 200 }}
+                    options={templates.map((tpl) => ({
+                      label: tpl.title,
+                      value: tpl.templateId,
+                    }))}
+                    onChange={(value) => setSelectedTemplate(value)}
+                  />
+                  <Button
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    onClick={() => applyTemplate(selectedTemplate)}
+                  >
+                    应用模板
+                  </Button>
+                  <Button icon={<SaveOutlined />} onClick={saveAsTemplate}>
+                    保存为模板
+                  </Button>
+                </Space>
+              </Form.Item>
 
-          <Form.Item name="notice" label="团队告示" style={{ width: 800 }}>
-            <Input.TextArea
-              showCount
-              autoSize={{
-                minRows: 2,
-                maxRows: 6,
-              }}
-            />
-          </Form.Item>
-          <Divider />
-        </Form>
+              <Form.Item name="notice" label="团队告示" style={{ width: 800 }}>
+                <Input.TextArea
+                  showCount
+                  autoSize={{
+                    minRows: 2,
+                    maxRows: 6,
+                  }}
+                />
+              </Form.Item>
+              <Divider />
+            </>
+          </Form>
 
-        <SlotPanel
-          mode="edit"
-          rules={rules}
-          signup_infos={signupInfos}
-          onRulesChange={handleRulesChange}
-        />
-      </div>
+          <SlotPanel
+            mode="edit"
+            rules={rules}
+            signup_infos={signupInfos}
+            onRulesChange={handleRulesChange}
+          />
+        </div>
+      )}
       <div
         style={{
           width: 265,
@@ -467,6 +472,7 @@ const BoardEditContent = ({ team = {} }) => {
 const BoardEditPage = () => {
   const { teamId } = useParams(); // 获取路由参数
   const [team, setTeam] = useState(null);
+  const navigate = useNavigate(); // 添加导航钩子
 
   useEffect(() => {
     const fetchTeam = async () => {
@@ -492,7 +498,10 @@ const BoardEditPage = () => {
   return (
     <Layout className="board-layout">
       <Content className="board-layout-content">
-        <BoardEditContent team={team || {}} /> {/* 传入 team 数据 */}
+        <BoardEditContent
+          team={team || {}}
+          onBack={() => navigate(teamId ? `/board/${teamId}` : "/board")} // 返回时带上 teamId
+        />
       </Content>
     </Layout>
   );

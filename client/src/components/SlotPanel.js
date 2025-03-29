@@ -23,6 +23,8 @@ import {
 import { xinfaInfoTable } from "../utils/xinfa";
 import { request } from "@/utils/request"; // 引入请求工具
 import store from "@/store"; // 引入 Redux store
+import { useDispatch } from "react-redux";
+import { fetchGuildMembersWithCache } from "@/store/modules/guild";
 
 const { Text, Paragraph } = Typography;
 
@@ -135,23 +137,17 @@ const EditModalAssign = ({ onSaveAssign, open, setOpen, title }) => {
   const [members, setMembers] = useState([]);
   const [characters, setCharacters] = useState([]);
   const [selectedCharacter, setSelectedCharacter] = useState(null);
+  const dispatch = useDispatch();
 
-  useEffect(() => {
-    const fetchMembers = async () => {
-      try {
-        const res = await request.post("/guild/listGuildMembers", {
-          guildId: store.getState().guild.guildId,
-        });
-        if (res.code !== 0) {
-          throw new Error(res.msg);
-        }
-        setMembers(res.data.members);
-      } catch (err) {
-        message.error(err.message);
-      }
-    };
-    fetchMembers();
-  }, []);
+  const fetchMembers = async () => {
+    try {
+      const guildId = store.getState().guild.guildId;
+      const cachedMembers = await dispatch(fetchGuildMembersWithCache(guildId));
+      setMembers(cachedMembers);
+    } catch (err) {
+      message.error(err.message);
+    }
+  };
 
   const fetchCharacters = async (userId) => {
     try {
@@ -172,6 +168,12 @@ const EditModalAssign = ({ onSaveAssign, open, setOpen, title }) => {
     fetchCharacters(userId);
     form.setFieldsValue({ character_name: null, xinfa: null });
   };
+
+  useEffect(() => {
+    if (open) {
+      fetchMembers(); // 打开模态框时加载成员数据
+    }
+  }, [open]);
 
   const onMemberChange = (value) => {
     const selectedMember = members.find(

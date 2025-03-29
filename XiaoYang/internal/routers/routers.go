@@ -55,7 +55,7 @@ func NewRouter() *gin.Engine { //nolint
 
 	// init jwt middleware, you can replace it with your own jwt middleware
 	jwt.Init(
-		jwt.WithExpire(time.Hour*24),
+		jwt.WithExpire(time.Hour*7*24),
 		jwt.WithSigningKey("GaiLuoLuoNB666"),
 		jwt.WithSigningMethod(jwt.HS384),
 	)

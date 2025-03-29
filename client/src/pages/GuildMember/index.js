@@ -4,11 +4,14 @@ import { request } from "@/utils/request";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import store from "@/store";
+import { useDispatch } from "react-redux";
+import { fetchGuildMembersWithCache } from "@/store/modules/guild";
 
 const { Option } = Select;
 
 const GuildMember = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { role } = useSelector((state) => state.guild);
   const { isSuperAdmin } = useSelector((state) => state.user);
 
@@ -26,20 +29,18 @@ const GuildMember = () => {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const res = await request.post("/guild/listGuildMembers", {
-          guildId: store.getState().guild.guildId,
-        });
-        if (res.code !== 0) {
-          throw new Error(res.msg);
-        }
-        setMembers(res.data.members);
-        setOriginalMembers(res.data.members); // 保存原始数据
+        const guildId = store.getState().guild.guildId;
+        const cachedMembers = await dispatch(
+          fetchGuildMembersWithCache(guildId)
+        );
+        setMembers(cachedMembers);
+        setOriginalMembers(cachedMembers); // 保存原始数据
       } catch (err) {
         message.error(err.message);
       }
     };
     fetchMembers();
-  }, []);
+  }, [dispatch]);
 
   const handleSave = async (record) => {
     try {
