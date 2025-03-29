@@ -216,22 +216,27 @@ const Board = () => {
   const { teamId } = useParams();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const teams = await fetchTeamList();
-        setTeamList(teams);
-        if (teams.length > 0 && !teamId) {
-          navigate(`/board/${teams[0].teamId}`);
+    if (teamList.length === 0) {
+      // 添加缓存逻辑，避免重复请求
+      const fetchData = async () => {
+        try {
+          const teams = await fetchTeamList();
+          setTeamList(teams);
+          if (teams.length > 0 && !teamId) {
+            navigate(`/board/${teams[0].teamId}`);
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchData();
-  }, [teamId, navigate]);
+      fetchData();
+    } else {
+      setLoading(false);
+    }
+  }, [teamId, navigate, teamList]); // 添加 teamList 作为依赖
 
   if (loading) {
     return (
