@@ -4,6 +4,7 @@ package handler
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	//"github.com/go-dev-frame/sponge/pkg/gin/middleware"
@@ -25,6 +26,7 @@ var _ XiaoYangV1.TeamServiceLogicer = (*teamServiceHandler)(nil)
 type teamServiceHandler struct {
 	userDao         dao.UsersDao
 	teamServiceDao  dao.TeamsDao
+	guildMemberDao  dao.GuildMembersDao
 	teamTemplateDao dao.TeamTemplatesDao
 }
 
@@ -42,6 +44,10 @@ func NewTeamServiceHandler() XiaoYangV1.TeamServiceLogicer {
 		teamTemplateDao: dao.NewTeamTemplatesDao(
 			database.GetDB(),
 			cache.NewTeamTemplatesCache(database.GetCacheType()),
+		),
+		guildMemberDao: dao.NewGuildMembersDao(
+			database.GetDB(),
+			cache.NewGuildMembersCache(database.GetCacheType()),
 		),
 	}
 }
@@ -272,6 +278,7 @@ func (h *teamServiceHandler) ListTeams(ctx context.Context, req *XiaoYangV1.List
 		Columns: []query.Column{
 			{
 				Name:  "guild_id",
+				Exp:   query.Eq,
 				Value: req.GuildId,
 			},
 		},
@@ -289,6 +296,34 @@ func (h *teamServiceHandler) ListTeams(ctx context.Context, req *XiaoYangV1.List
 			Name: "close_time",
 			Exp:  query.IsNotNull,
 		})
+	}
+
+	auth := ctx.Value("request_header_key").(http.Header).Get("Authorization")
+	userInfo, err := utils.ParseToken(auth)
+	if err != nil {
+		logger.Warn("ParseToken error", logger.Err(err))
+		return nil, ecode.ErrGetUserInfoUserService.Err("Token解析失败: " + err.Error())
+	}
+
+	// 检查用户权限
+	if !userInfo.IsAdmin && !userInfo.IsBot {
+		member, _, err := h.guildMemberDao.GetByColumns(ctx, &query.Params{
+			Columns: []query.Column{
+				{Name: "guild_id",
+					Exp:   query.Eq,
+					Value: req.GuildId},
+				{Name: "member_id",
+					Exp:   query.Eq,
+					Value: userInfo.UserID},
+			},
+		})
+		if err != nil || len(member) == 0 || (member[0].Role != "owner" && member[0].Role != "helper") {
+			params.Columns = append(params.Columns, query.Column{
+				Name:  "is_hidden",
+				Exp:   query.Eq,
+				Value: false,
+			})
+		}
 	}
 
 	data, _, err := h.teamServiceDao.GetByColumns(ctx, params)
@@ -368,6 +403,7 @@ func (h *teamServiceHandler) ListTemplates(ctx context.Context, req *XiaoYangV1.
 		Columns: []query.Column{
 			{
 				Name:  "guild_id",
+				Exp:   query.Eq,
 				Value: req.GuildId,
 			},
 		},

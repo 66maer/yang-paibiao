@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Modal, Space, message } from "antd";
+import { Table, Button, Modal, Space, message, Badge, Tag } from "antd";
 import { request } from "@/utils/request";
 import dayjs from "dayjs";
 import SlotPanel from "@/components/SlotPanel";
@@ -79,10 +79,50 @@ const HistoryTeams = () => {
       render: () => "暂未实现", // 占位符
     },
     {
-      title: "金团备注",
+      title: "金团记录",
       dataIndex: "summary",
       key: "summary",
-      render: (text) => text || "暂无备注",
+      render: (text) => {
+        try {
+          const parsedSummary = JSON.parse(text);
+          return (
+            <>
+              {parsedSummary.salary || "未知"} 金{" "}
+              <span style={{ color: "#888" }}>
+                （人均 {parsedSummary.perPersonSalary || "未知"} 金）
+              </span>
+              <div>
+                {(parsedSummary.specialDrops || []).length > 0
+                  ? (parsedSummary.specialDrops || []).map((drop, index) => (
+                      <Tag
+                        key={index}
+                        color="blue"
+                        style={{ marginBottom: "5px" }}
+                      >
+                        {drop}
+                      </Tag>
+                    ))
+                  : "无特殊掉落"}
+              </div>
+            </>
+          );
+        } catch (e) {
+          return text || "暂无记录";
+        }
+      },
+    },
+    {
+      title: "黑本人",
+      dataIndex: "summary",
+      key: "blacklist",
+      render: (text) => {
+        try {
+          const parsedSummary = JSON.parse(text);
+          return parsedSummary.blacklist || "无";
+        } catch (e) {
+          return "无";
+        }
+      },
     },
     {
       title: "操作",
@@ -142,7 +182,47 @@ const HistoryTeams = () => {
               <strong>副本：</strong> {selectedTeam.dungeons}
             </p>
             <p>
-              <strong>金团备注：</strong> {selectedTeam.summary || "暂无备注"}
+              <strong>今天记录</strong>
+              {selectedTeam.summary
+                ? (() => {
+                    try {
+                      const parsedSummary = JSON.parse(selectedTeam.summary);
+                      return (
+                        <>
+                          <div>
+                            {parsedSummary.salary || "未知"} 金{" "}
+                            <span style={{ color: "#888" }}>
+                              （人均 {parsedSummary.perPersonSalary || "未知"}{" "}
+                              金）
+                            </span>
+                          </div>
+                          <div>
+                            <strong>特殊掉落：</strong>
+                            {(parsedSummary.specialDrops || []).length > 0
+                              ? (parsedSummary.specialDrops || []).map(
+                                  (drop, index) => (
+                                    <Tag
+                                      key={index}
+                                      color="blue"
+                                      style={{ marginBottom: "5px" }}
+                                    >
+                                      {drop}
+                                    </Tag>
+                                  )
+                                )
+                              : "无特殊掉落"}
+                          </div>
+                          <div>
+                            <strong>黑本人：</strong>
+                            {parsedSummary.blacklist || "无"}
+                          </div>
+                        </>
+                      );
+                    } catch (e) {
+                      return "解析失败";
+                    }
+                  })()
+                : "暂无备注"}
             </p>
             <p>
               <strong>团队告示：</strong> {selectedTeam.notice || "暂无告示"}

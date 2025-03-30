@@ -298,7 +298,7 @@ const BoardEditContent = ({ team = {}, onBack }) => {
         throw new Error(res.msg);
       }
     } catch (error) {
-      message.error(error.message || "保存失败");
+      message.error(error.msg || "保存失败");
     }
   };
 

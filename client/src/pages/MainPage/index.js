@@ -69,7 +69,7 @@ const UserPannel = () => {
       if (onSuccess) onSuccess(); // 成功时执行回调关闭弹窗
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || error.message || "操作失败";
+        error.response?.data?.message || error.msg || "操作失败";
       message.error(errorMessage);
     } finally {
       setIsSubmitting(false);

@@ -226,6 +226,7 @@ func (h *guildServiceHandler) ListUserGuilds(ctx context.Context, req *XiaoYangV
 		Columns: []query.Column{
 			{
 				Name:  "member_id",
+				Exp:   query.Eq,
 				Value: req.UserId,
 			},
 		},
@@ -272,6 +273,7 @@ func (h *guildServiceHandler) ListGuildMembers(ctx context.Context, req *XiaoYan
 		Columns: []query.Column{
 			{
 				Name:  "guild_id",
+				Exp:   query.Eq,
 				Value: req.GuildId,
 			},
 		},
@@ -351,10 +353,12 @@ func (h *guildServiceHandler) RemoveGuildMember(ctx context.Context, req *XiaoYa
 		Columns: []query.Column{
 			{
 				Name:  "guild_id",
+				Exp:   query.Eq,
 				Value: req.GuildId,
 			},
 			{
 				Name:  "member_id",
+				Exp:   query.Eq,
 				Value: req.UserId,
 			},
 		},
@@ -386,10 +390,12 @@ func (h *guildServiceHandler) UpdateGuildMember(ctx context.Context, req *XiaoYa
 		Columns: []query.Column{
 			{
 				Name:  "guild_id",
+				Exp:   query.Eq,
 				Value: req.GuildId,
 			},
 			{
 				Name:  "member_id",
+				Exp:   query.Eq,
 				Value: req.UserId,
 			},
 		},
@@ -433,10 +439,12 @@ func (h *guildServiceHandler) GetGuildMember(ctx context.Context, req *XiaoYangV
 		Columns: []query.Column{
 			{
 				Name:  "guild_id",
+				Exp:   query.Eq,
 				Value: req.GuildId,
 			},
 			{
 				Name:  "member_id",
+				Exp:   query.Eq,
 				Value: req.UserId,
 			},
 		},

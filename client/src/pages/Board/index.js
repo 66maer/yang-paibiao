@@ -12,14 +12,6 @@ import {
   Empty,
   Tooltip,
   message,
-  Modal,
-  Form,
-  InputNumber,
-  Slider,
-  Row,
-  Col,
-  AutoComplete,
-  Select,
 } from "antd";
 import { request } from "@/utils/request";
 import SlotCard from "@/components/SlotCard";
@@ -32,23 +24,21 @@ import {
   AntDesignOutlined,
   EditOutlined,
   CloseCircleOutlined,
-  SwapOutlined,
 } from "@ant-design/icons";
 import store from "@/store";
 import BoardEditContent from "./edit";
 import { useNavigate, useParams } from "react-router-dom";
-import { useDispatch } from "react-redux";
 import { fetchGuildMembersWithCache } from "@/store/modules/guild";
+import CloseTeamModal from "./close"; // 导入 closeTeam 函数
 
 const { Header, Content, Footer, Sider } = Layout;
 const { Text, Title, Paragraph } = Typography;
-const { CheckableTag } = Tag;
 
 const fetchTeamList = async () => {
   try {
     const res = await request.post("/team/listTeams", {
       guildId: store.getState().guild.guildId,
-      filter: "open",
+      filter: "only_open",
       page: 0,
       pageSize: 100,
     });
@@ -62,220 +52,7 @@ const fetchTeamList = async () => {
   }
 };
 
-const CloseTeamModal = ({ team, visible, onClose, onSubmit }) => {
-  const [form] = Form.useForm();
-  const [members, setMembers] = useState([]);
-  const [workersCount, setWorkersCount] = useState(20);
-  const [selectedTags, setSelectedTags] = useState([]);
-  const [isTotalEditable, setIsTotalEditable] = useState(true); // 控制总工资和人均工资的输入模式
-  const dispatch = useDispatch();
-
-  const specialDrops = [
-    "玄晶",
-    "沙子",
-    "外观挂件",
-    "毕业精简",
-    "追须",
-    "高价其他",
-  ];
-
-  useEffect(() => {
-    if (visible) {
-      loadMembers();
-      form.resetFields();
-    }
-  }, [visible, form]);
-
-  const loadMembers = async () => {
-    try {
-      const guildId = store.getState().guild.guildId;
-      const cachedMembers = await dispatch(fetchGuildMembersWithCache(guildId));
-      setMembers(cachedMembers);
-    } catch (err) {
-      message.error("加载团队成员失败: " + err.message);
-    }
-  };
-
-  const handleTagChange = (tag, checked) => {
-    const nextSelectedTags = checked
-      ? [...selectedTags, tag]
-      : selectedTags.filter((t) => t !== tag);
-    setSelectedTags(nextSelectedTags);
-    form.setFieldsValue({ special_drops: nextSelectedTags });
-  };
-
-  const handleSalaryChange = (value, workersCountOverride) => {
-    const numericValue = parseInt(value, 10) || 0;
-    const effectiveWorkersCount = workersCountOverride ?? workersCount;
-    if (isTotalEditable) {
-      console.log("salary", numericValue, effectiveWorkersCount);
-      form.setFieldsValue({
-        perPersonSalary: Math.floor(numericValue / effectiveWorkersCount),
-      });
-    } else {
-      form.setFieldsValue({
-        salary: numericValue * effectiveWorkersCount,
-      });
-    }
-  };
-
-  const toggleSalaryMode = () => {
-    setIsTotalEditable(!isTotalEditable);
-    const currentSalary = form.getFieldValue(
-      isTotalEditable ? "salary" : "perPersonSalary"
-    );
-    handleSalaryChange(currentSalary);
-  };
-
-  const handleWorkersCountChange = (value) => {
-    console.log("workersCount", value);
-    setWorkersCount(value);
-    const currentSalary = form.getFieldValue(
-      isTotalEditable ? "salary" : "perPersonSalary"
-    );
-    handleSalaryChange(currentSalary, value); // 使用最新的 value 参数
-  };
-
-  const memberOptions = [
-    {
-      label: "野人",
-      value: "野人",
-      key: -1,
-    },
-    ...members.map((member) => ({
-      label: member.groupNickname,
-      value: member.groupNickname,
-      key: member.userId,
-    })),
-  ];
-
-  return (
-    <Modal
-      title="打完收工"
-      open={visible}
-      onCancel={onClose}
-      onOk={() => {
-        form
-          .validateFields()
-          .then((values) => {
-            onSubmit({
-              ...values,
-              workersCount,
-              bossCount: 25 - workersCount,
-            });
-          })
-          .catch((info) => {
-            console.log("验证失败:", info);
-          });
-      }}
-    >
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{
-          salary: 0,
-          perPersonSalary: 0,
-          special_drops: [],
-          workersCount: 20,
-          blacklist: null,
-        }}
-      >
-        <Form.Item label="金团工资">
-          <Row gutter={8} align="middle">
-            <Col span={10}>
-              <Form.Item name="salary" noStyle>
-                <InputNumber
-                  addonBefore="金团"
-                  addonAfter="金"
-                  min={0}
-                  style={{ width: "100%" }}
-                  disabled={!isTotalEditable}
-                  formatter={(value) =>
-                    `${value}`.replace(/\B(?=(\d{4})(?!\d))/g, ",")
-                  }
-                  parser={(value) => value?.replace(/,/g, "")}
-                  onChange={handleSalaryChange}
-                  onFocus={(e) => e.target.select()}
-                  controls={false}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={4} style={{ textAlign: "center" }}>
-              <Button
-                icon={<SwapOutlined />}
-                onClick={toggleSalaryMode}
-                shape="circle"
-              />
-            </Col>
-            <Col span={10}>
-              <Form.Item name="perPersonSalary" noStyle>
-                <InputNumber
-                  addonBefore="人均"
-                  addonAfter="金"
-                  min={0}
-                  style={{ width: "100%" }}
-                  disabled={isTotalEditable}
-                  formatter={(value) =>
-                    `${value}`.replace(/\B(?=(\d{4})(?!\d))/g, ",")
-                  }
-                  parser={(value) => value?.replace(/,/g, "")}
-                  onChange={handleSalaryChange}
-                  onFocus={(e) => e.target.select()}
-                  controls={false}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form.Item>
-
-        <Form.Item name="special_drops" label="特殊掉落">
-          <div>
-            {specialDrops.map((tag) => (
-              <CheckableTag
-                key={tag}
-                checked={selectedTags.indexOf(tag) > -1}
-                onChange={(checked) => handleTagChange(tag, checked)}
-              >
-                {tag}
-              </CheckableTag>
-            ))}
-          </div>
-        </Form.Item>
-
-        <Form.Item label="分工资情况">
-          <Row align="middle">
-            <Col span={4}>
-              <Text>打工: {workersCount}</Text>
-            </Col>
-            <Col span={16}>
-              <Slider
-                min={10}
-                max={25}
-                value={workersCount}
-                onChange={handleWorkersCountChange} // 更新滑动条的回调
-              />
-            </Col>
-            <Col span={4} style={{ textAlign: "right" }}>
-              <Text>老板: {25 - workersCount}</Text>
-            </Col>
-          </Row>
-        </Form.Item>
-
-        <Form.Item name="blacklist" label="黑本人">
-          <AutoComplete
-            allowClear
-            showSearch
-            placeholder="选择团员或直接输入"
-            options={memberOptions}
-            optionFilterProp="label"
-          />
-        </Form.Item>
-      </Form>
-    </Modal>
-  );
-};
-
-const BoardContent = ({ team = {}, isAdmin }) => {
+const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
   const { teamId, title, teamTime, dungeons, rule, notice } = team;
   const {
     bookXuanjing,
@@ -310,26 +87,6 @@ const BoardContent = ({ team = {}, isAdmin }) => {
 
   const handleCloseTeam = () => {
     setCloseTeamVisible(true);
-  };
-
-  const handleCloseTeamSubmit = async (values) => {
-    try {
-      const res = await request.post("/team/closeTeam", {
-        teamId: teamId,
-        ...values,
-      });
-
-      if (res.code !== 0) {
-        throw new Error(res.msg || "关闭开团失败");
-      }
-
-      message.success("已成功关闭开团");
-      setCloseTeamVisible(false);
-
-      navigate("/board");
-    } catch (error) {
-      message.error(error.message || "操作失败，请重试");
-    }
   };
 
   return (
@@ -432,8 +189,10 @@ const BoardContent = ({ team = {}, isAdmin }) => {
       <CloseTeamModal
         team={team}
         visible={closeTeamVisible}
-        onClose={() => setCloseTeamVisible(false)}
-        onSubmit={handleCloseTeamSubmit}
+        onClose={() => {
+          setCloseTeamVisible(false);
+          refreshTeamList();
+        }}
       />
     </div>
   );
@@ -462,9 +221,12 @@ const BoardLayoutSider = ({ isAdmin, teamList, teamId }) => {
         <DateTag date={new Date(teams[0].teamTime)} />
       </Space>
     ),
-    children: teams.map((team, index) => ({
+    children: teams.map((team) => ({
       key: `${team.teamId}`,
-      label: `第${index + 1}车`,
+      label: `${new Date(team.teamTime).toLocaleTimeString("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })} ${team.dungeons}`,
     })),
   }));
 
@@ -511,20 +273,26 @@ const Board = () => {
   const navigate = useNavigate();
   const { teamId } = useParams();
 
+  const refreshTeamList = async () => {
+    try {
+      const teams = await fetchTeamList();
+      setTeamList(teams);
+      if (
+        teams.length > 0 &&
+        (!teamId || !teams.some((team) => team.teamId == teamId))
+      ) {
+        navigate(`/board/${teams[0].teamId}`);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     if (teamList.length === 0) {
       const fetchData = async () => {
-        try {
-          const teams = await fetchTeamList();
-          setTeamList(teams);
-          if (teams.length > 0 && !teamId) {
-            navigate(`/board/${teams[0].teamId}`);
-          }
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setLoading(false);
-        }
+        await refreshTeamList();
+        setLoading(false);
       };
 
       fetchData();
@@ -560,7 +328,11 @@ const Board = () => {
       </Sider>
       <Content className="board-layout-content">
         {selectedTeam ? (
-          <BoardContent team={selectedTeam} isAdmin={isAdmin} />
+          <BoardContent
+            team={selectedTeam}
+            isAdmin={isAdmin}
+            refreshTeamList={refreshTeamList} // 传递刷新函数
+          />
         ) : (
           <div
             style={{

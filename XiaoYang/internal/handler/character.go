@@ -158,7 +158,9 @@ func (h *characterServiceHandler) ListUserCharacters(ctx context.Context, req *X
 
 	params := &query.Params{
 		Columns: []query.Column{
-			{Name: "user_id", Value: req.UserId},
+			{Name: "user_id",
+				Exp:   query.Eq,
+				Value: req.UserId},
 		},
 	}
 
