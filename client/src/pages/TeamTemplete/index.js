@@ -7,7 +7,7 @@ import store from "@/store";
 const TeamTemplate = () => {
   const [templates, setTemplates] = useState([]);
   const [editingTemplate, setEditingTemplate] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isHidden, setIsHidden] = useState(false); // 修改 isVisiable 为 isHidden
   const [form] = Form.useForm();
   const [rules, setRules] = useState(Array(25).fill({}));
 
@@ -61,7 +61,7 @@ const TeamTemplate = () => {
       }
 
       message.success(editingTemplate ? "更新成功" : "新增成功");
-      setIsModalVisible(false);
+      setIsHidden(false); // 修改 isVisiable 为 isHidden
       setEditingTemplate(null);
       form.resetFields();
       setRules(Array(25).fill({})); // 重置 rules
@@ -101,13 +101,13 @@ const TeamTemplate = () => {
       console.error("Failed to parse rule:", err);
     }
 
-    setIsModalVisible(true);
+    setIsHidden(true); // 修改 isVisiable 为 isHidden
   };
 
   const handleAdd = () => {
     setEditingTemplate(null);
     form.resetFields();
-    setIsModalVisible(true);
+    setIsHidden(true); // 修改 isVisiable 为 isHidden
   };
 
   const columns = [
@@ -144,8 +144,8 @@ const TeamTemplate = () => {
       />
       <Modal
         title={editingTemplate ? "编辑模板" : "新增模板"}
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
+        open={isHidden} // 修改 isVisiable 为 isHidden
+        onCancel={() => setIsHidden(false)} // 修改 isVisiable 为 isHidden
         footer={null}
         style={{ minWidth: 1060 }}
       >
@@ -174,7 +174,8 @@ const TeamTemplate = () => {
               <Button type="primary" htmlType="submit">
                 确定
               </Button>
-              <Button onClick={() => setIsModalVisible(false)}>取消</Button>
+              <Button onClick={() => setIsHidden(false)}>取消</Button>{" "}
+              {/* 修改 isVisiable 为 isHidden */}
             </Space>
           </Form.Item>
         </Form>

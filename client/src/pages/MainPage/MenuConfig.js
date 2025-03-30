@@ -38,6 +38,12 @@ const menuConfig = (role, isSuperAdmin) => {
       allowedRoles: ["owner", "helper"],
       content: "team-template",
     },
+    {
+      key: "history-teams",
+      label: "历史开团",
+      icon: <SnippetsOutlined />,
+      content: "history-teams",
+    },
   ];
 
   const filteredMenu = menu.filter((item) => {

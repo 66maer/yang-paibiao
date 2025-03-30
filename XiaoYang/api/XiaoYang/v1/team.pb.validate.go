@@ -69,7 +69,7 @@ func (m *CreateTeamRequest) validate(all bool) error {
 
 	// no validation rules for BookYuntie
 
-	// no validation rules for IsVisible
+	// no validation rules for IsHidden
 
 	// no validation rules for IsLock
 
@@ -289,6 +289,8 @@ func (m *CloseTeamRequest) validate(all bool) error {
 
 	// no validation rules for CloseId
 
+	// no validation rules for Summary
+
 	if len(errors) > 0 {
 		return CloseTeamRequestMultiError(errors)
 	}
@@ -503,7 +505,7 @@ func (m *UpdateTeamRequest) validate(all bool) error {
 
 	// no validation rules for BookYuntie
 
-	// no validation rules for IsVisible
+	// no validation rules for IsHidden
 
 	// no validation rules for IsLock
 
@@ -2321,7 +2323,7 @@ func (m *TeamInfo) validate(all bool) error {
 
 	// no validation rules for BookYuntie
 
-	// no validation rules for IsVisible
+	// no validation rules for IsHidden
 
 	// no validation rules for IsLock
 

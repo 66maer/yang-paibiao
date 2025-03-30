@@ -111,7 +111,7 @@ func (d *teamsDao) updateDataByID(ctx context.Context, db *gorm.DB, table *model
 
 	update["book_yuntie"] = table.BookYuntie
 
-	update["is_visible"] = table.IsVisible
+	update["is_hidden"] = table.IsHidden
 
 	update["is_lock"] = table.IsLock
 

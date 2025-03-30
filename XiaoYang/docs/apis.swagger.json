@@ -1381,6 +1381,10 @@
         "closeId": {
           "type": "integer",
           "format": "uint64"
+        },
+        "summary": {
+          "type": "string",
+          "title": "团队总结"
         }
       },
       "title": "关闭团队请求"
@@ -1485,7 +1489,7 @@
         "bookYuntie": {
           "type": "boolean"
         },
-        "isVisible": {
+        "isHidden": {
           "type": "boolean"
         },
         "isLock": {
@@ -2063,7 +2067,7 @@
         "bookYuntie": {
           "type": "boolean"
         },
-        "isVisible": {
+        "isHidden": {
           "type": "boolean"
         },
         "isLock": {
@@ -2260,7 +2264,7 @@
         "bookYuntie": {
           "type": "boolean"
         },
-        "isVisible": {
+        "isHidden": {
           "type": "boolean"
         },
         "isLock": {

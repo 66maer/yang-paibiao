@@ -121,7 +121,7 @@ CREATE TABLE teams (
     dungeons VARCHAR(50) NOT NULL,  -- 副本名称
     book_xuanjing BOOLEAN NOT NULL,  -- 是否有人预定玄晶
     book_yuntie BOOLEAN NOT NULL,  -- 是否有人预定陨铁
-    is_visible BOOLEAN NOT NULL,  -- 是否对外可见
+    is_hidden BOOLEAN NOT NULL,  -- 是否对外可见
     is_lock BOOLEAN NOT NULL,  -- 是否锁定
     rule JSONB NOT NULL,  -- 报名规则
     notice TEXT,  -- 团队告示
@@ -143,7 +143,7 @@ COMMENT ON COLUMN teams.team_time IS '开团时间';
 COMMENT ON COLUMN teams.dungeons IS '副本名称';
 COMMENT ON COLUMN teams.book_xuanjing IS '是否有人预定玄晶';
 COMMENT ON COLUMN teams.book_yuntie IS '是否有人预定陨铁';
-COMMENT ON COLUMN teams.is_visible IS '是否对外可见';
+COMMENT ON COLUMN teams.is_hidden IS '是否对外隐藏';
 COMMENT ON COLUMN teams.is_lock IS '是否锁定';
 COMMENT ON COLUMN teams.rule IS '报名规则';
 COMMENT ON COLUMN teams.notice IS '团队告示';

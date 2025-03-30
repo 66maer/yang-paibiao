@@ -15,7 +15,7 @@ type Teams struct {
 	Dungeons     string          `gorm:"column:dungeons;type:varchar(50);not null" json:"dungeons"`   // 副本名称
 	BookXuanjing bool            `gorm:"column:book_xuanjing;type:bool;not null" json:"bookXuanjing"` // 是否有人预定玄晶
 	BookYuntie   bool            `gorm:"column:book_yuntie;type:bool;not null" json:"bookYuntie"`     // 是否有人预定陨铁
-	IsVisible    bool            `gorm:"column:is_visible;type:bool;not null" json:"isVisible"`       // 是否对外可见
+	IsHidden     bool            `gorm:"column:is_hidden;type:bool;not null" json:"IsHidden"`         // 是否对外可见
 	IsLock       bool            `gorm:"column:is_lock;type:bool;not null" json:"isLock"`             // 是否锁定
 	Rule         *datatypes.JSON `gorm:"column:rule;type:jsonb;not null" json:"rule"`                 // 报名规则
 	Notice       string          `gorm:"column:notice;type:text" json:"notice"`                       // 团队告示

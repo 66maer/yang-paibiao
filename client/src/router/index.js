@@ -9,6 +9,7 @@ import GuildMember from "@/pages/GuildMember";
 import Character from "@/pages/Character";
 import BoardEditContent from "../pages/Board/edit"; // 导入编辑页面组件
 import TeamTemplate from "@/pages/TeamTemplete";
+import HistoryTeams from "@/pages/HistoryTeams";
 
 const routers = [
   {
@@ -46,6 +47,10 @@ const routers = [
       {
         path: "team-template",
         element: <TeamTemplate />,
+      },
+      {
+        path: "history-teams",
+        element: <HistoryTeams />,
       },
       // 可以在这里添加更多需要登录校验的子路由
     ],

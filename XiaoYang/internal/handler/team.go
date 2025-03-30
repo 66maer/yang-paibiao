@@ -61,7 +61,7 @@ func (h *teamServiceHandler) CreateTeam(ctx context.Context, req *XiaoYangV1.Cre
 		Dungeons:     req.Dungeons,
 		BookXuanjing: req.BookXuanjing,
 		BookYuntie:   req.BookYuntie,
-		IsVisible:    req.IsVisible,
+		IsHidden:     req.IsHidden,
 		IsLock:       req.IsLock,
 		Rule:         utils.StringToJSONPtr(req.Rule),
 		Notice:       req.Notice,
@@ -98,6 +98,7 @@ func (h *teamServiceHandler) CloseTeam(ctx context.Context, req *XiaoYangV1.Clos
 	data.CloseID = int(req.CloseId)
 	data.CloseTime = utils.CurrentTimePtr()
 	data.UpdateTime = utils.CurrentTimePtr()
+	data.Summary = utils.StringToJSONPtr(req.Summary)
 
 	err = h.teamServiceDao.UpdateByID(ctx, data)
 	if err != nil {
@@ -127,7 +128,7 @@ func (h *teamServiceHandler) UpdateTeam(ctx context.Context, req *XiaoYangV1.Upd
 	data.Dungeons = req.Dungeons
 	data.BookXuanjing = req.BookXuanjing
 	data.BookYuntie = req.BookYuntie
-	data.IsVisible = req.IsVisible
+	data.IsHidden = req.IsHidden
 	data.IsLock = req.IsLock
 	data.Rule = utils.StringToJSONPtr(req.Rule)
 	data.Notice = req.Notice
@@ -244,7 +245,7 @@ func (h *teamServiceHandler) GetTeam(ctx context.Context, req *XiaoYangV1.GetTea
 			Dungeons:        data.Dungeons,
 			BookXuanjing:    data.BookXuanjing,
 			BookYuntie:      data.BookYuntie,
-			IsVisible:       data.IsVisible,
+			IsHidden:        data.IsHidden,
 			IsLock:          data.IsLock,
 			Rule:            utils.JSONPtrToString(data.Rule),
 			Notice:          data.Notice,
@@ -312,7 +313,7 @@ func (h *teamServiceHandler) ListTeams(ctx context.Context, req *XiaoYangV1.List
 			Dungeons:        team.Dungeons,
 			BookXuanjing:    team.BookXuanjing,
 			BookYuntie:      team.BookYuntie,
-			IsVisible:       team.IsVisible,
+			IsHidden:        team.IsHidden,
 			IsLock:          team.IsLock,
 			Rule:            utils.JSONPtrToString(team.Rule),
 			Notice:          team.Notice,

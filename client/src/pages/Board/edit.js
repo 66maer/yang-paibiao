@@ -78,6 +78,9 @@ const timelineItems = [
   { color: "green", children: "张三1" },
   { color: "red", children: "李四2" },
   { color: "#66ccff", children: "王五王五王五王五王五王五" },
+  { color: "green", children: "张三1" },
+  { color: "red", children: "李四2" },
+  { color: "#66ccff", children: "王五王五王五王五王五王五" },
 ];
 
 const FormSwitchButton = ({
@@ -112,7 +115,7 @@ const FormSwitchButton = ({
 
 const BoardEditContent = ({ team = {}, onBack }) => {
   const { teamId, title, dungeons } = team;
-  const { isLock, isVisiable } = team;
+  const { isLock, isHidden } = team;
   const [autoTitle, setAutoTitle] = useState(!teamId); // 根据 teamId 判断默认值
   const [form] = Form.useForm();
   const [templates, setTemplates] = useState([]);
@@ -122,6 +125,7 @@ const BoardEditContent = ({ team = {}, onBack }) => {
     team.signupInfos || Array(25).fill({})
   );
   const [loading, setLoading] = useState(true); // 添加加载状态
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (team.teamId) {
@@ -131,11 +135,21 @@ const BoardEditContent = ({ team = {}, onBack }) => {
         time: dayjs(team.teamTime),
         dungeons: team.dungeons,
         isLock: team.isLock || false,
-        isVisiable: team.isVisiable || false,
+        isHidden: team.isHidden || false,
         bookXuanjing: team.bookXuanjing || false,
         bookYuntie: team.bookYuntie || false,
         notice: team.notice,
       });
+
+      try {
+        const parsedRule = JSON.parse(team.rule || Array(25).fill({}));
+        setRules(parsedRule);
+      } catch (error) {
+        console.error("Failed to parse rule:", error);
+        message.error("规则解析失败，已重置为默认值");
+        setRules(Array(25).fill({}));
+      }
+
       setAutoTitle(false); // 编辑模式下关闭自动生成标题
     }
     setLoading(false); // 数据加载完成后设置为 false
@@ -253,8 +267,39 @@ const BoardEditContent = ({ team = {}, onBack }) => {
     }
   };
 
-  const onFinish = (values) => {
-    console.log(values);
+  const onFinish = async (values) => {
+    try {
+      const payload = {
+        ...values,
+        rule: JSON.stringify(rules),
+        teamTime: new Date(
+          `${values.date.format("YYYY-MM-DD")}T${values.time.format(
+            "HH:mm:ss"
+          )}`
+        ).toISOString(),
+        guildId: store.getState().guild.guildId,
+        createrId: store.getState().user.userId,
+        isLock: values.isLock,
+        isHidden: values.isHidden,
+        bookXuanjing: values.bookXuanjing,
+        bookYuntie: values.bookYuntie,
+      };
+
+      const api = teamId ? "/team/updateTeam" : "/team/createTeam";
+      if (teamId) {
+        payload.teamId = teamId;
+      }
+
+      const res = await request.post(api, payload);
+      if (res.code === 0) {
+        message.success(teamId ? "团队更新成功" : "团队创建成功");
+        navigate(teamId ? `/board/${teamId}` : `/board/${res.data.teamId}`);
+      } else {
+        throw new Error(res.msg);
+      }
+    } catch (error) {
+      message.error(error.message || "保存失败");
+    }
   };
 
   const handleRulesChange = (updatedRules) => {
@@ -274,7 +319,7 @@ const BoardEditContent = ({ team = {}, onBack }) => {
             onFinish={onFinish}
             initialValues={{
               isLock: isLock || false,
-              isVisiable: isVisiable || false,
+              isHidden: isHidden || false,
               date: teamId ? dayjs(team.teamTime) : dayjs(),
               time: teamId ? dayjs(team.teamTime) : dayjs("19:30", "HH:mm"),
               dungeons: dungeons || undefined,
@@ -317,10 +362,10 @@ const BoardEditContent = ({ team = {}, onBack }) => {
                     tooltip="锁定团队，不允许自由报名"
                   />
                 </Form.Item>
-                <Form.Item name="isVisiable">
+                <Form.Item name="isHidden">
                   <FormSwitchButton
                     form={form}
-                    fieldName="isVisiable"
+                    fieldName="isHidden"
                     trueIcon={<EyeInvisibleOutlined />}
                     falseIcon={<EyeOutlined />}
                     tooltip="隐藏团队，仅管理员可见"
