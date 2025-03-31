@@ -103,40 +103,32 @@ func (d *signupsDao) updateDataByID(ctx context.Context, db *gorm.DB, table *mod
 	if table.SignupCharacterID != 0 {
 		update["signup_character_id"] = table.SignupCharacterID
 	}
-	if table.SignupInfo.String() != "" {
+	if table.SignupInfo != nil && table.SignupInfo.String() != "" {
 		update["signup_info"] = table.SignupInfo
 	}
 	if table.Priority != 0 {
 		update["priority"] = table.Priority
 	}
-	if table.IsRich != nil {
-		update["is_rich"] = table.IsRich
-	}
-	if table.IsProxy != nil {
-		update["is_proxy"] = table.IsProxy
-	}
+	update["is_rich"] = table.IsRich
+	update["is_proxy"] = table.IsProxy
 	if table.ClientType != "" {
 		update["client_type"] = table.ClientType
 	}
 	if table.LockSlot != 0 {
 		update["lock_slot"] = table.LockSlot
 	}
-	if table.IsDove != nil {
-		update["is_dove"] = table.IsDove
-	}
-	if table.IsCandidate != nil {
-		update["is_candidate"] = table.IsCandidate
-	}
-	if table.Detail.String() != "" {
+	update["is_dove"] = table.IsDove
+	update["is_candidate"] = table.IsCandidate
+	if table.Detail != nil && table.Detail.String() != "" {
 		update["detail"] = table.Detail
 	}
-	if table.SignupTime.IsZero() == false {
+	if table.SignupTime != nil && !table.SignupTime.IsZero() {
 		update["signup_time"] = table.SignupTime
 	}
 	if table.CancelUserID != 0 {
 		update["cancel_user_id"] = table.CancelUserID
 	}
-	if table.CancelTime.IsZero() == false {
+	if table.CancelTime != nil && !table.CancelTime.IsZero() {
 		update["cancel_time"] = table.CancelTime
 	}
 

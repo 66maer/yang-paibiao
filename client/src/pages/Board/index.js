@@ -30,6 +30,7 @@ import BoardEditContent from "./edit";
 import { useNavigate, useParams } from "react-router-dom";
 import { fetchGuildMembersWithCache } from "@/store/modules/guild";
 import CloseTeamModal from "./close"; // 导入 closeTeam 函数
+import SignupModal from "./singup";
 
 const { Header, Content, Footer, Sider } = Layout;
 const { Text, Title, Paragraph } = Typography;
@@ -48,6 +49,22 @@ const fetchTeamList = async () => {
     return res.data.teams;
   } catch (error) {
     console.error("Failed to fetch team list:", error);
+    return [];
+  }
+};
+
+const fetchSignupsByTeam = async (teamId) => {
+  try {
+    const res = await request.post("/signup/getSignupsByTeam", {
+      teamId,
+    });
+    if (res.code === 0) {
+      return res.data.signups;
+    } else {
+      throw new Error("获取报名列表失败");
+    }
+  } catch (error) {
+    console.error("Failed to fetch signups:", error);
     return [];
   }
 };
@@ -75,19 +92,30 @@ const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
 
   const [expanded, setExpanded] = useState(false);
   const [closeTeamVisible, setCloseTeamVisible] = useState(false);
+  const [signupVisible, setSignupVisible] = useState(false);
+  const [signupList, setSignupList] = useState([]);
   const navigate = useNavigate();
+
+  const refreshSignupList = async () => {
+    const signups = await fetchSignupsByTeam(teamId);
+    setSignupList(signups);
+  };
 
   const handleSignUp = () => {
     if (isLock) {
       console.warn("报名已被锁定，无法报名！");
       return;
     }
-    // ...报名逻辑...
+    setSignupVisible(true);
   };
 
   const handleCloseTeam = () => {
     setCloseTeamVisible(true);
   };
+
+  useEffect(() => {
+    refreshSignupList();
+  }, [teamId]);
 
   return (
     <div className="board-content">
@@ -193,6 +221,13 @@ const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
           setCloseTeamVisible(false);
           refreshTeamList();
         }}
+      />
+      <SignupModal
+        visible={signupVisible}
+        onClose={() => setSignupVisible(false)}
+        teamId={teamId}
+        refreshSignupList={refreshSignupList}
+        signupList={signupList}
       />
     </div>
   );

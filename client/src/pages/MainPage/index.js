@@ -220,7 +220,6 @@ const MainPage = () => {
     const fetchData = async () => {
       try {
         await store.dispatch(fetchUserInfo());
-        console.log("userInfo", store.getState().user.userInfo);
         if (!store.getState().user.userId) {
           message.error("未获取到用户信息，请重新登录");
           navigate("/login");

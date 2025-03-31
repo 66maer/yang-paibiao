@@ -175,7 +175,6 @@ const signupContent = (signup_info) => {
     is_proxy = false,
     is_lock = false,
     is_dove = false,
-    signup_time = 0,
   } = signup_info;
   const xinfa = xinfaInfoTable[charcater_xinfa];
   const bg_url = is_rich ? "/铜钱.svg" : `/menpai/${xinfa.menpai}.svg`;
@@ -309,7 +308,6 @@ const SlotCard = ({ cardInfo = {} }) => {
           is_proxy: false,
           is_lock: false,
           is_dove: false,
-          signup_time: 0,
         }}
       />
     </>

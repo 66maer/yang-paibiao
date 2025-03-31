@@ -372,7 +372,6 @@ const SlotXiaoDui = ({ rules, signupInfos, indexD, mode, updateRule }) => {
       case "edit-only-rule":
         return <EditSlotCard {...baseProps} onlyRule={true} />;
       default:
-        console.log("Unknown mode:", rule);
         return (
           <SlotCard
             key={globalIndex}
@@ -407,8 +406,6 @@ const SlotPanel = ({
       onRulesChange(updatedRules);
     }
   };
-
-  console.log("SlotPanel", rules, signup_infos);
 
   return (
     <div className="slot-panel" style={{ display: "flex" }}>

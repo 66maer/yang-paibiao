@@ -223,7 +223,7 @@ message CreateTeamRequest {
   string dungeons = 4;
   bool bookXuanjing = 5;
   bool bookYuntie = 6;
-  bool isVisible = 7;
+  bool isHidden = 7;
   bool isLock = 8;
   string rule = 9;
   string notice = 10;
@@ -239,6 +239,7 @@ message CreateTeamResponse {
 message CloseTeamRequest {
   uint64 teamId = 1;
   uint64 closeId = 2;
+  string summary = 3;  // 团队总结
 }
 
 // 关闭团队响应
@@ -253,7 +254,7 @@ message UpdateTeamRequest {
   string dungeons = 3;
   bool bookXuanjing = 4;
   bool bookYuntie = 5;
-  bool isVisible = 6;
+  bool isHidden = 6;
   bool isLock = 7;
   string rule = 8;
   string notice = 9;
@@ -315,6 +316,9 @@ message GetTeamResponse {
 // 批量查找开团请求
 message ListTeamsRequest {
   uint64 guildId = 1;
+  string filter = 2;
+  int32 page = 3;
+  int32 pageSize = 4;
 }
 
 // 批量查找开团响应
@@ -351,7 +355,7 @@ message TeamInfo {
   string dungeons = 5;
   bool bookXuanjing = 6;
   bool bookYuntie = 7;
-  bool isVisible = 8;
+  bool isHidden = 8;
   bool isLock = 9;
   string rule = 10;
   string notice = 11;
@@ -361,6 +365,8 @@ message TeamInfo {
   string updateTime = 15;  // ISO8601 格式
   string closeTime = 16;   // ISO8601 格式
   uint64 closeId = 17;
+  string createrNickname = 18;
+  string closeNickname = 19;
 }
 
 // 模板信息

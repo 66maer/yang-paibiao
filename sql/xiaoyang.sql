@@ -200,7 +200,6 @@ CREATE TABLE signups (
     client_type VARCHAR(20),  -- 客户端类型
     lock_slot INT,  -- 锁定到固定位置
     is_dove BOOLEAN NOT NULL,  -- 是否鸽了
-    is_candidate BOOLEAN NOT NULL,  -- 是否是替补
     detail JSONB,  -- 报名详情, 未来拓展
     signup_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 报名时间
     cancel_user_id INT,  -- 取消者ID, 外键
@@ -222,7 +221,6 @@ COMMENT ON COLUMN signups.is_proxy IS '是否是代报名';
 COMMENT ON COLUMN signups.client_type IS '客户端类型';
 COMMENT ON COLUMN signups.lock_slot IS '锁定到固定位置';
 COMMENT ON COLUMN signups.is_dove IS '是否鸽了';
-COMMENT ON COLUMN signups.is_candidate IS '是否是替补';
 COMMENT ON COLUMN signups.detail IS '报名详情';
 COMMENT ON COLUMN signups.signup_time IS '报名时间';
 COMMENT ON COLUMN signups.cancel_user_id IS '取消者ID';
