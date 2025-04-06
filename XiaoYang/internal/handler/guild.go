@@ -277,8 +277,6 @@ func (h *guildServiceHandler) ListGuildMembers(ctx context.Context, req *XiaoYan
 				Value: req.GuildId,
 			},
 		},
-		Page:  0,
-		Limit: 99999,
 	}
 
 	members, _, err := h.guildMemberDao.GetByColumns(ctx, params)

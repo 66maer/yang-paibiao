@@ -20,7 +20,11 @@ import (
 var _ XiaoYangV1.SignupServiceLogicer = (*signupServiceHandler)(nil)
 
 type signupServiceHandler struct {
-	signupDao dao.SignupsDao
+	signupDao      dao.SignupsDao
+	guildMemberDao dao.GuildMembersDao
+	userDao        dao.UsersDao
+	characterDao   dao.CharactersDao
+	teamDao        dao.TeamsDao
 }
 
 // NewSignupServiceHandler create a handler
@@ -29,6 +33,22 @@ func NewSignupServiceHandler() XiaoYangV1.SignupServiceLogicer {
 		signupDao: dao.NewSignupsDao(
 			database.GetDB(),
 			cache.NewSignupsCache(database.GetCacheType()),
+		),
+		guildMemberDao: dao.NewGuildMembersDao(
+			database.GetDB(),
+			cache.NewGuildMembersCache(database.GetCacheType()),
+		),
+		userDao: dao.NewUsersDao(
+			database.GetDB(),
+			cache.NewUsersCache(database.GetCacheType()),
+		),
+		characterDao: dao.NewCharactersDao(
+			database.GetDB(),
+			cache.NewCharactersCache(database.GetCacheType()),
+		),
+		teamDao: dao.NewTeamsDao(
+			database.GetDB(),
+			cache.NewTeamsCache(database.GetCacheType()),
 		),
 	}
 }
@@ -66,6 +86,52 @@ func (h *signupServiceHandler) CreateSignup(ctx context.Context, req *XiaoYangV1
 	}, nil
 }
 
+// 获取用户的群昵称或用户昵称，同时返回QQ号
+func (h *signupServiceHandler) getNickname(ctx context.Context, guildId, userId uint64) (string, string, error) {
+	params := &query.Params{
+		Columns: []query.Column{
+			{
+				Name:  "guild_id",
+				Exp:   query.Eq,
+				Value: guildId,
+			},
+			{
+				Name:  "member_id",
+				Exp:   query.Eq,
+				Value: userId,
+			},
+		},
+	}
+
+	members, _, err := h.guildMemberDao.GetByColumns(ctx, params)
+	if err != nil || len(members) == 0 {
+		return "", "", nil // 成员不存在时返回空值
+	}
+
+	member := members[0]
+	user, err := h.userDao.GetByID(ctx, uint64(member.MemberID))
+	if err != nil {
+		return "", "", err
+	}
+
+	if member.GroupNickname != "" {
+		return member.GroupNickname, user.QqNumber, nil
+	}
+	return user.Nickname, user.QqNumber, nil
+}
+
+// 获取角色名称和心法
+func (h *signupServiceHandler) getCharacterName(ctx context.Context, characterId uint64) (string, string, error) {
+	character, err := h.characterDao.GetByID(ctx, characterId)
+	if err != nil {
+		return "", "", err
+	}
+	if character != nil {
+		return character.Name, character.Xinfa, nil
+	}
+	return "未知", "daxia", nil
+}
+
 // CancelSignup 取消报名
 func (h *signupServiceHandler) CancelSignup(ctx context.Context, req *XiaoYangV1.CancelSignupRequest) (*XiaoYangV1.CancelSignupResponse, error) {
 	err := req.Validate()
@@ -100,6 +166,14 @@ func (h *signupServiceHandler) GetSignupsByTeam(ctx context.Context, req *XiaoYa
 		return nil, ecode.ErrGetSignupsByTeamSignupService.Err("请求参数无效: " + err.Error())
 	}
 
+	// 获取 team_id 对应的 guild_id
+	team, err := h.teamDao.GetByID(ctx, req.TeamId)
+	if err != nil {
+		logger.Warn("GetByID error", logger.Err(err))
+		return nil, ecode.ErrGetSignupsByTeamSignupService.Err("获取团队信息失败: " + err.Error())
+	}
+	guildId := uint64(team.GuildID)
+
 	params := &query.Params{
 		Columns: []query.Column{
 			{
@@ -118,6 +192,35 @@ func (h *signupServiceHandler) GetSignupsByTeam(ctx context.Context, req *XiaoYa
 
 	signups := make([]*XiaoYangV1.SignupInfo, len(data))
 	for i, signup := range data {
+
+		// 获取 SubmitUserId 的昵称和 QQ号
+		submitUserNickname, submitUserQQ, err := h.getNickname(ctx, guildId, uint64(signup.SubmitUserID))
+		if err == nil {
+			utils.UpdateJSONField(signup.SignupInfo, "SubmitUserName", submitUserNickname)
+			utils.UpdateJSONField(signup.SignupInfo, "SubmitUserQQ", submitUserQQ)
+		}
+
+		// 获取 SignupUserId 的昵称和 QQ号
+		signupUserNickname, signupUserQQ, err := h.getNickname(ctx, guildId, uint64(signup.SignupUserID))
+		if err == nil {
+			utils.UpdateJSONField(signup.SignupInfo, "SignupUserName", signupUserNickname)
+			utils.UpdateJSONField(signup.SignupInfo, "SignupUserQQ", signupUserQQ)
+		}
+
+		// 获取 SignupCharacterId 的角色名称和心法
+		characterName, xinfa, err := h.getCharacterName(ctx, uint64(signup.SignupCharacterID))
+		if err == nil {
+			utils.UpdateJSONField(signup.SignupInfo, "CharacterName", characterName)
+			utils.UpdateJSONField(signup.SignupInfo, "CharacterXinfa", xinfa)
+		}
+
+		// 获取 CancelUserId 的昵称和 QQ号
+		cancelUserNickname, cancelUserQQ, err := h.getNickname(ctx, guildId, uint64(signup.CancelUserID))
+		if err == nil {
+			utils.UpdateJSONField(signup.SignupInfo, "CancelUserName", cancelUserNickname)
+			utils.UpdateJSONField(signup.SignupInfo, "CancelUserQQ", cancelUserQQ)
+		}
+
 		signups[i] = &XiaoYangV1.SignupInfo{
 			SignupId:          uint64(signup.ID),
 			TeamId:            uint64(signup.TeamID),

@@ -85,7 +85,7 @@ const BoardEditContent = ({ team = {}, onBack }) => {
   const [signupInfos, setSignupInfos] = useState(team.signupInfos || Array(25).fill({}));
   const [candidateList, setCandidateList] = useState([]); // 添加候补列表状态
   const [signups, setSignups] = useState([]); // 添加原始报名列表状态
-  const [signupInfoEditLog, setSignupInfoEditLog] = useState([]); // 添加报名信息编辑日志状态
+  const [assignedSignups, setAssignedSignups] = useState([]); // 添加团长指定报名状态
   const [loading, setLoading] = useState(true); // 添加加载状态
   const navigate = useNavigate();
 
@@ -103,16 +103,6 @@ const BoardEditContent = ({ team = {}, onBack }) => {
         notice: team.notice,
       });
 
-      setAutoTitle(false); // 编辑模式下关闭自动生成标题
-
-      const fetchSignups = async () => {
-        if (team.teamId) {
-          const signups = await fetchSignupsByTeam(team.teamId);
-          setSignups(signups); // 设置原始报名列表
-        }
-      };
-      fetchSignups();
-
       try {
         const parsedRule = JSON.parse(team.rule || Array(25).fill({}));
         setRules(parsedRule);
@@ -121,41 +111,25 @@ const BoardEditContent = ({ team = {}, onBack }) => {
         message.error("规则解析失败，已重置为默认值");
         setRules(Array(25).fill({}));
       }
+
+      setAutoTitle(false); // 编辑模式下关闭自动生成标题
     }
     setLoading(false); // 数据加载完成后设置为 false
-  }, [teamId]); // 监听 team 的变化
+  }, [team, form]); // 监听 team 的变化
 
   useEffect(() => {
-    const applyEditLog = (signups, editLog) => {
-      const updatedSignups = [...signups];
-      editLog.forEach(({ type, data }) => {
-        if (type === "cancel") {
-          const index = updatedSignups.findIndex((signup) => signup.signupId === data.signupId);
-          if (index !== -1) {
-            updatedSignups[index] = {
-              ...updatedSignups[index],
-              cancelTime: new Date().toISOString(),
-            };
-          }
-        } else if (type === "assign") {
-          updatedSignups.push({
-            ...data,
-            signupTime: new Date().toISOString(),
-          });
-        }
-      });
-      return updatedSignups;
+    const fetchSignups = async () => {
+      if (team.teamId) {
+        const signups = await fetchSignupsByTeam(team.teamId);
+        const [slotMemberList, candidates] = SlotAllocate(rules, signups);
+        setSignupInfos(slotMemberList); // 设置最终的报名列表
+        setCandidateList(candidates); // 设置候补列表
+        setSignups(signups); // 设置原始报名列表
+      }
     };
-    const fixedSignups = applyEditLog(signups, signupInfoEditLog);
-    console.log("Fixed Signups:", fixedSignups);
-    const [slotMemberList, candidates] = SlotAllocate(rules, fixedSignups);
-    setSignupInfos(slotMemberList);
-    setCandidateList(candidates);
-  }, [rules, signups, signupInfoEditLog]);
 
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
+    fetchSignups();
+  }, [team.teamId, rules]); // 添加对 team.teamId 和 rules 的监听
 
   const fetchTemplates = async () => {
     try {
@@ -234,6 +208,10 @@ const BoardEditContent = ({ team = {}, onBack }) => {
     }
   };
 
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
   const pageTitle = teamId ? "编辑团队" : "发布开团";
 
   const generateTitle = () => {
@@ -279,6 +257,26 @@ const BoardEditContent = ({ team = {}, onBack }) => {
       const res = await request.post(api, payload);
       if (res.code === 0) {
         message.success(teamId ? "团队更新成功" : "团队创建成功");
+
+        // 如果有团长指定的报名，一次性提交
+        if (assignedSignups.length > 0) {
+          const createdTeamId = teamId || res.data.teamId;
+          // 提交所有团长指定的报名
+          const assignPromises = assignedSignups.map((assignData) => {
+            return request.post("/signup/createSignup", {
+              ...assignData,
+              teamId: createdTeamId,
+            });
+          });
+
+          try {
+            await Promise.all(assignPromises);
+            message.success("团长指定报名提交成功");
+          } catch (error) {
+            message.error("部分团长指定报名提交失败，请刷新页面后重试");
+          }
+        }
+
         navigate(teamId ? `/board/${teamId}` : `/board/${res.data.teamId}`);
       } else {
         throw new Error(res.msg);
@@ -289,23 +287,14 @@ const BoardEditContent = ({ team = {}, onBack }) => {
   };
 
   const handleRulesChange = (updatedRules) => {
+    console.log("Updated rules:", updatedRules);
     setRules(updatedRules);
   };
 
-  const handleSignupInfoUpdate = (type, data) => {
-    const editLog = [...signupInfoEditLog];
-    if (type === "assign") {
-      const { slotId } = data;
-      const oldSignupInfo = signupInfos[slotId];
-      if (oldSignupInfo) {
-        editLog.push({
-          type: "cancel",
-          data: { signupId: oldSignupInfo.signupId },
-        });
-      }
-    }
-    editLog.push({ type, data });
-    setSignupInfoEditLog(editLog);
+  const handleSignupInfosChange = (updatedSignupInfos, newAssignedSignups) => {
+    console.log("Updated signup infos:", updatedSignupInfos, newAssignedSignups);
+    setSignupInfos(updatedSignupInfos);
+    setAssignedSignups(newAssignedSignups);
   };
 
   const renderSignupList = (signups) => {
@@ -397,12 +386,25 @@ const BoardEditContent = ({ team = {}, onBack }) => {
     };
 
     return (
-      <div className="signup-list-wrapper">
-        <div className="signup-list">
+      <div
+        style={{
+          marginTop: -16,
+          marginRight: -16,
+          marginBottom: -16,
+        }}
+      >
+        <div
+          style={{
+            height: 1000,
+            overflowY: "auto",
+          }}
+        >
           <Timeline
             mode="left"
             items={signups.map((signup) => renderTimelineItem(signup))}
-            className="signup-timeline"
+            style={{
+              marginTop: 16,
+            }}
           />
         </div>
       </div>
@@ -411,14 +413,27 @@ const BoardEditContent = ({ team = {}, onBack }) => {
 
   const renderCandidateList = (candidates) => {
     return (
-      <div className="candidate-list-wrapper">
-        <div className="candidate-list">
+      <div
+        style={{
+          marginTop: -16,
+          marginRight: -16,
+          marginBottom: -16,
+        }}
+      >
+        <div
+          style={{
+            height: 1000,
+            overflowY: "auto",
+          }}
+        >
           {/* <Timeline
             mode="left"
             items={candidates.map((candidate, index) =>
               renderTimelineItem({ ...candidate, index }, true)
             )}
-            className="candidate-timeline"
+            style={{
+              marginTop: 16,
+            }}
           /> */}
         </div>
       </div>
@@ -426,9 +441,9 @@ const BoardEditContent = ({ team = {}, onBack }) => {
   };
 
   return (
-    <Flex className="board-content-wrapper">
+    <Flex style={{ height: "100%" }}>
       {loading ? (
-        <Spin className="board-loading" size="large" />
+        <Spin style={{ margin: "auto" }} size="large" />
       ) : (
         <div className="board-content">
           <Form
@@ -456,11 +471,18 @@ const BoardEditContent = ({ team = {}, onBack }) => {
                 </Button>
               </Space>
             </Flex>
-            <Divider className="board-divider" />
+            <Divider style={{ marginTop: 5 }} />
 
             <Space size={20} align="baseline">
               <Form.Item name="title" label="开团标题">
-                <Input showCount maxLength={30} disabled={autoTitle} className="board-title-input" />
+                <Input
+                  showCount
+                  maxLength={30}
+                  disabled={autoTitle}
+                  style={{
+                    width: 800,
+                  }}
+                />
               </Form.Item>
               <Form.Item name="isLock">
                 <FormSwitchButton
@@ -493,7 +515,7 @@ const BoardEditContent = ({ team = {}, onBack }) => {
                 </Space>
               </Form.Item>
               <Form.Item name="dungeons" label="副本" rules={[{ required: true }]}>
-                <Select options={dungeonsTable} className="board-dungeon-select" placeholder="请选择副本" />
+                <Select options={dungeonsTable} style={{ width: 150 }} placeholder="请选择副本" />
               </Form.Item>
               <Form.Item label="生成标题">
                 <Switch
@@ -522,7 +544,7 @@ const BoardEditContent = ({ team = {}, onBack }) => {
             <Form.Item label="使用模板">
               <Space>
                 <Select
-                  className="board-template-select"
+                  style={{ width: 200 }}
                   options={templates.map((tpl) => ({
                     label: tpl.title,
                     value: tpl.templateId,
@@ -538,7 +560,7 @@ const BoardEditContent = ({ team = {}, onBack }) => {
               </Space>
             </Form.Item>
 
-            <Form.Item name="notice" label="团队告示" className="board-notice">
+            <Form.Item name="notice" label="团队告示" style={{ width: 800 }}>
               <Input.TextArea
                 showCount
                 autoSize={{
@@ -553,15 +575,20 @@ const BoardEditContent = ({ team = {}, onBack }) => {
           <SlotPanel
             mode="edit"
             rules={rules}
-            signup_infos={signupInfos}
+            signup_infos={signupInfos} // 将最终的报名列表传递给 SlotPanel
             onRulesChange={handleRulesChange}
-            onSignupInfoUpdate={handleSignupInfoUpdate}
+            onSignupInfosChange={handleSignupInfosChange}
           />
         </div>
       )}
-      <div className="board-sidebar">
+      <div
+        style={{
+          width: 265,
+          marginLeft: 10,
+        }}
+      >
         <Collapse
-          className="board-collapse"
+          style={{ width: 250 }}
           items={[
             {
               label: "报名列表",

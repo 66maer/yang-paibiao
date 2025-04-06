@@ -31,6 +31,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { fetchGuildMembersWithCache } from "@/store/modules/guild";
 import CloseTeamModal from "./close"; // 导入 closeTeam 函数
 import SignupModal from "./singup";
+import SlotAllocate from "@/components/SlotAllocate"; // 导入 SlotAllocate 函数
 
 const { Header, Content, Footer, Sider } = Layout;
 const { Text, Title, Paragraph } = Typography;
@@ -53,15 +54,25 @@ const fetchTeamList = async () => {
   }
 };
 
-const fetchSignupsByTeam = async (teamId) => {
+export const fetchSignupsByTeam = async (teamId) => {
   try {
     const res = await request.post("/signup/getSignupsByTeam", {
       teamId,
     });
     if (res.code === 0) {
-      return res.data.signups;
+      return res.data.signups.map((signup) => {
+        const parsedSignupInfo = (() => {
+          try {
+            return JSON.parse(signup.signupInfo || "{}");
+          } catch (error) {
+            console.error("Failed to parse signupInfo:", error);
+            return {};
+          }
+        })();
+        return { ...signup, ...parsedSignupInfo };
+      });
     } else {
-      throw new Error("获取报名列表失败");
+      throw new Error(res.msg || "获取报名列表失败");
     }
   } catch (error) {
     console.error("Failed to fetch signups:", error);
@@ -94,11 +105,14 @@ const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
   const [closeTeamVisible, setCloseTeamVisible] = useState(false);
   const [signupVisible, setSignupVisible] = useState(false);
   const [signupList, setSignupList] = useState([]);
+  const [slotMemberList, setSlotMemberList] = useState([]);
   const navigate = useNavigate();
 
   const refreshSignupList = async () => {
     const signups = await fetchSignupsByTeam(teamId);
+    const [slotMemberList, candidateList] = SlotAllocate(parsedRule, signups);
     setSignupList(signups);
+    setSlotMemberList(slotMemberList);
   };
 
   const handleSignUp = () => {
@@ -213,7 +227,7 @@ const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
           </div>
         </pre>
       </Paragraph>
-      <SlotPanel rules={parsedRule} />
+      <SlotPanel rules={parsedRule} signup_infos={slotMemberList} />
       <CloseTeamModal
         team={team}
         visible={closeTeamVisible}

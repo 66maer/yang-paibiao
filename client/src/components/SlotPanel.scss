@@ -21,6 +21,7 @@
       background: rgba(0, 0, 0, 0.1);
       cursor: pointer;
       transition: background 0.3s;
+      z-index: 1;
 
       &.mask-rule {
         top: 0;

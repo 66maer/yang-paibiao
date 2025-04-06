@@ -4,7 +4,7 @@ import { getLocalToken } from "./token";
 const request = axios.create({
   // baseURL: "http://api.zyhm.fun/api",
   baseURL: "http://localhost:8080/api/v1",
-  timeout: 5000,
+  //timeout: 5000,
 });
 
 request.interceptors.request.use(

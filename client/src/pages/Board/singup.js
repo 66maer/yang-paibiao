@@ -94,11 +94,29 @@ const SignupModal = ({
         characters.find((char) => char.name === values.signupCharacterId)
           ?.characterId || 0;
 
+      const submitName =
+        members.find((member) => member.userId === submitUserId)
+          ?.groupNickname || "未知";
+      const signupName =
+        members.find((member) => member.userId === signupUserId)
+          ?.groupNickname || values.submitUserId;
+      const characterName =
+        characters.find((char) => char.characterId === signupCharacterId)
+          ?.name || values.signupCharacterId;
+
+      const signupInfo = JSON.stringify({
+        submitName,
+        signupName,
+        characterName,
+        characterXinfa: values.xinfa || "未知",
+        isLock: false,
+      });
+
       console.log("报名信息", {
         submitUserId,
         signupUserId,
         signupCharacterId,
-        xinfa: values.xinfa,
+        signupInfo,
         isRich: values.isRich,
         isProxy,
       });
@@ -115,7 +133,6 @@ const SignupModal = ({
         return;
       }
 
-      console.log("signupList", signupList);
       const isInvalidSelfSignup = signupList.some(
         (signup) =>
           !isProxy &&
@@ -130,22 +147,6 @@ const SignupModal = ({
       }
 
       const clientType = values.isWujie ? "无界" : "旗舰";
-      const signupInfo = JSON.stringify({
-        submit_name:
-          members.find((member) => member.userId === submitUserId)
-            ?.groupNickname || "未知",
-        signup_name:
-          members.find((member) => member.userId === signupUserId)
-            ?.groupNickname || "未知",
-        character_name:
-          characters.find((char) => char.characterId === signupCharacterId)
-            ?.name || "未知",
-        character_xinfa: values.xinfa || "未知",
-        client_type: clientType,
-        is_rich: values.isRich || false,
-        is_proxy: isProxy,
-        is_lock: false,
-      });
 
       const res = await request.post("/signup/createSignup", {
         teamId,
@@ -217,6 +218,12 @@ const SignupModal = ({
     }
   };
 
+  const onFilterOption = (inputValue, option) => {
+    const regex = new RegExp(inputValue.split("").join(".*"));
+    const list = xinfaInfoTable[option.value].nickname;
+    return list.some((item) => regex.test(item));
+  };
+
   return (
     <Modal
       title="报名"
@@ -279,6 +286,7 @@ const SignupModal = ({
               ),
               value: xinfa,
             }))}
+            filterOption={onFilterOption}
           />
         </Form.Item>
         <Row gutter={16}>

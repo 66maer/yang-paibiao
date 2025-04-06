@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"time"
 
 	"gorm.io/datatypes"
@@ -64,4 +65,24 @@ func ISO8601ToTimePtr(s string) *time.Time {
 func CurrentTimePtr() *time.Time {
 	t := time.Now()
 	return &t
+}
+
+// UpdateJSONField 更新 *datatypes.JSON 中的指定字段
+func UpdateJSONField(j *datatypes.JSON, key string, value interface{}) {
+	if j == nil {
+		return
+	}
+
+	var data map[string]interface{}
+	if err := json.Unmarshal(*j, &data); err != nil {
+		return
+	}
+
+	data[key] = value
+	updatedJSON, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+
+	*j = datatypes.JSON(updatedJSON)
 }

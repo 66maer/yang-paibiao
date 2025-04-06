@@ -9,7 +9,7 @@ const SampleAllocate = (rules, slots, signupInfo, last = -1) => {
       slots[idx] = signupInfo;
       return idx;
     }
-    if (allowXinfaList.includes(signupInfo.xinfa)) {
+    if (allowXinfaList?.includes(signupInfo.characterXinfa)) {
       slots[idx] = signupInfo;
       return idx;
     }
@@ -23,14 +23,14 @@ const DFS = (resSlots, rules, slots, signupList, candidateList) => {
     return true;
   }
   for (const [idx, signupInfo] of signupList.entries()) {
-    if (signupInfo.cancelTime != null) {
+    if (signupInfo.cancelTime != null || signupInfo.cancelTime == "") {
       continue; // 已经取消报名的不处理
     }
     if (candidateList.includes(signupInfo)) {
       continue; // 已经在候补列表了, 不再处理
     }
-    if (signupInfo.isLock && signupInfo.lockSlotId != null) {
-      slots[signupInfo.lockSlotId] = signupInfo;
+    if (signupInfo.isLock && signupInfo.lockSlot != null) {
+      slots[signupInfo.lockSlot] = signupInfo;
       continue; // 钦定的位置直接插入
     }
     let last = -1;
@@ -40,9 +40,7 @@ const DFS = (resSlots, rules, slots, signupList, candidateList) => {
       if (last == -1) {
         return false;
       }
-      if (
-        DFS(resSlots, rules, newSlots, signupList.slice(idx + 1), candidateList)
-      ) {
+      if (DFS(resSlots, rules, newSlots, signupList.slice(idx + 1), candidateList)) {
         return true;
       }
     }
@@ -61,14 +59,14 @@ const SlotAllocate = (teamRules, signupList) => {
   ];
 
   for (const [idx, signupInfo] of sortedSignupList.entries()) {
-    if (signupInfo.cancelTime != null) {
+    if (signupInfo.cancelTime) {
       continue; // 已经取消报名的不处理
     }
     if (candidateList.includes(signupInfo)) {
       continue; // 已经在候补列表了, 不再处理
     }
-    if (signupInfo.isLock && signupInfo.lockSlotId != null) {
-      slotMemberList[signupInfo.lockSlotId] = signupInfo;
+    if (signupInfo.isLock && signupInfo.lockSlot != null) {
+      slotMemberList[signupInfo.lockSlot] = signupInfo;
       continue; // 钦定的位置直接插入
     }
 
@@ -82,13 +80,7 @@ const SlotAllocate = (teamRules, signupList) => {
     const newSlotMemberList = Array(teamRules.length).fill(null);
     const tmpSlotMemberList = newSlotMemberList.slice();
 
-    const res = DFS(
-      newSlotMemberList,
-      teamRules,
-      tmpSlotMemberList,
-      signupList.slice(0, idx + 1),
-      candidateList
-    );
+    const res = DFS(newSlotMemberList, teamRules, tmpSlotMemberList, signupList.slice(0, idx + 1), candidateList);
     if (res) {
       slotMemberList.splice(0, slotMemberList.length, ...newSlotMemberList);
     } else {
@@ -96,14 +88,14 @@ const SlotAllocate = (teamRules, signupList) => {
     }
   }
 
-  const teamSlots = slotMemberList.map((signupInfo, idx) => {
-    return {
-      rule: teamRules[idx],
-      member: signupInfo,
-    };
-  });
+  // const teamSlots = slotMemberList.map((signupInfo, idx) => {
+  //   return {
+  //     rule: teamRules[idx],
+  //     member: signupInfo,
+  //   };
+  // });
 
-  return [teamSlots, candidateList];
+  return [slotMemberList, candidateList];
 };
 
 export default SlotAllocate;
