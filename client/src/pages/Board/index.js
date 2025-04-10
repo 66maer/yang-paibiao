@@ -12,6 +12,11 @@ import {
   Empty,
   Tooltip,
   message,
+  Collapse,
+  Table,
+  List,
+  Divider,
+  Popover,
 } from "antd";
 import { request } from "@/utils/request";
 import SlotCard from "@/components/SlotCard";
@@ -82,15 +87,7 @@ export const fetchSignupsByTeam = async (teamId) => {
 
 const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
   const { teamId, title, teamTime, dungeons, rule, notice } = team;
-  const {
-    bookXuanjing,
-    bookYuntie,
-    isLock,
-    isHidden,
-    createTime,
-    updateTime,
-    createrNickname,
-  } = team;
+  const { bookXuanjing, bookYuntie, isLock, isHidden, createTime, updateTime, createrNickname } = team;
 
   let parsedRule = [];
   try {
@@ -106,6 +103,8 @@ const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
   const [signupVisible, setSignupVisible] = useState(false);
   const [signupList, setSignupList] = useState([]);
   const [slotMemberList, setSlotMemberList] = useState([]);
+  const [candidateList, setCandidateList] = useState([]);
+  const [mySignup, setMySignup] = useState();
   const navigate = useNavigate();
 
   const refreshSignupList = async () => {
@@ -113,6 +112,14 @@ const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
     const [slotMemberList, candidateList] = SlotAllocate(parsedRule, signups);
     setSignupList(signups);
     setSlotMemberList(slotMemberList);
+    setCandidateList(candidateList);
+    setMySignup(
+      signups.filter(
+        (signup) =>
+          (!signup.cancelTime || signup.cancelTime === "") &&
+          (signup.submitUserId === store.getState().user.userId || signup.signupUserId === store.getState().user.userId)
+      )
+    );
   };
 
   const handleSignUp = () => {
@@ -135,14 +142,7 @@ const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
     <div className="board-content">
       <Flex justify="space-between" align="center">
         <div style={{ display: "flex", alignItems: "center" }}>
-          {isLock && (
-            <Avatar
-              size={32}
-              shape="square"
-              src="/lock.svg"
-              className="board-content-avatar"
-            />
-          )}
+          {isLock && <Avatar size={32} shape="square" src="/lock.svg" className="board-content-avatar" />}
           <Space>
             <Title level={2} className="board-content-title">
               {title}
@@ -157,20 +157,12 @@ const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
         <Space>
           {isAdmin && (
             <Tooltip title="编辑开团">
-              <Button
-                shape="circle"
-                icon={<EditOutlined />}
-                onClick={() => navigate(`/board/edit/${teamId}`)}
-              />
+              <Button shape="circle" icon={<EditOutlined />} onClick={() => navigate(`/board/edit/${teamId}`)} />
             </Tooltip>
           )}
           {isAdmin && (
             <Tooltip title="关闭开团">
-              <Button
-                shape="circle"
-                icon={<CloseCircleOutlined />}
-                onClick={handleCloseTeam}
-              />
+              <Button shape="circle" icon={<CloseCircleOutlined />} onClick={handleCloseTeam} />
             </Tooltip>
           )}
           <Tooltip title={isLock ? "报名已被锁定" : ""}>
@@ -188,18 +180,10 @@ const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
           <Tag icon={<ClockCircleOutlined />} className="team-tag" color="cyan">
             {new Date(teamTime).toLocaleString()}
           </Tag>
-          <Tag
-            className="team-tag"
-            icon={<img src="/玄晶.png" alt="玄晶" />}
-            color={bookXuanjing ? "#f50" : "#5a0"}
-          >
+          <Tag className="team-tag" icon={<img src="/玄晶.png" alt="玄晶" />} color={bookXuanjing ? "#f50" : "#5a0"}>
             {bookXuanjing ? "大铁已包" : "大铁可拍"}
           </Tag>
-          <Tag
-            className="team-tag"
-            icon={<img src="/陨铁.png" alt="陨铁" />}
-            color={bookYuntie ? "#f50" : "#5a0"}
-          >
+          <Tag className="team-tag" icon={<img src="/陨铁.png" alt="陨铁" />} color={bookYuntie ? "#f50" : "#5a0"}>
             {bookYuntie ? "小铁已包" : "小铁可拍"}
           </Tag>
           <blockquote>
@@ -221,13 +205,70 @@ const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
               color: "#888",
             }}
           >
-            由 {createrNickname || "未知"} 创建于{" "}
-            {new Date(createTime).toLocaleString()}， 最后更新时间{" "}
+            由 {createrNickname || "未知"} 创建于 {new Date(createTime).toLocaleString()}， 最后更新时间{" "}
             {new Date(updateTime).toLocaleString()}
           </div>
         </pre>
       </Paragraph>
       <SlotPanel rules={parsedRule} signup_infos={slotMemberList} />
+      {(candidateList.length > 0 || mySignup) && <Divider />}
+      {candidateList.length > 0 && (
+        <Collapse>
+          <Collapse.Panel header="候补列表" key="1">
+            <List
+              grid={{ gutter: 16, column: 4 }}
+              dataSource={candidateList}
+              renderItem={(item) => (
+                <List.Item>
+                  <SlotCard signupInfo={item} rulePopover={false} />
+                </List.Item>
+              )}
+            />
+          </Collapse.Panel>
+        </Collapse>
+      )}
+      {mySignup && (
+        <Collapse>
+          <Collapse.Panel header="我的报名" key="2">
+            <List
+              grid={{ gutter: 16, column: 4 }}
+              dataSource={mySignup}
+              renderItem={(item) => (
+                <List.Item>
+                  <Popover
+                    content={
+                      <Button
+                        danger
+                        onClick={async () => {
+                          try {
+                            await request.post("/signup/cancelSignup", {
+                              signupIds: [item.signupId],
+                              cancelUserId: store.getState().user.userId,
+                            });
+                            message.success("取消报名成功");
+                            refreshSignupList();
+                          } catch (error) {
+                            console.error("Failed to cancel signup:", error);
+                            message.error("取消报名失败");
+                          }
+                        }}
+                      >
+                        取消报名
+                      </Button>
+                    }
+                    title="操作"
+                    trigger="click"
+                  >
+                    <div>
+                      <SlotCard signupInfo={item} rulePopover={false} />
+                    </div>
+                  </Popover>
+                </List.Item>
+              )}
+            />
+          </Collapse.Panel>
+        </Collapse>
+      )}
       <CloseTeamModal
         team={team}
         visible={closeTeamVisible}
@@ -303,9 +344,7 @@ const BoardLayoutSider = ({ isAdmin, teamList, teamId }) => {
         mode="inline"
         defaultSelectedKeys={[defaultSelectedKey]}
         defaultOpenKeys={menuItems
-          .filter((item) =>
-            item.children.some((child) => child.key === defaultSelectedKey)
-          )
+          .filter((item) => item.children.some((child) => child.key === defaultSelectedKey))
           .map((item) => item.key)}
         items={menuItems}
         style={{ background: "#f6e0e0" }}
@@ -326,10 +365,7 @@ const Board = () => {
     try {
       const teams = await fetchTeamList();
       setTeamList(teams);
-      if (
-        teams.length > 0 &&
-        (!teamId || !teams.some((team) => team.teamId == teamId))
-      ) {
+      if (teams.length > 0 && (!teamId || !teams.some((team) => team.teamId == teamId))) {
         navigate(`/board/${teams[0].teamId}`);
       }
     } catch (err) {
@@ -369,11 +405,7 @@ const Board = () => {
   return (
     <Layout className="board-layout">
       <Sider className="board-layout-sider" width={250}>
-        <BoardLayoutSider
-          isAdmin={isAdmin}
-          teamList={teamList}
-          teamId={teamId}
-        />
+        <BoardLayoutSider isAdmin={isAdmin} teamList={teamList} teamId={teamId} />
       </Sider>
       <Content className="board-layout-content">
         {selectedTeam ? (
@@ -391,10 +423,7 @@ const Board = () => {
               height: "100%",
             }}
           >
-            <Empty
-              style={{}}
-              description="最近没开团，别急，尊重夕阳红命运..."
-            />
+            <Empty style={{}} description="最近没开团，别急，尊重夕阳红命运..." />
           </div>
         )}
       </Content>

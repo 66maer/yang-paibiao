@@ -34,15 +34,15 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 };
 
 service SignupService {
-  // 报名
+  // 批量报名
   rpc CreateSignup(CreateSignupRequest) returns (CreateSignupResponse) {
     option (google.api.http) = {
       post: "/api/v1/signup/createSignup"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "报名"
-      description: "创建新的报名记录"
+      summary: "批量报名"
+      description: "创建新的批量报名记录"
       security: {
         security_requirement: {
           key: "BearerAuth"
@@ -52,15 +52,15 @@ service SignupService {
     };
   }
 
-  // 取消报名
+  // 批量取消报名
   rpc CancelSignup(CancelSignupRequest) returns (CancelSignupResponse) {
     option (google.api.http) = {
       post: "/api/v1/signup/cancelSignup"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "取消报名"
-      description: "取消报名记录"
+      summary: "批量取消报名"
+      description: "批量取消报名记录"
       security: {
         security_requirement: {
           key: "BearerAuth"
@@ -89,34 +89,39 @@ service SignupService {
   }
 }
 
-// 报名请求
+// 批量报名请求
 message CreateSignupRequest {
-  uint64 teamId = 1;
-  uint64 submitUserId = 2;
-  uint64 signupUserId = 3;
-  uint64 signupCharacterId = 4;
-  string signupInfo = 5;  // 报名展示信息
-  int32 priority = 6;
-  bool isRich = 7;
-  bool isProxy = 8;
-  string clientType = 9;
-  int32 lockSlot = 10;
+  repeated SignupInfo signups = 1;  // 批量报名信息
 }
 
-// 报名响应
+// 批量报名响应
 message CreateSignupResponse {
-  bool success = 1;
+  repeated SignupResult results = 1;  // 每个报名的结果
 }
 
-// 取消报名请求
+// 报名结果
+message SignupResult {
+  uint64 signupId = 1;      // 报名ID
+  bool success = 2;         // 是否成功
+  string errorMessage = 3;  // 错误信息（如果失败）
+}
+
+// 批量取消报名请求
 message CancelSignupRequest {
-  uint64 signupId = 1;
-  uint64 cancelUserId = 2;
+  repeated uint64 signupIds = 1;  // 报名ID列表
+  uint64 cancelUserId = 2;        // 取消操作的用户ID
 }
 
-// 取消报名响应
+// 批量取消报名响应
 message CancelSignupResponse {
-  bool success = 1;
+  repeated CancelResult results = 1;  // 每个取消操作的结果
+}
+
+// 取消结果
+message CancelResult {
+  uint64 signupId = 1;      // 报名ID
+  bool success = 2;         // 是否成功
+  string errorMessage = 3;  // 错误信息（如果失败）
 }
 
 // 获取报名信息请求

@@ -153,9 +153,9 @@ const signupContent = (signup_info) => {
           <Avatar src={`/xinfa/${xinfa.icon}`} alt={xinfa.name} draggable={false} />
           <div className="labels">
             {clientType === "无界" && label("/mobile.svg", "无界", "我将使用无界端形态出战")}
-            {isLock && label("/lock.svg", "锁定", "被团长钦定——团长已经撅腚了，你来打这一车！")}
             {isDove && label("/dove.svg", "鸽子", "此人放鸽子！可耻！！")}
             {isRich && label("/rich.svg", "老板", "我是尊贵的老板")}
+            {isLock && label("/lock.svg", "锁定", "被团长钦定——团长已经撅腚了，你来打这一车！")}
           </div>
         </div>
         <div className="body">
@@ -168,19 +168,21 @@ const signupContent = (signup_info) => {
   );
 };
 
-const SlotCardCanvas = ({ rule, signup_info }) => {
+const SlotCardCanvas = ({ rule, signup_info, rulePopover }) => {
   if (!signup_info || Object.keys(signup_info).length === 0) {
     return <div className="slot-card-canvas slot-rule">{ruleContent(rule)}</div>;
   }
-  return (
+  return rulePopover ? (
     <Popover content={ruleContent(rule)} trigger="click">
       {signupContent(signup_info)}
     </Popover>
+  ) : (
+    signupContent(signup_info)
   );
 };
 
-const SlotCard = ({ rule = {}, signupInfo = {} }) => {
-  return <SlotCardCanvas rule={rule} signup_info={signupInfo} />;
+const SlotCard = ({ rule = {}, signupInfo = {}, rulePopover = true }) => {
+  return <SlotCardCanvas rule={rule} signup_info={signupInfo} rulePopover={rulePopover} />;
 };
 
 export default SlotCard;

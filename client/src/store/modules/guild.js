@@ -6,7 +6,9 @@ const guildSlice = createSlice({
   initialState: {
     guildId: 1, // 当前群组ID (目前不考虑做多群组，只有一个)
     ukey: "zyhm", // 当前群组 (目前不考虑做多群组，只有一个)
+    name: "醉倚花眠", // 当前群组名称 (目前不考虑做多群组，只有一个)
     role: "member", // 当前群组中的角色
+    groupNickname: "", // 当前用户在群组中的昵称
     guilds: ["zyhm"], // 当前用户所在的所有群组
     guildMembers: {}, // 缓存群组成员数据
   },
@@ -24,11 +26,13 @@ const guildSlice = createSlice({
       const { guildId, members } = action.payload;
       state.guildMembers[guildId] = members;
     },
+    setGroupNickname(state, action) {
+      state.groupNickname = action.payload;
+    },
   },
 });
 
-const { setCurLeague, setRole, setGuilds, setGuildMembers } =
-  guildSlice.actions;
+const { setCurLeague, setRole, setGuilds, setGuildMembers, setGroupNickname } = guildSlice.actions;
 
 const fetchGetLeagueRole = (userId) => {
   return async (dispatch) => {
@@ -41,6 +45,7 @@ const fetchGetLeagueRole = (userId) => {
       throw new Error(res.msg);
     }
     dispatch(setRole(res.data.memberInfo.groupRole));
+    dispatch(setGroupNickname(res.data.memberInfo.groupNickname)); // 设置群昵称
   };
 };
 
@@ -76,5 +81,6 @@ export {
   setCurLeague,
   setRole,
   setGuilds,
+  setGroupNickname,
 };
 export default guildSlice.reducer;

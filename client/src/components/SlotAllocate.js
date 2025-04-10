@@ -1,101 +1,93 @@
-const SampleAllocate = (rules, slots, signupInfo, last = -1) => {
-  for (let idx = last + 1; idx < rules.length; idx++) {
-    const rule = rules[idx];
-    if (slots[idx] != null) {
-      continue; // 这个位置已经有人了
-    }
-    const { allowRich, allowXinfaList } = rule;
-    if (allowRich && signupInfo.isRich && allowRich == signupInfo.isRich) {
-      slots[idx] = signupInfo;
-      return idx;
-    }
-    if (allowXinfaList?.includes(signupInfo.characterXinfa)) {
-      slots[idx] = signupInfo;
-      return idx;
-    }
-  }
-  return -1;
-};
+function SlotAllocate(ruleList, signupList) {
+  const result = new Array(ruleList.length).fill(null);
+  const occupied = new Array(ruleList.length).fill(false);
 
-const DFS = (resSlots, rules, slots, signupList, candidateList) => {
-  if (signupList.length == 0) {
-    resSlots.splice(0, resSlots.length, ...slots);
-    return true;
+  // 移除取消报名的成员
+  signupList = signupList.filter((m) => !m.cancelTime || m.cancelTime === "");
+
+  // 处理锁定成员
+  for (const signup of signupList) {
+    if (signup.isLock) {
+      const slot = signup.lockSlot;
+      result[slot] = signup;
+      occupied[slot] = true;
+    }
   }
-  for (const [idx, signupInfo] of signupList.entries()) {
-    if (signupInfo.cancelTime != null || signupInfo.cancelTime == "") {
-      continue; // 已经取消报名的不处理
+
+  // 收集未被锁定的成员和坑位
+  const unlockedMembers = signupList.filter((m) => !m.isLock);
+  const unlockedSlots = [];
+  for (let i = 0; i < ruleList.length; i++) {
+    if (!occupied[i]) {
+      unlockedSlots.push(i);
     }
-    if (candidateList.includes(signupInfo)) {
-      continue; // 已经在候补列表了, 不再处理
-    }
-    if (signupInfo.isLock && signupInfo.lockSlot != null) {
-      slots[signupInfo.lockSlot] = signupInfo;
-      continue; // 钦定的位置直接插入
-    }
-    let last = -1;
-    while (true) {
-      const newSlots = slots.slice();
-      last = SampleAllocate(rules, newSlots, signupInfo, last);
-      if (last == -1) {
-        return false;
+  }
+
+  // 构建邻接表：每个未被锁定的成员可以匹配的坑位
+  const adj = [];
+  for (const member of unlockedMembers) {
+    const possibleSlots = [];
+    for (const slot of unlockedSlots) {
+      const rule = ruleList[slot];
+      if (member.isRich) {
+        if (!rule.allowRich) continue;
+      } else {
+        if (!rule.allowXinfaList || !rule.allowXinfaList.includes(member.characterXinfa)) continue;
       }
-      if (DFS(resSlots, rules, newSlots, signupList.slice(idx + 1), candidateList)) {
+      possibleSlots.push(slot);
+    }
+    adj.push(possibleSlots);
+  }
+
+  // 匈牙利算法数据结构
+  const matchToSlot = new Map(); // 成员索引 => 坑位索引（原数组）
+  const slotMatchedTo = new Map(); // 坑位索引 => 成员索引
+
+  function dfs(memberIdx, visited) {
+    if (visited[memberIdx]) return false;
+    visited[memberIdx] = true;
+
+    const possibleSlots = adj[memberIdx];
+    for (const slot of possibleSlots) {
+      if (!slotMatchedTo.has(slot)) {
+        // 坑位未被占用，直接匹配
+        matchToSlot.set(memberIdx, slot);
+        slotMatchedTo.set(slot, memberIdx);
         return true;
+      } else {
+        const prevMemberIdx = slotMatchedTo.get(slot);
+        if (dfs(prevMemberIdx, visited)) {
+          // 原占用的成员找到了新的坑位，当前成员占据此坑位
+          matchToSlot.set(memberIdx, slot);
+          slotMatchedTo.set(slot, memberIdx);
+          return true;
+        }
       }
     }
+    return false;
   }
-  return false;
-};
 
-const SlotAllocate = (teamRules, signupList) => {
-  const slotMemberList = Array(teamRules.length).fill(null);
-  const candidateList = [];
+  // 按报名顺序处理每个未被锁定的成员
+  for (let i = 0; i < unlockedMembers.length; i++) {
+    const visited = new Array(unlockedMembers.length).fill(false);
+    dfs(i, visited);
+  }
 
-  // 对 signupList 进行排序，将 isLock 的元素提到前面
-  const sortedSignupList = [
-    ...signupList.filter((signupInfo) => signupInfo.isLock),
-    ...signupList.filter((signupInfo) => !signupInfo.isLock),
-  ];
+  // 填充匹配结果到最终数组
+  for (const [memberIdx, slot] of matchToSlot) {
+    result[slot] = unlockedMembers[memberIdx];
+  }
 
-  for (const [idx, signupInfo] of sortedSignupList.entries()) {
-    if (signupInfo.cancelTime) {
-      continue; // 已经取消报名的不处理
-    }
-    if (candidateList.includes(signupInfo)) {
-      continue; // 已经在候补列表了, 不再处理
-    }
-    if (signupInfo.isLock && signupInfo.lockSlot != null) {
-      slotMemberList[signupInfo.lockSlot] = signupInfo;
-      continue; // 钦定的位置直接插入
-    }
-
-    // 先进行简单插入
-    const resIdx = SampleAllocate(teamRules, slotMemberList, signupInfo);
-    if (resIdx != -1) {
-      continue;
-    }
-
-    // 无法简单插入，尝试回朔重排
-    const newSlotMemberList = Array(teamRules.length).fill(null);
-    const tmpSlotMemberList = newSlotMemberList.slice();
-
-    const res = DFS(newSlotMemberList, teamRules, tmpSlotMemberList, signupList.slice(0, idx + 1), candidateList);
-    if (res) {
-      slotMemberList.splice(0, slotMemberList.length, ...newSlotMemberList);
-    } else {
-      candidateList.push(signupInfo);
+  // 构建候补列表（按原报名顺序中未被匹配的成员）
+  const alternate = [];
+  const matchedMembers = new Set(matchToSlot.keys());
+  for (let i = 0; i < unlockedMembers.length; i++) {
+    if (!matchedMembers.has(i)) {
+      alternate.push(unlockedMembers[i]);
     }
   }
 
-  // const teamSlots = slotMemberList.map((signupInfo, idx) => {
-  //   return {
-  //     rule: teamRules[idx],
-  //     member: signupInfo,
-  //   };
-  // });
-
-  return [slotMemberList, candidateList];
-};
+  return [result, alternate];
+}
 
 export default SlotAllocate;

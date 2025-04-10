@@ -4,6 +4,7 @@ package handler
 
 import (
 	"context"
+	"sort"
 
 	XiaoYangV1 "XiaoYang/api/XiaoYang/v1"
 	"XiaoYang/internal/cache"
@@ -53,7 +54,7 @@ func NewSignupServiceHandler() XiaoYangV1.SignupServiceLogicer {
 	}
 }
 
-// CreateSignup 报名
+// CreateSignup 批量报名
 func (h *signupServiceHandler) CreateSignup(ctx context.Context, req *XiaoYangV1.CreateSignupRequest) (*XiaoYangV1.CreateSignupResponse, error) {
 	err := req.Validate()
 	if err != nil {
@@ -61,28 +62,41 @@ func (h *signupServiceHandler) CreateSignup(ctx context.Context, req *XiaoYangV1
 		return nil, ecode.ErrCreateSignupSignupService.Err("请求参数无效: " + err.Error())
 	}
 
-	data := &model.Signups{
-		TeamID:            int(req.TeamId),
-		SubmitUserID:      int(req.SubmitUserId),
-		SignupUserID:      int(req.SignupUserId),
-		SignupCharacterID: int(req.SignupCharacterId),
-		SignupInfo:        utils.StringToJSONPtr(req.SignupInfo),
-		Priority:          int(req.Priority),
-		IsRich:            req.IsRich,
-		IsProxy:           req.IsProxy,
-		ClientType:        req.ClientType,
-		LockSlot:          int(req.LockSlot),
-		SignupTime:        utils.CurrentTimePtr(),
-	}
+	results := make([]*XiaoYangV1.SignupResult, len(req.Signups))
+	for i, signup := range req.Signups {
+		data := &model.Signups{
+			TeamID:            int(signup.TeamId),
+			SubmitUserID:      int(signup.SubmitUserId),
+			SignupUserID:      int(signup.SignupUserId),
+			SignupCharacterID: int(signup.SignupCharacterId),
+			SignupInfo:        utils.StringToJSONPtr(signup.SignupInfo),
+			Priority:          int(signup.Priority),
+			IsRich:            signup.IsRich,
+			IsProxy:           signup.IsProxy,
+			ClientType:        signup.ClientType,
+			LockSlot:          int(signup.LockSlot),
+			SignupTime:        utils.CurrentTimePtr(),
+		}
 
-	err = h.signupDao.Create(ctx, data)
-	if err != nil {
-		logger.Warn("CreateSignup error", logger.Err(err))
-		return nil, ecode.ErrCreateSignupSignupService.Err("创建报名失败: " + err.Error())
+		err = h.signupDao.Create(ctx, data)
+		if err != nil {
+			logger.Warn("CreateSignup error", logger.Err(err))
+			results[i] = &XiaoYangV1.SignupResult{
+				SignupId:     0,
+				Success:      false,
+				ErrorMessage: "创建报名失败: " + err.Error(),
+			}
+			continue
+		}
+
+		results[i] = &XiaoYangV1.SignupResult{
+			SignupId: uint64(data.ID),
+			Success:  true,
+		}
 	}
 
 	return &XiaoYangV1.CreateSignupResponse{
-		Success: true,
+		Results: results,
 	}, nil
 }
 
@@ -132,7 +146,7 @@ func (h *signupServiceHandler) getCharacterName(ctx context.Context, characterId
 	return "未知", "daxia", nil
 }
 
-// CancelSignup 取消报名
+// CancelSignup 批量取消报名
 func (h *signupServiceHandler) CancelSignup(ctx context.Context, req *XiaoYangV1.CancelSignupRequest) (*XiaoYangV1.CancelSignupResponse, error) {
 	err := req.Validate()
 	if err != nil {
@@ -140,22 +154,42 @@ func (h *signupServiceHandler) CancelSignup(ctx context.Context, req *XiaoYangV1
 		return nil, ecode.ErrCancelSignupSignupService.Err("请求参数无效: " + err.Error())
 	}
 
-	data, err := h.signupDao.GetByID(ctx, req.SignupId)
-	if err != nil {
-		logger.Warn("GetByID error", logger.Err(err))
-		return nil, ecode.ErrCancelSignupSignupService.Err("获取报名信息失败: " + err.Error())
+	results := make([]*XiaoYangV1.CancelResult, len(req.SignupIds))
+	for i, signupId := range req.SignupIds {
+		data, err := h.signupDao.GetByID(ctx, signupId)
+		if err != nil {
+			logger.Warn("GetByID error", logger.Err(err))
+			results[i] = &XiaoYangV1.CancelResult{
+				SignupId:     signupId,
+				Success:      false,
+				ErrorMessage: "获取报名信息失败: " + err.Error(),
+			}
+			continue
+		}
+
+		data.CancelUserID = int(req.CancelUserId)
+		data.CancelTime = utils.CurrentTimePtr()
+
+		err = h.signupDao.UpdateByID(ctx, data)
+		if err != nil {
+			logger.Warn("UpdateByID error", logger.Err(err))
+			results[i] = &XiaoYangV1.CancelResult{
+				SignupId:     signupId,
+				Success:      false,
+				ErrorMessage: "取消报名失败: " + err.Error(),
+			}
+			continue
+		}
+
+		results[i] = &XiaoYangV1.CancelResult{
+			SignupId: signupId,
+			Success:  true,
+		}
 	}
 
-	data.CancelUserID = int(req.CancelUserId)
-	data.CancelTime = utils.CurrentTimePtr()
-
-	err = h.signupDao.UpdateByID(ctx, data)
-	if err != nil {
-		logger.Warn("UpdateByID error", logger.Err(err))
-		return nil, ecode.ErrCancelSignupSignupService.Err("取消报名失败: " + err.Error())
-	}
-
-	return &XiaoYangV1.CancelSignupResponse{Success: true}, nil
+	return &XiaoYangV1.CancelSignupResponse{
+		Results: results,
+	}, nil
 }
 
 // GetSignupsByTeam 根据teamId获取报名信息
@@ -194,31 +228,39 @@ func (h *signupServiceHandler) GetSignupsByTeam(ctx context.Context, req *XiaoYa
 	for i, signup := range data {
 
 		// 获取 SubmitUserId 的昵称和 QQ号
-		submitUserNickname, submitUserQQ, err := h.getNickname(ctx, guildId, uint64(signup.SubmitUserID))
-		if err == nil {
-			utils.UpdateJSONField(signup.SignupInfo, "SubmitUserName", submitUserNickname)
-			utils.UpdateJSONField(signup.SignupInfo, "SubmitUserQQ", submitUserQQ)
+		if signup.SubmitUserID != 0 {
+			submitUserNickname, submitUserQQ, err := h.getNickname(ctx, guildId, uint64(signup.SubmitUserID))
+			if err == nil {
+				utils.UpdateJSONField(signup.SignupInfo, "submitName", submitUserNickname)
+				utils.UpdateJSONField(signup.SignupInfo, "submitQQNumber", submitUserQQ)
+			}
 		}
 
 		// 获取 SignupUserId 的昵称和 QQ号
-		signupUserNickname, signupUserQQ, err := h.getNickname(ctx, guildId, uint64(signup.SignupUserID))
-		if err == nil {
-			utils.UpdateJSONField(signup.SignupInfo, "SignupUserName", signupUserNickname)
-			utils.UpdateJSONField(signup.SignupInfo, "SignupUserQQ", signupUserQQ)
+		if signup.SignupUserID != 0 {
+			signupUserNickname, signupUserQQ, err := h.getNickname(ctx, guildId, uint64(signup.SignupUserID))
+			if err == nil {
+				utils.UpdateJSONField(signup.SignupInfo, "signupName", signupUserNickname)
+				utils.UpdateJSONField(signup.SignupInfo, "signupQQNumber", signupUserQQ)
+			}
 		}
 
 		// 获取 SignupCharacterId 的角色名称和心法
-		characterName, xinfa, err := h.getCharacterName(ctx, uint64(signup.SignupCharacterID))
-		if err == nil {
-			utils.UpdateJSONField(signup.SignupInfo, "CharacterName", characterName)
-			utils.UpdateJSONField(signup.SignupInfo, "CharacterXinfa", xinfa)
+		if signup.SignupCharacterID != 0 {
+			characterName, xinfa, err := h.getCharacterName(ctx, uint64(signup.SignupCharacterID))
+			if err == nil {
+				utils.UpdateJSONField(signup.SignupInfo, "characterName", characterName)
+				utils.UpdateJSONField(signup.SignupInfo, "characterXinfa", xinfa)
+			}
 		}
 
 		// 获取 CancelUserId 的昵称和 QQ号
-		cancelUserNickname, cancelUserQQ, err := h.getNickname(ctx, guildId, uint64(signup.CancelUserID))
-		if err == nil {
-			utils.UpdateJSONField(signup.SignupInfo, "CancelUserName", cancelUserNickname)
-			utils.UpdateJSONField(signup.SignupInfo, "CancelUserQQ", cancelUserQQ)
+		if signup.CancelUserID != 0 {
+			cancelUserNickname, cancelUserQQ, err := h.getNickname(ctx, guildId, uint64(signup.CancelUserID))
+			if err == nil {
+				utils.UpdateJSONField(signup.SignupInfo, "cancelName", cancelUserNickname)
+				utils.UpdateJSONField(signup.SignupInfo, "cancelQQNumber", cancelUserQQ)
+			}
 		}
 
 		signups[i] = &XiaoYangV1.SignupInfo{
@@ -238,6 +280,11 @@ func (h *signupServiceHandler) GetSignupsByTeam(ctx context.Context, req *XiaoYa
 			CancelTime:        utils.TimePtrToISO8601(signup.CancelTime),
 		}
 	}
+
+	// 按 SignupId 排序
+	sort.Slice(signups, func(i, j int) bool {
+		return signups[i].SignupId < signups[j].SignupId
+	})
 
 	return &XiaoYangV1.GetSignupsByTeamResponse{Signups: signups}, nil
 }

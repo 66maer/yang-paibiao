@@ -22,20 +22,12 @@ import { fetchGuildMembersWithCache } from "@/store/modules/guild";
 
 const { Text } = Typography;
 
-const SignupModal = ({
-  visible,
-  onClose,
-  teamId,
-  refreshSignupList,
-  signupList,
-}) => {
+const SignupModal = ({ visible, onClose, teamId, refreshSignupList, signupList }) => {
   const [loading, setLoading] = useState(false);
   const [isProxy, setIsProxy] = useState(false);
   const [members, setMembers] = useState([]);
   const [characters, setCharacters] = useState([]);
-  const [selectedUserId, setSelectedUserId] = useState(
-    store.getState().user.userId
-  );
+  const [selectedUserId, setSelectedUserId] = useState(store.getState().user.userId);
   const dispatch = useDispatch();
   const [form] = Form.useForm();
 
@@ -73,9 +65,7 @@ const SignupModal = ({
   useEffect(() => {
     // 当成员列表加载完成后，设置默认值
     if (members.length > 0) {
-      const defaultMember = members.find(
-        (member) => member.userId === selectedUserId
-      );
+      const defaultMember = members.find((member) => member.userId === selectedUserId);
       if (defaultMember) {
         form.setFieldsValue({ submitUserId: defaultMember.groupNickname });
       }
@@ -87,22 +77,14 @@ const SignupModal = ({
     try {
       const submitUserId = store.getState().user.userId;
       const signupUserId = isProxy
-        ? members.find((member) => member.groupNickname === values.submitUserId)
-            ?.userId || 0
+        ? members.find((member) => member.groupNickname === values.submitUserId)?.userId || 0
         : submitUserId;
-      const signupCharacterId =
-        characters.find((char) => char.name === values.signupCharacterId)
-          ?.characterId || 0;
+      const signupCharacterId = characters.find((char) => char.name === values.signupCharacterId)?.characterId || 0;
 
-      const submitName =
-        members.find((member) => member.userId === submitUserId)
-          ?.groupNickname || "未知";
-      const signupName =
-        members.find((member) => member.userId === signupUserId)
-          ?.groupNickname || values.submitUserId;
+      const submitName = members.find((member) => member.userId === submitUserId)?.groupNickname || "未知";
+      const signupName = members.find((member) => member.userId === signupUserId)?.groupNickname || values.submitUserId;
       const characterName =
-        characters.find((char) => char.characterId === signupCharacterId)
-          ?.name || values.signupCharacterId;
+        characters.find((char) => char.characterId === signupCharacterId)?.name || values.signupCharacterId;
 
       const signupInfo = JSON.stringify({
         submitName,
@@ -123,6 +105,8 @@ const SignupModal = ({
 
       const isDuplicateSignup = signupList.some(
         (signup) =>
+          !signup.cancelTime &&
+          signup.cancelTime !== "" &&
           signupCharacterId != 0 &&
           signup.signupCharacterId === signupCharacterId
       );
@@ -136,6 +120,8 @@ const SignupModal = ({
       const isInvalidSelfSignup = signupList.some(
         (signup) =>
           !isProxy &&
+          !signup.cancelTime &&
+          signup.cancelTime !== "" &&
           signup.submitUserId === submitUserId &&
           signup.signupUserId === submitUserId
       );
@@ -148,24 +134,29 @@ const SignupModal = ({
 
       const clientType = values.isWujie ? "无界" : "旗舰";
 
-      const res = await request.post("/signup/createSignup", {
-        teamId,
-        submitUserId,
-        signupUserId,
-        signupCharacterId,
-        signupInfo,
-        isRich: values.isRich || false,
-        isProxy,
-        clientType,
-        lockSlot: -1,
-      });
+      const signupData = [
+        {
+          teamId,
+          submitUserId,
+          signupUserId,
+          signupCharacterId,
+          signupInfo,
+          isRich: values.isRich || false,
+          isProxy,
+          clientType,
+          lockSlot: -1,
+        },
+      ];
 
-      if (res.code === 0 && res.data.success) {
+      const res = await request.post("/signup/createSignup", { signups: signupData });
+
+      if (res.code === 0 && res.data.results[0]?.success) {
         message.success("报名成功！");
         refreshSignupList();
         onClose();
       } else {
-        message.error("报名失败，请重试！");
+        const errorMessage = res.data.results[0]?.errorMessage || "报名失败，请重试！";
+        message.error(errorMessage);
       }
     } catch (error) {
       console.error("报名失败:", error);
@@ -199,18 +190,14 @@ const SignupModal = ({
   };
 
   const onMemberChange = (value) => {
-    const selectedMember = members.find(
-      (member) => member.groupNickname === value
-    );
+    const selectedMember = members.find((member) => member.groupNickname === value);
     if (!selectedMember) {
       setCharacters([]);
     }
   };
 
   const onCharacterSelect = (value, option) => {
-    const selectedCharacter = characters.find(
-      (char) => char.characterId === option.key
-    );
+    const selectedCharacter = characters.find((char) => char.characterId === option.key);
     if (selectedCharacter) {
       form.setFieldsValue({ xinfa: selectedCharacter.xinfa });
     } else {
@@ -225,22 +212,12 @@ const SignupModal = ({
   };
 
   return (
-    <Modal
-      title="报名"
-      open={visible}
-      onCancel={onClose}
-      footer={null}
-      destroyOnClose
-    >
+    <Modal title="报名" open={visible} onCancel={onClose} footer={null} destroyOnClose>
       <Form onFinish={handleSignup} layout="vertical" form={form}>
         <Form.Item label="报名人 (代报名请开启右侧开关)">
           <Row align="middle" gutter={16}>
             <Col flex="auto">
-              <Form.Item
-                name="submitUserId"
-                noStyle
-                rules={[{ required: true, message: "请填入报名人" }]}
-              >
+              <Form.Item name="submitUserId" noStyle rules={[{ required: true, message: "请填入报名人" }]}>
                 <AutoComplete
                   disabled={!isProxy}
                   options={memberOptions}
@@ -261,18 +238,9 @@ const SignupModal = ({
           </Row>
         </Form.Item>
         <Form.Item name="signupCharacterId" label="角色">
-          <AutoComplete
-            allowClear
-            options={characterOptions}
-            placeholder="选择角色"
-            onSelect={onCharacterSelect}
-          />
+          <AutoComplete allowClear options={characterOptions} placeholder="选择角色" onSelect={onCharacterSelect} />
         </Form.Item>
-        <Form.Item
-          name="xinfa"
-          label="心法"
-          rules={[{ required: true, message: "请选择心法" }]}
-        >
+        <Form.Item name="xinfa" label="心法" rules={[{ required: true, message: "请选择心法" }]}>
           <Select
             showSearch
             allowClear
@@ -296,11 +264,7 @@ const SignupModal = ({
             </Form.Item>
           </Col>
           <Col flex="auto">
-            <Form.Item
-              name="isWujie"
-              valuePropName="checked"
-              label="客户端类型"
-            >
+            <Form.Item name="isWujie" valuePropName="checked" label="客户端类型">
               <Switch checkedChildren="无界端" unCheckedChildren="旗舰端" />
             </Form.Item>
           </Col>

@@ -57,25 +57,39 @@ func (m *CreateSignupRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for TeamId
+	for idx, item := range m.GetSignups() {
+		_, _ = idx, item
 
-	// no validation rules for SubmitUserId
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CreateSignupRequestValidationError{
+						field:  fmt.Sprintf("Signups[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CreateSignupRequestValidationError{
+						field:  fmt.Sprintf("Signups[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CreateSignupRequestValidationError{
+					field:  fmt.Sprintf("Signups[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
 
-	// no validation rules for SignupUserId
-
-	// no validation rules for SignupCharacterId
-
-	// no validation rules for SignupInfo
-
-	// no validation rules for Priority
-
-	// no validation rules for IsRich
-
-	// no validation rules for IsProxy
-
-	// no validation rules for ClientType
-
-	// no validation rules for LockSlot
+	}
 
 	if len(errors) > 0 {
 		return CreateSignupRequestMultiError(errors)
@@ -179,7 +193,39 @@ func (m *CreateSignupResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Success
+	for idx, item := range m.GetResults() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CreateSignupResponseValidationError{
+						field:  fmt.Sprintf("Results[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CreateSignupResponseValidationError{
+						field:  fmt.Sprintf("Results[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CreateSignupResponseValidationError{
+					field:  fmt.Sprintf("Results[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return CreateSignupResponseMultiError(errors)
@@ -261,6 +307,111 @@ var _ interface {
 	ErrorName() string
 } = CreateSignupResponseValidationError{}
 
+// Validate checks the field values on SignupResult with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *SignupResult) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SignupResult with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in SignupResultMultiError, or
+// nil if none found.
+func (m *SignupResult) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SignupResult) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for SignupId
+
+	// no validation rules for Success
+
+	// no validation rules for ErrorMessage
+
+	if len(errors) > 0 {
+		return SignupResultMultiError(errors)
+	}
+
+	return nil
+}
+
+// SignupResultMultiError is an error wrapping multiple validation errors
+// returned by SignupResult.ValidateAll() if the designated constraints aren't met.
+type SignupResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SignupResultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SignupResultMultiError) AllErrors() []error { return m }
+
+// SignupResultValidationError is the validation error returned by
+// SignupResult.Validate if the designated constraints aren't met.
+type SignupResultValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SignupResultValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SignupResultValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SignupResultValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SignupResultValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SignupResultValidationError) ErrorName() string { return "SignupResultValidationError" }
+
+// Error satisfies the builtin error interface
+func (e SignupResultValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSignupResult.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SignupResultValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SignupResultValidationError{}
+
 // Validate checks the field values on CancelSignupRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -282,8 +433,6 @@ func (m *CancelSignupRequest) validate(all bool) error {
 	}
 
 	var errors []error
-
-	// no validation rules for SignupId
 
 	// no validation rules for CancelUserId
 
@@ -389,7 +538,39 @@ func (m *CancelSignupResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Success
+	for idx, item := range m.GetResults() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CancelSignupResponseValidationError{
+						field:  fmt.Sprintf("Results[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CancelSignupResponseValidationError{
+						field:  fmt.Sprintf("Results[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CancelSignupResponseValidationError{
+					field:  fmt.Sprintf("Results[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return CancelSignupResponseMultiError(errors)
@@ -470,6 +651,111 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CancelSignupResponseValidationError{}
+
+// Validate checks the field values on CancelResult with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *CancelResult) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CancelResult with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in CancelResultMultiError, or
+// nil if none found.
+func (m *CancelResult) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CancelResult) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for SignupId
+
+	// no validation rules for Success
+
+	// no validation rules for ErrorMessage
+
+	if len(errors) > 0 {
+		return CancelResultMultiError(errors)
+	}
+
+	return nil
+}
+
+// CancelResultMultiError is an error wrapping multiple validation errors
+// returned by CancelResult.ValidateAll() if the designated constraints aren't met.
+type CancelResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CancelResultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CancelResultMultiError) AllErrors() []error { return m }
+
+// CancelResultValidationError is the validation error returned by
+// CancelResult.Validate if the designated constraints aren't met.
+type CancelResultValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CancelResultValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CancelResultValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CancelResultValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CancelResultValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CancelResultValidationError) ErrorName() string { return "CancelResultValidationError" }
+
+// Error satisfies the builtin error interface
+func (e CancelResultValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCancelResult.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CancelResultValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CancelResultValidationError{}
 
 // Validate checks the field values on GetSignupsByTeamRequest with the rules
 // defined in the proto definition for this message. If any rules are

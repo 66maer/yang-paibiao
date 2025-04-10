@@ -323,6 +323,10 @@ const EditSlotCard = ({ rule, signupInfo, index, updateRule, onSignupInfoUpdate,
   const assignTitle = `编辑报名信息： ${chineseNumbers[Math.floor(index / 5)]}队 · ${circledNumbers[index % 5]}`;
 
   const [curRule, setCurRule] = useState(rule);
+  useEffect(() => {
+    setCurRule(rule);
+  }, [rule]);
+
   const [curAssignForm] = Form.useForm();
 
   const onSaveRule = () => {
@@ -403,6 +407,7 @@ const SlotPanel = ({
   onRulesChange,
   onSignupInfoUpdate,
 }) => {
+  console.log("SlotPanel输入参数:", rules, signup_infos, mode);
   const updateRule = (index, updatedRule) => {
     const updatedRules = [...rules];
     updatedRules[index] = updatedRule;

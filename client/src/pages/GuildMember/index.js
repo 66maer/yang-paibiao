@@ -30,9 +30,7 @@ const GuildMember = () => {
     const fetchMembers = async () => {
       try {
         const guildId = store.getState().guild.guildId;
-        const cachedMembers = await dispatch(
-          fetchGuildMembersWithCache(guildId)
-        );
+        const cachedMembers = await dispatch(fetchGuildMembersWithCache(guildId));
         setMembers(cachedMembers);
         setOriginalMembers(cachedMembers); // 保存原始数据
       } catch (err) {
@@ -63,9 +61,7 @@ const GuildMember = () => {
   const handleCancel = (userId) => {
     setMembers((prev) =>
       prev.map((member) =>
-        member.userId === userId
-          ? originalMembers.find((original) => original.userId === userId)
-          : member
+        member.userId === userId ? originalMembers.find((original) => original.userId === userId) : member
       )
     );
     setEditing((prev) => ({ ...prev, [userId]: false }));
@@ -92,9 +88,7 @@ const GuildMember = () => {
             onChange={(e) =>
               setMembers((prev) =>
                 prev.map((member) =>
-                  member.userId === record.userId
-                    ? { ...member, groupNickname: e.target.value }
-                    : member
+                  member.userId === record.userId ? { ...member, groupNickname: e.target.value } : member
                 )
               )
             }
@@ -127,11 +121,7 @@ const GuildMember = () => {
             value={record.groupRole}
             onChange={(value) =>
               setMembers((prev) =>
-                prev.map((member) =>
-                  member.userId === record.userId
-                    ? { ...member, groupRole: value }
-                    : member
-                )
+                prev.map((member) => (member.userId === record.userId ? { ...member, groupRole: value } : member))
               )
             }
             style={{ width: "100%" }} // 确保下拉框宽度一致
@@ -164,13 +154,7 @@ const GuildMember = () => {
             <Button onClick={() => handleCancel(record.userId)}>取消</Button>
           </Space>
         ) : (
-          <Button
-            onClick={() =>
-              setEditing((prev) => ({ ...prev, [record.userId]: true }))
-            }
-          >
-            编辑
-          </Button>
+          <Button onClick={() => setEditing((prev) => ({ ...prev, [record.userId]: true }))}>编辑</Button>
         ),
     },
   ];

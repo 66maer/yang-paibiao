@@ -147,7 +147,6 @@ const BoardEditContent = ({ team = {}, onBack }) => {
       return updatedSignups;
     };
     const fixedSignups = applyEditLog(signups, signupInfoEditLog);
-    console.log("Fixed Signups:", fixedSignups);
     const [slotMemberList, candidates] = SlotAllocate(rules, fixedSignups);
     setSignupInfos(slotMemberList);
     setCandidateList(candidates);
@@ -279,6 +278,58 @@ const BoardEditContent = ({ team = {}, onBack }) => {
       const res = await request.post(api, payload);
       if (res.code === 0) {
         message.success(teamId ? "团队更新成功" : "团队创建成功");
+
+        // 获取团队ID
+        const createdTeamId = teamId || res.data.teamId;
+
+        // 处理 editLog 中的报名信息
+        if (signupInfoEditLog.length > 0) {
+          const signups = signupInfoEditLog
+            .filter((log) => log.type === "assign")
+            .map((log) => ({
+              teamId: createdTeamId,
+              submitUserId: store.getState().user.userId,
+              signupUserId: log.data.signupUserId,
+              signupCharacterId: log.data.signupCharacterId,
+              signupInfo: JSON.stringify({
+                submitName: log.data.submitName,
+                signupName: log.data.signupName,
+                characterName: log.data.characterName,
+                characterXinfa: log.data.characterXinfa,
+                isLock: log.data.isLock || false,
+              }),
+              isRich: log.data.isRich || false,
+              isProxy: log.data.isProxy || false,
+              clientType: log.data.clientType || "旗舰",
+              lockSlot: log.data.lockSlot || -1,
+            }));
+
+          const cancels = signupInfoEditLog.filter((log) => log.type === "cancel").map((log) => log.data.signupId);
+
+          if (cancels.length > 0) {
+            const cancelRes = await request.post("/signup/cancelSignup", {
+              signupIds: cancels,
+              cancelUserId: store.getState().user.userId,
+            });
+            if (cancelRes.code === 0 && cancelRes.data.results.every((result) => result.success)) {
+              message.success("取消报名信息已成功提交！");
+            } else {
+              const failedCancels = cancelRes.data.results.filter((result) => !result.success);
+              message.error(`部分取消报名失败：${failedCancels.map((f) => f.errorMessage).join(", ")}`);
+            }
+          }
+
+          if (signups.length > 0) {
+            const signupRes = await request.post("/signup/createSignup", { signups });
+            if (signupRes.code === 0 && signupRes.data.results.every((result) => result.success)) {
+              message.success("报名信息已成功提交！");
+            } else {
+              const failedSignups = signupRes.data.results.filter((result) => !result.success);
+              message.error(`部分报名失败：${failedSignups.map((f) => f.errorMessage).join(", ")}`);
+            }
+          }
+        }
+
         navigate(teamId ? `/board/${teamId}` : `/board/${res.data.teamId}`);
       } else {
         throw new Error(res.msg);
@@ -295,113 +346,135 @@ const BoardEditContent = ({ team = {}, onBack }) => {
   const handleSignupInfoUpdate = (type, data) => {
     const editLog = [...signupInfoEditLog];
     if (type === "assign") {
-      const { slotId } = data;
-      const oldSignupInfo = signupInfos[slotId];
+      const { slotIndex } = data;
+      const oldSignupInfo = signupInfos[slotIndex];
       if (oldSignupInfo) {
-        editLog.push({
-          type: "cancel",
-          data: { signupId: oldSignupInfo.signupId },
-        });
+        if (oldSignupInfo.signupId) {
+          editLog.push({
+            type: "cancel",
+            data: { signupId: oldSignupInfo.signupId },
+          });
+        } else if (oldSignupInfo.isLock) {
+          const index = editLog.findIndex((log) => log.type === "assign" && log.data.slotIndex === slotIndex);
+          if (index !== -1) {
+            editLog.splice(index, 1);
+          }
+        }
       }
     }
     editLog.push({ type, data });
     setSignupInfoEditLog(editLog);
   };
 
-  const renderSignupList = (signups) => {
-    const handleCancelSignup = (signupId) => {
-      console.log("取消报名:", signupId);
-      // 空实现，后续可添加取消报名逻辑
+  const handleCancelSignup = async (signupId) => {
+    try {
+      await request.post("/signup/cancelSignup", {
+        signupIds: [signupId],
+        cancelUserId: store.getState().user.userId,
+      });
+      message.success("取消报名成功");
+      const updatedSignups = signups.map((signup) =>
+        signup.signupId === signupId ? { ...signup, cancelTime: new Date().toISOString() } : signup
+      );
+      setSignups(updatedSignups);
+    } catch (error) {
+      console.error("Failed to cancel signup:", error);
+      message.error("取消报名失败");
+    }
+  };
+
+  const renderTimelineItem = (item, showCancelButton) => {
+    const getDot = (signup) => {
+      const color = signup.isRich ? "orange" : "green";
+      if (signup.cancelTime) {
+        return <CloseCircleOutlined style={{ color: "red" }} />;
+      }
+      if (signup.isProxy) {
+        return <UserSwitchOutlined style={{ color: color }} />;
+      }
+      if (signup.isLock) {
+        return <LockOutlined style={{ color: color }} />;
+      }
+      return <UserOutlined style={{ color: "green" }} />;
     };
 
-    const renderTimelineItem = (item) => {
-      const getDot = (signup) => {
-        const color = signup.isRich ? "orange" : "green";
-        if (signup.cancelTime) {
-          return <CloseCircleOutlined style={{ color: "red" }} />;
-        }
-        if (signup.isProxy) {
-          return <UserSwitchOutlined style={{ color: color }} />;
-        }
-        if (signup.isLock) {
-          return <LockOutlined style={{ color: color }} />;
-        }
-        return <UserOutlined style={{ color: "green" }} />;
-      };
+    const getTags = (signup) => {
+      const tags = [];
+      if (signup.isProxy) {
+        tags.push(
+          <Tag color="purple" icon={<UserSwitchOutlined />}>
+            代报名
+          </Tag>
+        );
+      }
+      if (signup.isRich) {
+        tags.push(
+          <Tag color="orange" icon={<PayCircleOutlined />}>
+            老板
+          </Tag>
+        );
+      }
+      if (signup.isLock) {
+        tags.push(
+          <Tag color="green" icon={<LockOutlined />}>
+            锁定报名
+          </Tag>
+        );
+      }
+      if (signup.cancelTime) {
+        tags.push(
+          <Tag color="red" icon={<CloseCircleOutlined />}>
+            已取消
+          </Tag>
+        );
+      }
+      if (tags.length > 0) {
+        return <Space>{tags}</Space>;
+      }
+      return null;
+    };
 
-      const getTags = (signup) => {
-        const tags = [];
-        if (signup.isProxy) {
-          tags.push(
-            <Tag color="purple" icon={<UserSwitchOutlined />}>
-              代报名
-            </Tag>
-          );
-        }
-        if (signup.isRich) {
-          tags.push(
-            <Tag color="orange" icon={<PayCircleOutlined />}>
-              老板
-            </Tag>
-          );
-        }
-        if (signup.isLock) {
-          tags.push(
-            <Tag color="green" icon={<LockOutlined />}>
-              锁定报名
-            </Tag>
-          );
-        }
-        if (signup.cancelTime) {
-          tags.push(
-            <Tag color="red" icon={<CloseCircleOutlined />}>
-              已取消
-            </Tag>
-          );
-        }
-        if (tags.length > 0) {
-          return <Space>{tags}</Space>;
-        }
-        return null;
-      };
+    return {
+      dot: getDot(item),
+      children: (
+        <Popover
+          content={
+            <Space direction="vertical" size={4}>
+              {getTags(item)}
+              <Space>
+                <Avatar src={`/xinfa/${xinfaInfoTable[item.characterXinfa].icon}`} size={20} />
+                {item.characterName}
+              </Space>
+              {`报名时间: ${item.signupTime}`}
+              {item.isProxy && `由 ${item.submitName} 代报名`}
+              {item.cancelTime && `取消时间: ${item.cancelTime}`}
+              {item.cancelTime && `由`}
 
-      return {
-        dot: getDot(item),
-        children: (
-          <Popover
-            content={
-              <Space direction="vertical" size={4}>
-                {getTags(item)}
-                <Space>
-                  <Avatar src={`/xinfa/${xinfaInfoTable[item.characterXinfa].icon}`} size={20} />
-                  {item.characterName}
-                </Space>
-                {`报名时间: ${item.signupTime}`}
-                {item.isProxy && `由 ${item.submitName} 代报名`}
-                {item.cancelTime && `取消时间: ${item.cancelTime}`}
-                {item.cancelTime && `由`}
+              {showCancelButton && !item.cancelTime && (
                 <Button danger onClick={() => handleCancelSignup(item.signupId)}>
                   取消报名
                 </Button>
-              </Space>
-            }
-            title={item.signupName}
-          >
-            <Space>
-              <Avatar src={`/xinfa/${xinfaInfoTable[item.characterXinfa].icon}`} size={24} />
-              {`${item.signupName} (${item.characterName})`}
+              )}
             </Space>
-          </Popover>
-        ),
-      };
+          }
+          title={item.signupName}
+        >
+          <Space>
+            <Avatar src={`/xinfa/${xinfaInfoTable[item.characterXinfa].icon}`} size={24} />
+            {`${item.signupName} (${item.characterName})`}
+          </Space>
+        </Popover>
+      ),
     };
+  };
 
+  const renderSignupList = (signups) => {
     return (
       <div className="signup-list-wrapper">
         <div className="signup-list">
           <Timeline
             mode="left"
-            items={signups.map((signup) => renderTimelineItem(signup))}
+            items={signups.map((signup) => renderTimelineItem(signup, true))}
             className="signup-timeline"
           />
         </div>
@@ -413,13 +486,11 @@ const BoardEditContent = ({ team = {}, onBack }) => {
     return (
       <div className="candidate-list-wrapper">
         <div className="candidate-list">
-          {/* <Timeline
+          <Timeline
             mode="left"
-            items={candidates.map((candidate, index) =>
-              renderTimelineItem({ ...candidate, index }, true)
-            )}
+            items={candidates.map((candidate) => renderTimelineItem(candidate, false))}
             className="candidate-timeline"
-          /> */}
+          />
         </div>
       </div>
     );
