@@ -16,7 +16,6 @@ import (
 	"XiaoYang/internal/model"
 	"XiaoYang/internal/utils"
 
-	"github.com/go-dev-frame/sponge/pkg/gocrypto"
 	"github.com/go-dev-frame/sponge/pkg/jwt"
 	"github.com/go-dev-frame/sponge/pkg/logger"
 )
@@ -45,15 +44,9 @@ func (h *userServiceHandler) Register(ctx context.Context, req *XiaoYangV1.Regis
 		return nil, ecode.ErrRegisterUserService.Err("请求参数无效，请检查输入")
 	}
 
-	pswd, err := gocrypto.HashAndSaltPassword(req.Password)
-	if err != nil {
-		logger.Warn("HashAndSaltPassword error", logger.Err(err))
-		return nil, ecode.InternalServerError.Err("密码加密失败: " + err.Error())
-	}
-
 	data := &model.Users{
 		QqNumber: req.QqNumber,
-		Password: pswd,
+		Password: req.Password, // 直接存储明文密码
 		Nickname: req.Nickname,
 	}
 
@@ -99,7 +92,7 @@ func (h *userServiceHandler) Login(ctx context.Context, req *XiaoYangV1.LoginReq
 		return nil, ecode.ErrLoginUserService.Err("用户未注册: " + err.Error())
 	}
 
-	if !gocrypto.VerifyPassword(req.Password, data.Password) {
+	if req.Password != data.Password { // 直接比较明文密码
 		logger.Warn("password error", logger.Err(err))
 		return nil, ecode.ErrLoginUserService.Err("密码错误")
 	}
@@ -207,18 +200,12 @@ func (h *userServiceHandler) ChangePassword(ctx context.Context, req *XiaoYangV1
 		return nil, ecode.ErrChangePasswordUserService.Err("用户不存在: " + err.Error())
 	}
 
-	if !gocrypto.VerifyPassword(req.OldPassword, data.Password) {
+	if req.OldPassword != data.Password { // 直接比较明文密码
 		logger.Warn("OldPassword error", logger.Err(err))
 		return nil, ecode.ErrChangePasswordUserService.Err("旧密码错误")
 	}
 
-	newPassword, err := gocrypto.HashAndSaltPassword(req.NewPassword)
-	if err != nil {
-		logger.Warn("HashAndSaltPassword error", logger.Err(err))
-		return nil, ecode.InternalServerError.Err("密码加密失败: " + err.Error())
-	}
-
-	data.Password = newPassword
+	data.Password = req.NewPassword // 直接存储明文密码
 	err = h.userDao.UpdateByID(ctx, data)
 	if err != nil {
 		logger.Warn("Update error", logger.Err(err))
