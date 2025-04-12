@@ -26,25 +26,14 @@ const LoginCard = () => {
 
   return (
     <Form onFinish={onFinish}>
-      <Form.Item
-        name="qqNumber"
-        rules={[{ required: true, message: "请输入QQ号!" }]}
-      >
+      <Form.Item name="qqNumber" rules={[{ required: true, message: "请输入QQ号!" }]}>
         <Input prefix={<UserOutlined />} placeholder="QQ号" />
       </Form.Item>
-      <Form.Item
-        name="password"
-        rules={[{ required: true, message: "请输入密码" }]}
-      >
+      <Form.Item name="password" rules={[{ required: true, message: "请输入密码" }]}>
         <Input.Password prefix={<LockOutlined />} placeholder="密码" />
       </Form.Item>
       <Form.Item>
-        <Button
-          type="primary"
-          htmlType="submit"
-          style={{ width: "100%" }}
-          loading={loading}
-        >
+        <Button type="primary" htmlType="submit" style={{ width: "100%" }} loading={loading}>
           登录
         </Button>
       </Form.Item>
@@ -73,16 +62,10 @@ const RegisterCard = () => {
 
   return (
     <Form onFinish={onFinish}>
-      <Form.Item
-        name="qqNumber"
-        rules={[{ required: true, message: "请输入QQ号!" }]}
-      >
+      <Form.Item name="qqNumber" rules={[{ required: true, message: "请输入QQ号!" }]}>
         <Input prefix={<UserOutlined />} placeholder="QQ号" />
       </Form.Item>
-      <Form.Item
-        name="password"
-        rules={[{ required: true, message: "请输入密码" }]}
-      >
+      <Form.Item name="password" rules={[{ required: true, message: "请输入密码" }]}>
         <Input.Password prefix={<LockOutlined />} placeholder="密码" />
       </Form.Item>
       <Form.Item
@@ -114,12 +97,7 @@ const RegisterCard = () => {
       </Form.Item>
 
       <Form.Item>
-        <Button
-          type="primary"
-          htmlType="submit"
-          style={{ width: "100%" }}
-          loading={loading}
-        >
+        <Button type="primary" htmlType="submit" style={{ width: "100%" }} loading={loading}>
           注册
         </Button>
       </Form.Item>
@@ -132,13 +110,7 @@ const LoginPage = () => {
   return (
     <Layout style={{ height: "100vh" }}>
       <Layout.Content>
-        <Flex
-          justify="center"
-          align="center"
-          vertical
-          gap="large"
-          style={{ height: "100vh" }}
-        >
+        <Flex justify="center" align="center" vertical gap="large" style={{ height: "100vh" }}>
           <img src="/logo-title.png" alt="logo" draggable="false" />
 
           <Card style={{ width: 350, position: "relative" }}>
