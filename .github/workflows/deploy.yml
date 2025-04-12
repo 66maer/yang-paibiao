@@ -29,7 +29,8 @@ jobs:
 
       - name: 构建并推送服务端 Docker 镜像
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-server:latest ./XiaoYang
+          cd XiaoYang
+          make image-build2.sh REPO_HOST=${{ secrets.DOCKERHUB_USERNAME }} 
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-server:latest
 
       - name: 拷贝 docker-compose.yml 到服务器

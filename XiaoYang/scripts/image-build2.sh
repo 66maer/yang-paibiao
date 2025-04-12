@@ -4,7 +4,7 @@
 
 serverName="XiaoYang"
 # image name of the service, prohibit uppercase letters in names.
-IMAGE_NAME="xiao-yang/xiao-yang"
+IMAGE_NAME="xiaoyang-server"
 # Dockerfile file directory
 DOCKERFILE_PATH="scripts/build"
 DOCKERFILE="${DOCKERFILE_PATH}/Dockerfile_build"
