@@ -1,136 +1,187 @@
-import {
-  Avatar,
-  List,
-  Space,
-  Layout,
-  Button,
-  Card,
-  Typography,
-  Popconfirm,
-  message,
-} from "antd";
-import {
-  EditOutlined,
-  AppstoreAddOutlined,
-  FormOutlined,
-  DiffOutlined,
-  CheckCircleOutlined,
-  DeleteOutlined,
-} from "@ant-design/icons";
+import React, { useState, useEffect } from "react";
+import { Table, Button, Modal, Form, Input, Space, message } from "antd";
+import { request } from "@/utils/request";
+import SlotPanel from "@/components/SlotPanel";
+import store from "@/store";
 
-import { EditPanel } from "@/components/TeamPanel";
-import { useNavigate } from "react-router-dom";
-import { request } from "@/utils";
-import { store } from "@/store";
-import { fetchTeamTemplete } from "@/store/modules/teamTemplete";
-import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+const TeamTemplate = () => {
+  const [templates, setTemplates] = useState([]);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [isHidden, setIsHidden] = useState(false); // 修改 isVisiable 为 isHidden
+  const [form] = Form.useForm();
+  const [rules, setRules] = useState(Array(25).fill({}));
 
-const { Text, Title } = Typography;
-const { Header, Content, Sider } = Layout;
-
-const TeamTemplete = () => {
-  const teamTemplete = useSelector((state) => state.teamTemplete.teamTemplete);
+  const fetchTemplateList = async () => {
+    try {
+      const guildId = store.getState().guild.guildId; // 从 store 获取 guildId
+      const res = await request.post("/template/listTemplates", { guildId });
+      if (res.code !== 0) {
+        throw new Error(res.msg);
+      }
+      setTemplates(res.data.templates);
+    } catch (err) {
+      message.error(err.message);
+    }
+  };
 
   useEffect(() => {
-    store.dispatch(fetchTeamTemplete());
+    fetchTemplateList();
   }, []);
 
-  const navigate = useNavigate();
+  const handleRulesChange = (updatedRules) => {
+    setRules(updatedRules);
+  };
+
+  const handleSave = async (values) => {
+    try {
+      const api = editingTemplate
+        ? "/template/updateTemplate"
+        : "/template/createTemplate";
+      var payload = {
+        ...values,
+        rule: JSON.stringify(rules),
+      };
+
+      if (editingTemplate) {
+        payload = {
+          ...payload,
+          templateId: editingTemplate.templateId,
+        };
+      } else {
+        payload = {
+          ...payload,
+          guildId: store.getState().guild.guildId,
+          createrId: store.getState().user.userId,
+        };
+      }
+
+      const res = await request.post(api, payload);
+      if (res.code !== 0) {
+        throw new Error(res.msg);
+      }
+
+      message.success(editingTemplate ? "更新成功" : "新增成功");
+      setIsHidden(false); // 修改 isVisiable 为 isHidden
+      setEditingTemplate(null);
+      form.resetFields();
+      setRules(Array(25).fill({})); // 重置 rules
+
+      await fetchTemplateList(); // 调用抽取的函数获取模板列表
+    } catch (err) {
+      message.error(err.message);
+    }
+  };
+
+  const handleDelete = async (templateId) => {
+    try {
+      const res = await request.post("/template/deleteTemplate", {
+        templateId,
+      });
+      if (res.code !== 0) {
+        throw new Error(res.msg);
+      }
+      message.success("删除成功");
+      setTemplates((prev) =>
+        prev.filter((tpl) => tpl.templateId !== templateId)
+      );
+    } catch (err) {
+      message.error(err.message);
+    }
+  };
+
+  const handleEdit = (template) => {
+    setEditingTemplate(template);
+    form.setFieldsValue({ ...template });
+
+    console.log("handleEdit", template);
+    try {
+      const parsedRules = JSON.parse(template.rule);
+      setRules(parsedRules);
+    } catch (err) {
+      console.error("Failed to parse rule:", err);
+    }
+
+    setIsHidden(true); // 修改 isVisiable 为 isHidden
+  };
+
+  const handleAdd = () => {
+    setEditingTemplate(null);
+    form.resetFields();
+    setIsHidden(true); // 修改 isVisiable 为 isHidden
+  };
+
+  const columns = [
+    {
+      title: "模板标题",
+      dataIndex: "title",
+      key: "title",
+    },
+    {
+      title: "操作",
+      key: "action",
+      render: (_, record) => (
+        <Space>
+          <Button onClick={() => handleEdit(record)}>编辑</Button>
+          <Button danger onClick={() => handleDelete(record.templateId)}>
+            删除
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
   return (
-    <Layout>
-      <Header
-        style={{
-          backgroundColor: "#e6d2d5",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "0",
-        }}
+    <div className="team-template-page">
+      <Button type="primary" style={{ marginBottom: 16 }} onClick={handleAdd}>
+        新增模板
+      </Button>
+      <Table
+        dataSource={templates}
+        columns={columns}
+        rowKey="templateId"
+        pagination={false}
+        bordered
+      />
+      <Modal
+        title={editingTemplate ? "编辑模板" : "新增模板"}
+        open={isHidden} // 修改 isVisiable 为 isHidden
+        onCancel={() => setIsHidden(false)} // 修改 isVisiable 为 isHidden
+        footer={null}
+        style={{ minWidth: 1060 }}
       >
-        <h1>团队模板</h1>
-        <Button
-          icon={<DiffOutlined />}
-          size="large"
-          onClick={() => {
-            navigate("/teamTemplete/edit");
-          }}
-        >
-          新模板
-        </Button>
-      </Header>
-      <Content>
-        <List
-          style={{
-            height: "100%",
-          }}
-          size="large"
-          // 数据超过10个则展示分页, 否则隐藏
-          pagination={
-            teamTemplete.length > 10
-              ? {
-                  onChange: (page) => {
-                    console.log(page);
-                  },
-                  pageSize: 10,
-                  align: "center",
-                }
-              : false
-          }
-          dataSource={teamTemplete}
-          renderItem={(item) => {
-            return (
-              <List.Item
-                key={item.name}
-                actions={[
-                  <Button
-                    icon={<FormOutlined />}
-                    onClick={() => {
-                      navigate("/teamTemplete/edit", {
-                        state: { team: item },
-                      });
-                    }}
-                  >
-                    编辑
-                  </Button>,
-                  <Popconfirm
-                    title="确定删除该模板吗?"
-                    description="删除后不可恢复"
-                    onConfirm={() => {
-                      try {
-                        request
-                          .post("/deleteTeamTemplete", {
-                            name: item.name,
-                          })
-                          .then((res) => {
-                            message.success(res.message);
-                            store.dispatch(fetchTeamTemplete());
-                            //setActiveTeam(activeTeam.filter((t) => t !== item));
-                          });
-                      } catch (err) {
-                        const { response } = err;
-                        if (response) {
-                          message.error(response.data.message);
-                        } else {
-                          message.error("网络错误");
-                        }
-                      }
-                    }}
-                  >
-                    <Button icon={<DeleteOutlined />}>删除</Button>
-                  </Popconfirm>,
-                ]}
-              >
-                <Space>
-                  <div style={{ fontSize: "1.5rem" }}>{item.name}</div>
-                </Space>
-              </List.Item>
-            );
-          }}
-        />
-      </Content>
-    </Layout>
+        <Form form={form} onFinish={handleSave} layout="vertical">
+          <Form.Item
+            name="title"
+            label="模板标题"
+            rules={[{ required: true, message: "请输入模板标题" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item name="notice" label="团队告示">
+            <Input.TextArea rows={4} />
+          </Form.Item>
+          <Form.Item label="编辑面板">
+            <div className="board-content">
+              <SlotPanel
+                mode="edit-only-rule"
+                rules={rules}
+                onRulesChange={handleRulesChange}
+              />
+            </div>
+          </Form.Item>
+          <Form.Item>
+            <Space style={{ float: "right" }}>
+              <Button type="primary" htmlType="submit">
+                确定
+              </Button>
+              <Button onClick={() => setIsHidden(false)}>取消</Button>{" "}
+              {/* 修改 isVisiable 为 isHidden */}
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
   );
 };
 
-export default TeamTemplete;
+export default TeamTemplate;

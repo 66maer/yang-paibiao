@@ -1,9 +1,9 @@
 import axios from "axios";
 import { getLocalToken } from "./token";
-import { store } from "@/store";
 
 const request = axios.create({
-  baseURL: "http://api.zyhm.fun/api",
+  baseURL: "http://api.zyhm.fun/api/v1",
+  ///baseURL: "http://localhost:8080/api/v1",
   timeout: 5000,
 });
 
@@ -12,10 +12,6 @@ request.interceptors.request.use(
     const token = getLocalToken();
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
-    }
-    const curLeague = store.getState().league.curLeague;
-    if (curLeague) {
-      config.headers["curLeague"] = curLeague;
     }
     return config;
   },

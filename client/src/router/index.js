@@ -1,83 +1,65 @@
-import App from "@/pages/App";
-import Login from "@/pages/Login";
-import TeamBoard from "@/pages/TeamBoard";
-import TeamEdit from "@/pages/TeamEdit";
-import TeamTemplete from "@/pages/TeamTemplete";
-import ManageLeague from "@/pages/ManageLeague";
-import UserCharacter from "@/pages/UserCharacter";
-import CareerHistory from "@/pages/CareerHistory";
-import TeamHistory from "@/pages/TeamHistory";
-import Publish from "@/pages/TeamEdit/Publish";
-import EditTemplate from "@/pages/TeamTemplete/EditTemplete";
-import TestPage from "@/pages/Test/test";
-import { Navigate } from "react-router-dom";
-
 import { createBrowserRouter } from "react-router-dom";
+import { Children } from "react";
+import MainPage from "../pages/MainPage";
+import LoginPage from "../pages/Login";
 import { AuthRoute } from "@/components/AuthRoute";
-import Version from "@/pages/Version";
-const router = createBrowserRouter([
+import { Navigate } from "react-router-dom";
+import BoardPage from "../pages/Board";
+import GuildMember from "@/pages/GuildMember";
+import Character from "@/pages/Character";
+import BoardEditContent from "../pages/Board/edit"; // 导入编辑页面组件
+import TeamTemplate from "@/pages/TeamTemplete";
+import HistoryTeams from "@/pages/HistoryTeams";
+import Screenshot from "../pages/Screenshot";
+
+const routers = [
+  {
+    path: "/login",
+    Component: LoginPage,
+  },
+  {
+    path: "/screenshot",
+    Component: Screenshot,
+  },
   {
     path: "/",
     element: (
       <AuthRoute>
-        <App />
+        <MainPage />
       </AuthRoute>
     ),
     children: [
       {
         path: "/", // 重定向到teamBoard
-        element: <Navigate to="teamBoard" />,
+        element: <Navigate to="board" />,
       },
       {
-        path: "teamBoard",
-        element: <TeamBoard />,
+        path: "board/:teamId?",
+        element: <BoardPage />,
       },
       {
-        path: "teamEdit",
-        element: <TeamEdit />,
+        path: "board/edit/:teamId?", // 修复编辑页面路由
+        element: <BoardEditContent />,
       },
       {
-        path: "teamTemplete",
-        element: <TeamTemplete />,
+        path: "members",
+        element: <GuildMember />,
       },
       {
-        path: "manageLeague",
-        element: <ManageLeague />,
+        path: "characters",
+        element: <Character />,
       },
       {
-        path: "UserCharacter",
-        element: <UserCharacter />,
+        path: "team-template",
+        element: <TeamTemplate />,
       },
       {
-        path: "CareerHistory",
-        element: <CareerHistory />,
+        path: "history-teams",
+        element: <HistoryTeams />,
       },
-      {
-        path: "TeamHistory",
-        element: <TeamHistory />,
-      },
-      {
-        path: "teamEdit/edit",
-        element: <Publish />,
-      },
-      {
-        path: "teamTemplete/edit",
-        element: <EditTemplate />,
-      },
-      {
-        path: "version",
-        element: <Version />,
-      },
+      // 可以在这里添加更多需要登录校验的子路由
     ],
   },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/test",
-    element: <TestPage />,
-  },
-]);
+];
 
-export default router;
+export default createBrowserRouter(routers);

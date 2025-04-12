@@ -1,0 +1,58 @@
+# 如果需要将 YAML 转换为 Go 结构体，请执行命令: make update-config
+
+# 应用设置
+app:
+  name: "XiaoYang" # 服务器名称
+  env: "prod" # 运行环境，dev: 开发环境, prod: 生产环境, test: 测试环境
+  version: "v0.0.0"
+  host: "127.0.0.1" # 域名或IP，用于服务注册
+  enableStat: true # 是否开启打印统计信息，true:开启, false:关闭
+  enableMetrics: true # 是否开启指标收集，true:开启, false:关闭
+  enableHTTPProfile: false # 是否开启性能分析，true:开启, false:关闭
+  enableLimit: false # 是否开启限流（自适应），true:开启, false:关闭
+  enableCircuitBreaker: false # 是否开启熔断器（自适应），true:开启, false:关闭
+  enableTrace: false # 是否开启追踪，true:开启, false:关闭，如果为true则必须设置jaeger配置
+  tracingSamplingRate: 1.0 # 追踪采样率，介于0和1之间，0表示不采样，1表示采样所有链接
+  #registryDiscoveryType: ""      # 注册和发现类型：consul, etcd, nacos，如果为空，则不使用注册和发现
+  cacheType: "" # 缓存类型，如果为空，则不使用缓存，支持 "memory" 和 "redis"，如果设置为redis，则必须设置redis配置
+
+# HTTP服务器设置
+http:
+  port: 8080 # 监听端口
+  timeout: 0 # 请求超时时间，单位（秒），如果为0表示不设置，如果大于0表示设置超时时间，如果enableHTTPProfile为true，则需要设置为0或大于60秒
+
+# 日志设置
+logger:
+  level: "info" # 输出日志级别 debug, info, warn, error，默认是debug
+  format: "console" # 输出格式，console或json，默认是console
+  isSave: true # false:输出到终端，true:输出到文件，默认是false
+  logFileConfig: # 当isSave=true时生效
+  #filename: "out.log" # 文件名（默认是out.log）
+  #maxSize: 20            # 最大文件大小（MB，默认是10MB）
+  #maxBackups: 50         # 保留的旧文件的最大数量（默认是100）
+  #maxAge: 15             # 保留旧文件的最长天数（默认是30天）
+  #isCompression: true    # 是否压缩/归档旧文件（默认是false）
+
+# 数据库设置
+database:
+  driver: "postgresql"
+  postgres:
+    # dsn格式，<用户名>:<密码>@<主机名>:<端口>/<数据库>?[k=v& ......]
+    dsn: "66maer:66maer666@(psql_db:5432)/xiaoyang?sslmode=disable"
+    enableLog: true # 是否开启日志
+    maxIdleConns: 3 # 设置空闲连接池中的最大连接数
+    maxOpenConns: 100 # 设置打开的数据库连接数上限
+    connMaxLifetime: 30 # 设置连接可重复使用的最长时间，单位（分）
+
+# Redis设置
+redis:
+  # dsn格式，[用户]:<密码>@127.0.0.1:6379/[数据库]，默认用户是default，Redis 6.0及以上版本仅支持用户。
+  dsn: "default:123456@192.168.3.37:6379/0"
+  dialTimeout: 10 # 连接超时时间，单位（秒）
+  readTimeout: 2 # 读取超时时间，单位（秒）
+  writeTimeout: 2 # 写入超时时间，单位（秒）
+
+# Jaeger设置
+jaeger:
+  agentHost: "192.168.3.37"
+  agentPort: 6831

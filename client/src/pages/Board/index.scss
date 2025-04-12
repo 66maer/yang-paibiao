@@ -1,0 +1,83 @@
+.kaituan-button{
+  width: calc(100% - 32px);
+  margin: 16px;
+  word-spacing: 2em;
+}
+
+.team-tag {
+  font-size: 16px;
+  padding: 4px;
+  img {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+    margin-top: -7px;
+    margin-bottom: -3px;
+  }
+}
+
+.board-layout{
+  height: 100%;
+}
+
+.board-layout-sider {
+  background: #f6e0e0;
+  overflow: auto;
+}
+
+.board-layout-content {
+  background: #f6eaea;
+  padding: 24px;
+  overflow: auto;
+}
+
+.board-content {
+  display: flex;
+  flex-direction: column;
+  width: 1000px;
+}
+
+.board-content-title {
+  margin-top: 5px;
+}
+
+.board-content-avatar {
+  margin-top: -6px;
+}
+
+.board-content-wrapper {
+  height: 100%;
+}
+
+.board-loading {
+  margin: auto;
+}
+
+.board-divider {
+  margin-top: 5px;
+}
+
+.board-title-input {
+  width: 800px;
+}
+
+.board-dungeon-select {
+  width: 150px;
+}
+
+.board-template-select {
+  width: 200px;
+}
+
+.board-notice {
+  width: 800px;
+}
+
+.board-sidebar {
+  width: 265px;
+  margin-left: 10px;
+}
+
+.board-collapse {
+  width: 250px;
+}

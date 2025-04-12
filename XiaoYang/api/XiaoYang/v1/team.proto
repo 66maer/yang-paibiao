@@ -1,0 +1,382 @@
+syntax = "proto3";
+
+package api.XiaoYang.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "tagger/tagger.proto";
+import "validate/validate.proto";
+
+option go_package = "XiaoYang/api/XiaoYang/v1;v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  host: "localhost:8080",
+  base_path: "",
+  info: {
+    title: "xiaoyang team api docs",
+    version: "1.0",
+  }
+  schemes: HTTP,
+  schemes: HTTPS,
+  consumes: "application/json",
+  produces: "application/json",
+  security_definitions: {
+    security: {
+      key: "BearerAuth"
+      value: {
+        type: TYPE_API_KEY
+        in: IN_HEADER
+        name: "Authorization"
+        description: "Input a \"Bearer your-jwt-token\" to Value"
+      }
+    }
+  }
+};
+
+service TeamService {
+  // 开团
+  rpc CreateTeam(CreateTeamRequest) returns (CreateTeamResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/team/createTeam"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "开团"
+      description: "创建新的开团"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 关闭团队
+  rpc CloseTeam(CloseTeamRequest) returns (CloseTeamResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/team/closeTeam"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "关闭团队"
+      description: "关闭指定的团队"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 修改开团信息
+  rpc UpdateTeam(UpdateTeamRequest) returns (UpdateTeamResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/team/updateTeam"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "修改开团信息"
+      description: "更新开团的基本信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 新增模板
+  rpc CreateTemplate(CreateTemplateRequest) returns (CreateTemplateResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/template/createTemplate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "新增模板"
+      description: "创建新的开团模板"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 删除模板
+  rpc DeleteTemplate(DeleteTemplateRequest) returns (DeleteTemplateResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/template/deleteTemplate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除模板"
+      description: "删除指定的开团模板"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 修改模板
+  rpc UpdateTemplate(UpdateTemplateRequest) returns (UpdateTemplateResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/template/updateTemplate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "修改模板"
+      description: "更新开团模板的信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取开团信息
+  rpc GetTeam(GetTeamRequest) returns (GetTeamResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/team/getTeam"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取开团信息"
+      description: "根据开团ID获取开团信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取所有开团信息
+  rpc ListTeams(ListTeamsRequest) returns (ListTeamsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/team/listTeams"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取所有开团信息"
+      description: "根据群组ID获取所有开团信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取模板信息
+  rpc GetTemplate(GetTemplateRequest) returns (GetTemplateResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/template/getTemplate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取模板信息"
+      description: "根据模板ID获取模板信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+
+  // 获取所有模板信息
+  rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/template/listTemplates"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取所有模板信息"
+      description: "根据群组ID获取所有模板信息"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
+}
+
+// 创建开团请求
+message CreateTeamRequest {
+  uint64 guildId = 1;
+  uint64 createrId = 2;
+  string title = 3;
+  string dungeons = 4;
+  bool bookXuanjing = 5;
+  bool bookYuntie = 6;
+  bool isHidden = 7;
+  bool isLock = 8;
+  string rule = 9;
+  string notice = 10;
+  string teamTime = 11;  // ISO8601 格式
+}
+
+// 创建开团响应
+message CreateTeamResponse {
+  uint64 teamId = 1;
+}
+
+// 关闭团队请求
+message CloseTeamRequest {
+  uint64 teamId = 1;
+  uint64 closeId = 2;
+  string summary = 3;  // 团队总结
+}
+
+// 关闭团队响应
+message CloseTeamResponse {
+  bool success = 1;
+}
+
+// 修改开团信息请求
+message UpdateTeamRequest {
+  uint64 teamId = 1;
+  string title = 2;
+  string dungeons = 3;
+  bool bookXuanjing = 4;
+  bool bookYuntie = 5;
+  bool isHidden = 6;
+  bool isLock = 7;
+  string rule = 8;
+  string notice = 9;
+  string teamTime = 10;  // ISO8601 格式
+}
+
+// 修改开团信息响应
+message UpdateTeamResponse {
+  bool success = 1;
+}
+
+// 新增模板请求
+message CreateTemplateRequest {
+  uint64 guildId = 1;
+  uint64 createrId = 2;
+  string title = 3;
+  string rule = 4;
+  string notice = 5;
+}
+
+// 新增模板响应
+message CreateTemplateResponse {
+  uint64 templateId = 1;
+}
+
+// 删除模板请求
+message DeleteTemplateRequest {
+  uint64 templateId = 1;
+}
+
+// 删除模板响应
+message DeleteTemplateResponse {
+  bool success = 1;
+}
+
+// 修改模板请求
+message UpdateTemplateRequest {
+  uint64 templateId = 1;
+  string title = 2;
+  string rule = 3;
+  string notice = 4;
+}
+
+// 修改模板响应
+message UpdateTemplateResponse {
+  bool success = 1;
+}
+
+// 查找开团请求
+message GetTeamRequest {
+  uint64 teamId = 1;
+}
+
+// 查找开团响应
+message GetTeamResponse {
+  TeamInfo teamInfo = 1;
+}
+
+// 批量查找开团请求
+message ListTeamsRequest {
+  uint64 guildId = 1;
+  string filter = 2;
+  int32 page = 3;
+  int32 pageSize = 4;
+}
+
+// 批量查找开团响应
+message ListTeamsResponse {
+  repeated TeamInfo teams = 1;
+}
+
+// 查找模板请求
+message GetTemplateRequest {
+  uint64 templateId = 1;
+}
+
+// 查找模板响应
+message GetTemplateResponse {
+  TemplateInfo templateInfo = 1;
+}
+
+// 批量查找模板请求
+message ListTemplatesRequest {
+  uint64 guildId = 1;
+}
+
+// 批量查找模板响应
+message ListTemplatesResponse {
+  repeated TemplateInfo templates = 1;
+}
+
+// 开团信息
+message TeamInfo {
+  uint64 teamId = 1;
+  uint64 guildId = 2;
+  uint64 createrId = 3;
+  string title = 4;
+  string dungeons = 5;
+  bool bookXuanjing = 6;
+  bool bookYuntie = 7;
+  bool isHidden = 8;
+  bool isLock = 9;
+  string rule = 10;
+  string notice = 11;
+  string summary = 12;     // 团队总结
+  string teamTime = 13;    // ISO8601 格式
+  string createTime = 14;  // ISO8601 格式
+  string updateTime = 15;  // ISO8601 格式
+  string closeTime = 16;   // ISO8601 格式
+  uint64 closeId = 17;
+  string createrNickname = 18;
+  string closeNickname = 19;
+}
+
+// 模板信息
+message TemplateInfo {
+  uint64 templateId = 1;
+  uint64 guildId = 2;
+  uint64 createrId = 3;
+  string title = 4;
+  string rule = 5;
+  string notice = 6;
+  string createTime = 7;  // ISO8601 格式
+  string updateTime = 8;  // ISO8601 格式
+}

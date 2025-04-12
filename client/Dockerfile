@@ -1,6 +1,6 @@
 # 阶段1: 构建前端
 # 使用官方 Node 镜像作为构建环境
-FROM node:lts-alpine3.20 as build
+FROM node:lts-alpine as build
 # 设置工作目录
 WORKDIR /app
 # 复制 package.json 和 package-lock.json

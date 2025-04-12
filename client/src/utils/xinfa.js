@@ -1,4 +1,4 @@
-const xinfaInfoTable = {
+export const xinfaInfoTable = {
   huajian: {
     name: "花间游",
     nickname: ["花间", "花间游", "草里爬"],
@@ -81,18 +81,7 @@ const xinfaInfoTable = {
   },
   wenshui: {
     name: "问水诀",
-    nickname: [
-      "藏剑",
-      "问水诀",
-      "问水",
-      "问水决",
-      "黄鸡",
-      "叽",
-      "黄叽",
-      "KFC",
-      "kfc",
-      "星期四",
-    ],
+    nickname: ["藏剑", "问水诀", "问水", "问水决", "黄鸡", "叽", "黄叽", "KFC", "kfc", "星期四"],
     menpai: "藏剑",
     icon: "wenshui.png",
     color: "#d6f95d",
@@ -245,7 +234,7 @@ const xinfaInfoTable = {
   },
   shanhai: {
     name: "山海心诀",
-    nickname: ["万灵", "山海心诀"],
+    nickname: ["万灵", "山海心诀", "弓"],
     menpai: "万灵",
     icon: "shanhai.png",
     color: "#ebd773",
@@ -253,12 +242,22 @@ const xinfaInfoTable = {
   },
   zhoutian: {
     name: "周天功",
-    nickname: ["段氏"],
+    nickname: ["段氏", "周天功", "扇子", "扇"],
     menpai: "段氏",
     icon: "zhoutian.png",
-    color: "#89cf4f",
+    color: "#5F9BB4",
     type: ["dps", "内功", "元气"],
   },
 };
 
-export { xinfaInfoTable };
+export const allXinfaList = Object.keys(xinfaInfoTable);
+
+export const dpsXinfaList = allXinfaList.filter((xinfa) => xinfaInfoTable[xinfa].type.includes("dps"));
+
+export const naiXinfaList = allXinfaList.filter((xinfa) => xinfaInfoTable[xinfa].type.includes("奶妈"));
+
+export const tXinfaList = allXinfaList.filter((xinfa) => xinfaInfoTable[xinfa].type.includes("T"));
+
+export const neigongXinfaList = allXinfaList.filter((xinfa) => xinfaInfoTable[xinfa].type.includes("内功"));
+
+export const waigongXinfaList = allXinfaList.filter((xinfa) => xinfaInfoTable[xinfa].type.includes("外功"));
