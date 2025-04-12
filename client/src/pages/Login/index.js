@@ -114,7 +114,8 @@ const LoginPage = () => {
           <img src="/logo-title.png" alt="logo" draggable="false" />
 
           <Card style={{ width: 350, position: "relative" }}>
-            {reg_mode ? RegisterCard() : LoginCard()}
+            {/* {reg_mode ? RegisterCard() : LoginCard()} */}
+            {LoginCard()}
             <Button
               onClick={() => setRegMode(!reg_mode)}
               type="link"
