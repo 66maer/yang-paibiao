@@ -24,13 +24,13 @@ jobs:
 
       - name: 构建并推送客户端 Docker 镜像
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/zyhm-client:latest ./client
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/zyhm-client:latest
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-client:latest ./client
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-client:latest
 
       - name: 构建并推送服务端 Docker 镜像
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/zyhm-server:latest ./server
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/zyhm-server:latest
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-server:latest ./XiaoYang
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-server:latest
 
       - name: 拷贝 docker-compose.yml 到服务器
         uses: appleboy/scp-action@v0.1.1
@@ -49,7 +49,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/${{ secrets.SSH_USER }}/zyhm
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/zyhm-client:latest
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/zyhm-server:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-client:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-server:latest
             docker-compose down
             docker-compose up -d
