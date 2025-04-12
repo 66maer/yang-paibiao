@@ -3,7 +3,7 @@
 # 应用设置
 app:
   name: "XiaoYang" # 服务器名称
-  env: "dev" # 运行环境，dev: 开发环境, prod: 生产环境, test: 测试环境
+  env: "prod" # 运行环境，dev: 开发环境, prod: 生产环境, test: 测试环境
   version: "v0.0.0"
   host: "127.0.0.1" # 域名或IP，用于服务注册
   enableStat: true # 是否开启打印统计信息，true:开启, false:关闭
@@ -25,9 +25,9 @@ http:
 logger:
   level: "info" # 输出日志级别 debug, info, warn, error，默认是debug
   format: "console" # 输出格式，console或json，默认是console
-  isSave: false # false:输出到终端，true:输出到文件，默认是false
-  #logFileConfig:           # 当isSave=true时生效
-  #filename: "out.log"    # 文件名（默认是out.log）
+  isSave: true # false:输出到终端，true:输出到文件，默认是false
+  logFileConfig: # 当isSave=true时生效
+  #filename: "out.log" # 文件名（默认是out.log）
   #maxSize: 20            # 最大文件大小（MB，默认是10MB）
   #maxBackups: 50         # 保留的旧文件的最大数量（默认是100）
   #maxAge: 15             # 保留旧文件的最长天数（默认是30天）
@@ -38,7 +38,7 @@ database:
   driver: "postgresql"
   postgres:
     # dsn格式，<用户名>:<密码>@<主机名>:<端口>/<数据库>?[k=v& ......]
-    dsn: "66maer:66maer666@(127.0.0.1:5432)/xiaoyang?sslmode=disable"
+    dsn: "66maer:66maer666@(psql_db:5432)/xiaoyang?sslmode=disable"
     enableLog: true # 是否开启日志
     maxIdleConns: 3 # 设置空闲连接池中的最大连接数
     maxOpenConns: 100 # 设置打开的数据库连接数上限

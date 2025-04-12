@@ -1,6 +1,6 @@
 -- 使用PostgreSQL数据库
 -- 创建数据库
--- CREATE DATABASE xiaoyang
+-- CREATE DATABASE xiaoyang;
 
 -- 使用数据库
 -- \c xiaoyang
@@ -256,5 +256,62 @@ COMMENT ON COLUMN logs.create_time IS '创建时间';
 -- 创建操作日志表索引
 CREATE INDEX idx_logs_user_id ON logs(user_id);
 CREATE INDEX idx_logs_guild_id ON logs(guild_id);
+
+------ 机器人数据映射表 ------
+-- 创建机器人数据映射表
+CREATE TABLE bot_data (
+    id SERIAL PRIMARY KEY,  -- 映射ID, 自增主键
+    member_openid VARCHAR(50) NOT NULL,  -- 成员OpenID, 唯一标识
+    guild_id INT NOT NULL,  -- 群组ID, 外键
+    qq_number VARCHAR(20) NOT NULL,  -- QQ号
+    user_id INT NOT NULL,  -- 用户ID, 外键
+
+    FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE,  -- 外键关联群组表, 级联删除
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE  -- 外键关联用户表, 级联删除
+);
+
+-- 添加机器人数据映射表注释
+COMMENT ON TABLE bot_data IS '机器人数据映射表';
+COMMENT ON COLUMN bot_data.id IS '映射ID';
+COMMENT ON COLUMN bot_data.member_openid IS '成员OpenID';
+COMMENT ON COLUMN bot_data.guild_id IS '群组ID';
+COMMENT ON COLUMN bot_data.user_id IS '用户ID';
+
+-- 创建机器人数据映射表索引
+CREATE INDEX idx_bot_data_member_openid ON bot_data(member_openid);
+CREATE INDEX idx_bot_data_qq_number ON bot_data(qq_number);
+
+------ 验证码表 ------
+-- 创建验证码表
+CREATE TABLE verification_codes (
+    id SERIAL PRIMARY KEY,  -- 验证码ID, 自增主键
+    qq_number VARCHAR(20) NOT NULL,  -- QQ号
+    code VARCHAR(6) NOT NULL,  -- 验证码
+    expire_time TIMESTAMP NOT NULL,  -- 验证码过期时间
+    is_rebind BOOLEAN DEFAULT FALSE  -- 是否为重新绑定
+);
+
+-- 添加验证码表注释
+COMMENT ON TABLE verification_codes IS '验证码表';
+COMMENT ON COLUMN verification_codes.id IS '验证码ID';
+COMMENT ON COLUMN verification_codes.qq_number IS 'QQ号';
+COMMENT ON COLUMN verification_codes.code IS '验证码';
+COMMENT ON COLUMN verification_codes.expire_time IS '验证码过期时间';
+COMMENT ON COLUMN verification_codes.is_rebind IS '是否为重新绑定';
+
+------ 初始化数据 ------
+-- 插入管理员用户
+INSERT INTO users (qq_number, password, nickname, is_admin, is_bot)
+VALUES ('505670805', '123456', '彭于晏', TRUE, FALSE);
+-- 插入机器人用户
+INSERT INTO users (qq_number, password, nickname, is_admin, is_bot)
+VALUES ('000000000', '123456', '小秧Bot', FALSE, TRUE);
+-- 插入群组
+INSERT INTO guilds (guild_qq_number, ukey, name, server, avatar, expire_time, preferences)
+VALUES ('665209794', 'zyhm', '醉倚花眠', '华乾', '', '2050-12-31 23:59:59', '{}');
+-- 插入群组成员
+INSERT INTO guild_members (guild_id, member_id, role, group_nickname)
+VALUES (1, 1, 'helper', '丐箩箩'),
+       (1, 2, 'bot', '小秧Bot');
 
 COMMIT;

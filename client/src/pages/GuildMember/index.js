@@ -125,10 +125,14 @@ const GuildMember = () => {
               )
             }
             style={{ width: "100%" }} // 确保下拉框宽度一致
-            disabled={record.groupRole === "owner"} // 禁用群主的下拉框
+            disabled={
+              record.groupRole === "owner" || record.groupRole === "bot" // 禁用群主和机器人
+            } // 禁用群主的下拉框
           >
             {record.groupRole === "owner" ? (
               <Option value="owner">群主</Option>
+            ) : record.groupRole === "bot" ? (
+              <Option value="bot">机器人</Option>
             ) : (
               <>
                 <Option value="helper">管理员</Option>
@@ -182,6 +186,8 @@ const GuildMember = () => {
         return "blue";
       case "member":
         return "green";
+      case "bot":
+        return "purple";
       case "blacklist":
         return "red";
       default:

@@ -78,9 +78,10 @@ type Database struct {
 }
 
 type Logger struct {
-	Format string `yaml:"format" json:"format"`
-	IsSave bool   `yaml:"isSave" json:"isSave"`
-	Level  string `yaml:"level" json:"level"`
+	Format        string      `yaml:"format" json:"format"`
+	IsSave        bool        `yaml:"isSave" json:"isSave"`
+	Level         string      `yaml:"level" json:"level"`
+	LogFileConfig interface{} `yaml:"logFileConfig" json:"logFileConfig"`
 }
 
 type HTTP struct {

@@ -10,11 +10,16 @@ import Character from "@/pages/Character";
 import BoardEditContent from "../pages/Board/edit"; // 导入编辑页面组件
 import TeamTemplate from "@/pages/TeamTemplete";
 import HistoryTeams from "@/pages/HistoryTeams";
+import Screenshot from "../pages/Screenshot";
 
 const routers = [
   {
     path: "/login",
     Component: LoginPage,
+  },
+  {
+    path: "/screenshot",
+    Component: Screenshot,
   },
   {
     path: "/",
