@@ -49,9 +49,7 @@ const ruleContent = (rule) => {
         );
       });
       return (
-        <Avatar.Group maxCount={6} maxStyle={{ color: "#f56a00", backgroundColor: "#fde3cf" }}>
-          {items}
-        </Avatar.Group>
+        <Avatar.Group max={{ count: 6, style: { color: "#f56a00", backgroundColor: "#fde3cf" } }}>{items}</Avatar.Group>
       );
     };
 

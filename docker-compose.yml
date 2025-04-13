@@ -34,3 +34,11 @@ services:
     ports:
       - "5432:5432"
     restart: always
+
+  xiaoyang-bot:
+    image: xiaoyang-bot:latest
+    container_name: xiaoyang-bot
+    restart: always
+    volumes:
+      - ./bot/logs:/app/logs
+      - ./bot/config.yaml:/app/config.yaml

@@ -72,8 +72,8 @@ func (h *teamServiceHandler) CreateTeam(ctx context.Context, req *XiaoYangV1.Cre
 		Rule:         utils.StringToJSONPtr(req.Rule),
 		Notice:       req.Notice,
 		TeamTime:     utils.ISO8601ToTimePtr(req.TeamTime),
-		CreateTime:   utils.CurrentTimePtr(),
-		UpdateTime:   utils.CurrentTimePtr(),
+		CreateTime:   utils.NowUTCPointer(),
+		UpdateTime:   utils.NowUTCPointer(),
 	}
 
 	err = h.teamServiceDao.Create(ctx, data)
@@ -102,8 +102,8 @@ func (h *teamServiceHandler) CloseTeam(ctx context.Context, req *XiaoYangV1.Clos
 	}
 
 	data.CloseID = int(req.CloseId)
-	data.CloseTime = utils.CurrentTimePtr()
-	data.UpdateTime = utils.CurrentTimePtr()
+	data.CloseTime = utils.NowUTCPointer()
+	data.UpdateTime = utils.NowUTCPointer()
 	data.Summary = utils.StringToJSONPtr(req.Summary)
 
 	err = h.teamServiceDao.UpdateByID(ctx, data)
@@ -139,7 +139,7 @@ func (h *teamServiceHandler) UpdateTeam(ctx context.Context, req *XiaoYangV1.Upd
 	data.Rule = utils.StringToJSONPtr(req.Rule)
 	data.Notice = req.Notice
 	data.TeamTime = utils.ISO8601ToTimePtr(req.TeamTime)
-	data.UpdateTime = utils.CurrentTimePtr()
+	data.UpdateTime = utils.NowUTCPointer()
 
 	err = h.teamServiceDao.UpdateByID(ctx, data)
 	if err != nil {

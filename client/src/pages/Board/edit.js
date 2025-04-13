@@ -445,11 +445,10 @@ const BoardEditContent = ({ team = {}, onBack }) => {
                 <Avatar src={`/xinfa/${xinfaInfoTable[item.characterXinfa].icon}`} size={20} />
                 {item.characterName}
               </Space>
-              {`报名时间: ${item.signupTime}`}
+              {`报名时间: ${new Date(item.signupTime).toLocaleString("zh-CN")}`}
               {item.isProxy && `由 ${item.submitName} 代报名`}
-              {item.cancelTime && `取消时间: ${item.cancelTime}`}
-              {item.cancelTime && `由`}
-
+              {item.cancelTime && `取消时间: $${new Date(item.cancelTime).toLocaleString("zh-CN")}`}
+              {item.cancelTime && `由 ${item.cancelName} 取消`}
               {showCancelButton && !item.cancelTime && (
                 <Button danger onClick={() => handleCancelSignup(item.signupId)}>
                   取消报名
@@ -593,11 +592,11 @@ const BoardEditContent = ({ team = {}, onBack }) => {
             <Form.Item label="使用模板">
               <Space>
                 <Select
-                  className="board-template-select"
                   options={templates.map((tpl) => ({
                     label: tpl.title,
                     value: tpl.templateId,
                   }))}
+                  style={{ width: 200 }}
                   onChange={(value) => setSelectedTemplate(value)}
                 />
                 <Button type="primary" icon={<DownloadOutlined />} onClick={() => applyTemplate(selectedTemplate)}>

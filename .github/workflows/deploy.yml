@@ -33,6 +33,11 @@ jobs:
           make image-build2 REPO_HOST=${{ secrets.DOCKERHUB_USERNAME }} 
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-server:latest
 
+      - name: 构建并推送 Bot Docker 镜像
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-bot:latest ./bot
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-bot:latest
+
       - name: 拷贝 docker-compose.yml 到服务器
         uses: appleboy/scp-action@v0.1.1
         with:
@@ -52,5 +57,6 @@ jobs:
             cd /home/${{ secrets.SSH_USER }}/zyhm
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-client:latest
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-server:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/xiaoyang-bot:latest
             docker-compose down
             docker-compose up -d

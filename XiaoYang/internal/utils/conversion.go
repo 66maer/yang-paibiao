@@ -58,12 +58,13 @@ func ISO8601ToTimePtr(s string) *time.Time {
 	if err != nil {
 		return nil
 	}
-	return &tt
+	localTime := tt.UTC()
+	return &localTime
 }
 
-// CurrentTimePtr 返回当前时间的指针
-func CurrentTimePtr() *time.Time {
-	t := time.Now()
+// NowUTCPointer 返回当前时间的指针
+func NowUTCPointer() *time.Time {
+	t := time.Now().UTC()
 	return &t
 }
 

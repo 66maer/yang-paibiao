@@ -51,7 +51,7 @@ const Screenshot = () => {
             {dungeons}
           </Tag>
           <Tag icon={<ClockCircleOutlined />} className="team-tag" color="cyan">
-            {new Date(teamTime).toLocaleString()}
+            {new Date(teamTime).toLocaleString("zh-CN")}
           </Tag>
           <Tag className="team-tag" icon={<img src="/玄晶.png" alt="玄晶" />} color={bookXuanjing ? "#f50" : "#5a0"}>
             {bookXuanjing ? "大铁已包" : "大铁可拍"}
@@ -73,8 +73,8 @@ const Screenshot = () => {
           </blockquote>
           <div className="screenshot-footer">
             <div>
-              由 {createrNickname || "未知"} 创建于 {new Date(createTime).toLocaleString()}， 最后更新时间
-              {new Date(updateTime).toLocaleString()}
+              由 {createrNickname || "未知"} 创建于 {new Date(createTime).toLocaleString("zh-CN")}， 最后更新时间
+              {new Date(updateTime).toLocaleString("zh-CN")}
             </div>
           </div>
         </pre>

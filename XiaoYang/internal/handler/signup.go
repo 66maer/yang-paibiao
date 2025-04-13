@@ -75,7 +75,7 @@ func (h *signupServiceHandler) CreateSignup(ctx context.Context, req *XiaoYangV1
 			IsProxy:           signup.IsProxy,
 			ClientType:        signup.ClientType,
 			LockSlot:          int(signup.LockSlot),
-			SignupTime:        utils.CurrentTimePtr(),
+			SignupTime:        utils.NowUTCPointer(),
 		}
 
 		err = h.signupDao.Create(ctx, data)
@@ -168,7 +168,7 @@ func (h *signupServiceHandler) CancelSignup(ctx context.Context, req *XiaoYangV1
 		}
 
 		data.CancelUserID = int(req.CancelUserId)
-		data.CancelTime = utils.CurrentTimePtr()
+		data.CancelTime = utils.NowUTCPointer()
 
 		err = h.signupDao.UpdateByID(ctx, data)
 		if err != nil {
