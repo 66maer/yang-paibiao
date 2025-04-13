@@ -407,7 +407,6 @@ const SlotPanel = ({
   onRulesChange,
   onSignupInfoUpdate,
 }) => {
-  console.log("SlotPanel输入参数:", rules, signup_infos, mode);
   const updateRule = (index, updatedRule) => {
     const updatedRules = [...rules];
     updatedRules[index] = updatedRule;

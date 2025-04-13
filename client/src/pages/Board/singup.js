@@ -103,13 +103,13 @@ const SignupModal = ({ visible, onClose, teamId, refreshSignupList, signupList }
         isProxy,
       });
 
-      const isDuplicateSignup = signupList.some(
-        (signup) =>
-          !signup.cancelTime &&
-          signup.cancelTime !== "" &&
-          signupCharacterId != 0 &&
-          signup.signupCharacterId === signupCharacterId
-      );
+      const isDuplicateSignup =
+        signupCharacterId !== 0 &&
+        signupList.some(
+          (signup) => (!signup.cancelTime || signup.cancelTime === "") && signup.signupCharacterId === signupCharacterId
+        );
+
+      console.info("分步逻辑：", signupCharacterId, signupList);
 
       if (isDuplicateSignup) {
         message.error("该角色已报名，不能重复报名！");
@@ -117,14 +117,13 @@ const SignupModal = ({ visible, onClose, teamId, refreshSignupList, signupList }
         return;
       }
 
-      const isInvalidSelfSignup = signupList.some(
-        (signup) =>
-          !isProxy &&
-          !signup.cancelTime &&
-          signup.cancelTime !== "" &&
-          signup.submitUserId === submitUserId &&
-          signup.signupUserId === submitUserId
-      );
+      const isInvalidSelfSignup =
+        !isProxy &&
+        signupList.some(
+          (signup) =>
+            (!signup.cancelTime || signup.cancelTime === "") &&
+            (signup.submitUserId === submitUserId || signup.signupUserId === submitUserId)
+        );
 
       if (isInvalidSelfSignup) {
         message.error("不可重复报名，请选择代报名！");
