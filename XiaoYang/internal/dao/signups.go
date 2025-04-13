@@ -118,7 +118,6 @@ func (d *signupsDao) updateDataByID(ctx context.Context, db *gorm.DB, table *mod
 		update["lock_slot"] = table.LockSlot
 	}
 	update["is_dove"] = table.IsDove
-	update["is_candidate"] = table.IsCandidate
 	if table.Detail != nil && table.Detail.String() != "" {
 		update["detail"] = table.Detail
 	}

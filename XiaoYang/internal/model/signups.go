@@ -19,7 +19,6 @@ type Signups struct {
 	ClientType        string          `gorm:"column:client_type;type:varchar(20)" json:"clientType"`         // 客户端类型
 	LockSlot          int             `gorm:"column:lock_slot;type:int4" json:"lockSlot"`                    // 锁定到固定位置
 	IsDove            bool            `gorm:"column:is_dove;type:bool;not null" json:"isDove"`               // 是否鸽了
-	IsCandidate       bool            `gorm:"column:is_candidate;type:bool;not null" json:"isCandidate"`     // 是否是替补
 	Detail            *datatypes.JSON `gorm:"column:detail;type:jsonb" json:"detail"`                        // 报名详情
 	SignupTime        *time.Time      `gorm:"column:signup_time;type:timestamp" json:"signupTime"`           // 报名时间
 	CancelUserID      int             `gorm:"column:cancel_user_id;type:int4" json:"cancelUserID"`           // 取消者ID

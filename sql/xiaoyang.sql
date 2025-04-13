@@ -1,5 +1,6 @@
 -- 使用PostgreSQL数据库
 -- 创建数据库
+-- psql -U 66maer postgres
 -- CREATE DATABASE xiaoyang;
 
 -- 使用数据库
@@ -286,7 +287,8 @@ CREATE INDEX idx_bot_data_qq_number ON bot_data(qq_number);
 CREATE TABLE verification_codes (
     id SERIAL PRIMARY KEY,  -- 验证码ID, 自增主键
     qq_number VARCHAR(20) NOT NULL,  -- QQ号
-    code VARCHAR(6) NOT NULL,  -- 验证码
+    nickname VARCHAR(50) NOT NULL,  -- 昵称
+    code VARCHAR(6) NOT NULL UNIQUE,  -- 验证码
     expire_time TIMESTAMP NOT NULL,  -- 验证码过期时间
     is_rebind BOOLEAN DEFAULT FALSE  -- 是否为重新绑定
 );
@@ -295,6 +297,7 @@ CREATE TABLE verification_codes (
 COMMENT ON TABLE verification_codes IS '验证码表';
 COMMENT ON COLUMN verification_codes.id IS '验证码ID';
 COMMENT ON COLUMN verification_codes.qq_number IS 'QQ号';
+COMMENT ON COLUMN verification_codes.nickname IS '昵称';
 COMMENT ON COLUMN verification_codes.code IS '验证码';
 COMMENT ON COLUMN verification_codes.expire_time IS '验证码过期时间';
 COMMENT ON COLUMN verification_codes.is_rebind IS '是否为重新绑定';
