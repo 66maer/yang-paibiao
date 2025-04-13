@@ -237,24 +237,28 @@ const BoardContent = ({ team = {}, isAdmin, refreshTeamList }) => {
                 <List.Item>
                   <Popover
                     content={
-                      <Button
-                        danger
-                        onClick={async () => {
-                          try {
-                            await request.post("/signup/cancelSignup", {
-                              signupIds: [item.signupId],
-                              cancelUserId: store.getState().user.userId,
-                            });
-                            message.success("取消报名成功");
-                            refreshSignupList();
-                          } catch (error) {
-                            console.error("Failed to cancel signup:", error);
-                            message.error("取消报名失败");
-                          }
-                        }}
-                      >
-                        取消报名
-                      </Button>
+                      <>
+                        <Button
+                          disabled={item.isLock}
+                          danger
+                          onClick={async () => {
+                            try {
+                              await request.post("/signup/cancelSignup", {
+                                signupIds: [item.signupId],
+                                cancelUserId: store.getState().user.userId,
+                              });
+                              message.success("取消报名成功");
+                              refreshSignupList();
+                            } catch (error) {
+                              console.error("Failed to cancel signup:", error);
+                              message.error("取消报名失败");
+                            }
+                          }}
+                        >
+                          取消报名
+                        </Button>
+                        {item.isLock && "锁定无法取消，请联系管理员"}
+                      </>
                     }
                     title="操作"
                     trigger="click"
