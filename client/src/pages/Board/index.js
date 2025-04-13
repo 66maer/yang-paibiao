@@ -369,8 +369,13 @@ const Board = () => {
     try {
       const teams = await fetchTeamList();
       setTeamList(teams);
-      if (teams.length > 0 && (!teamId || !teams.some((team) => team.teamId == teamId))) {
-        navigate(`/board/${teams[0].teamId}`);
+      if (teams.length > 0) {
+        if (!teamId || !teams.some((team) => team.teamId == teamId)) {
+          navigate(`/board/${teams[0].teamId}`);
+        }
+      } else if (!teamId) {
+        // 如果没有团队且没有选中的团队，清空当前路径
+        navigate("/board");
       }
     } catch (err) {
       console.error(err);
@@ -378,17 +383,15 @@ const Board = () => {
   };
 
   useEffect(() => {
-    if (teamList.length === 0) {
+    if (loading) {
       const fetchData = async () => {
         await refreshTeamList();
         setLoading(false);
       };
 
       fetchData();
-    } else {
-      setLoading(false);
     }
-  }, [teamId, navigate, teamList]);
+  }, [loading]); // 仅在加载状态改变时触发
 
   if (loading) {
     return (

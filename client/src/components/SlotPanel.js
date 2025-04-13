@@ -373,7 +373,6 @@ const EditSlotCard = ({ rule, signupInfo, index, updateRule, onSignupInfoUpdate,
 const SlotXiaoDui = ({ rules, signupInfos, indexD, mode, updateRule, onSignupInfoUpdate }) => {
   const cardFactory = (mode, globalIndex, rule, signupInfo) => {
     const baseProps = {
-      key: globalIndex,
       rule,
       signupInfo,
       index: globalIndex,
@@ -382,11 +381,11 @@ const SlotXiaoDui = ({ rules, signupInfos, indexD, mode, updateRule, onSignupInf
     };
     switch (mode) {
       case "edit":
-        return <EditSlotCard {...baseProps} />;
+        return <EditSlotCard key={globalIndex} {...baseProps} />;
       case "edit-only-rule":
-        return <EditSlotCard {...baseProps} onlyRule={true} />;
+        return <EditSlotCard key={globalIndex} {...baseProps} onlyRule={true} />;
       default:
-        return <SlotCard {...baseProps} />;
+        return <SlotCard key={globalIndex} {...baseProps} />;
     }
   };
 

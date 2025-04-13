@@ -112,8 +112,8 @@ const ruleContent = (rule) => {
   }
 
   return (
-    <div class="multi-content-container">
-      <div class="multi-content-bracket">
+    <div className="multi-content-container">
+      <div className="multi-content-bracket">
         <span>或</span>
       </div>
       <div>

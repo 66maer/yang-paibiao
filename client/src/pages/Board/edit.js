@@ -261,7 +261,7 @@ const BoardEditContent = ({ team = {}, onBack }) => {
       const payload = {
         ...values,
         rule: JSON.stringify(rules),
-        teamTime: new Date(`${values.date.format("YYYY-MM-DD")}T${values.time.format("HH:mm:ss")}`).toISOString(),
+        teamTime: values.time,
         guildId: store.getState().guild.guildId,
         createrId: store.getState().user.userId,
         isLock: values.isLock,

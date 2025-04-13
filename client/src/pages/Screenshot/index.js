@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Typography, Collapse, List, Divider, Tag, Avatar, Space } from "antd";
-import SlotCard from "@/components/SlotCard";
 import SlotPanel from "@/components/SlotPanel";
 import { CompassOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import SlotAllocate from "@/components/SlotAllocate";
@@ -27,7 +26,6 @@ const Screenshot = () => {
     notice = "",
     rules = [],
     signups = [],
-    candidateList = [],
     bookXuanjing,
     bookYuntie,
     createrNickname,
@@ -101,7 +99,7 @@ const Screenshot = () => {
                       </div>
                     </div>
                     <div className="candidate-status">
-                      <div className="status-replace">{item.isRich && "代"}</div>
+                      <div className="status-replace">{item.isProxy && "代"}</div>
                       <div className="status-lie">{item.isRich && "躺"}</div>
                     </div>
                   </div>

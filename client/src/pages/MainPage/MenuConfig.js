@@ -46,16 +46,14 @@ const menuConfig = (role, isSuperAdmin) => {
     },
   ];
 
-  const filteredMenu = menu.filter((item) => {
-    if (
-      !item.allowedRoles ||
-      item.allowedRoles.includes(role) ||
-      isSuperAdmin
-    ) {
-      return true;
-    }
-    return false;
-  });
+  const filteredMenu = menu
+    .filter((item) => {
+      if (!item.allowedRoles || item.allowedRoles.includes(role) || isSuperAdmin) {
+        return true;
+      }
+      return false;
+    })
+    .map(({ allowedRoles, ...rest }) => rest);
 
   return filteredMenu;
 };
