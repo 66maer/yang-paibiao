@@ -15,10 +15,9 @@ jobs:
         id: changes
         uses: dorny/paths-filter@v2
         with:
-          filters:
+          filters: |
             client:
-              paths:
-                - "client/**"
+              - "client/**"
       - name: 设置 Docker Buildx
         if: steps.changes.outputs.client == 'true'
         uses: docker/setup-buildx-action@v1
@@ -43,10 +42,9 @@ jobs:
         id: changes
         uses: dorny/paths-filter@v2
         with:
-          filters:
+          filters: |
             server:
-              paths:
-                - "XiaoYang/**"
+              - "XiaoYang/**"
       - name: 设置 Docker Buildx
         if: steps.changes.outputs.server == 'true'
         uses: docker/setup-buildx-action@v1
@@ -72,10 +70,9 @@ jobs:
         id: changes
         uses: dorny/paths-filter@v2
         with:
-          filters:
+          filters: |
             bot:
-              paths:
-                - "bot/**"
+              - "bot/**"
       - name: 设置 Docker Buildx
         if: steps.changes.outputs.bot == 'true'
         uses: docker/setup-buildx-action@v1
