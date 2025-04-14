@@ -7,7 +7,7 @@ _log = logging.get_logger()
 class PersonalizationService:
     def __init__(self):
         self.db = DatabaseHandler()
-        with open("/home/maer/work/yang-paibiao/bot/xinfa_config.json", "r") as xinfa_file:
+        with open("xinfa_config.json", "r") as xinfa_file:
             self.xinfa_config = json.load(xinfa_file)  # 加载心法配置
 
     def add_character(self, member_openid, args):

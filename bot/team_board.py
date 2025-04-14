@@ -7,12 +7,14 @@ from botpy import logging
 import json
 import asyncio
 from pyppeteer import launch
+from collections import defaultdict
 
 _log = logging.get_logger()
 
 class TeamBoardService:
     def __init__(self):
         self.db = DatabaseHandler()
+        self.last_call_time = 0  # 全局最后调用时间
 
     def get_open_teams(self):
         """
@@ -37,6 +39,13 @@ class TeamBoardService:
         """
         根据序号获取开团的详细信息，并返回图片的Base64编码。
         """
+        current_time = time.time()
+        if current_time - self.last_call_time < 30:  # 检查是否在CD时间内
+            _log.warning(f"面板详情调用频率过快")
+            raise ValueError(f"尚在调息之中，静待片刻方可。(剩余{30 - (current_time - self.last_call_time):.1f}秒)")
+
+        self.last_call_time = current_time  # 更新全局最后调用时间
+
         query = """
             SELECT id, title, team_time, dungeons, notice, book_xuanjing, book_yuntie, 
                    is_lock, rule, create_time, update_time, 
