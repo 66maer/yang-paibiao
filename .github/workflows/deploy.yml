@@ -17,7 +17,8 @@ jobs:
         with:
           filters:
             client:
-              - "client/**"
+              paths:
+                - "client/**"
       - name: 设置 Docker Buildx
         if: steps.changes.outputs.client == 'true'
         uses: docker/setup-buildx-action@v1
@@ -44,7 +45,8 @@ jobs:
         with:
           filters:
             server:
-              - "XiaoYang/**"
+              paths:
+                - "XiaoYang/**"
       - name: 设置 Docker Buildx
         if: steps.changes.outputs.server == 'true'
         uses: docker/setup-buildx-action@v1
@@ -72,7 +74,8 @@ jobs:
         with:
           filters:
             bot:
-              - "bot/**"
+              paths:
+                - "bot/**"
       - name: 设置 Docker Buildx
         if: steps.changes.outputs.bot == 'true'
         uses: docker/setup-buildx-action@v1
