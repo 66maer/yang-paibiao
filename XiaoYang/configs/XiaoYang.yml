@@ -38,6 +38,7 @@ database:
   driver: "postgresql"
   postgres:
     # dsn格式，<用户名>:<密码>@<主机名>:<端口>/<数据库>?[k=v& ......]
+    #dsn: "66maer:66maer666@(localhost:5432)/xiaoyang?sslmode=disable"
     dsn: "66maer:66maer666@(psql_db:5432)/xiaoyang?sslmode=disable"
     enableLog: true # 是否开启日志
     maxIdleConns: 3 # 设置空闲连接池中的最大连接数

@@ -142,23 +142,20 @@ class TeamBoardService:
         """
         # 启动无头浏览器
         browser = await launch(
-            headless=True,
-        args=[
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',  # 解决共享内存限制
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process'  # WSL下建议启用
-        ],
-        ignoreDefaultArgs=['--enable-automation'],  # 禁用自动化提示条
-        dumpio=True  # 输出调试信息
+            executablePath='/usr/bin/google-chrome-unstable',
+            headless=True,args=['--no-sandbox', '--disable-gpu'],
+            dumpio=True  # 输出调试信息
+            # '--no-sandbox',
+            # '--single-process',
+            # '--disable-dev-shm-usage',
+            # '--disable-gpu',
+            # '--no-zygote'
         )
         page = await browser.newPage()
 
         # 访问React组件的路由
         url = f'http://xiaoyang-client:80/screenshot?data={encoded_details}'
+        # url = f'http://localhost:3000/screenshot?data={encoded_details}'
         await page.goto(url, {'waitUntil': 'networkidle0'})
         # # 调整视口大小（可选）
         # await page.setViewport({'width': 1010, 'height': 800})

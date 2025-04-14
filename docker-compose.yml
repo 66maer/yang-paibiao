@@ -36,9 +36,11 @@ services:
     restart: always
 
   xiaoyang-bot:
-    image: xiaoyang-bot:latest
+    image: docker.io/66maer/xiaoyang-bot:latest
     container_name: xiaoyang-bot
     restart: always
     volumes:
       - ./bot/logs:/app/logs
+      - ./bot/cache:/app/cache
       - ./bot/config.yaml:/app/config.yaml
+      
