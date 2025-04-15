@@ -22,6 +22,9 @@ custom_file_handler["filename"] = f"{log_directory}/xiaoyang-bot.log"
 # 检查并创建日志目录
 if not os.path.exists(log_directory):
     os.makedirs(log_directory)
+# 检查cache目录
+if not os.path.exists("cache"):
+    os.makedirs("cache")
 
 # 调用 configure_logging 配置日志
 configure_logging(ext_handlers=custom_file_handler)

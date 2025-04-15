@@ -18,7 +18,7 @@ class TeamBoardService:
         client_config = config["client"]
         self.host_url = client_config["host_url"]
 
-    def get_open_teams(self):
+    async def get_open_teams(self):
         """
         查询所有未关闭且未隐藏的开团信息，按时间排序。
         """
@@ -33,6 +33,11 @@ class TeamBoardService:
             _log.info("没有未关闭的开团信息。")
             return "没有开团", 1
         
+        # 如果只有一条数据，返回详细信息
+        if len(results) == 1:
+            team = results[0]
+            return await self.get_team_details(1)
+
         response = "\n".join([f"\n【{idx + 1}】. {team['title']}" for idx, team in enumerate(results)])
         _log.info("成功获取未关闭的开团信息。")
         return response, 1
@@ -102,7 +107,7 @@ class TeamBoardService:
         signups = []
         for signup in signup_results:
             submit_name = signup["submit_group_nickname"] or signup["submit_nickname"] or "未知"
-            signup_name = signup["signup_group_nickname"] or signup["signup_nickname"] or "未知"
+            signup_name = signup["signup_group_nickname"] or signup["signup_nickname"] or None
             _log.info(f"提交昵称{submit_name}，原始昵称{signup['submit_nickname']}，群昵称{signup['submit_group_nickname']}")
             _log.info(f"报名昵称{signup_name}，原始昵称{signup['signup_nickname']}，群昵称{signup['signup_group_nickname']}")
             signup_info = signup["signup_info"]
@@ -111,7 +116,7 @@ class TeamBoardService:
                 "submitUserId": signup["submit_user_id"],
                 "submitName": submit_name,
                 "signupUserId": signup["signup_user_id"],
-                "signupName": signup_name,
+                "signupName": signup_name or signup_info.get("signupName", "未知"),
                 "signupCharacterId": signup["signup_character_id"],
                 "characterName": signup["character_name"] or signup_info.get("characterName", "未知"),
                 "characterXinfa": signup["character_xinfa"] or signup_info.get("characterXinfa", "未知"),
@@ -164,15 +169,11 @@ class TeamBoardService:
         await page.goto(url, {'waitUntil': 'networkidle0'})
 
         # 使用 POST 请求传递数据
-        await page.evaluate(f"""
-            fetch('{url}', {{
-                method: 'POST',
-                headers: {{
-                    'Content-Type': 'application/json'
-                }},
-                body: JSON.stringify({{'data': '{encoded_details}'}})
-            }});
-        """)
+        await page.evaluate('''(data) => {
+            localStorage.setItem('screenshotData', data);
+        }''', encoded_details)
+
+        await page.reload({'waitUntil': 'networkidle0'})
 
         # 截图并保存
         await page.screenshot({'path': f'cache/{id}.png', 'fullPage': True})
@@ -198,7 +199,7 @@ class TeamBoardService:
         # 清理旧缓存
         self.clean_old_cache()
         if len(args) == 0:
-            return self.get_open_teams()
+            return await self.get_open_teams()
         elif len(args) == 1 and args[0].isdigit():
             idx = int(args[0])
             return await self.get_team_details(idx)

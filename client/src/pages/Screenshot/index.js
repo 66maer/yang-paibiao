@@ -9,8 +9,7 @@ import "./index.scss"; // 引入样式文件
 const { Title, Paragraph } = Typography;
 
 const Screenshot = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const base64Data = urlParams.get("data");
+  const base64Data = localStorage.getItem("screenshotData");
 
   let decodedData = {};
   try {

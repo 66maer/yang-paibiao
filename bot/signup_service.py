@@ -311,6 +311,11 @@ class SignupHandlerBase:
             team_list = self._format_team_list(active_teams)
             raise ValueError(RET_MSG["K-无效团队序号"].format(team_idx=team_idx, team_list=team_list))
         return active_teams[team_idx - 1]["id"]
+
+    def _validate_name_length(self, name: str, field_name: str) -> None:
+        """验证名称长度是否超过限制"""
+        if len(name) > 6:
+            raise ValueError(f"{field_name}不能超过6个汉字")
     # endregion
 
 class NormalSignupHandler(SignupHandlerBase):
@@ -363,10 +368,13 @@ class NormalSignupHandler(SignupHandlerBase):
         else:
             raise ValueError(RET_MSG["K-无效心法"].format(xinfa=args[0]))
         
+
         # 检查是否存在对应角色
         characters = self.character_service.get_character(user_id, name, xinfa)
         if characters:
             return characters[0]
+        
+        self._validate_name_length(name, "角色名")
         
         return {
             "xinfa": xinfa,
@@ -399,7 +407,8 @@ class NormalSignupHandler(SignupHandlerBase):
         existing_signups = self.db.execute_query(query, (team_id,), fetchall=True)
 
         # 检查是否有同一角色重复报名（排除角色ID为0的情况）
-        if character_data["id"] != 0 and any(
+        _log.debug("检查是否有同一角色重复报名，当前角色ID: %s, 记录列表: %s", character_data["id"], existing_signups)
+        if character_data["id"] and character_data["id"] != 0 and any(
             record["signup_character_id"] == character_data["id"] for record in existing_signups
         ):
             raise ValueError("该角色已报名，不能重复报名！")
@@ -442,7 +451,10 @@ class ProxySignupHandler(SignupHandlerBase):
         
         participant_name = args[0]
         xinfa = args[1]
-        character_name = args[2] if len(args) > 2 else None
+        if len(args) > 2:
+            character_name = args[2]
+            self._validate_name_length(character_name, "角色名")
+        self._validate_name_length(participant_name, "参与人昵称")
 
         # 验证心法
         parsed_xinfa = self.character_service.try_parse_xinfa(xinfa)
@@ -489,7 +501,10 @@ class BossSignupHandler(SignupHandlerBase):
         
         boss_name = args[0]
         xinfa = args[1]
-        character_name = args[2] if len(args) > 2 else None
+        if len(args) > 2:
+            character_name = args[2]
+            self._validate_name_length(character_name, "角色名")
+        self._validate_name_length(boss_name, "老板昵称")
 
         # 验证心法
         parsed_xinfa = self.character_service.try_parse_xinfa(xinfa)
