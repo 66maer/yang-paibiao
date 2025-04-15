@@ -9,6 +9,34 @@ from botpy import logging
 
 _log = logging.get_logger()
 
+# 通用引用字典
+COMMON_REFERENCES = {
+    "K-初次绑定提示": "使用说明：\n1. 【初次绑定(第一步)】：/绑定QQ号 QQ号 昵称\n2. 【邮件验证(第二步)】：/绑定QQ号 验证码",
+    "K-重新绑定提示": "使用说明：\n1. 【重新绑定新QQ号】：/绑定QQ号 重新绑定 QQ号 昵称\n2. 【邮件验证(第二步)】：/绑定QQ号 验证码",
+    "K-邮箱检查提示": "请核对您的QQ邮箱 {email} 是否正确。如果您未使用QQ邮箱，请联系管理员手动绑定 [{member_openid}]。",
+    "K-重试提示": "请稍后重试。",
+    "K-格式错误提示": "请检查命令格式是否正确。"
+}
+
+# 错误信息字典
+ERROR_MESSAGES = {
+    "K-未提供参数": "{初次绑定提示}\n{重新绑定提示}".format(
+        初次绑定提示=COMMON_REFERENCES["K-初次绑定提示"], 
+        重新绑定提示=COMMON_REFERENCES["K-重新绑定提示"]
+    ),
+    "K-已绑定": "该QQ号或用户已绑定过。",
+    "K-验证码生成失败": "生成验证码失败，{重试提示}".format(重试提示=COMMON_REFERENCES["K-重试提示"]),
+    "K-邮件发送失败": "邮件发送失败，{邮箱检查提示}".format(邮箱检查提示=COMMON_REFERENCES["K-邮箱检查提示"]),
+    "K-验证码无效或过期": "验证码无效或已过期。",
+    "K-重新绑定失败": "该QQ号未绑定，无法重新绑定。",
+    "K-绑定失败": "绑定失败，{重试提示}".format(重试提示=COMMON_REFERENCES["K-重试提示"]),
+    "K-参数格式错误": "{格式错误提示}\n{初次绑定提示}\n{重新绑定提示}".format(
+        格式错误提示=COMMON_REFERENCES["K-格式错误提示"], 
+        初次绑定提示=COMMON_REFERENCES["K-初次绑定提示"], 
+        重新绑定提示=COMMON_REFERENCES["K-重新绑定提示"]
+    )
+}
+
 class QQBindingService:
     def __init__(self):
         self.db = DatabaseHandler()
@@ -39,10 +67,10 @@ class QQBindingService:
                 _log.info(f"验证码邮件已成功发送至 {email}。")
         except smtplib.SMTPException as e:
             _log.error(f"发送验证码邮件至 {email} 时发生SMTP错误: {e}")
-            raise ValueError(f"邮件发送失败，请核对您的QQ邮箱 {email} 是否正确。如果您未使用QQ邮箱，请联系管理员手动绑定 [{member_openid}]。")
+            raise ValueError(ERROR_MESSAGES["K-邮件发送失败"].format(email=email, member_openid=member_openid))
         except Exception as e:
             _log.error(f"发送验证码邮件至 {email} 时发生未知错误: {e}")
-            raise ValueError(f"邮件发送失败，请核对您的QQ邮箱 {email} 是否正确。如果您未使用QQ邮箱，请联系管理员手动绑定 [{member_openid}]。")
+            raise ValueError(ERROR_MESSAGES["K-邮件发送失败"].format(email=email, member_openid=member_openid))
 
     def delete_expired_verification_codes(self):
         """
@@ -58,7 +86,7 @@ class QQBindingService:
     def bind_qq(self, member_openid, args):
         if len(args) == 0:
             _log.info(f"用户 {member_openid} 请求绑定QQ号，但未提供参数。")
-            return "使用说明：\n、1. 【初次绑定(第一步)】：/绑定QQ号 QQ号 昵称\n2. 【邮件验证((第二步))】：/绑定QQ号 验证码\n3. 【重新绑定新QQ号】：/绑定QQ号 重新绑定 QQ号 昵称"
+            return ERROR_MESSAGES["K-未提供参数"]
 
         if len(args) == 2 and args[0].isdigit():
             qq_number, nickname = args
@@ -71,7 +99,7 @@ class QQBindingService:
             result = self.db.execute_query(query, (member_openid, qq_number), fetchone=True)
             if result:
                 _log.warning(f"绑定失败：用户 {member_openid} 或 QQ号 {qq_number} 已绑定过。")
-                raise ValueError("该QQ号或用户已绑定过。")
+                raise ValueError(ERROR_MESSAGES["K-已绑定"])
 
             try:
                 # 删除所有过期记录
@@ -94,7 +122,7 @@ class QQBindingService:
                         _log.warning(f"验证码插入失败，尝试重新生成: {e}")
                 else:
                     _log.error(f"用户 {member_openid} 绑定QQ号 {qq_number} 时生成验证码失败。")
-                    raise ValueError("生成验证码失败，请稍后重试。")
+                    raise ValueError(ERROR_MESSAGES["K-验证码生成失败"])
 
                 # 提交事务
                 self.db.commit_transaction()
@@ -107,7 +135,7 @@ class QQBindingService:
             except Exception as e:
                 self.db.rollback_transaction()
                 _log.error(f"绑定QQ号时发生错误: {e}")
-                raise ValueError("绑定失败，请稍后重试。")
+                raise ValueError(ERROR_MESSAGES["K-绑定失败"])
 
         elif len(args) == 1 and args[0].isdigit():
             code = args[0]
@@ -120,7 +148,7 @@ class QQBindingService:
             result = self.db.execute_query(query, (code, datetime.now()), fetchone=True)
             if not result:
                 _log.warning(f"验证码 {code} 无效或已过期。")
-                raise ValueError("验证码无效或已过期。")
+                raise ValueError(ERROR_MESSAGES["K-验证码无效或过期"])
 
             qq_number, nickname, is_rebind = result["qq_number"], result["nickname"], result["is_rebind"]
             _log.info(f"验证码 {code} 验证成功，QQ号 {qq_number}，昵称 {nickname}，是否重新绑定：{is_rebind}。")
@@ -173,7 +201,7 @@ class QQBindingService:
             except Exception as e:
                 self.db.rollback_transaction()
                 _log.error(f"验证QQ号时发生错误: {e}")
-                raise ValueError("绑定失败，请稍后重试。")
+                raise ValueError(ERROR_MESSAGES["K-绑定失败"])
 
         elif len(args) == 3 and args[0] == "重新绑定" and args[1].isdigit():
             qq_number, nickname = args[1], args[2]
@@ -185,7 +213,7 @@ class QQBindingService:
             result = self.db.execute_query(query, (qq_number,), fetchone=True)
             if not result:
                 _log.warning(f"重新绑定失败：QQ号 {qq_number} 未绑定。")
-                raise ValueError("该QQ号未绑定，无法重新绑定。")
+                raise ValueError(ERROR_MESSAGES["K-重新绑定失败"])
 
             try:
                 # 删除所有过期记录
@@ -208,7 +236,7 @@ class QQBindingService:
                         _log.warning(f"验证码插入失败，尝试重新生成: {e}")
                 else:
                     _log.error(f"用户 {member_openid} 重新绑定QQ号 {qq_number} 时生成验证码失败。")
-                    raise ValueError("生成验证码失败，请稍后重试。")
+                    raise ValueError(ERROR_MESSAGES["K-验证码生成失败"])
 
                 # 提交事务
                 self.db.commit_transaction()
@@ -221,8 +249,8 @@ class QQBindingService:
             except Exception as e:
                 self.db.rollback_transaction()
                 _log.error(f"重新绑定QQ号时发生错误: {e}")
-                raise ValueError("重新绑定失败，请稍后重试。")
+                raise ValueError(ERROR_MESSAGES["K-绑定失败"])
 
         else:
             _log.warning(f"用户 {member_openid} 提供的参数格式错误：{args}")
-            raise ValueError("参数格式错误。")
+            raise ValueError(ERROR_MESSAGES["K-参数格式错误"])
