@@ -22,7 +22,7 @@ class QQBindingService:
     def generate_verification_code(self):
         return ''.join(random.choices("0123456789", k=6))
 
-    def send_verification_email(self, email, code, is_rebind=False):
+    def send_verification_email(self, email, code, member_openid, is_rebind=False):
         action = "重新绑定" if is_rebind else "绑定"
         msg = MIMEText(f"您的{action}验证码是：{code}，有效期为10分钟。")
         msg['Subject'] = f"【小秧】QQ{action}验证码"
@@ -39,10 +39,10 @@ class QQBindingService:
                 _log.info(f"验证码邮件已成功发送至 {email}。")
         except smtplib.SMTPException as e:
             _log.error(f"发送验证码邮件至 {email} 时发生SMTP错误: {e}")
-            raise ValueError("邮件发送失败，请稍后重试。")
+            raise ValueError(f"邮件发送失败，请核对您的QQ邮箱 {email} 是否正确。如果您未使用QQ邮箱，请联系管理员手动绑定 [{member_openid}]。")
         except Exception as e:
             _log.error(f"发送验证码邮件至 {email} 时发生未知错误: {e}")
-            raise ValueError("邮件发送失败，请稍后重试。")
+            raise ValueError(f"邮件发送失败，请核对您的QQ邮箱 {email} 是否正确。如果您未使用QQ邮箱，请联系管理员手动绑定 [{member_openid}]。")
 
     def delete_expired_verification_codes(self):
         """
@@ -52,13 +52,13 @@ class QQBindingService:
             DELETE FROM verification_codes 
             WHERE expire_time <= %s
         """
-        self.db.execute_query(delete_query, (datetime.now(),))
-        _log.info("已删除所有过期的验证码记录。")
+        rows_deleted = self.db.execute_query(delete_query, (datetime.now(),))
+        _log.info(f"已删除所有过期的验证码记录，共删除 {rows_deleted} 条记录。")
 
     def bind_qq(self, member_openid, args):
         if len(args) == 0:
             _log.info(f"用户 {member_openid} 请求绑定QQ号，但未提供参数。")
-            return "使用说明：\n1. 【初次绑定】：/绑定QQ号 QQ号 昵称\n2. 【邮件验证】：/绑定QQ号 验证码\n3. 【重新绑定】：/绑定QQ号 重新绑定 QQ号 昵称"
+            return "使用说明：\n、1. 【初次绑定(第一步)】：/绑定QQ号 QQ号 昵称\n2. 【邮件验证((第二步))】：/绑定QQ号 验证码\n3. 【重新绑定新QQ号】：/绑定QQ号 重新绑定 QQ号 昵称"
 
         if len(args) == 2 and args[0].isdigit():
             qq_number, nickname = args
@@ -101,7 +101,7 @@ class QQBindingService:
                 _log.info(f"用户 {member_openid} 成功为 QQ号 {qq_number} 生成验证码并提交事务。")
 
                 # 发送邮件
-                self.send_verification_email(f"{qq_number}@qq.com", code)
+                self.send_verification_email(f"{qq_number}@qq.com", code, member_openid)
                 _log.info(f"验证码邮件已发送至 {qq_number}@qq.com。")
                 return "验证码已发送，请查收邮件。"
             except Exception as e:
@@ -215,7 +215,7 @@ class QQBindingService:
                 _log.info(f"用户 {member_openid} 成功为 QQ号 {qq_number} 生成重新绑定验证码并提交事务。")
 
                 # 发送邮件
-                self.send_verification_email(f"{qq_number}@qq.com", code, is_rebind=True)
+                self.send_verification_email(f"{qq_number}@qq.com", code, member_openid, is_rebind=True)
                 _log.info(f"重新绑定验证码邮件已发送至 {qq_number}@qq.com。")
                 return "重新绑定验证码已发送，请查收邮件。"
             except Exception as e:

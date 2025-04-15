@@ -44,7 +44,7 @@ const fetchLogin = (loginForm) => {
         qqNumber: res.data.qqNumber,
         nickname: res.data.nickname,
         avatar: res.data.avatar,
-        isSuperAdmin: res.data.isSuperAdmin,
+        isSuperAdmin: res.data.isAdmin,
       })
     );
   };
