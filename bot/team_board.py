@@ -1,13 +1,11 @@
 import base64
 import os
 import time
-from datetime import datetime, timedelta
 from db_handler import DatabaseHandler
 from botpy import logging
 import json
-import asyncio
 from pyppeteer import launch
-from collections import defaultdict
+import yaml
 
 _log = logging.get_logger()
 
@@ -15,6 +13,10 @@ class TeamBoardService:
     def __init__(self):
         self.db = DatabaseHandler()
         self.last_call_time = 0  # 全局最后调用时间
+        with open("config.yaml", "r") as config_file:
+            config = yaml.safe_load(config_file)
+        client_config = config["client"]
+        self.host_url = client_config["host_url"]
 
     def get_open_teams(self):
         """
@@ -163,8 +165,7 @@ class TeamBoardService:
         page = await browser.newPage()
 
         # 访问React组件的路由
-        url = f'http://xiaoyang-client:80/screenshot?data={encoded_details}'
-        # url = f'http://localhost:3000/screenshot?data={encoded_details}'
+        url = f'http://{self.host_url}/screenshot?data={encoded_details}'
         await page.goto(url, {'waitUntil': 'networkidle0'})
         # # 调整视口大小（可选）
         # await page.setViewport({'width': 1010, 'height': 800})

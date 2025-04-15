@@ -7,14 +7,18 @@ from qq_binding import QQBindingService
 from team_board import TeamBoardService
 from signup_service import SignupService
 from personalization_service import PersonalizationService 
-_log = logging.get_logger()
-
+import os
 from botpy.logging import configure_logging, DEFAULT_FILE_HANDLER
+
+_log = logging.get_logger()
 
 # 配置日志输出目录
 log_directory = "logs"
 custom_file_handler = DEFAULT_FILE_HANDLER.copy()
 custom_file_handler["filename"] = f"{log_directory}/xiaoyang-bot.log"
+# 检查并创建日志目录
+if not os.path.exists(log_directory):
+    os.makedirs(log_directory)
 
 # 调用 configure_logging 配置日志
 configure_logging(ext_handlers=custom_file_handler)
@@ -47,7 +51,7 @@ async def handle_command(message: Message):
     command_parts = content.split()
     command = command_parts[0]
     args = command_parts[1:]
-    if command == "/开团看板":
+    if command == "/查看团队":
         service = TeamBoardService()
         try:
             response, msg_type = await service.handle_team_board_command(args)
