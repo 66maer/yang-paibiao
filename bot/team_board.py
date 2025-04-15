@@ -154,21 +154,26 @@ class TeamBoardService:
         # 启动无头浏览器
         browser = await launch(
             executablePath='/usr/bin/google-chrome-unstable',
-            headless=True,args=['--no-sandbox', '--disable-gpu'],
+            headless=True, args=['--no-sandbox', '--disable-gpu'],
             dumpio=True  # 输出调试信息
-            # '--no-sandbox',
-            # '--single-process',
-            # '--disable-dev-shm-usage',
-            # '--disable-gpu',
-            # '--no-zygote'
         )
         page = await browser.newPage()
 
         # 访问React组件的路由
-        url = f'http://{self.host_url}/screenshot?data={encoded_details}'
+        url = f'http://{self.host_url}/screenshot'
         await page.goto(url, {'waitUntil': 'networkidle0'})
-        # # 调整视口大小（可选）
-        # await page.setViewport({'width': 1010, 'height': 800})
+
+        # 使用 POST 请求传递数据
+        await page.evaluate(f"""
+            fetch('{url}', {{
+                method: 'POST',
+                headers: {{
+                    'Content-Type': 'application/json'
+                }},
+                body: JSON.stringify({{'data': '{encoded_details}'}})
+            }});
+        """)
+
         # 截图并保存
         await page.screenshot({'path': f'cache/{id}.png', 'fullPage': True})
         await browser.close()

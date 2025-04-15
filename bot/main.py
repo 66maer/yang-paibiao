@@ -5,10 +5,13 @@ from botpy.http import Route
 import yaml
 from qq_binding import QQBindingService
 from team_board import TeamBoardService
-from signup_service import SignupService
+
 from personalization_service import PersonalizationService 
 import os
 from botpy.logging import configure_logging, DEFAULT_FILE_HANDLER
+import json
+from db_handler import DatabaseHandler
+from signup_service import NormalSignupHandler, ProxySignupHandler, BossSignupHandler
 
 _log = logging.get_logger()
 
@@ -22,6 +25,38 @@ if not os.path.exists(log_directory):
 
 # 调用 configure_logging 配置日志
 configure_logging(ext_handlers=custom_file_handler)
+
+# ========================= 配置服务处理函数 =========================
+
+with open("xinfa_config.json") as f:
+    xinfa_config = json.load(f)
+
+db = DatabaseHandler()
+signup_service = NormalSignupHandler(db, xinfa_config)
+proxy_signup_service = ProxySignupHandler(db, xinfa_config)
+boss_signup_service = BossSignupHandler(db, xinfa_config)
+
+# 全局使用说明
+USAGE_GUIDE = """
+可用指令列表：
+1. /开团看板 [序号] - 查看开团信息或详细信息
+2. /报名 [团队序号] <角色名> - 快捷报名角色 [推荐]
+   /报名 [团队序号] <心法名> - 模糊报名(不指定角色)
+   /报名 [团队序号] <心法名> <角色名> - 常规报名
+   /报名 [团队序号] <角色名> <心法名> - 常规报名
+3. /代报名 [团队序号] <参与人昵称> <心法名> <角色名> - [推荐]
+   /代报名 [团队序号] <参与人昵称> <心法名> - 不指定角色
+4. /登记老板 [团队序号] <老板昵称> <心法名> <角色名> - [推荐]
+   /登记老板 [团队序号] <老板昵称> <心法名> - 不指定角色
+5. /取消报名 [团队序号] [编号] - 取消报名
+6. /添加角色 <心法名> <角色名> - 添加新角色
+7. /修改昵称 <新昵称> - 修改群昵称
+8. /绑定QQ号 <QQ号> <昵称> - 绑定QQ号
+9. /绑定QQ号 验证码 - 验证绑定
+10. /绑定QQ号 重新绑定 <QQ号> <昵称> - 重新绑定QQ号
+11. /使用说明 - 查看指令使用说明
+12. /活动 - 查看当前活动信息
+"""
 
 async def post_group_base64file(message: Message, group_openid: str, file_type: int, file_data: str, srv_send_msg: bool = False):
     """
@@ -40,7 +75,6 @@ async def post_group_base64file(message: Message, group_openid: str, file_type: 
     }
     route = Route("POST", "/v2/groups/{group_openid}/files", group_openid=group_openid)
     return await message._api._http.request(route, json=payload)
-
 
 async def handle_command(message: Message):
     content = message.content
@@ -73,23 +107,26 @@ async def handle_command(message: Message):
         except ValueError as e:
             await message.reply(content=str(e))
     elif command == "/报名":
-        service = SignupService()
         try:
-            response = service.signup(member_openid, args)
+            response = signup_service.process_command(member_openid, args)
             await message.reply(content=response)
         except ValueError as e:
             await message.reply(content=str(e))
     elif command == "/代报名":
-        service = SignupService()
         try:
-            response = service.proxy_signup(member_openid, args)
+            response = proxy_signup_service.process_command(member_openid, args)
+            await message.reply(content=response)
+        except ValueError as e:
+            await message.reply(content=str(e))
+    elif command == "/登记老板":
+        try:
+            response = boss_signup_service.process_command(member_openid, args)
             await message.reply(content=response)
         except ValueError as e:
             await message.reply(content=str(e))
     elif command == "/取消报名":
-        service = SignupService()
         try:
-            response = service.cancel_signup(member_openid, args)
+            response = signup_service.cancel_signup(member_openid, args)
             await message.reply(content=response)
         except ValueError as e:
             await message.reply(content=str(e))
@@ -115,25 +152,15 @@ async def handle_command(message: Message):
         except ValueError as e:
             await message.reply(content=str(e))
     elif command == "/使用说明":
-        commands = [
-            "/开团看板 [序号] - 查看开团信息或详细信息",
-            "/报名 <团队序号> <角色名|心法名> [老板] - 报名参加团队",
-            "/报名 <团队序号> <心法名> <角色名> [老板] - 报名参加团队",
-            "/代报名 <团队序号> <参与人昵称> <心法名> <角色名> [老板] - 代他人报名",
-            "/取消报名 <团队序号> [编号] - 取消报名",
-            "/添加角色 <心法名> <角色名> - 添加新角色",
-            "/修改昵称 <新昵称> - 修改群昵称",
-            "/绑定QQ号 <QQ号> <昵称> - 绑定QQ号",
-            "/绑定QQ号 验证码 - 验证绑定",
-            "/绑定QQ号 重新绑定 <QQ号> <昵称> - 重新绑定QQ号",
-            "/使用说明 - 查看指令使用说明",
-        ]
-        usage_guide = "可用指令列表：\n"
-        for i, cmd in enumerate(commands, start=1):
-            usage_guide += f"{i}. {cmd}\n"
-        await message.reply(content=usage_guide)
+        await message.reply(content=USAGE_GUIDE)
+    elif command == "/活动":
+        # 处理活动指令
+        activity_info = """
+        暂无活动，敬请期待
+        """
+        await message.reply(content=activity_info)
     else:
-        await message.reply(content="未知指令")
+        await message.reply(content=f"未知指令。\n{USAGE_GUIDE}")
         return
 
 

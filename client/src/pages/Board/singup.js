@@ -103,13 +103,12 @@ const SignupModal = ({ visible, onClose, teamId, refreshSignupList, signupList }
         isProxy,
       });
 
+      // 检查是否有同一角色重复报名（角色ID为0除外）
       const isDuplicateSignup =
         signupCharacterId !== 0 &&
         signupList.some(
           (signup) => (!signup.cancelTime || signup.cancelTime === "") && signup.signupCharacterId === signupCharacterId
         );
-
-      console.info("分步逻辑：", signupCharacterId, signupList);
 
       if (isDuplicateSignup) {
         message.error("该角色已报名，不能重复报名！");
@@ -117,6 +116,7 @@ const SignupModal = ({ visible, onClose, teamId, refreshSignupList, signupList }
         return;
       }
 
+      // 检查当前提交人是否已有其他提交记录（仅限非代报名）
       const isInvalidSelfSignup =
         !isProxy &&
         signupList.some(
