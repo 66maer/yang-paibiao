@@ -33,7 +33,7 @@ class SignupService:
         query = """
             SELECT * FROM characters WHERE user_id = %s AND name = %s
         """
-        return self.db.execute_query(query, (user_id, name), fetchall=True)  # 修改为 fetchall
+        return self.db.execute_query(query, (user_id, name), fetchall=True)
 
     def get_characters_by_xinfa(self, user_id, xinfa):
         query = """
@@ -63,98 +63,124 @@ class SignupService:
             "/代报名 <团队序号> <参与人昵称> <心法名> <角色名> [老板]"
         )
 
-    def signup(self, member_openid, args):
-        if len(args) < 2:
-            raise ValueError(f"参数错误，请检查输入格式。\n{self.get_signup_format_help()}")
+    def _get_active_teams(self):
+        query = """
+            SELECT id, title FROM teams WHERE close_time IS NULL AND is_hidden = FALSE ORDER BY team_time
+        """
+        return self.db.execute_query(query, fetchall=True)
 
-        team_idx = int(args[0])
-        team_id = self._get_team_id_by_index(team_idx)
-        userinfo = self.get_user_info(member_openid)
-        user_id = userinfo["user_id"]
-        nickname = userinfo["group_nickname"] or userinfo["nickname"]  # 优先使用群昵称
-        _log.info(f"昵称{nickname}，原始昵称{userinfo['nickname']}，群昵称{userinfo['group_nickname']}")
-        args = args[1:]  # 移除第一个参数
+    def _validate_team(self, team_idx):
+        teams = self._get_active_teams()
+        if not teams:
+            raise ValueError("当前没有活跃的团队，无法报名。")
+        if len(teams) == 1:
+            if team_idx is None or team_idx == 1:
+                return teams[0]["id"]
+            else:
+                raise ValueError(f"没有找到标号为 {team_idx} 的团队。\n当前团队列表：\n" +
+                                 "\n".join([f"【1】. {teams[0]['title']}"]))
+        if team_idx is None or not isinstance(team_idx, int):
+            raise ValueError("有多个团队，请指定团队序号。\n当前团队列表：\n" +
+                             "\n".join([f"【{idx + 1}】. {team['title']}" for idx, team in enumerate(teams)]))
+        if team_idx < 1 or team_idx > len(teams):
+            raise ValueError(f"团队标号无效。\n当前团队列表：\n" +
+                             "\n".join([f"【{idx + 1}】. {team['title']}" for idx, team in enumerate(teams)]))
+        return teams[team_idx - 1]["id"]
 
+    def _get_character(self, user_id, name_or_xinfa):
+        characters = self.get_character_by_name(user_id, name_or_xinfa)
+        if characters:
+            if len(characters) == 1:
+                return characters[0]
+            raise ValueError(f"找到多个同名角色，请提供具体的角色名称：{[c['name'] for c in characters]}")
+        xinfa = self.parse_xinfa(name_or_xinfa)
+        characters = self.get_characters_by_xinfa(user_id, xinfa)
+        if characters:
+            if len(characters) == 1:
+                return characters[0]
+            raise ValueError(f"找到多个角色，请提供具体的角色名称：{[c['name'] for c in characters]}")
+        return {"id": 0, "name": None, "xinfa": xinfa}
+
+    def _handle_signup(self, team_id, user_id, nickname, args, is_proxy=False, proxy_name=None):
         if len(args) == 1:
-            name_or_xinfa = args[0]
-            characters = self.get_character_by_name(user_id, name_or_xinfa)
-            _log.info(f"用户 {user_id} 查询角色：{name_or_xinfa}")
-            if len(characters) == 1:
-                return self._create_signup(team_id, user_id, characters[0], {"signupName": nickname, "submitName": nickname})
-            elif len(characters) > 1:
-                raise ValueError(f"找到多个同名角色，请提供具体的角色名称：{[c['name'] for c in characters]}")
-            
-            xinfa = self.parse_xinfa(name_or_xinfa)
-            characters = self.get_characters_by_xinfa(user_id, xinfa)
-            if len(characters) == 1:
-                return self._create_signup(team_id, user_id, characters[0], {"signupName": nickname, "submitName": nickname})
-            elif len(characters) > 1:
-                raise ValueError(f"找到多个角色，请提供具体的角色名称：{[c['name'] for c in characters]}")
-            else:
-                raise ValueError(f"未找到角色，请检查参数。\n{self.get_signup_format_help()}")
-
+            character = self._get_character(user_id, args[0])
+            return self._create_signup(team_id, user_id, character, {
+                "signupName": proxy_name or nickname,
+                "submitName": nickname,
+                "isRich": False,
+                "isProxy": is_proxy
+            })
         elif len(args) == 2:
-            name_or_xinfa, second_arg = args
-            if self.is_rich_keyword(second_arg):
-                characters = self.get_character_by_name(user_id, name_or_xinfa)
-                if len(characters) == 1:
-                    return self._create_signup(team_id, user_id, characters[0], {"signupName": nickname, "submitName": nickname, "isRich": True})
-                elif len(characters) > 1:
-                    raise ValueError(f"找到多个同名角色，请提供具体的角色名称：{[c['name'] for c in characters]}")
-                
-                xinfa = self.parse_xinfa(name_or_xinfa)
-                characters = self.get_characters_by_xinfa(user_id, xinfa)
-                if len(characters) == 1:
-                    return self._create_signup(team_id, user_id, characters[0], {"signupName": nickname, "submitName": nickname, "isRich": True})
-                elif len(characters) > 1:
-                    raise ValueError(f"找到多个角色，请提供具体的角色名称：{[c['name'] for c in characters]}")
-                else:
-                    raise ValueError(f"未找到角色，请检查参数。\n{self.get_signup_format_help()}")
-            else:
-                xinfa = self.parse_xinfa(name_or_xinfa)
-                character_name = second_arg
-                return self._create_signup(team_id, user_id, {
-                    "id": 0,
-                    "name": None if character_name in ["?", "？"] else character_name,
-                    "xinfa": xinfa
-                }, {"signupName": nickname, "submitName": nickname})
-
-        elif len(args) == 3:
-            xinfa_nickname, character_name, third_arg = args
-            xinfa = self.parse_xinfa(xinfa_nickname)
-            is_rich = self.is_rich_keyword(third_arg)
+            if self.is_rich_keyword(args[1]):
+                character = self._get_character(user_id, args[0])
+                return self._create_signup(team_id, user_id, character, {
+                    "signupName": proxy_name or nickname,
+                    "submitName": nickname,
+                    "isRich": True,
+                    "isProxy": is_proxy
+                })
+            xinfa = self.parse_xinfa(args[0])
+            character_name = args[1]
             return self._create_signup(team_id, user_id, {
                 "id": 0,
                 "name": None if character_name in ["?", "？"] else character_name,
                 "xinfa": xinfa
-            }, {"signupName": nickname, "submitName": nickname, "isRich": is_rich})
-
+            }, {
+                "signupName": proxy_name or nickname,
+                "submitName": nickname,
+                "isRich": False,
+                "isProxy": is_proxy
+            })
+        elif len(args) == 3:
+            xinfa = self.parse_xinfa(args[0])
+            character_name = args[1]
+            is_rich = self.is_rich_keyword(args[2])
+            return self._create_signup(team_id, user_id, {
+                "id": 0,
+                "name": None if character_name in ["?", "？"] else character_name,
+                "xinfa": xinfa
+            }, {
+                "signupName": proxy_name or nickname,
+                "submitName": nickname,
+                "isRich": is_rich,
+                "isProxy": is_proxy
+            })
         else:
             raise ValueError(f"参数错误，请检查输入格式。\n{self.get_signup_format_help()}")
 
+    def signup(self, member_openid, args):
+        if len(args) < 1:
+            raise ValueError(f"参数错误，请检查输入格式。\n{self.get_signup_format_help()}")
+        team_idx = int(args[0]) if args[0].isdigit() else None
+        team_id = self._validate_team(team_idx)
+        userinfo = self.get_user_info(member_openid)
+        user_id = userinfo["user_id"]
+        nickname = userinfo["group_nickname"] or userinfo["nickname"]
+        args = args[1:] if team_idx else args
+        return self._handle_signup(team_id, user_id, nickname, args)
+
     def proxy_signup(self, member_openid, args):
-        if len(args) < 4 or len(args) > 5:
+        if len(args) < 4:
             raise ValueError(f"参数错误，请检查输入格式。\n{self.get_proxy_signup_format_help()}")
+        team_idx = int(args[0]) if args[0].isdigit() else None
+        team_id = self._validate_team(team_idx)
+        userinfo = self.get_user_info(member_openid)
+        user_id = userinfo["user_id"]
+        nickname = userinfo["group_nickname"] or userinfo["nickname"]
+        proxy_name = args[1]
+        return self._handle_signup(team_id, user_id, nickname, args[2:], is_proxy=True, proxy_name=proxy_name)
 
-        team_idx = int(args[0])
-        team_id = self._get_team_id_by_index(team_idx)
-        args = args[1:]  # 移除第一个参数
-
-        signup_name, xinfa_nickname, character_name = args[:3]
-        is_rich = len(args) == 4 and self.is_rich_keyword(args[3])
-        xinfa = self.parse_xinfa(xinfa_nickname)
-        return self._create_signup(team_id, self.get_user_info(member_openid)["user_id"], {
-            "id": 0,
-            "name": None if character_name in ["?", "？"] else character_name,
-            "xinfa": xinfa
-        }, {"signupName": signup_name, "submitName": signup_name, "isRich": is_rich})
+    def register_rich(self, member_openid, args):
+        if len(args) < 4:
+            raise ValueError("参数错误，请检查输入格式。")
+        return self.proxy_signup(member_openid, args)
 
     def cancel_signup(self, member_openid, args):
         if len(args) < 1:
             raise ValueError("参数错误，请提供团队序号。")
 
         team_idx = int(args[0])
-        team_id = self._get_team_id_by_index(team_idx)
+        team_id = self._validate_team(team_idx)
         args = args[1:]  # 移除第一个参数
 
         user_id = self.get_user_info(member_openid)["user_id"]
@@ -180,15 +206,6 @@ class SignupService:
 
         else:
             raise ValueError("参数错误，请检查输入格式。")
-
-    def _get_team_id_by_index(self, index):
-        query = """
-            SELECT id FROM teams WHERE close_time IS NULL AND is_hidden = FALSE ORDER BY team_time
-        """
-        results = self.db.execute_query(query, fetchall=True)
-        if not results or index < 1 or index > len(results):
-            raise ValueError("无效的团队序号。")
-        return results[index - 1]["id"]
 
     def _create_signup(self, team_id, user_id, character, userinfo):
         signup_info = {
