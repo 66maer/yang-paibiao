@@ -71,15 +71,24 @@ class TeamBoardService:
         details = {
             "id": team["id"],
             "title": team["title"],
-            "teamTime": datetime.fromtimestamp(team["team_time"], tz=timezone.utc).isoformat(),
+            "teamTime": datetime.fromtimestamp(
+                team["team_time"].timestamp() if isinstance(team["team_time"], datetime) else team["team_time"],
+                tz=timezone.utc
+            ).isoformat(),
             "dungeons": team["dungeons"],
             "notice": team["notice"],
             "bookXuanjing": team["book_xuanjing"],
             "bookYuntie": team["book_yuntie"],
             "isLock": team["is_lock"],
             "rules": team["rule"],
-            "createTime": datetime.fromtimestamp(team["create_time"], tz=timezone.utc).isoformat(),
-            "updateTime": datetime.fromtimestamp(team["update_time"], tz=timezone.utc).isoformat(),
+            "createTime": datetime.fromtimestamp(
+                team["create_time"].timestamp() if isinstance(team["create_time"], datetime) else team["create_time"],
+                tz=timezone.utc
+            ).isoformat(),
+            "updateTime": datetime.fromtimestamp(
+                team["update_time"].timestamp() if isinstance(team["update_time"], datetime) else team["update_time"],
+                tz=timezone.utc
+            ).isoformat(),
             "createrNickname": team["creater_nickname"]
         }
 
