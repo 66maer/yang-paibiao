@@ -15,6 +15,7 @@ MSG_DETAILS = {
 RET_MSG = {
     "K-未绑定":"请先绑定QQ号",
     "K-未开团":"还没有开团，别急，尊重夕阳红命运...",
+    "K-团已锁":"车门已经焊死了，无法自由报名，请联系团长或管理员。",
     "K-未指定团号":"你想报名哪一车？请指明团队序号。\n{team_list}",
     "K-无效团队序号":"你指定的团队'{team_idx}'序号无效，请重新输入。\n{team_list}",
     "K-报名格式错误": "格式错误，报名格式说明：\n"
@@ -52,7 +53,7 @@ class TeamService:
     
     def get_active_teams(self) -> List[Dict]:
         """获取所有活跃团队"""
-        query = "SELECT id, title FROM teams WHERE close_time IS NULL AND is_hidden = FALSE ORDER BY team_time"
+        query = "SELECT id, title, is_lock FROM teams WHERE close_time IS NULL AND is_hidden = FALSE ORDER BY team_time"
         return self.db.execute_query(query, fetchall=True)
 
 class CharacterService:
@@ -151,6 +152,8 @@ class SignupHandlerBase:
             raise ValueError(RET_MSG["K-未开团"])
 
         if len(active_teams) == 1 and (not args or not args[0].isdigit()):
+            if active_teams[0]["is_lock"]:
+                raise ValueError(RET_MSG["K-团已锁"])
             return active_teams[0]["id"], args
 
         if not args or not args[0].isdigit():
@@ -163,6 +166,8 @@ class SignupHandlerBase:
             raise ValueError(RET_MSG["K-无效团队序号"].format(team_idx=team_idx, team_list=team_list))
 
         _log.debug("团队序号解析完成，团队ID: %s，剩余参数: %s", active_teams[team_idx]["id"], args[1:])
+        if active_teams[team_idx]["is_lock"]:
+            raise ValueError(RET_MSG["K-团已锁"])
         return active_teams[team_idx]["id"], args[1:]
 
     def _format_team_list(self, teams: List[Dict]) -> str:

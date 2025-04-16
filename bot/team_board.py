@@ -38,7 +38,7 @@ class TeamBoardService:
             team = results[0]
             return await self.get_team_details(1)
 
-        response = "\n".join([f"\n【{idx + 1}】. {team['title']}" for idx, team in enumerate(results)])
+        response = "\n".join([f"\n【{idx + 1}】. {'[锁]' if team['is_lock'] else ''}{team['title']}" for idx, team in enumerate(results)])
         _log.info("成功获取未关闭的开团信息。")
         return response, 1
 
@@ -70,15 +70,15 @@ class TeamBoardService:
         details = {
             "id": team["id"],
             "title": team["title"],
-            "teamTime": team["team_time"].strftime("%Y-%m-%d %H:%M:%S"),
+            "teamTime": team["team_time"],  # 保留为 UTC 时间
             "dungeons": team["dungeons"],
             "notice": team["notice"],
             "bookXuanjing": team["book_xuanjing"],
             "bookYuntie": team["book_yuntie"],
             "isLock": team["is_lock"],
             "rules": team["rule"],
-            "createTime": team["create_time"].strftime("%Y-%m-%d %H:%M:%S"),
-            "updateTime": team["update_time"].strftime("%Y-%m-%d %H:%M:%S"),
+            "createTime": team["create_time"],  # 保留为 UTC 时间
+            "updateTime": team["update_time"],  # 保留为 UTC 时间
             "createrNickname": team["creater_nickname"]
         }
 
