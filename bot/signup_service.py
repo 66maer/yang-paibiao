@@ -365,10 +365,10 @@ class NormalSignupHandler(SignupHandlerBase):
     def _handle_double_arguments(self, user_id: int, args: List[str]) -> Dict:
         """处理多参数情况"""
         if self.character_service.try_parse_xinfa(args[0]):
-            xinfa = args[0]
+            xinfa = self.character_service.try_parse_xinfa(args[0])
             name = args[1]
         elif self.character_service.try_parse_xinfa(args[1]):
-            xinfa = args[1]
+            xinfa = self.character_service.try_parse_xinfa(args[1])
             name = args[0]
         else:
             raise ValueError(RET_MSG["K-无效心法"].format(xinfa=args[0]))
@@ -431,11 +431,12 @@ class NormalSignupHandler(SignupHandlerBase):
 
         try:
             if signup_data.get("need_create"):
-                self.character_service.add_character(user_info["user_id"], character_data["name"], signup_data.get("xinfa"))
-                res = self.character_service.get_character(user_info["user_id"], character_data["name"], signup_data.get("xinfa"))
+                self.character_service.add_character(user_info["user_id"], character_data["name"], character_data.get("xinfa"))
+                res = self.character_service.get_character(user_info["user_id"], character_data["name"], character_data.get("xinfa"))
                 if res:
                     character_data["id"] = res.get("id")
-                    footnote += "\n" + RET_MSG["K-添加常用角色"].format(character_name=character_data["name"], xinfa=character_data["xinfa"])
+                    footnote += "\n" + RET_MSG["K-添加常用角色"].format(character_name=character_data["name"], 
+                                                                  xinfa=self.character_service.get_xinfa_name(character_data["xinfa"]))
         except Exception as e:
             _log.warning("添加角色失败: %s", e)
         
