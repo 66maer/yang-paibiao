@@ -205,7 +205,7 @@ class SignupHandlerBase:
 
     def _create_signup_record(self, team_id: int, user_id: int, character: Dict, meta: Dict) -> str:
         """创建报名记录"""
-        _log.debug("开始创建报名记录，团队ID: %s，用户ID: %s，角色信息: %s，元信息: %s", 
+        _log.info("开始创建报名记录，团队ID: %s，用户ID: %s，角色信息: %s，元信息: %s", 
                    team_id, user_id, character, meta)
         signup_info = {
             "submitName": meta["submit_name"],
@@ -334,7 +334,7 @@ class NormalSignupHandler(SignupHandlerBase):
         3. [心法名 角色名] -> 创建/使用角色
         4. [角色名 心法名] -> 同上
         """
-        _log.debug("开始解析报名参数，用户ID: %s，参数: %s", user_id, args)
+        _log.info("开始解析报名参数，用户ID: %s，参数: %s", user_id, args)
         if not args:
             raise ValueError(RET_MSG["K-报名格式错误"])
         
@@ -441,7 +441,7 @@ class NormalSignupHandler(SignupHandlerBase):
             _log.warning("添加角色失败: %s", e)
         
         result = self._create_signup_record(team_id, user_info["user_id"], character_data, meta)
-        _log.debug("报名执行完成，结果: %s", result)
+        _log.info("报名执行完成，结果: %s", result)
         return result + footnote
 
 class ProxySignupHandler(SignupHandlerBase):
@@ -451,7 +451,7 @@ class ProxySignupHandler(SignupHandlerBase):
         解析代报名参数：
         格式：/代报名 [团队序号] <参与人昵称> <心法名> [角色名]
         """
-        _log.debug("开始解析代报名参数，用户ID: %s，参数: %s", user_id, args)
+        _log.info("开始解析代报名参数，用户ID: %s，参数: %s", user_id, args)
         if len(args) < 2:
             raise ValueError(RET_MSG["K-代报名格式错误"])
         
@@ -475,7 +475,7 @@ class ProxySignupHandler(SignupHandlerBase):
 
     def execute_signup(self, team_id: int, user_info: Dict, signup_data: Dict) -> str:
         """执行代报名逻辑"""
-        _log.debug("开始执行代报名，团队ID: %s，用户信息: %s，报名数据: %s", 
+        _log.info("开始执行代报名，团队ID: %s，用户信息: %s，报名数据: %s", 
                    team_id, user_info, signup_data)
         meta = {
             "signup_name": signup_data["participant_name"],
@@ -491,7 +491,7 @@ class ProxySignupHandler(SignupHandlerBase):
         }
 
         result = self._create_signup_record(team_id, user_info["user_id"], character_data, meta)
-        _log.debug("代报名执行完成，结果: %s", result)
+        _log.info("代报名执行完成，结果: %s", result)
         return result
 
 class BossSignupHandler(SignupHandlerBase):
@@ -501,12 +501,13 @@ class BossSignupHandler(SignupHandlerBase):
         解析登记老板参数：
         格式：/登记老板 [团队序号] <老板昵称> <心法名> [角色名]
         """
-        _log.debug("开始解析登记老板参数，用户ID: %s，参数: %s", user_id, args)
+        _log.info("开始解析登记老板参数，用户ID: %s，参数: %s", user_id, args)
         if len(args) < 2:
             raise ValueError(RET_MSG["K-登记老板格式错误"])
         
         boss_name = args[0]
         xinfa = args[1]
+        character_name = None
         if len(args) > 2:
             character_name = args[2]
             self._validate_name_length(character_name, "角色名")
@@ -520,12 +521,12 @@ class BossSignupHandler(SignupHandlerBase):
         return {
             "boss_name": boss_name,
             "xinfa": parsed_xinfa,
-            "character_name": character_name
+            "name": character_name
         }
 
     def execute_signup(self, team_id: int, user_info: Dict, signup_data: Dict) -> str:
         """执行登记老板逻辑"""
-        _log.debug("开始执行登记老板，团队ID: %s，用户信息: %s，登记数据: %s", 
+        _log.info("开始执行登记老板，团队ID: %s，用户信息: %s，登记数据: %s", 
                    team_id, user_info, signup_data)
         meta = {
             "signup_name": signup_data["boss_name"],
@@ -536,10 +537,10 @@ class BossSignupHandler(SignupHandlerBase):
 
         character_data = {
             "id": 0,  # 登记老板不绑定具体角色
-            "name": signup_data.get("character_name", ""),
+            "name": signup_data.get("name", ""),
             "xinfa": signup_data["xinfa"]
         }
 
         result = self._create_signup_record(team_id, user_info["user_id"], character_data, meta)
-        _log.debug("登记老板执行完成，结果: %s", result)
+        _log.info("登记老板执行完成，结果: %s", result)
         return result
