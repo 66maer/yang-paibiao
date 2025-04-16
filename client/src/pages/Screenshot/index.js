@@ -51,9 +51,24 @@ const Screenshot = () => {
             {dungeons}
           </Tag>
           <Tag icon={<ClockCircleOutlined />} className="team-tag" color="cyan">
-            {new Date(teamTime).toLocaleString("zh-CN")}
+            {new Date(teamTime).toLocaleString("zh-CN", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+              second: "numeric",
+              timeZone: "Asia/Shanghai",
+              //timeZoneName: "short",
+            })}
           </Tag>
-          <DateTag date={new Date(teamTime)} />
+          <DateTag
+            date={new Date(teamTime)}
+            style={{
+              padding: "4px",
+              fontSize: "16px",
+            }}
+          />
           <Tag className="team-tag" icon={<img src="/玄晶.png" alt="玄晶" />} color={bookXuanjing ? "#f50" : "#5a0"}>
             {bookXuanjing ? "大铁已包" : "大铁可拍"}
           </Tag>
@@ -74,8 +89,28 @@ const Screenshot = () => {
           </blockquote>
           <div className="screenshot-footer">
             <div>
-              由 {createrNickname || "未知"} 创建于 {new Date(createTime).toLocaleString("zh-CN")}， 最后更新时间
-              {new Date(updateTime).toLocaleString("zh-CN")}
+              由 {createrNickname || "未知"} 创建于{" "}
+              {new Date(createTime).toLocaleString("zh-CN", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "numeric",
+                minute: "numeric",
+                second: "numeric",
+                timeZone: "Asia/Shanghai",
+                //timeZoneName: "short",
+              })}
+              ， 最后更新时间
+              {new Date(updateTime).toLocaleString("zh-CN", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "numeric",
+                minute: "numeric",
+                second: "numeric",
+                timeZone: "Asia/Shanghai",
+                //timeZoneName: "short",
+              })}
             </div>
           </div>
         </pre>
