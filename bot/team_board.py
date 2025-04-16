@@ -6,6 +6,7 @@ from botpy import logging
 import json
 from pyppeteer import launch
 import yaml
+from datetime import datetime, timezone
 
 _log = logging.get_logger()
 
@@ -70,15 +71,15 @@ class TeamBoardService:
         details = {
             "id": team["id"],
             "title": team["title"],
-            "teamTime": team["team_time"],  # 保留为 UTC 时间
+            "teamTime": datetime.fromtimestamp(team["team_time"], tz=timezone.utc).isoformat(),
             "dungeons": team["dungeons"],
             "notice": team["notice"],
             "bookXuanjing": team["book_xuanjing"],
             "bookYuntie": team["book_yuntie"],
             "isLock": team["is_lock"],
             "rules": team["rule"],
-            "createTime": team["create_time"],  # 保留为 UTC 时间
-            "updateTime": team["update_time"],  # 保留为 UTC 时间
+            "createTime": datetime.fromtimestamp(team["create_time"], tz=timezone.utc).isoformat(),
+            "updateTime": datetime.fromtimestamp(team["update_time"], tz=timezone.utc).isoformat(),
             "createrNickname": team["creater_nickname"]
         }
 
