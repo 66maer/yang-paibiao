@@ -431,8 +431,8 @@ class NormalSignupHandler(SignupHandlerBase):
 
         try:
             if signup_data.get("need_create"):
-                self.character_service.add_character(user_info["user_id"], character_data["name"], character_data["xinfa"])
-                res = self.character_service.get_character(user_info["user_id"], character_data["name"], character_data["xinfa"])
+                self.character_service.add_character(user_info["user_id"], character_data["name"], signup_data.get("xinfa"))
+                res = self.character_service.get_character(user_info["user_id"], character_data["name"], signup_data.get("xinfa"))
                 if res:
                     character_data["id"] = res.get("id")
                     footnote += "\n" + RET_MSG["K-添加常用角色"].format(character_name=character_data["name"], xinfa=character_data["xinfa"])
