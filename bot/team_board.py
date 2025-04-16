@@ -23,7 +23,7 @@ class TeamBoardService:
         查询所有未关闭且未隐藏的开团信息，按时间排序。
         """
         query = """
-            SELECT id, title 
+            SELECT id, title, is_lock
             FROM teams 
             WHERE close_time IS NULL AND is_hidden = FALSE
             ORDER BY team_time
