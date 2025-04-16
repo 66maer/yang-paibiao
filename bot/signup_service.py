@@ -457,6 +457,7 @@ class ProxySignupHandler(SignupHandlerBase):
         
         participant_name = args[0]
         xinfa = args[1]
+        character_name = None
         if len(args) > 2:
             character_name = args[2]
             self._validate_name_length(character_name, "角色名")
@@ -521,7 +522,7 @@ class BossSignupHandler(SignupHandlerBase):
         return {
             "boss_name": boss_name,
             "xinfa": parsed_xinfa,
-            "name": character_name
+            "character_name": character_name
         }
 
     def execute_signup(self, team_id: int, user_info: Dict, signup_data: Dict) -> str:
@@ -537,7 +538,7 @@ class BossSignupHandler(SignupHandlerBase):
 
         character_data = {
             "id": 0,  # 登记老板不绑定具体角色
-            "name": signup_data.get("name", ""),
+            "name": signup_data.get("character_name", ""),
             "xinfa": signup_data["xinfa"]
         }
 
