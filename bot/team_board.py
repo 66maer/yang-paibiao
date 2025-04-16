@@ -6,7 +6,6 @@ from botpy import logging
 import json
 from pyppeteer import launch
 import yaml
-from datetime import datetime, timezone
 
 _log = logging.get_logger()
 
@@ -71,24 +70,15 @@ class TeamBoardService:
         details = {
             "id": team["id"],
             "title": team["title"],
-            "teamTime": datetime.fromtimestamp(
-                team["team_time"].timestamp() if isinstance(team["team_time"], datetime) else team["team_time"],
-                tz=timezone.utc
-            ).isoformat(),
+            "teamTime": team["team_time"].strftime("%Y-%m-%dT%H:%M:%SZ"),
             "dungeons": team["dungeons"],
             "notice": team["notice"],
             "bookXuanjing": team["book_xuanjing"],
             "bookYuntie": team["book_yuntie"],
             "isLock": team["is_lock"],
             "rules": team["rule"],
-            "createTime": datetime.fromtimestamp(
-                team["create_time"].timestamp() if isinstance(team["create_time"], datetime) else team["create_time"],
-                tz=timezone.utc
-            ).isoformat(),
-            "updateTime": datetime.fromtimestamp(
-                team["update_time"].timestamp() if isinstance(team["update_time"], datetime) else team["update_time"],
-                tz=timezone.utc
-            ).isoformat(),
+            "createTime": team["create_time"].strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "updateTime": team["update_time"].strftime("%Y-%m-%dT%H:%M:%SZ"),
             "createrNickname": team["creater_nickname"]
         }
 

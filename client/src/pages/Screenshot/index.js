@@ -52,6 +52,7 @@ const Screenshot = () => {
           <Tag icon={<ClockCircleOutlined />} className="team-tag" color="cyan">
             {new Date(teamTime).toLocaleString("zh-CN")}
           </Tag>
+          <DateTag date={new Date(teamTime)} />
           <Tag className="team-tag" icon={<img src="/玄晶.png" alt="玄晶" />} color={bookXuanjing ? "#f50" : "#5a0"}>
             {bookXuanjing ? "大铁已包" : "大铁可拍"}
           </Tag>
