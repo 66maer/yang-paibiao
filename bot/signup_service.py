@@ -222,7 +222,7 @@ class SignupHandlerBase:
         self.db.execute_query(query, (team_id, user_id, meta.get("signup_user_id",0), character.get("id",0), 
                                       json.dumps(signup_info), meta.get("is_rich", False), meta.get("is_proxy", False)))
         self.db.commit_transaction()
-        _log.debug("报名记录创建成功")
+        _log.info(f"报名成功 ，团队ID: {team_id}，用户ID: {user_id}，角色信息: {character}，元信息: {meta}")
         if meta.get("is_rich"):
             return RET_MSG["K-登记老板成功"]
         if meta.get("is_proxy"):
@@ -383,13 +383,13 @@ class NormalSignupHandler(SignupHandlerBase):
         
         return {
             "xinfa": xinfa,
-            "character_name": name,
-            "name": True
+            "name": name,
+            "need_create": True
         }
 
     def execute_signup(self, team_id: int, user_info: Dict, signup_data: Dict) -> str:
         """执行报名逻辑"""
-        _log.debug("开始执行报名，团队ID: %s，用户信息: %s，报名数据: %s", 
+        _log.info("开始执行报名，团队ID: %s，用户信息: %s，报名数据: %s", 
                    team_id, user_info, signup_data)
         meta = {
             "signup_name": user_info["nickname"],
