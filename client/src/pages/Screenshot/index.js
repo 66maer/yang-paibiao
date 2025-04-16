@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Typography, Collapse, List, Divider, Tag, Avatar, Space } from "antd";
+import { Typography, List, Divider, Tag, Avatar, Space } from "antd";
 import SlotPanel from "@/components/SlotPanel";
 import { CompassOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import SlotAllocate from "@/components/SlotAllocate";
 import { xinfaInfoTable } from "@/utils/xinfa";
 import "./index.scss"; // 引入样式文件
+import DateTag from "@/components/DateTag";
 
 const { Title, Paragraph } = Typography;
 
