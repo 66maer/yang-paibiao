@@ -31,11 +31,10 @@ const Screenshot = () => {
     createrNickname,
     createTime,
     updateTime,
+    isLock,
   } = decodedData;
 
   const [slotMemberList, candidates] = SlotAllocate(rules, signups);
-
-  const isLock = true;
 
   const [expanded, setExpanded] = useState(false);
 
