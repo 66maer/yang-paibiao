@@ -360,7 +360,7 @@ class NormalSignupHandler(SignupHandlerBase):
             char_list = "\n".join(f"{c['name']}({c['xinfa']})" for c in characters)
             raise ValueError(RET_MSG["K-角色不明确"].format(character_list=char_list))
         xinfa = self.character_service.parse_xinfa(arg)
-        return {"xinfa": xinfa, "character_name": None, "need_hint": True}
+        return {"xinfa": xinfa, "name": None, "need_hint": True}
 
     def _handle_double_arguments(self, user_id: int, args: List[str]) -> Dict:
         """处理多参数情况"""
@@ -384,7 +384,7 @@ class NormalSignupHandler(SignupHandlerBase):
         return {
             "xinfa": xinfa,
             "character_name": name,
-            "need_create": True
+            "name": True
         }
 
     def execute_signup(self, team_id: int, user_info: Dict, signup_data: Dict) -> str:
@@ -399,7 +399,7 @@ class NormalSignupHandler(SignupHandlerBase):
         
         character_data = {
             "id": signup_data.get("id"),
-            "name": signup_data.get("character_name"),
+            "name": signup_data.get("name"),
             "xinfa": signup_data.get("xinfa")
         }
 
