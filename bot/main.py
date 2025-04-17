@@ -169,7 +169,8 @@ async def handle_command(message: Message):
 
 class MyClient(botpy.Client):
     def __init__(self, intents, config):
-        super().__init__(intents=intents, is_sandbox=config["qqbot"]["is_sandbox"])
+        # super().__init__(intents=intents, is_sandbox=config["qqbot"]["is_sandbox"])
+        super().__init__(intents=intents)
         self.appid = config["qqbot"]["appid"]
         self.secret = config["qqbot"]["secret"]
 
