@@ -98,7 +98,6 @@ async def handle_command(message: Message):
     if command == "/查看团队":
         try:
             response, msg_type = await team_board_service.handle_team_board_command(args)
-            _log.info(f"指令 /查看团队 响应：{response}")
             if msg_type == 1:
                 # 处理文本消息
                 await message.reply(content=response)

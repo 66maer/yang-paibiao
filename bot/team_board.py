@@ -31,7 +31,7 @@ class TeamBoardService:
         results = self.db.execute_query(query, fetchall=True)
         if not results:
             _log.info("没有未关闭的开团信息。")
-            return "没有开团", 1
+            return "还没有开团，别急，尊重夕阳红命运...", 1
         
         # 如果只有一条数据，返回详细信息
         if len(results) == 1:
@@ -39,7 +39,7 @@ class TeamBoardService:
             return await self.get_team_details(1)
 
         response = "\n".join([f"\n【{idx + 1}】. {'[锁]' if team['is_lock'] else ''}{team['title']}" for idx, team in enumerate(results)])
-        _log.info("成功获取未关闭的开团信息。")
+        _log.info(f"查找到 {len(results)} 个开团信息：{response}")
         return response, 1
 
     async def get_team_details(self, idx):
@@ -103,13 +103,10 @@ class TeamBoardService:
         """
         signup_results = self.db.execute_query(signup_query, (team["id"],), fetchall=True)
 
-        _log.info(f"获取到报名者信息：{signup_results}")
         signups = []
         for signup in signup_results:
             submit_name = signup["submit_group_nickname"] or signup["submit_nickname"] or "未知"
             signup_name = signup["signup_group_nickname"] or signup["signup_nickname"] or None
-            _log.info(f"提交昵称{submit_name}，原始昵称{signup['submit_nickname']}，群昵称{signup['submit_group_nickname']}")
-            _log.info(f"报名昵称{signup_name}，原始昵称{signup['signup_nickname']}，群昵称{signup['signup_group_nickname']}")
             signup_info = signup["signup_info"]
             signups.append({
                 "signupId": signup["id"],
@@ -141,7 +138,7 @@ class TeamBoardService:
             with open(cache_data_path, "r") as f:
                 cached_data = f.read()
             if cached_data == encoded_details:
-                _log.info(f"缓存匹配，直接返回缓存图片的Base64数据")
+                _log.info(f"缓存匹配，直接返回缓存图片的Base64数据：{cache_path}")
                 with open(cache_path, "rb") as image_file:
                     return base64.b64encode(image_file.read()).decode("utf-8"), 2
 
