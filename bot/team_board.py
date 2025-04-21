@@ -10,8 +10,8 @@ import yaml
 _log = logging.get_logger()
 
 class TeamBoardService:
-    def __init__(self):
-        self.db = DatabaseHandler()
+    def __init__(self, db: DatabaseHandler):
+        self.db = db
         self.last_call_time = 0  # 全局最后调用时间
         with open("config.yaml", "r") as config_file:
             config = yaml.safe_load(config_file)

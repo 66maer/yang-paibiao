@@ -31,13 +31,17 @@ configure_logging(ext_handlers=custom_file_handler)
 
 # ========================= 配置服务处理函数 =========================
 
+# 全局服务实例化
+db = DatabaseHandler()
 with open("xinfa_config.json") as f:
     xinfa_config = json.load(f)
 
-db = DatabaseHandler()
 signup_service = NormalSignupHandler(db, xinfa_config)
 proxy_signup_service = ProxySignupHandler(db, xinfa_config)
 boss_signup_service = BossSignupHandler(db, xinfa_config)
+team_board_service = TeamBoardService(db)
+personalization_service = PersonalizationService(db, xinfa_config)
+qq_binding_service = QQBindingService(db)
 
 # 全局使用说明
 USAGE_GUIDE = """
@@ -83,15 +87,18 @@ async def handle_command(message: Message):
     content = message.content
     member_openid = message.author.member_openid
 
+    # 记录请求日志
+    _log.info(f"收到指令请求：用户ID={member_openid}, 内容={content}")
+
     # 处理指令
     # 拆分指令和参数
     command_parts = content.split()
     command = command_parts[0]
     args = command_parts[1:]
     if command == "/查看团队":
-        service = TeamBoardService()
         try:
-            response, msg_type = await service.handle_team_board_command(args)
+            response, msg_type = await team_board_service.handle_team_board_command(args)
+            _log.info(f"指令 /查看团队 响应：{response}")
             if msg_type == 1:
                 # 处理文本消息
                 await message.reply(content=response)
@@ -108,61 +115,76 @@ async def handle_command(message: Message):
                     media=upload_media,
                 )
         except ValueError as e:
+            _log.warning(f"指令 /查看团队 错误：{str(e)}")
             await message.reply(content=str(e))
     elif command == "/报名":
         try:
             response = signup_service.process_command(member_openid, args)
+            _log.info(f"指令 /报名 响应：{response}")
             await message.reply(content=response)
         except ValueError as e:
+            _log.warning(f"指令 /报名 错误：{str(e)}")
             await message.reply(content=str(e))
     elif command == "/代报名":
         try:
             response = proxy_signup_service.process_command(member_openid, args)
+            _log.info(f"指令 /代报名 响应：{response}")
             await message.reply(content=response)
         except ValueError as e:
+            _log.warning(f"指令 /代报名 错误：{str(e)}")
             await message.reply(content=str(e))
     elif command == "/登记老板":
         try:
             response = boss_signup_service.process_command(member_openid, args)
+            _log.info(f"指令 /登记老板 响应：{response}")
             await message.reply(content=response)
         except ValueError as e:
+            _log.warning(f"指令 /登记老板 错误：{str(e)}")
             await message.reply(content=str(e))
     elif command == "/取消报名":
         try:
             response = signup_service.cancel_signup(member_openid, args)
+            _log.info(f"指令 /取消报名 响应：{response}")
             await message.reply(content=response)
         except ValueError as e:
+            _log.warning(f"指令 /取消报名 错误：{str(e)}")
             await message.reply(content=str(e))
     elif command == "/添加角色":
-        service = PersonalizationService()
         try:
-            response = service.add_character(member_openid, args)
+            response = personalization_service.add_character(member_openid, args)
+            _log.info(f"指令 /添加角色 响应：{response}")
             await message.reply(content=response)
         except ValueError as e:
+            _log.warning(f"指令 /添加角色 错误：{str(e)}")
             await message.reply(content=str(e))
     elif command == "/修改昵称":
-        service = PersonalizationService()
         try:
-            response = service.update_group_nickname(member_openid, args)
+            response = personalization_service.update_group_nickname(member_openid, args)
+            _log.info(f"指令 /修改昵称 响应：{response}")
             await message.reply(content=response)
         except ValueError as e:
+            _log.warning(f"指令 /修改昵称 错误：{str(e)}")
             await message.reply(content=str(e))
     elif command == "/绑定QQ号":
-        service = QQBindingService()
         try:
-            response = service.bind_qq(member_openid, args)
+            response = qq_binding_service.bind_qq(member_openid, args)
+            _log.info(f"指令 /绑定QQ号 响应：{response}")
             await message.reply(content=response)
         except ValueError as e:
+            _log.warning(f"指令 /绑定QQ号 错误：{str(e)}")
             await message.reply(content=str(e))
     elif command == "/使用说明":
+        _log.info(f"指令 /使用说明 响应：{USAGE_GUIDE}")
         await message.reply(content=USAGE_GUIDE)
     elif command == "/活动":
         # 处理活动指令
         activity_info = """
         暂无活动，敬请期待
         """
+        _log.info(f"指令 /活动 响应：{activity_info}")
         await message.reply(content=activity_info)
     else:
+        _log.warning(f"未知指令：{command}")
         await message.reply(content=f"未知指令。\n{USAGE_GUIDE}")
         return
 

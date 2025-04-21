@@ -38,8 +38,8 @@ ERROR_MESSAGES = {
 }
 
 class QQBindingService:
-    def __init__(self):
-        self.db = DatabaseHandler()
+    def __init__(self, db: DatabaseHandler):
+        self.db = db
         with open("config.yaml", "r") as config_file:
             config = yaml.safe_load(config_file)
         self.smtp_server = "smtp.qq.com"
