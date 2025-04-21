@@ -12,11 +12,24 @@ _log = logging.get_logger()
 class TeamBoardService:
     def __init__(self, db: DatabaseHandler):
         self.db = db
-        self.last_call_time = 0  # 全局最后调用时间
+        self.last_call_times = {}  # 使用字典存储每个团队的最后调用时间
+        self.call_cd = 15  # 调用间隔时间
         with open("config.yaml", "r") as config_file:
             config = yaml.safe_load(config_file)
         client_config = config["client"]
         self.host_url = client_config["host_url"]
+
+    def clean_expired_call_times(self):
+        """
+        清理 last_call_times 中超过缓存过期时间的条目。
+        """
+        current_time = time.time()
+        expired_keys = [team_id for team_id, last_time in self.last_call_times.items()
+                        if current_time - last_time > 2 * self.call_cd]
+        for key in expired_keys:
+            del self.last_call_times[key]
+        if expired_keys:
+            _log.info(f"清理过期的调用时间缓存：{expired_keys}")
 
     async def get_open_teams(self):
         """
@@ -46,13 +59,6 @@ class TeamBoardService:
         """
         根据序号获取开团的详细信息，并返回图片的Base64编码。
         """
-        current_time = time.time()
-        if current_time - self.last_call_time < 30:  # 检查是否在CD时间内
-            _log.warning(f"面板详情调用频率过快")
-            raise ValueError(f"尚在调息之中，静待片刻方可。(剩余{30 - (current_time - self.last_call_time):.1f}秒)")
-
-        self.last_call_time = current_time  # 更新全局最后调用时间
-
         query = """
             SELECT id, title, team_time, dungeons, notice, book_xuanjing, book_yuntie, 
                    is_lock, rule, create_time, update_time, 
@@ -67,6 +73,16 @@ class TeamBoardService:
             raise ValueError("无效的序号。")
         
         team = results[idx - 1]
+        team_id = team["id"]
+
+        current_time = time.time()
+        if team_id in self.last_call_times and current_time - self.last_call_times[team_id] < self.call_cd:
+            _log.warning(f"面板详情调用频率过快，团队ID：{team_id}")
+            remaining_time = self.call_cd - (current_time - self.last_call_times[team_id])
+            raise ValueError(f"尚在调息之中，静待片刻方可。(剩余{remaining_time:.1f}秒)")
+
+        self.last_call_times[team_id] = current_time  # 更新该团队的最后调用时间
+
         details = {
             "id": team["id"],
             "title": team["title"],
@@ -179,13 +195,15 @@ class TeamBoardService:
 
     def clean_old_cache(self):
         """
-        清理前3天的缓存图片和Base64数据。
+        清理当天 0 点之前的缓存图片和 Base64 数据。
         """
         cache_dir = "cache"
-        cutoff_time = time.time() - 7 * 24 * 60 * 60  # 7天前的时间戳
+        # 获取当天 0 点的时间戳
+        current_time = time.time()
+        zero_time = current_time - (current_time % (24 * 60 * 60))
         for filename in os.listdir(cache_dir):
             file_path = os.path.join(cache_dir, filename)
-            if os.path.isfile(file_path) and os.path.getmtime(file_path) < cutoff_time:
+            if os.path.isfile(file_path) and os.path.getmtime(file_path) < zero_time:
                 os.remove(file_path)
                 _log.info(f"已清理缓存文件：{file_path}")
 
@@ -195,6 +213,7 @@ class TeamBoardService:
         """
         # 清理旧缓存
         self.clean_old_cache()
+        self.clean_expired_call_times()  # 清理过期的调用时间缓存
         if len(args) == 0:
             return await self.get_open_teams()
         elif len(args) == 1 and args[0].isdigit():

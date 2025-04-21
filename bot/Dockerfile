@@ -1,5 +1,11 @@
 FROM python:3.10-slim
 
+# set the time zone to Shanghai
+RUN apk add tzdata  \
+    && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && echo "Asia/Shanghai" > /etc/timezone \
+    && apk del tzdata
+
 RUN apt-get update \
     && apt-get install -y wget gnupg2 --no-install-recommends \
     && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
