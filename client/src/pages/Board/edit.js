@@ -258,10 +258,15 @@ const BoardEditContent = ({ team = {}, onBack }) => {
 
   const onFinish = async (values) => {
     try {
+      console.log("Form values:", values);
+      const teamDate = values.date.startOf("day"); // 获取日期的起始时间
+      const teamTime = values.time; // 获取时间
+      const combinedTeamTime = teamDate.hour(teamTime.hour()).minute(teamTime.minute()).second(0).toISOString(); // 组合成 UTC 时间
+
       const payload = {
         ...values,
         rule: JSON.stringify(rules),
-        teamTime: values.time,
+        teamTime: combinedTeamTime, // 使用组合后的 UTC 时间
         guildId: store.getState().guild.guildId,
         createrId: store.getState().user.userId,
         isLock: values.isLock,

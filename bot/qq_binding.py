@@ -139,6 +139,11 @@ class QQBindingService:
 
         elif len(args) == 1 and args[0].isdigit():
             code = args[0]
+            # 考虑用户忘记输入昵称，被误为验证码，提示正确格式
+            if len(code) != 6:
+                _log.warning(f"用户 {member_openid} 提供的验证码格式错误：{code}")
+                raise ValueError(ERROR_MESSAGES["K-参数格式错误"])
+
             _log.info(f"用户 {member_openid} 请求验证验证码 {code}。")
             # 验证记录
             query = """
