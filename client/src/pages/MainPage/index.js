@@ -302,6 +302,9 @@ const MainPage = () => {
           padding: 20,
           display: "flex",
           justifyContent: "center",
+          overflow: "auto", // 添加溢出滚动
+          flex: 1, // 让Content区域填充可用空间
+          height: 0, // 这是Flex布局中使用overflow的技巧
         }}
       >
         <div style={{ width: "100%", maxWidth: "1300px" }}>

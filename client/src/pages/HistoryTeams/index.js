@@ -14,11 +14,18 @@ const HistoryTeams = () => {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 10,
-    total: 0,
+    pageSize: 1000,
+    total: 9000,
   });
 
-  const fetchHistoryTeams = async (page = 1, pageSize = 10) => {
+  // 添加权限检查逻辑
+  const isAdmin = (() => {
+    const { isSuperAdmin } = store.getState().user;
+    const { role } = store.getState().guild;
+    return isSuperAdmin || role === "owner" || role === "helper";
+  })();
+
+  const fetchHistoryTeams = async (page = 1, pageSize = 1000) => {
     setLoading(true);
     try {
       const res = await request.post("/team/listTeams", {
@@ -34,6 +41,7 @@ const HistoryTeams = () => {
       setPagination((prev) => ({
         ...prev,
         current: page,
+        pageSize,
         total: res.data.totalCount,
       }));
     } catch (err) {
@@ -215,9 +223,11 @@ const HistoryTeams = () => {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={handleAddHistoryRecord}>
-          新增历史记录
-        </Button>
+        {isAdmin && (
+          <Button type="primary" onClick={handleAddHistoryRecord}>
+            新增历史记录
+          </Button>
+        )}
       </div>
       <Table
         dataSource={teams}
