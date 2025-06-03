@@ -4,12 +4,14 @@ import { request } from "@/utils/request";
 import dayjs from "dayjs";
 import SlotPanel from "@/components/SlotPanel";
 import store from "@/store";
+import AddHistoryRecordModal from "./AddHistoryRecordModal";
 
 const HistoryTeams = () => {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -54,11 +56,31 @@ const HistoryTeams = () => {
     fetchHistoryTeams(pagination.current, pagination.pageSize);
   };
 
+  const handleAddHistoryRecord = () => {
+    setIsAddModalVisible(true);
+  };
+
+  const handleAddHistorySuccess = () => {
+    setIsAddModalVisible(false);
+    fetchHistoryTeams(); // 刷新列表
+    message.success("历史记录添加成功");
+  };
+
   const columns = [
     {
       title: "标题",
       dataIndex: "title",
       key: "title",
+    },
+    {
+      title: "副本",
+      dataIndex: "dungeons",
+      key: "dungeons",
+      filters: Array.from(new Set(teams.map((team) => team.dungeons))).map((dungeon) => ({
+        text: dungeon,
+        value: dungeon,
+      })),
+      onFilter: (value, record) => record.dungeons === value,
     },
     {
       title: "创建日期",
@@ -73,12 +95,6 @@ const HistoryTeams = () => {
       key: "closeTime",
       sorter: (a, b) => dayjs(a.closeTime).valueOf() - dayjs(b.closeTime).valueOf(),
       render: (text) => dayjs(text).format("YYYY-MM-DD HH:mm"),
-    },
-    {
-      title: "报名人数",
-      dataIndex: "signupCount",
-      key: "signupCount",
-      render: () => "暂未实现", // 占位符
     },
     {
       title: "金团记录",
@@ -97,9 +113,11 @@ const HistoryTeams = () => {
         try {
           const parsedSummary = JSON.parse(text);
           const perPersonSalary = parsedSummary.perPersonSalary || 0;
+          const currentDungeon = record.dungeons;
 
-          // Calculate min, max, and average
-          const salaries = teams
+          // 按照副本分类计算统计数据
+          const sameTypeDungeonTeams = teams.filter((team) => team.dungeons === currentDungeon);
+          const salaries = sameTypeDungeonTeams
             .map((team) => {
               try {
                 return JSON.parse(team.summary || "{}").perPersonSalary || null;
@@ -111,7 +129,8 @@ const HistoryTeams = () => {
 
           const minSalary = Math.min(...salaries);
           const maxSalary = Math.max(...salaries);
-          const avgSalary = salaries.reduce((sum, salary) => sum + salary, 0) / salaries.length;
+          const avgSalary =
+            salaries.length > 0 ? salaries.reduce((sum, salary) => sum + salary, 0) / salaries.length : 0;
 
           const deviationThreshold = avgSalary * 0.34; // Define a threshold for deviation
           const isMin = perPersonSalary === minSalary;
@@ -135,23 +154,23 @@ const HistoryTeams = () => {
             </>
           );
 
-          if (isMin) {
+          if (isMin && salaries.length > 1) {
             return (
-              <Badge.Ribbon text="史低" color="green">
+              <Badge.Ribbon text="★史低" color="green">
                 {content}
               </Badge.Ribbon>
             );
           }
-          if (isMax) {
+          if (isMax && salaries.length > 1) {
             return (
-              <Badge.Ribbon text="史高" color="red">
+              <Badge.Ribbon text="★史高" color="red">
                 {content}
               </Badge.Ribbon>
             );
           }
           if (isFarBelowAvg) {
             return (
-              <Badge.Ribbon text="小黑手" color="purple">
+              <Badge.Ribbon text="黑鬼" color="purple">
                 {content}
               </Badge.Ribbon>
             );
@@ -195,6 +214,11 @@ const HistoryTeams = () => {
 
   return (
     <div>
+      <div style={{ marginBottom: 16 }}>
+        <Button type="primary" onClick={handleAddHistoryRecord}>
+          新增历史记录
+        </Button>
+      </div>
       <Table
         dataSource={teams}
         columns={columns}
@@ -283,6 +307,12 @@ const HistoryTeams = () => {
           <p>加载中...</p>
         )}
       </Modal>
+
+      <AddHistoryRecordModal
+        visible={isAddModalVisible}
+        onClose={() => setIsAddModalVisible(false)}
+        onSuccess={handleAddHistorySuccess}
+      />
     </div>
   );
 };
