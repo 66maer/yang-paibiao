@@ -22,7 +22,13 @@ RET_MSG = {
                     "/报名 [团队序号] <角色名> -- 快捷报名角色 [推荐]\n"
                     "/报名 [团队序号] <心法名> -- 模糊报名(不指定角色)\n"
                     "/报名 [团队序号] <心法名> <角色名> -- 常规报名\n"
-                    "/报名 [团队序号] <角色名> <心法名> -- 常规报名",
+                    "/报名 [团队序号] <角色名> <心法名> -- 常规报名\n"
+                    "---示例-------\n"
+                    "/报名 1 丐箩箩 -- 快捷报名角色 [推荐]\n"
+                    "/报名 1 冰心 -- 模糊报名(不指定角色)\n"
+                    "/报名 1 毒经 举\n"
+                    "/报名 1 幸福会长大 奶药\n"
+                    "---------",
     "K-角色不明确":"你有多个同名角色，需要指定心法。\n{character_list}",
     "K-无效心法":"无法将'{xinfa}'解析为心法名称。",
     "K-报名成功":"报名成功！具体排坑情况请查看开团看板。(已加入队列, 可能会候补)",
@@ -41,6 +47,7 @@ RET_MSG = {
     "K-未报名":"没有找到关于你的报名记录，请查看开团看板。",
     "K-取消报名成功":"取消报名成功！\n{signup_info}",
     "K-多个报名记录":"找到多个报名记录，请提供编号取消：\n{signup_list}",
+    "K-取消报名未匹配":"无法匹配报名记录：\n{signup_list}",
     "K-取消报名编号无效":"报名编号无效，请检查输入。\n{signup_list}",
 }
 
@@ -264,16 +271,57 @@ class SignupHandlerBase:
                     )
                 )
 
-        elif len(args) == 1 and args[0].isdigit():
-            idx = int(args[0]) - 1
-            if idx < 0 or idx >= len(results):
-                raise ValueError(RET_MSG["K-取消报名编号无效"].format(
+        elif len(args) == 1:
+            # 第二个参数是序号
+            if args[0].isdigit():
+                idx = int(args[0]) - 1
+                if idx < 0 or idx >= len(results):
+                    raise ValueError(RET_MSG["K-取消报名编号无效"].format(
+                        signup_list="\n".join(
+                            f"【{idx+1}】. {self._format_signup_info(result['signup_info'])}"
+                            for idx, result in enumerate(results)
+                        )
+                    ))
+                return self._cancel_signup(results[idx], user_id)
+            # 第二个参数是角色名
+            elif any(r["signup_info"]["characterName"] == args[0] for r in results):
+                results = [r for r in results if r["signup_info"]["characterName"] == args[0]]
+                if len(results) == 1:
+                    return self._cancel_signup(results[0], user_id)
+                return RET_MSG["K-多个报名记录"].format(
                     signup_list="\n".join(
                         f"【{idx+1}】. {self._format_signup_info(result['signup_info'])}"
                         for idx, result in enumerate(results)
                     )
-                ))
-            return self._cancel_signup(results[idx], user_id)
+                )
+            # 第二个参数是心法名
+            elif self.character_service.try_parse_xinfa(args[0]):
+                xinfa = self.character_service.try_parse_xinfa(args[0])
+                results_temp = [r for r in results if r["signup_info"]["characterXinfa"] == xinfa]
+                if not results_temp:
+                    raise ValueError(RET_MSG["K-取消报名未匹配"].format(
+                        signup_list="\n".join(
+                            f"【{idx+1}】. {self._format_signup_info(result['signup_info'])}"
+                            for idx, result in enumerate(results)
+                        )
+                    ))
+                if len(results_temp) == 1:
+                    return self._cancel_signup(results_temp[0], user_id)
+                return RET_MSG["K-多个报名记录"].format(
+                    signup_list="\n".join(
+                        f"【{idx+1}】. {self._format_signup_info(result['signup_info'])}"
+                        for idx, result in enumerate(results_temp)
+                    )
+                )
+            # 第二个参数是 "all" 或 "全部"
+            elif args[0].lower() == "all" or args[0] == "全部":
+                for result in results:
+                    self._cancel_signup(result, user_id)
+                return RET_MSG["K-取消报名成功"].format(
+                    signup_info="已取消全部报名记录。"
+                )
+            else:
+                raise ValueError(RET_MSG["K-取消报名格式错误"])
 
         else:
             raise ValueError(RET_MSG["K-取消报名格式错误"])
