@@ -64,12 +64,14 @@ const HistoryTeams = () => {
       title: "创建日期",
       dataIndex: "createTime",
       key: "createTime",
+      sorter: (a, b) => dayjs(a.createTime).valueOf() - dayjs(b.createTime).valueOf(),
       render: (text) => dayjs(text).format("YYYY-MM-DD HH:mm"),
     },
     {
       title: "结束日期",
       dataIndex: "closeTime",
       key: "closeTime",
+      sorter: (a, b) => dayjs(a.closeTime).valueOf() - dayjs(b.closeTime).valueOf(),
       render: (text) => dayjs(text).format("YYYY-MM-DD HH:mm"),
     },
     {
@@ -82,23 +84,49 @@ const HistoryTeams = () => {
       title: "金团记录",
       dataIndex: "summary",
       key: "summary",
-      render: (text) => {
+      sorter: (a, b) => {
+        try {
+          const parsedA = JSON.parse(a.summary || "{}");
+          const parsedB = JSON.parse(b.summary || "{}");
+          return (parsedA.perPersonSalary || 0) - (parsedB.perPersonSalary || 0);
+        } catch (e) {
+          return 0;
+        }
+      },
+      render: (text, record, index) => {
         try {
           const parsedSummary = JSON.parse(text);
-          return (
+          const perPersonSalary = parsedSummary.perPersonSalary || 0;
+
+          // Calculate min, max, and average
+          const salaries = teams
+            .map((team) => {
+              try {
+                return JSON.parse(team.summary || "{}").perPersonSalary || null;
+              } catch {
+                return null;
+              }
+            })
+            .filter((salary) => salary !== null);
+
+          const minSalary = Math.min(...salaries);
+          const maxSalary = Math.max(...salaries);
+          const avgSalary = salaries.reduce((sum, salary) => sum + salary, 0) / salaries.length;
+
+          const deviationThreshold = avgSalary * 0.34; // Define a threshold for deviation
+          const isMin = perPersonSalary === minSalary;
+          const isMax = perPersonSalary === maxSalary;
+          const isFarBelowAvg = perPersonSalary < avgSalary - deviationThreshold;
+          const isFarAboveAvg = perPersonSalary > avgSalary + deviationThreshold;
+
+          const content = (
             <>
               {parsedSummary.salary || "未知"} 金{" "}
-              <span style={{ color: "#888" }}>
-                （人均 {parsedSummary.perPersonSalary || "未知"} 金）
-              </span>
+              <span style={{ color: "#888" }}>（人均 {parsedSummary.perPersonSalary || "未知"} 金）</span>
               <div>
                 {(parsedSummary.specialDrops || []).length > 0
                   ? (parsedSummary.specialDrops || []).map((drop, index) => (
-                      <Tag
-                        key={index}
-                        color="blue"
-                        style={{ marginBottom: "5px" }}
-                      >
+                      <Tag key={index} color="blue" style={{ marginBottom: "5px" }}>
                         {drop}
                       </Tag>
                     ))
@@ -106,6 +134,36 @@ const HistoryTeams = () => {
               </div>
             </>
           );
+
+          if (isMin) {
+            return (
+              <Badge.Ribbon text="史低" color="green">
+                {content}
+              </Badge.Ribbon>
+            );
+          }
+          if (isMax) {
+            return (
+              <Badge.Ribbon text="史高" color="red">
+                {content}
+              </Badge.Ribbon>
+            );
+          }
+          if (isFarBelowAvg) {
+            return (
+              <Badge.Ribbon text="小黑手" color="purple">
+                {content}
+              </Badge.Ribbon>
+            );
+          }
+          if (isFarAboveAvg) {
+            return (
+              <Badge.Ribbon text="小红手" color="pink">
+                {content}
+              </Badge.Ribbon>
+            );
+          }
+          return content;
         } catch (e) {
           return text || "暂无记录";
         }
@@ -148,8 +206,7 @@ const HistoryTeams = () => {
           pageSize: pagination.pageSize,
           total: pagination.total,
           showSizeChanger: true,
-          onChange: (page, pageSize) =>
-            handleTableChange({ current: page, pageSize }),
+          onChange: (page, pageSize) => handleTableChange({ current: page, pageSize }),
         }}
       />
       <Modal
@@ -165,12 +222,10 @@ const HistoryTeams = () => {
               <strong>标题：</strong> {selectedTeam.title}
             </p>
             <p>
-              <strong>创建日期：</strong>{" "}
-              {dayjs(selectedTeam.createTime).format("YYYY-MM-DD HH:mm")}
+              <strong>创建日期：</strong> {dayjs(selectedTeam.createTime).format("YYYY-MM-DD HH:mm")}
             </p>
             <p>
-              <strong>结束日期：</strong>{" "}
-              {dayjs(selectedTeam.closeTime).format("YYYY-MM-DD HH:mm")}
+              <strong>结束日期：</strong> {dayjs(selectedTeam.closeTime).format("YYYY-MM-DD HH:mm")}
             </p>
             <p>
               <strong>创建人：</strong> {selectedTeam.createrNickname || "未知"}
@@ -191,25 +246,16 @@ const HistoryTeams = () => {
                         <>
                           <div>
                             {parsedSummary.salary || "未知"} 金{" "}
-                            <span style={{ color: "#888" }}>
-                              （人均 {parsedSummary.perPersonSalary || "未知"}{" "}
-                              金）
-                            </span>
+                            <span style={{ color: "#888" }}>（人均 {parsedSummary.perPersonSalary || "未知"} 金）</span>
                           </div>
                           <div>
                             <strong>特殊掉落：</strong>
                             {(parsedSummary.specialDrops || []).length > 0
-                              ? (parsedSummary.specialDrops || []).map(
-                                  (drop, index) => (
-                                    <Tag
-                                      key={index}
-                                      color="blue"
-                                      style={{ marginBottom: "5px" }}
-                                    >
-                                      {drop}
-                                    </Tag>
-                                  )
-                                )
+                              ? (parsedSummary.specialDrops || []).map((drop, index) => (
+                                  <Tag key={index} color="blue" style={{ marginBottom: "5px" }}>
+                                    {drop}
+                                  </Tag>
+                                ))
                               : "无特殊掉落"}
                           </div>
                           <div>
