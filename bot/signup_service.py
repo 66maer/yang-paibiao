@@ -22,8 +22,8 @@ RET_MSG = {
                     "/报名 [团队序号] <角色名> -- 快捷报名角色 [推荐]\n"
                     "/报名 [团队序号] <心法名> -- 模糊报名(不指定角色)\n"
                     "/报名 [团队序号] <心法名> <角色名> -- 常规报名\n"
-                    "/报名 [团队序号] <角色名> <心法名> -- 常规报名\n"
-                    "---示例-------\n"
+                    "/报名 [团队序号] <角色名> <心法名> -- 常规报名",
+    "K-报名格式示例": "---示例-------\n"
                     "/报名 1 丐箩箩 -- 快捷报名角色 [推荐]\n"
                     "/报名 1 冰心 -- 模糊报名(不指定角色)\n"
                     "/报名 1 毒经 举\n"
@@ -37,13 +37,19 @@ RET_MSG = {
     "K-代报名格式错误":"格式错误，代报名格式说明：\n"
                     "/代报名 [团队序号] <参与人昵称> <心法名> <角色名> -- [推荐]\n"
                     "/代报名 [团队序号] <参与人昵称> <心法名> -- 不指定角色",
+    "K-代报名格式示例": "---示例-------\n"
+                      "/代报名 1 举 毒经 渊墨蝶 -- 最明确 [推荐]\n"
+                      "/代报名 1 举 冰心 -- 模糊报名(不指定角色)\n",
     "K-代报名成功":"代报名成功！具体排坑情况请查看开团看板。(已加入队列, 可能会候补)\n",
     "K-登记老板格式错误":"格式错误，登记老板格式说明：\n"
                     "/登记老板 [团队序号] <老板昵称> <心法名> <角色名> -- [推荐]\n"
                     "/登记老板 [团队序号] <老板昵称> <心法名> -- 不指定角色",
+    "K-登记老板格式示例": "---示例-------\n"
+                      "/登记老板 1 举 毒经 渊墨蝶 -- 最明确 [推荐]\n"
+                      "/登记老板 1 举 冰心 -- 模糊报名(不指定角色)\n",
     "K-登记老板成功":"登记老板成功！具体排坑情况请查看开团看板。(已加入队列, 可能会候补)}\n",
     "K-取消报名格式错误":"格式错误，取消报名格式说明：\n"
-                    "/取消报名 [团队序号] [编号]",
+                    "/取消报名 [团队序号] [编号/心法/名称]",
     "K-未报名":"没有找到关于你的报名记录，请查看开团看板。",
     "K-取消报名成功":"取消报名成功！\n{signup_info}",
     "K-多个报名记录":"找到多个报名记录，请提供编号取消：\n{signup_list}",
@@ -382,21 +388,24 @@ class NormalSignupHandler(SignupHandlerBase):
         3. [心法名 角色名] -> 创建/使用角色
         4. [角色名 心法名] -> 同上
         """
-        _log.info("开始解析报名参数，用户ID: %s，参数: %s", user_id, args)
-        if not args:
-            raise ValueError(RET_MSG["K-报名格式错误"])
-        
-        # 参数解析逻辑
-        if len(args) == 1:
-            result = self._handle_single_argument(user_id, args[0])
-            _log.debug("单参数解析结果: %s", result)
-            return result
-        elif len(args) == 2:
-            result = self._handle_double_arguments(user_id, args)
-            _log.debug("双参数解析结果: %s", result)
-            return result
-        else:
-            raise ValueError(RET_MSG["K-报名格式错误"])
+        try:
+            _log.info("开始解析报名参数，用户ID: %s，参数: %s", user_id, args)
+            if not args:
+                raise ValueError(RET_MSG["K-报名格式错误"])
+
+            # 参数解析逻辑
+            if len(args) == 1:
+                result = self._handle_single_argument(user_id, args[0])
+                _log.debug("单参数解析结果: %s", result)
+                return result
+            elif len(args) == 2:
+                result = self._handle_double_arguments(user_id, args)
+                _log.debug("双参数解析结果: %s", result)
+                return result
+            else:
+                raise ValueError(RET_MSG["K-报名格式错误"])
+        except ValueError as e:
+            raise ValueError(f"{e}\n{RET_MSG['K-报名格式示例']}") from e
 
     def _handle_single_argument(self, user_id: int, arg: str) -> Dict:
         """处理单个参数情况"""
@@ -499,28 +508,31 @@ class ProxySignupHandler(SignupHandlerBase):
         解析代报名参数：
         格式：/代报名 [团队序号] <参与人昵称> <心法名> [角色名]
         """
-        _log.info("开始解析代报名参数，用户ID: %s，参数: %s", user_id, args)
-        if len(args) < 2:
-            raise ValueError(RET_MSG["K-代报名格式错误"])
-        
-        participant_name = args[0]
-        xinfa = args[1]
-        character_name = None
-        if len(args) > 2:
-            character_name = args[2]
-            self._validate_name_length(character_name, "角色名")
-        self._validate_name_length(participant_name, "参与人昵称")
+        try:
+            _log.info("开始解析代报名参数，用户ID: %s，参数: %s", user_id, args)
+            if len(args) < 2:
+                raise ValueError(RET_MSG["K-代报名格式错误"])
 
-        # 验证心法
-        parsed_xinfa = self.character_service.try_parse_xinfa(xinfa)
-        if not parsed_xinfa:
-            raise ValueError(RET_MSG["K-无效心法"].format(xinfa=xinfa))
+            participant_name = args[0]
+            xinfa = args[1]
+            character_name = None
+            if len(args) > 2:
+                character_name = args[2]
+                self._validate_name_length(character_name, "角色名")
+            self._validate_name_length(participant_name, "参与人昵称")
 
-        return {
-            "participant_name": participant_name,
-            "xinfa": parsed_xinfa,
-            "character_name": character_name
-        }
+            # 验证心法
+            parsed_xinfa = self.character_service.try_parse_xinfa(xinfa)
+            if not parsed_xinfa:
+                raise ValueError(RET_MSG["K-无效心法"].format(xinfa=xinfa))
+
+            return {
+                "participant_name": participant_name,
+                "xinfa": parsed_xinfa,
+                "character_name": character_name
+            }
+        except ValueError as e:
+            raise ValueError(f"{e}\n{RET_MSG['K-代报名格式示例']}") from e
 
     def execute_signup(self, team_id: int, user_info: Dict, signup_data: Dict) -> str:
         """执行代报名逻辑"""
@@ -550,28 +562,31 @@ class BossSignupHandler(SignupHandlerBase):
         解析登记老板参数：
         格式：/登记老板 [团队序号] <老板昵称> <心法名> [角色名]
         """
-        _log.info("开始解析登记老板参数，用户ID: %s，参数: %s", user_id, args)
-        if len(args) < 2:
-            raise ValueError(RET_MSG["K-登记老板格式错误"])
-        
-        boss_name = args[0]
-        xinfa = args[1]
-        character_name = None
-        if len(args) > 2:
-            character_name = args[2]
-            self._validate_name_length(character_name, "角色名")
-        self._validate_name_length(boss_name, "老板昵称")
+        try:
+            _log.info("开始解析登记老板参数，用户ID: %s，参数: %s", user_id, args)
+            if len(args) < 2:
+                raise ValueError(RET_MSG["K-登记老板格式错误"])
 
-        # 验证心法
-        parsed_xinfa = self.character_service.try_parse_xinfa(xinfa)
-        if not parsed_xinfa:
-            raise ValueError(RET_MSG["K-无效心法"].format(xinfa=xinfa))
+            boss_name = args[0]
+            xinfa = args[1]
+            character_name = None
+            if len(args) > 2:
+                character_name = args[2]
+                self._validate_name_length(character_name, "角色名")
+            self._validate_name_length(boss_name, "老板昵称")
 
-        return {
-            "boss_name": boss_name,
-            "xinfa": parsed_xinfa,
-            "character_name": character_name
-        }
+            # 验证心法
+            parsed_xinfa = self.character_service.try_parse_xinfa(xinfa)
+            if not parsed_xinfa:
+                raise ValueError(RET_MSG["K-无效心法"].format(xinfa=xinfa))
+
+            return {
+                "boss_name": boss_name,
+                "xinfa": parsed_xinfa,
+                "character_name": character_name
+            }
+        except ValueError as e:
+            raise ValueError(f"{e}\n{RET_MSG['K-登记老板格式示例']}") from e
 
     def execute_signup(self, team_id: int, user_info: Dict, signup_data: Dict) -> str:
         """执行登记老板逻辑"""
