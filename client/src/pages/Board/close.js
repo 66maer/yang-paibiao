@@ -1,16 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  Form,
-  InputNumber,
-  Slider,
-  Row,
-  Col,
-  AutoComplete,
-  Button,
-  Tag,
-  message,
-} from "antd";
+import { Modal, Form, InputNumber, Slider, Row, Col, AutoComplete, Button, Tag, message } from "antd";
 import { SwapOutlined } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import store from "@/store";
@@ -35,21 +24,14 @@ const closeTeam = async (payload) => {
 const CloseTeamModal = ({ team, visible, onClose }) => {
   const [form] = Form.useForm();
   const [members, setMembers] = useState([]);
-  const [workersCount, setWorkersCount] = useState(20);
+  const [workersCount, setWorkersCount] = useState(25);
   const [selectedTags, setSelectedTags] = useState([]);
   const [isTotalEditable, setIsTotalEditable] = useState(true);
   const [countdown, setCountdown] = useState(5); // 倒计时
   const [canSubmit, setCanSubmit] = useState(false); // 是否可以点击“记录并保存”
   const dispatch = useDispatch();
 
-  const specialDrops = [
-    "玄晶",
-    "沙子",
-    "外观挂件",
-    "毕业精简",
-    "追须",
-    "高价其他",
-  ];
+  const specialDrops = ["玄晶", "沙子", "外观挂件", "毕业精简", "追须", "高价其他"];
 
   useEffect(() => {
     if (visible) {
@@ -81,9 +63,7 @@ const CloseTeamModal = ({ team, visible, onClose }) => {
   };
 
   const handleTagChange = (tag, checked) => {
-    const nextSelectedTags = checked
-      ? [...selectedTags, tag]
-      : selectedTags.filter((t) => t !== tag);
+    const nextSelectedTags = checked ? [...selectedTags, tag] : selectedTags.filter((t) => t !== tag);
     setSelectedTags(nextSelectedTags);
     form.setFieldsValue({ special_drops: nextSelectedTags });
   };
@@ -104,17 +84,13 @@ const CloseTeamModal = ({ team, visible, onClose }) => {
 
   const toggleSalaryMode = () => {
     setIsTotalEditable(!isTotalEditable);
-    const currentSalary = form.getFieldValue(
-      isTotalEditable ? "salary" : "perPersonSalary"
-    );
+    const currentSalary = form.getFieldValue(isTotalEditable ? "salary" : "perPersonSalary");
     handleSalaryChange(currentSalary);
   };
 
   const handleWorkersCountChange = (value) => {
     setWorkersCount(value);
-    const currentSalary = form.getFieldValue(
-      isTotalEditable ? "salary" : "perPersonSalary"
-    );
+    const currentSalary = form.getFieldValue(isTotalEditable ? "salary" : "perPersonSalary");
     handleSalaryChange(currentSalary, value);
   };
 
@@ -177,12 +153,7 @@ const CloseTeamModal = ({ team, visible, onClose }) => {
         <Button key="saveWithoutRecord" onClick={handleSaveWithoutRecord}>
           不记录直接保存
         </Button>,
-        <Button
-          key="saveWithRecord"
-          type="primary"
-          disabled={!canSubmit}
-          onClick={handleSaveWithRecord}
-        >
+        <Button key="saveWithRecord" type="primary" disabled={!canSubmit} onClick={handleSaveWithRecord}>
           {canSubmit ? "记录并保存" : `记录并保存 (${countdown}s)`}
         </Button>,
       ]}
@@ -208,9 +179,7 @@ const CloseTeamModal = ({ team, visible, onClose }) => {
                   min={0}
                   style={{ width: "100%" }}
                   disabled={!isTotalEditable}
-                  formatter={(value) =>
-                    `${value}`.replace(/\B(?=(\d{4})(?!\d))/g, ",")
-                  }
+                  formatter={(value) => `${value}`.replace(/\B(?=(\d{4})(?!\d))/g, ",")}
                   parser={(value) => value?.replace(/,/g, "")}
                   onChange={handleSalaryChange}
                   onFocus={(e) => e.target.select()}
@@ -219,11 +188,7 @@ const CloseTeamModal = ({ team, visible, onClose }) => {
               </Form.Item>
             </Col>
             <Col span={4} style={{ textAlign: "center" }}>
-              <Button
-                icon={<SwapOutlined />}
-                onClick={toggleSalaryMode}
-                shape="circle"
-              />
+              <Button icon={<SwapOutlined />} onClick={toggleSalaryMode} shape="circle" />
             </Col>
             <Col span={10}>
               <Form.Item name="perPersonSalary" noStyle>
@@ -233,9 +198,7 @@ const CloseTeamModal = ({ team, visible, onClose }) => {
                   min={0}
                   style={{ width: "100%" }}
                   disabled={isTotalEditable}
-                  formatter={(value) =>
-                    `${value}`.replace(/\B(?=(\d{4})(?!\d))/g, ",")
-                  }
+                  formatter={(value) => `${value}`.replace(/\B(?=(\d{4})(?!\d))/g, ",")}
                   parser={(value) => value?.replace(/,/g, "")}
                   onChange={handleSalaryChange}
                   onFocus={(e) => e.target.select()}
@@ -266,12 +229,7 @@ const CloseTeamModal = ({ team, visible, onClose }) => {
               <span>打工: {workersCount}</span>
             </Col>
             <Col span={16}>
-              <Slider
-                min={10}
-                max={25}
-                value={workersCount}
-                onChange={handleWorkersCountChange}
-              />
+              <Slider min={10} max={25} value={workersCount} onChange={handleWorkersCountChange} />
             </Col>
             <Col span={4} style={{ textAlign: "right" }}>
               <span>老板: {25 - workersCount}</span>

@@ -25,7 +25,7 @@ import { dungeonsTable } from "@/utils/dungeons";
 const AddHistoryRecordModal = ({ visible, onClose, onSuccess }) => {
   const [form] = Form.useForm();
   const [members, setMembers] = useState([]);
-  const [workersCount, setWorkersCount] = useState(20);
+  const [workersCount, setWorkersCount] = useState(25);
   const [selectedTags, setSelectedTags] = useState([]);
   const [isTotalEditable, setIsTotalEditable] = useState(true);
   const [loading, setLoading] = useState(false);

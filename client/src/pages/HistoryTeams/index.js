@@ -37,7 +37,13 @@ const HistoryTeams = () => {
       if (res.code !== 0) {
         throw new Error(res.msg);
       }
-      setTeams(res.data.teams);
+
+      // 对获取的数据按照关闭时间从近到远进行排序
+      const sortedTeams = [...res.data.teams].sort(
+        (a, b) => dayjs(b.closeTime).valueOf() - dayjs(a.closeTime).valueOf()
+      );
+
+      setTeams(sortedTeams);
       setPagination((prev) => ({
         ...prev,
         current: page,
@@ -101,6 +107,7 @@ const HistoryTeams = () => {
       title: "结束日期",
       dataIndex: "closeTime",
       key: "closeTime",
+      defaultSortOrder: "descend", // 添加默认排序
       sorter: (a, b) => dayjs(a.closeTime).valueOf() - dayjs(b.closeTime).valueOf(),
       render: (text) => dayjs(text).format("YYYY-MM-DD HH:mm"),
     },
