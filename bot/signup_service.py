@@ -80,7 +80,7 @@ class CharacterService:
         query = "SELECT * FROM characters WHERE user_id = %s AND name = %s"
         return self.db.execute_query(query, (user_id, name), fetchall=True)
     
-    def get_character(self, user_id: int, name: str, xinfa:str) -> List[Dict]:
+    def get_character(self, user_id: int, name: str, xinfa:str):
         """根据角色名和心法查询"""
         query = """
             SELECT * FROM characters 
@@ -430,11 +430,13 @@ class NormalSignupHandler(SignupHandlerBase):
         else:
             raise ValueError(RET_MSG["K-无效心法"].format(xinfa=args[0]))
         
+        _log.info("解析心法: %s，角色名: %s", xinfa, name)
 
         # 检查是否存在对应角色
         characters = self.character_service.get_character(user_id, name, xinfa)
         if characters:
-            return characters[0]
+            _log.info("找到已存在角色: %s", characters)
+            return characters
         
         self._validate_name_length(name, "角色名")
         
@@ -476,10 +478,7 @@ class NormalSignupHandler(SignupHandlerBase):
             raise ValueError("该角色已报名，不能重复报名！")
 
         # 检查当前提交人是否已有其他提交记录
-        if any(
-            record["submit_user_id"] == user_info["user_id"] or record["signup_user_id"] == user_info["user_id"]
-            for record in existing_signups
-        ):
+        if any( record["signup_user_id"] == user_info["user_id"] for record in existing_signups ):
             raise ValueError("不可重复报名，请选择代报名！")
 
         footnote = ""
