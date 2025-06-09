@@ -132,22 +132,22 @@ class SignupHandlerBase:
         2. 解析剩余参数
         3. 执行报名逻辑
         """
-        _log.debug("开始处理报名指令，用户ID: %s，参数: %s", member_openid, args)
+        _log.info("开始处理报名指令，用户ID: %s，参数: %s", member_openid, args)
         # 获取用户信息
         user_info = self._get_user_info(member_openid)
-        _log.debug("获取到的用户信息: %s", user_info)
+        _log.info("获取到的用户信息: %s", user_info)
         
         # 步骤1：处理团队序号
         team_id, args = self._resolve_team_index(args)
-        _log.debug("解析团队序号完成，团队ID: %s，剩余参数: %s", team_id, args)
+        _log.info("解析团队序号完成，团队ID: %s，剩余参数: %s", team_id, args)
         
         # 步骤2：解析业务参数
         signup_data = self.parse_arguments(user_info["user_id"], args)
-        _log.debug("解析报名参数完成: %s", signup_data)
+        _log.info("解析报名参数完成: %s", signup_data)
         
         # 步骤3：执行报名
         result = self.execute_signup(team_id, user_info, signup_data)
-        _log.debug("报名处理完成，结果: %s", result)
+        _log.info("报名处理完成，结果: %s", result)
         return result
 
     def _resolve_team_index(self, args: List[str]) -> Tuple[int, List[str]]:
@@ -157,9 +157,9 @@ class SignupHandlerBase:
         2. 根据参数判断是否携带序号
         3. 返回团队ID和剩余参数
         """
-        _log.debug("开始解析团队序号，参数: %s", args)
+        _log.info("开始解析团队序号，参数: %s", args)
         active_teams = self.team_service.get_active_teams()
-        _log.debug("获取到的活跃团队: %s", active_teams)
+        _log.info("获取到的活跃团队: %s", active_teams)
 
         if not active_teams:
             raise ValueError(RET_MSG["K-未开团"])
@@ -178,7 +178,7 @@ class SignupHandlerBase:
             team_list = self._format_team_list(active_teams)
             raise ValueError(RET_MSG["K-无效团队序号"].format(team_idx=team_idx, team_list=team_list))
 
-        _log.debug("团队序号解析完成，团队ID: %s，剩余参数: %s", active_teams[team_idx]["id"], args[1:])
+        _log.info("团队序号解析完成，团队ID: %s，剩余参数: %s", active_teams[team_idx]["id"], args[1:])
         if active_teams[team_idx]["is_lock"]:
             raise ValueError(RET_MSG["K-团已锁"])
         return active_teams[team_idx]["id"], args[1:]
@@ -201,7 +201,7 @@ class SignupHandlerBase:
     # region 公共方法
     def _get_user_info(self, member_openid: str) -> Dict:
         """获取用户信息"""
-        _log.debug("开始获取用户信息，用户ID: %s", member_openid)
+        _log.info("开始获取用户信息，用户ID: %s", member_openid)
         query = """
             SELECT u.id AS user_id, u.qq_number, 
                    COALESCE(gm.group_nickname, u.nickname) AS nickname
@@ -213,7 +213,7 @@ class SignupHandlerBase:
         result = self.db.execute_query(query, (member_openid,), fetchone=True)
         if not result:
             raise ValueError(RET_MSG["K-未绑定"])
-        _log.debug("获取到的用户信息: %s", result)
+        _log.info("获取到的用户信息: %s", result)
         return result
 
     def _create_signup_record(self, team_id: int, user_id: int, character: Dict, meta: Dict) -> str:
@@ -396,11 +396,11 @@ class NormalSignupHandler(SignupHandlerBase):
             # 参数解析逻辑
             if len(args) == 1:
                 result = self._handle_single_argument(user_id, args[0])
-                _log.debug("单参数解析结果: %s", result)
+                _log.info("单参数解析结果: %s", result)
                 return result
             elif len(args) == 2:
                 result = self._handle_double_arguments(user_id, args)
-                _log.debug("双参数解析结果: %s", result)
+                _log.info("双参数解析结果: %s", result)
                 return result
             else:
                 raise ValueError(RET_MSG["K-报名格式错误"])
@@ -469,7 +469,7 @@ class NormalSignupHandler(SignupHandlerBase):
         existing_signups = self.db.execute_query(query, (team_id,), fetchall=True)
 
         # 检查是否有同一角色重复报名（排除角色ID为0的情况）
-        _log.debug("检查是否有同一角色重复报名，当前角色ID: %s, 记录列表: %s", character_data["id"], existing_signups)
+        _log.info("检查是否有同一角色重复报名，当前角色ID: %s, 记录列表: %s", character_data["id"], existing_signups)
         if character_data["id"] and character_data["id"] != 0 and any(
             record["signup_character_id"] == character_data["id"] for record in existing_signups
         ):
