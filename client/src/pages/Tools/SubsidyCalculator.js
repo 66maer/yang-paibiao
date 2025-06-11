@@ -94,8 +94,8 @@ const SubsidyCalculator = () => {
       removable: false,
       width: 120,
       render: (_, record) => {
-        // 计算该行的总金额
-        return calculateRowTotal(record);
+        // 记录并显示已计算好的金额
+        return record.calculatedAmount || 0;
       },
     },
   ];
@@ -152,29 +152,44 @@ const SubsidyCalculator = () => {
   };
 
   // 计算行总金额
-  const calculateRowTotal = (record) => {
-    let total = 0;
-    columns.forEach((column) => {
-      if (
-        column.key !== "person" &&
-        column.key !== "totalAmount" &&
-        column.key !== "action" &&
-        record[column.dataIndex]
-      ) {
-        total += column.amount || 0;
-      }
-    });
-    return total;
-  };
+  // 使用 memoization 避免不必要的重计算
+  const calculateRowTotal = React.useCallback(
+    (record) => {
+      let total = 0;
+      columns.forEach((column) => {
+        if (
+          column.key !== "person" &&
+          column.key !== "totalAmount" &&
+          column.key !== "action" &&
+          record[column.dataIndex]
+        ) {
+          total += column.amount || 0;
+        }
+      });
+      console.log(`计算行 ${record.key} 的总金额: ￥${total}`);
+      return total;
+    },
+    [columns]
+  );
 
-  // 计算总金额
+  // 计算总金额和每行金额
   useEffect(() => {
     let sum = 0;
-    data.forEach((record) => {
-      sum += calculateRowTotal(record);
+    const updatedData = data.map((record) => {
+      // 为每行计算金额并保存
+      const rowAmount = calculateRowTotal(record);
+      sum += rowAmount;
+      return { ...record, calculatedAmount: rowAmount };
     });
+
+    // 更新总金额
     setTotalAmount(sum);
-  }, [data, columns]);
+
+    // 如果金额有变化，更新数据
+    if (JSON.stringify(updatedData) !== JSON.stringify(data)) {
+      setData(updatedData);
+    }
+  }, [data, columns, calculateRowTotal]);
 
   // 添加新行
   const handleAddRow = () => {
@@ -299,7 +314,18 @@ const SubsidyCalculator = () => {
 
   // 处理补贴金额变更
   const handleAmountChange = (columnKey, amount) => {
-    setColumns(columns.map((column) => (column.key === columnKey ? { ...column, amount: amount } : column)));
+    // 更新列数据
+    setColumns((prevColumns) =>
+      prevColumns.map((column) => (column.key === columnKey ? { ...column, amount: amount } : column))
+    );
+
+    // 强制触发行数据更新
+    setData((prevData) =>
+      prevData.map((record) => ({
+        ...record,
+        _forceUpdate: Date.now(), // 添加一个时间戳来强制数据更新
+      }))
+    );
   };
 
   // 自定义表头渲染
@@ -338,9 +364,10 @@ const SubsidyCalculator = () => {
           <InputNumber
             size="small"
             min={0}
-            defaultValue={column.amount}
+            value={column.amount}
             onChange={(value) => handleAmountChange(column.key, value)}
-            prefix="￥"
+            onStep={(value) => handleAmountChange(column.key, value)}
+            step={100}
             style={{ width: "100%" }}
           />
         )}
@@ -418,7 +445,7 @@ const SubsidyCalculator = () => {
 
         <Row justify="end" style={{ marginTop: 16 }}>
           <Col>
-            <Typography.Title level={4}>总补贴：￥{totalAmount}</Typography.Title>
+            <Typography.Title level={4}>总补贴：{totalAmount}</Typography.Title>
           </Col>
         </Row>
       </Card>
