@@ -166,7 +166,6 @@ const SubsidyCalculator = () => {
           total += column.amount || 0;
         }
       });
-      console.log(`计算行 ${record.key} 的总金额: ￥${total}`);
       return total;
     },
     [columns]
