@@ -8,6 +8,10 @@ export const dungeonsTable = [
     label: "普通太极宫",
   },
   {
+    value: "空城殿·上",
+    label: "空城殿·上",
+  },
+  {
     value: "英雄一之窟",
     label: "英雄一之窟",
   },

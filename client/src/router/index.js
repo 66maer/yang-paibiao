@@ -11,6 +11,8 @@ import BoardEditContent from "../pages/Board/edit"; // 导入编辑页面组件
 import TeamTemplate from "@/pages/TeamTemplete";
 import HistoryTeams from "@/pages/HistoryTeams";
 import Screenshot from "../pages/Screenshot";
+import Tools from "@/pages/Tools";
+import SubsidyCalculator from "@/pages/Tools/SubsidyCalculator";
 
 const routers = [
   {
@@ -56,6 +58,20 @@ const routers = [
       {
         path: "history-teams",
         element: <HistoryTeams />,
+      },
+      {
+        path: "tools",
+        element: <Tools />,
+        children: [
+          {
+            path: "",
+            element: <Navigate to="subsidy-calculator" />,
+          },
+          {
+            path: "subsidy-calculator",
+            element: <SubsidyCalculator />,
+          },
+        ],
       },
       // 可以在这里添加更多需要登录校验的子路由
     ],

@@ -218,7 +218,7 @@ export const xinfaInfoTable = {
   },
   lingsu: {
     name: "灵素",
-    nickname: ["药奶", "灵素", "奶药"],
+    nickname: ["奶药", "药奶", "灵素"],
     menpai: "药宗",
     icon: "lingsu.png",
     color: "#00ac99",

@@ -8,6 +8,7 @@ import {
   SnippetsOutlined,
   CloudSyncOutlined,
   CoffeeOutlined,
+  ToolOutlined,
 } from "@ant-design/icons";
 
 const menuConfig = (role, isSuperAdmin) => {
@@ -43,6 +44,12 @@ const menuConfig = (role, isSuperAdmin) => {
       label: "历史开团",
       icon: <SnippetsOutlined />,
       content: "history-teams",
+    },
+    {
+      key: "tools",
+      label: "小工具",
+      icon: <ToolOutlined />,
+      content: "tools",
     },
   ];
 
