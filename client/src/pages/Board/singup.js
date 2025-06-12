@@ -120,9 +120,7 @@ const SignupModal = ({ visible, onClose, teamId, refreshSignupList, signupList }
       const isInvalidSelfSignup =
         !isProxy &&
         signupList.some(
-          (signup) =>
-            (!signup.cancelTime || signup.cancelTime === "") &&
-            (signup.submitUserId === submitUserId || signup.signupUserId === submitUserId)
+          (signup) => (!signup.cancelTime || signup.cancelTime === "") && signup.signupUserId === submitUserId
         );
 
       if (isInvalidSelfSignup) {
