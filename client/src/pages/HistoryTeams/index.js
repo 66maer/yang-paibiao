@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Table, Button, Modal, Space, message, Badge, Tag } from "antd";
+import { LineChartOutlined } from "@ant-design/icons";
 import { request } from "@/utils/request";
 import dayjs from "dayjs";
 import SlotPanel from "@/components/SlotPanel";
 import store from "@/store";
 import AddHistoryRecordModal from "./AddHistoryRecordModal";
+import PriceTrendModal from "./PriceTrendModal";
 
 const HistoryTeams = () => {
   const [teams, setTeams] = useState([]);
@@ -12,6 +14,7 @@ const HistoryTeams = () => {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [isPriceTrendModalVisible, setIsPriceTrendModalVisible] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 1000,
@@ -72,6 +75,10 @@ const HistoryTeams = () => {
 
   const handleAddHistoryRecord = () => {
     setIsAddModalVisible(true);
+  };
+
+  const handleShowPriceTrend = () => {
+    setIsPriceTrendModalVisible(true);
   };
 
   const handleAddHistorySuccess = () => {
@@ -185,7 +192,7 @@ const HistoryTeams = () => {
           }
           if (isFarBelowAvg) {
             return (
-              <Badge.Ribbon text="黑鬼" color="purple">
+              <Badge.Ribbon text="小黑手" color="purple">
                 {content}
               </Badge.Ribbon>
             );
@@ -229,12 +236,19 @@ const HistoryTeams = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        {isAdmin && (
-          <Button type="primary" onClick={handleAddHistoryRecord}>
-            新增历史记录
+      <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          {isAdmin && (
+            <Button type="primary" onClick={handleAddHistoryRecord}>
+              新增历史记录
+            </Button>
+          )}
+        </div>
+        <div>
+          <Button type="primary" icon={<LineChartOutlined />} onClick={handleShowPriceTrend}>
+            价格走势
           </Button>
-        )}
+        </div>
       </div>
       <Table
         dataSource={teams}
@@ -329,6 +343,12 @@ const HistoryTeams = () => {
         visible={isAddModalVisible}
         onClose={() => setIsAddModalVisible(false)}
         onSuccess={handleAddHistorySuccess}
+      />
+
+      <PriceTrendModal
+        visible={isPriceTrendModalVisible}
+        onClose={() => setIsPriceTrendModalVisible(false)}
+        teams={teams}
       />
     </div>
   );
