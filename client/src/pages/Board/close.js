@@ -28,15 +28,27 @@ const CloseTeamModal = ({ team, visible, onClose }) => {
   const [selectedTags, setSelectedTags] = useState([]);
   const [isTotalEditable, setIsTotalEditable] = useState(true);
   const [countdown, setCountdown] = useState(5); // 倒计时
-  const [canSubmit, setCanSubmit] = useState(false); // 是否可以点击“记录并保存”
+  const [canSubmit, setCanSubmit] = useState(false); // 是否可以点击"记录并保存"
   const dispatch = useDispatch();
 
-  const specialDrops = ["玄晶", "沙子", "外观挂件", "毕业精简", "追须", "高价其他"];
+  const specialDrops = [
+    { name: "玄晶", color: "gold" },
+    { name: "沙子", color: "blue" },
+    { name: "外观挂件", color: "blue" },
+    { name: "毕业精简", color: "blue" },
+    { name: "追须", color: "blue" },
+    { name: "高价其他", color: "blue" },
+    { name: "T腰坠", color: "black" },
+    { name: "奶腰坠", color: "black" },
+    { name: "烂掉的精简", color: "black" },
+    { name: "烂掉的特效武器", color: "black" },
+  ];
 
   useEffect(() => {
     if (visible) {
       loadMembers();
       form.resetFields();
+      setSelectedTags([]);
       setCountdown(5); // 重置倒计时
       setCanSubmit(false); // 禁用按钮
       const timer = setInterval(() => {
@@ -211,13 +223,22 @@ const CloseTeamModal = ({ team, visible, onClose }) => {
 
         <Form.Item name="special_drops" label="特殊掉落">
           <div>
-            {specialDrops.map((tag) => (
+            {specialDrops.map((item) => (
               <Tag.CheckableTag
-                key={tag}
-                checked={selectedTags.indexOf(tag) > -1}
-                onChange={(checked) => handleTagChange(tag, checked)}
+                key={item.name}
+                checked={selectedTags.indexOf(item.name) > -1}
+                onChange={(checked) => handleTagChange(item.name, checked)}
+                style={{
+                  backgroundColor: selectedTags.indexOf(item.name) > -1 ? item.color : "transparent",
+                  color: selectedTags.indexOf(item.name) > -1 ? "white" : item.color,
+                  borderColor: item.color,
+                  marginBottom: "8px",
+                  marginRight: "8px",
+                  padding: "2px 8px",
+                  borderRadius: "4px",
+                }}
               >
-                {tag}
+                {item.name}
               </Tag.CheckableTag>
             ))}
           </div>

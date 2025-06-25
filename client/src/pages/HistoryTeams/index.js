@@ -8,6 +8,20 @@ import store from "@/store";
 import AddHistoryRecordModal from "./AddHistoryRecordModal";
 import PriceTrendModal from "./PriceTrendModal";
 
+// 特殊掉落及对应颜色定义
+export const specialDropsColors = {
+  玄晶: "gold",
+  沙子: "blue",
+  外观挂件: "blue",
+  毕业精简: "blue",
+  追须: "blue",
+  高价其他: "blue",
+  T腰坠: "black",
+  奶腰坠: "black",
+  烂掉的精简: "black",
+  烂掉的特效武器: "black",
+};
+
 const HistoryTeams = () => {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -167,7 +181,7 @@ const HistoryTeams = () => {
               <div>
                 {(parsedSummary.specialDrops || []).length > 0
                   ? (parsedSummary.specialDrops || []).map((drop, index) => (
-                      <Tag key={index} color="blue" style={{ marginBottom: "5px" }}>
+                      <Tag key={index} color={specialDropsColors[drop] || "blue"} style={{ marginBottom: "5px" }}>
                         {drop}
                       </Tag>
                     ))
@@ -192,7 +206,7 @@ const HistoryTeams = () => {
           }
           if (isFarBelowAvg) {
             return (
-              <Badge.Ribbon text="小黑手" color="purple">
+              <Badge.Ribbon text="黑鬼" color="purple">
                 {content}
               </Badge.Ribbon>
             );
@@ -307,7 +321,11 @@ const HistoryTeams = () => {
                             <strong>特殊掉落：</strong>
                             {(parsedSummary.specialDrops || []).length > 0
                               ? (parsedSummary.specialDrops || []).map((drop, index) => (
-                                  <Tag key={index} color="blue" style={{ marginBottom: "5px" }}>
+                                  <Tag
+                                    key={index}
+                                    color={specialDropsColors[drop] || "blue"}
+                                    style={{ marginBottom: "5px" }}
+                                  >
                                     {drop}
                                   </Tag>
                                 ))

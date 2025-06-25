@@ -15,6 +15,9 @@ import {
 import { Divider, Radio, Empty, Card, Typography, Tag } from "antd";
 import dayjs from "dayjs";
 
+// 导入特殊掉落颜色定义
+import { specialDropsColors } from ".";
+
 const { Title, Text } = Typography;
 
 const PriceChart = ({ teams }) => {
@@ -180,7 +183,7 @@ const PriceChart = ({ teams }) => {
               <p>特殊掉落:</p>
               <div>
                 {data.specialDrops.map((drop, i) => (
-                  <Tag key={i} color="blue" style={{ marginBottom: "5px" }}>
+                  <Tag key={i} color={specialDropsColors[drop] || "blue"} style={{ marginBottom: "5px" }}>
                     {drop}
                   </Tag>
                 ))}
