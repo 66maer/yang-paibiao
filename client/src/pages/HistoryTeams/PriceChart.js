@@ -12,7 +12,7 @@ import {
   Label,
   LabelList,
 } from "recharts";
-import { Divider, Radio, Empty, Card, Typography, Tag } from "antd";
+import { Divider, Radio, Empty, Card, Typography, Tag, Switch } from "antd";
 import dayjs from "dayjs";
 
 // 导入特殊掉落颜色定义
@@ -22,6 +22,8 @@ const { Title, Text } = Typography;
 
 const PriceChart = ({ teams }) => {
   const [selectedDungeon, setSelectedDungeon] = useState(null);
+  const [show5DayMA, setShow5DayMA] = useState(false); // 5日均线开关
+  const [show10DayMA, setShow10DayMA] = useState(false); // 10日均线开关
 
   // 获取所有副本类型
   const dungeonTypes = useMemo(() => {
@@ -165,6 +167,40 @@ const PriceChart = ({ teams }) => {
     };
   }, [chartData]);
 
+  // 计算移动平均线数据
+  const chartDataWithMA = useMemo(() => {
+    if (chartData.length === 0) return [];
+
+    // 复制原始数据
+    const result = [...chartData];
+
+    // 计算并添加5日移动平均线
+    if (show5DayMA) {
+      result.forEach((item, index) => {
+        // 获取当前点及前4个点(如果存在)
+        const startIndex = Math.max(0, index - 4);
+        const pointsToAverage = result.slice(startIndex, index + 1);
+        const sum = pointsToAverage.reduce((acc, curr) => acc + curr.salary, 0);
+        // 计算5日移动平均值
+        item.ma5 = sum / pointsToAverage.length;
+      });
+    }
+
+    // 计算并添加10日移动平均线
+    if (show10DayMA) {
+      result.forEach((item, index) => {
+        // 获取当前点及前9个点(如果存在)
+        const startIndex = Math.max(0, index - 9);
+        const pointsToAverage = result.slice(startIndex, index + 1);
+        const sum = pointsToAverage.reduce((acc, curr) => acc + curr.salary, 0);
+        // 计算10日移动平均值
+        item.ma10 = sum / pointsToAverage.length;
+      });
+    }
+
+    return result;
+  }, [chartData, show5DayMA, show10DayMA]);
+
   // 自定义提示框内容
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -216,9 +252,23 @@ const PriceChart = ({ teams }) => {
         </Radio.Group>
       </div>
 
+      <div style={{ marginBottom: 16, display: "flex", alignItems: "center" }}>
+        <Text strong style={{ marginRight: 16 }}>
+          均线显示：
+        </Text>
+        <div style={{ marginRight: 16 }}>
+          <Switch checked={show5DayMA} onChange={setShow5DayMA} size="small" />
+          <Text style={{ marginLeft: 8 }}>5日均线</Text>
+        </div>
+        <div>
+          <Switch checked={show10DayMA} onChange={setShow10DayMA} size="small" />
+          <Text style={{ marginLeft: 8 }}>10日均线</Text>
+        </div>
+      </div>
+
       {chartData.length > 0 ? (
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData} margin={{ top: 30, right: 30, left: 20, bottom: 10 }}>
+          <LineChart data={chartDataWithMA} margin={{ top: 30, right: 30, left: 20, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" label={{ value: "日期", position: "insideBottomRight", offset: -5 }} />
             <YAxis label={{ value: "总金团(金)", angle: -90, position: "insideLeft" }} />
@@ -323,6 +373,16 @@ const PriceChart = ({ teams }) => {
                 offset={10}
               />
             </Line>
+
+            {/* 5日均线 */}
+            {show5DayMA && chartDataWithMA.length > 0 && (
+              <Line type="monotone" dataKey="ma5" stroke="#73d13d" name="5日均线" dot={false} strokeWidth={2} />
+            )}
+
+            {/* 10日均线 */}
+            {show10DayMA && chartDataWithMA.length > 0 && (
+              <Line type="monotone" dataKey="ma10" stroke="#ffbb33" name="10日均线" dot={false} strokeWidth={2} />
+            )}
           </LineChart>
         </ResponsiveContainer>
       ) : (
