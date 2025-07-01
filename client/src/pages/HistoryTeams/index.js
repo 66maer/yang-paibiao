@@ -10,16 +10,18 @@ import PriceTrendModal from "./PriceTrendModal";
 
 // 特殊掉落及对应颜色定义
 export const specialDropsColors = {
-  玄晶: "gold",
-  沙子: "blue",
-  外观挂件: "blue",
-  毕业精简: "blue",
-  追须: "blue",
-  高价其他: "blue",
-  T腰坠: "black",
-  奶腰坠: "black",
-  烂掉的精简: "black",
-  烂掉的特效武器: "black",
+  玄晶: "#FFD700", // 金色
+  沙子: "#5F9BB4",
+  外观挂件: "#5F9BB4",
+  毕业精简: "#722ED1",
+  追须: "#5F9BB4",
+  玄玉石: "#13C2C2",
+  秘籍: "#9D497E",
+  高价其他: "#A0D911",
+  T腰坠: "#333333",
+  奶腰坠: "#333333",
+  烂掉的精简: "#333333",
+  烂掉的特效武器: "#333333",
 };
 
 const HistoryTeams = () => {

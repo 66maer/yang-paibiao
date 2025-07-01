@@ -32,16 +32,18 @@ const AddHistoryRecordModal = ({ visible, onClose, onSuccess }) => {
   const dispatch = useDispatch();
 
   const specialDrops = [
-    { name: "玄晶", color: "gold" },
-    { name: "沙子", color: "blue" },
-    { name: "外观挂件", color: "blue" },
-    { name: "毕业精简", color: "blue" },
-    { name: "追须", color: "blue" },
-    { name: "高价其他", color: "blue" },
-    { name: "T腰坠", color: "black" },
-    { name: "奶腰坠", color: "black" },
-    { name: "烂掉的精简", color: "black" },
-    { name: "烂掉的特效武器", color: "black" },
+    { name: "玄晶", color: "#FFD700" }, // 金色
+    { name: "沙子", color: "#5F9BB4" },
+    { name: "外观挂件", color: "#5F9BB4" },
+    { name: "毕业精简", color: "#722ED1" },
+    { name: "追须", color: "#5F9BB4" },
+    { name: "玄玉石", color: "#13C2C2" },
+    { name: "秘籍", color: "#9D497E" },
+    { name: "高价其他", color: "#A0D911" },
+    { name: "T腰坠", color: "#333333" },
+    { name: "奶腰坠", color: "#333333" },
+    { name: "烂掉的精简", color: "#333333" },
+    { name: "烂掉的特效武器", color: "#333333" },
   ];
 
   useEffect(() => {
