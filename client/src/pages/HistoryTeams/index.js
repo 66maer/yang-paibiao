@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import SlotPanel from "@/components/SlotPanel";
 import store from "@/store";
 import AddHistoryRecordModal from "./AddHistoryRecordModal";
+import EditHistoryRecordModal from "./EditHistoryRecordModal";
 import PriceTrendModal from "./PriceTrendModal";
 
 // 特殊掉落及对应颜色定义
@@ -30,6 +31,8 @@ const HistoryTeams = () => {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editingTeam, setEditingTeam] = useState(null);
   const [isPriceTrendModalVisible, setIsPriceTrendModalVisible] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -101,6 +104,18 @@ const HistoryTeams = () => {
     setIsAddModalVisible(false);
     fetchHistoryTeams(); // 刷新列表
     message.success("历史记录添加成功");
+  };
+
+  const handleEditHistoryRecord = (team) => {
+    setEditingTeam(team);
+    setIsEditModalVisible(true);
+  };
+
+  const handleEditHistorySuccess = () => {
+    setIsEditModalVisible(false);
+    setEditingTeam(null);
+    fetchHistoryTeams(); // 刷新列表
+    message.success("历史记录修改成功");
   };
 
   const columns = [
@@ -243,9 +258,16 @@ const HistoryTeams = () => {
       title: "操作",
       key: "action",
       render: (_, record) => (
-        <Button type="link" onClick={() => handleViewDetails(record)}>
-          查看
-        </Button>
+        <Space>
+          <Button type="link" onClick={() => handleViewDetails(record)}>
+            查看
+          </Button>
+          {isAdmin && (
+            <Button type="link" onClick={() => handleEditHistoryRecord(record)}>
+              修改
+            </Button>
+          )}
+        </Space>
       ),
     },
   ];
@@ -363,6 +385,13 @@ const HistoryTeams = () => {
         visible={isAddModalVisible}
         onClose={() => setIsAddModalVisible(false)}
         onSuccess={handleAddHistorySuccess}
+      />
+
+      <EditHistoryRecordModal
+        visible={isEditModalVisible}
+        onClose={() => setIsEditModalVisible(false)}
+        onSuccess={handleEditHistorySuccess}
+        teamData={editingTeam}
       />
 
       <PriceTrendModal

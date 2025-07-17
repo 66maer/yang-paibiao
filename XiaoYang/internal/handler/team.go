@@ -4,6 +4,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -102,9 +103,26 @@ func (h *teamServiceHandler) CloseTeam(ctx context.Context, req *XiaoYangV1.Clos
 	}
 
 	data.CloseID = int(req.CloseId)
-	data.CloseTime = utils.NowUTCPointer()
-	data.UpdateTime = utils.NowUTCPointer()
 	data.Summary = utils.StringToJSONPtr(req.Summary)
+
+	// 检查是否为修改模式（通过解析Summary中的isEdit字段判断）
+	var summaryMap map[string]interface{}
+	if err := json.Unmarshal([]byte(req.Summary), &summaryMap); err == nil {
+		if isEdit, exists := summaryMap["isEdit"]; !exists || !isEdit.(bool) {
+			// 不是修改模式，更新时间字段
+			data.CloseTime = utils.NowUTCPointer()
+			data.UpdateTime = utils.NowUTCPointer()
+		}
+		// 移除isEdit字段，不存储到数据库
+		delete(summaryMap, "isEdit")
+		if updatedSummary, err := json.Marshal(summaryMap); err == nil {
+			data.Summary = utils.StringToJSONPtr(string(updatedSummary))
+		}
+	} else {
+		// 解析失败，按原逻辑处理
+		data.CloseTime = utils.NowUTCPointer()
+		data.UpdateTime = utils.NowUTCPointer()
+	}
 
 	err = h.teamServiceDao.UpdateByID(ctx, data)
 	if err != nil {
