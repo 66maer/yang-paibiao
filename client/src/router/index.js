@@ -1,5 +1,4 @@
 import { createBrowserRouter } from "react-router-dom";
-import { Children } from "react";
 import MainPage from "../pages/MainPage";
 import LoginPage from "../pages/Login";
 import { AuthRoute } from "@/components/AuthRoute";
@@ -13,6 +12,7 @@ import HistoryTeams from "@/pages/HistoryTeams";
 import Screenshot from "../pages/Screenshot";
 import Tools from "@/pages/Tools";
 import SubsidyCalculator from "@/pages/Tools/SubsidyCalculator";
+import SubsidyCalculatorV2 from "@/pages/Tools/SubsidyCalculatorV2";
 
 const routers = [
   {
@@ -70,6 +70,10 @@ const routers = [
           {
             path: "subsidy-calculator",
             element: <SubsidyCalculator />,
+          },
+          {
+            path: "subsidy-calculator-v2",
+            element: <SubsidyCalculatorV2 />,
           },
         ],
       },
