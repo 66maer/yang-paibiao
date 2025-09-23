@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Row, Col, Button, InputNumber, Typography, Space, message } from "antd";
-import { PlusOutlined, ReloadOutlined, SaveOutlined, UploadOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, SaveOutlined, UploadOutlined, ClearOutlined, DeleteOutlined } from "@ant-design/icons";
 import DragTag from "@/components/SubsidyV2/DragTag";
 import MemberContainer from "@/components/SubsidyV2/MemberContainer";
 
@@ -321,6 +321,22 @@ const SubsidyCalculatorV2 = () => {
     message.success("已恢复默认容器配置");
   };
 
+  // 清空所有容器
+  const handleClearContainers = () => {
+    setContainers([]);
+    message.success("已清空所有容器");
+  };
+
+  // 清空所有容器中的标签
+  const handleClearAllTags = () => {
+    const newContainers = containers.map((container) => ({
+      ...container,
+      tags: [],
+    }));
+    recalculateSubsidies(newContainers);
+    message.success("已清空所有容器中的标签");
+  };
+
   // 保存配置到本地存储
   const handleSaveConfig = () => {
     const config = {
@@ -433,6 +449,12 @@ const SubsidyCalculatorV2 = () => {
                 </Button>
                 <Button size="small" icon={<ReloadOutlined />} onClick={handleRestoreDefault}>
                   恢复默认容器
+                </Button>
+                <Button size="small" icon={<ClearOutlined />} onClick={handleClearContainers}>
+                  清空容器
+                </Button>
+                <Button size="small" icon={<DeleteOutlined />} onClick={handleClearAllTags}>
+                  清空标签
                 </Button>
               </Space>
             </div>
