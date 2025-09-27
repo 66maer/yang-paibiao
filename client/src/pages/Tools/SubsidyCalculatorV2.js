@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Row, Col, Button, InputNumber, Typography, Space, message } from "antd";
+import { Row, Col, Button, InputNumber, Typography, Space, Switch, message } from "antd";
 import { PlusOutlined, ReloadOutlined, SaveOutlined, UploadOutlined, ClearOutlined, DeleteOutlined } from "@ant-design/icons";
 import DragTag from "@/components/SubsidyV2/DragTag";
 import MemberContainer from "@/components/SubsidyV2/MemberContainer";
@@ -85,6 +85,7 @@ const SubsidyCalculatorV2 = () => {
   const [containers, setContainers] = useState([...DEFAULT_CONTAINERS]); // 容器列表
   const [dragOverContainer, setDragOverContainer] = useState(null); // 拖拽悬停的容器
   const [customTagCounter, setCustomTagCounter] = useState(1); // 自定义标签计数器
+  const [calculateMode, setCalculateMode] = useState("proportion"); // 计算模式：proportion(等比例) / equal(等金额)
 
   // 计算最大可补贴金额
   useEffect(() => {
@@ -109,70 +110,123 @@ const SubsidyCalculatorV2 = () => {
       }
 
       let updatedContainers = JSON.parse(JSON.stringify(newContainers)); // 深拷贝
-      let remainingAmount = maxSubsidy;
 
-      // 第一步：计算所有固定金额补贴
-      let totalFixedAmount = 0;
-      updatedContainers.forEach((container) => {
-        container.tags.forEach((tag) => {
-          if (tag.isFixed) {
-            totalFixedAmount += tag.price;
-            tag.displayPrice = tag.price;
-          }
-        });
-      });
+      if (calculateMode === "proportion") {
+        // 等比例扣除模式（原有逻辑）
+        let remainingAmount = maxSubsidy;
 
-      remainingAmount -= totalFixedAmount;
-
-      // 第二步：处理浮动金额补贴
-      if (remainingAmount > 0) {
-        // 计算所有浮动标签的总价值
-        let totalFloatingAmount = 0;
-        const floatingTags = [];
-
+        // 第一步：计算所有固定金额补贴
+        let totalFixedAmount = 0;
         updatedContainers.forEach((container) => {
           container.tags.forEach((tag) => {
-            if (!tag.isFixed) {
-              totalFloatingAmount += tag.price;
-              floatingTags.push(tag);
+            if (tag.isFixed) {
+              totalFixedAmount += tag.price;
+              tag.displayPrice = tag.price;
             }
           });
         });
 
-        if (totalFloatingAmount > 0) {
-          if (remainingAmount >= totalFloatingAmount) {
-            // 剩余金额足够，按原价补贴
-            floatingTags.forEach((tag) => {
+        remainingAmount -= totalFixedAmount;
+
+        // 第二步：处理浮动金额补贴
+        if (remainingAmount > 0) {
+          // 计算所有浮动标签的总价值
+          let totalFloatingAmount = 0;
+          const floatingTags = [];
+
+          updatedContainers.forEach((container) => {
+            container.tags.forEach((tag) => {
+              if (!tag.isFixed) {
+                totalFloatingAmount += tag.price;
+                floatingTags.push(tag);
+              }
+            });
+          });
+
+          if (totalFloatingAmount > 0) {
+            if (remainingAmount >= totalFloatingAmount) {
+              // 剩余金额足够，按原价补贴
+              floatingTags.forEach((tag) => {
+                tag.displayPrice = tag.price;
+              });
+            } else {
+              // 剩余金额不够，按比例分配
+              const ratio = remainingAmount / totalFloatingAmount;
+              floatingTags.forEach((tag) => {
+                tag.displayPrice = Math.floor(tag.price * ratio);
+              });
+            }
+          }
+        } else {
+          // 剩余金额不足，浮动标签为0
+          updatedContainers.forEach((container) => {
+            container.tags.forEach((tag) => {
+              if (!tag.isFixed) {
+                tag.displayPrice = 0;
+              }
+            });
+          });
+        }
+      } else {
+        // 等金额扣除模式
+        // 计算所有补贴项的总金额和总数量
+        let totalOriginalAmount = 0;
+        let totalTagCount = 0;
+        const allTags = [];
+
+        updatedContainers.forEach((container) => {
+          container.tags.forEach((tag) => {
+            totalOriginalAmount += tag.price;
+            totalTagCount += 1;
+            allTags.push(tag);
+          });
+        });
+
+        if (totalTagCount > 0) {
+          if (totalOriginalAmount <= maxSubsidy) {
+            // 总金额不超过可分配金额，按原价显示
+            allTags.forEach((tag) => {
               tag.displayPrice = tag.price;
             });
           } else {
-            // 剩余金额不够，按比例分配
-            const ratio = remainingAmount / totalFloatingAmount;
-            floatingTags.forEach((tag) => {
-              tag.displayPrice = Math.floor(tag.price * ratio);
+            // 总金额超过可分配金额，需要等金额扣除
+            const excessAmount = totalOriginalAmount - maxSubsidy;
+            const deductionPerTag = Math.floor(excessAmount / totalTagCount);
+
+            // 先按平均扣除金额计算
+            allTags.forEach((tag) => {
+              tag.displayPrice = Math.max(0, tag.price - deductionPerTag);
             });
+
+            // 计算扣除后的总额
+            let currentTotal = allTags.reduce((sum, tag) => sum + tag.displayPrice, 0);
+
+            // 如果还有剩余需要扣除的金额（由于取整导致的），从价格较高的补贴中继续扣除
+            let remainingExcess = totalOriginalAmount - currentTotal - maxSubsidy;
+            if (remainingExcess > 0) {
+              // 按原价从高到低排序，优先从高价补贴中扣除
+              const sortedTags = [...allTags].sort((a, b) => b.price - a.price);
+              for (let i = 0; i < sortedTags.length && remainingExcess > 0; i++) {
+                if (sortedTags[i].displayPrice > 0) {
+                  const canDeduct = Math.min(remainingExcess, sortedTags[i].displayPrice);
+                  sortedTags[i].displayPrice -= canDeduct;
+                  remainingExcess -= canDeduct;
+                }
+              }
+            }
           }
         }
-      } else {
-        // 剩余金额不足，浮动标签为0
-        updatedContainers.forEach((container) => {
-          container.tags.forEach((tag) => {
-            if (!tag.isFixed) {
-              tag.displayPrice = 0;
-            }
-          });
-        });
       }
 
       setContainers(updatedContainers);
     },
-    [containers, totalAmount, maxSubsidy]
+    [containers, totalAmount, maxSubsidy, calculateMode]
   );
 
-  // 当总金团变化时重新计算
+  // 当总金团或计算模式变化时重新计算
   useEffect(() => {
     recalculateSubsidies();
-  }, [totalAmount, maxSubsidy]);
+  }, [totalAmount, maxSubsidy, calculateMode]);
 
   // 添加新标签
   const handleAddTag = () => {
@@ -376,6 +430,62 @@ const SubsidyCalculatorV2 = () => {
     }, 0);
   };
 
+  // 计算扣除信息
+  const calculateDeductionInfo = () => {
+    if (!totalAmount || maxSubsidy === 0) {
+      return null;
+    }
+
+    // 计算原始总金额
+    const originalTotal = containers.reduce((total, container) => {
+      return (
+        total +
+        container.tags.reduce((sum, tag) => {
+          return sum + tag.price;
+        }, 0)
+      );
+    }, 0);
+
+    // 如果原始总金额不超过最大补贴，则无扣除
+    if (originalTotal <= maxSubsidy) {
+      return null;
+    }
+
+    if (calculateMode === "proportion") {
+      // 等比例模式：计算扣除比例
+      // 计算浮动标签的原始总额和扣除后总额
+      let originalFloatingTotal = 0;
+      let currentFloatingTotal = 0;
+
+      containers.forEach((container) => {
+        container.tags.forEach((tag) => {
+          if (!tag.isFixed) {
+            originalFloatingTotal += tag.price;
+            currentFloatingTotal += (tag.displayPrice || 0);
+          }
+        });
+      });
+
+      if (originalFloatingTotal > 0) {
+        const deductionRatio = ((originalFloatingTotal - currentFloatingTotal) / originalFloatingTotal * 100).toFixed(1);
+        return `每项浮动补贴扣除 ${deductionRatio}%`;
+      }
+    } else {
+      // 等金额模式：计算每项扣除金额
+      const totalTagCount = containers.reduce((count, container) => {
+        return count + container.tags.length;
+      }, 0);
+
+      if (totalTagCount > 0) {
+        const excessAmount = originalTotal - maxSubsidy;
+        const deductionPerTag = Math.floor(excessAmount / totalTagCount);
+        return `每项补贴扣除 ${deductionPerTag} 金`;
+      }
+    }
+
+    return null;
+  };
+
   return (
     <div style={{ padding: "12px", height: "100%" }}>
       <div style={{ marginBottom: "12px" }}>
@@ -404,8 +514,8 @@ const SubsidyCalculatorV2 = () => {
           </Col>
         </Row>
 
-        {/* 第二行：按钮 */}
-        <Row gutter={[8, 8]}>
+        {/* 第二行：按钮和计算模式开关 */}
+        <Row gutter={[8, 8]} align="middle">
           <Col>
             <Button size="small" type="primary" icon={<SaveOutlined />} onClick={handleSaveConfig}>
               存储配置
@@ -415,6 +525,16 @@ const SubsidyCalculatorV2 = () => {
             <Button size="small" icon={<UploadOutlined />} onClick={handleLoadConfig}>
               加载配置
             </Button>
+          </Col>
+          <Col>
+            <Text style={{ marginRight: 8 }}>扣除模式：</Text>
+            <Switch
+              checked={calculateMode === "equal"}
+              onChange={(checked) => setCalculateMode(checked ? "equal" : "proportion")}
+              checkedChildren="等金额"
+              unCheckedChildren="等比例"
+              size="small"
+            />
           </Col>
         </Row>
       </div>
@@ -499,10 +619,19 @@ const SubsidyCalculatorV2 = () => {
                 border: "1px solid #d9d9d9",
               }}
             >
-              <Text strong style={{ color: "#52c41a" }}>
-                总补贴：{calculateTotalSubsidy()}
-                {totalAmount && ` / ${maxSubsidy}`}
-              </Text>
+              <div>
+                <Text strong style={{ color: "#52c41a" }}>
+                  总补贴：{calculateTotalSubsidy()}
+                  {totalAmount && ` / ${maxSubsidy}`}
+                </Text>
+              </div>
+              {calculateDeductionInfo() && (
+                <div style={{ marginTop: "2px" }}>
+                  <Text style={{ fontSize: "12px", color: "#ff7875" }}>
+                    {calculateDeductionInfo()}
+                  </Text>
+                </div>
+              )}
             </div>
           </div>
         </Col>
