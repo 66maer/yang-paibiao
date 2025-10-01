@@ -13,6 +13,7 @@ import Screenshot from "../pages/Screenshot";
 import Tools from "@/pages/Tools";
 import SubsidyCalculator from "@/pages/Tools/SubsidyCalculator";
 import SubsidyCalculatorV2 from "@/pages/Tools/SubsidyCalculatorV2";
+import SubsidyCalculatorV3 from "@/pages/Tools/SubsidyCalculatorV3";
 
 const routers = [
   {
@@ -74,6 +75,10 @@ const routers = [
           {
             path: "subsidy-calculator-v2",
             element: <SubsidyCalculatorV2 />,
+          },
+          {
+            path: "subsidy-calculator-v3",
+            element: <SubsidyCalculatorV3 />,
           },
         ],
       },

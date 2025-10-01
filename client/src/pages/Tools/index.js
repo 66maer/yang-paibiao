@@ -24,6 +24,11 @@ const Tools = () => {
       icon: <CalculatorOutlined />,
       label: "补贴计算器V2",
     },
+    {
+      key: "subsidy-calculator-v3",
+      icon: <CalculatorOutlined />,
+      label: "补贴计算器V3",
+    },
     // 未来可以在这里添加更多工具
   ];
 
