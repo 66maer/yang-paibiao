@@ -10,24 +10,14 @@ const Tools = () => {
   const location = useLocation();
 
   // 获取当前选中的工具路径
-  const selectedKey = location.pathname.split("/")[2] || "subsidy-calculator";
+  const selectedKey = location.pathname.split("/")[2] || "subsidy-calculator-v3";
 
   // 工具列表
   const toolItems = [
     {
-      key: "subsidy-calculator",
-      icon: <CalculatorOutlined />,
-      label: "补贴计算器",
-    },
-    {
-      key: "subsidy-calculator-v2",
-      icon: <CalculatorOutlined />,
-      label: "补贴计算器V2",
-    },
-    {
       key: "subsidy-calculator-v3",
       icon: <CalculatorOutlined />,
-      label: "补贴计算器V3",
+      label: "补贴计算器",
     },
     {
       key: "schedule-planner",

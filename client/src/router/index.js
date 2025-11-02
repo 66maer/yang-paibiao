@@ -11,8 +11,6 @@ import TeamTemplate from "@/pages/TeamTemplete";
 import HistoryTeams from "@/pages/HistoryTeams";
 import Screenshot from "../pages/Screenshot";
 import Tools from "@/pages/Tools";
-import SubsidyCalculator from "@/pages/Tools/SubsidyCalculator";
-import SubsidyCalculatorV2 from "@/pages/Tools/SubsidyCalculatorV2";
 import SubsidyCalculatorV3 from "@/pages/Tools/SubsidyCalculatorV3";
 import SchedulePlanner from "@/pages/Tools/SchedulePlanner";
 
@@ -67,15 +65,7 @@ const routers = [
         children: [
           {
             path: "",
-            element: <Navigate to="subsidy-calculator" />,
-          },
-          {
-            path: "subsidy-calculator",
-            element: <SubsidyCalculator />,
-          },
-          {
-            path: "subsidy-calculator-v2",
-            element: <SubsidyCalculatorV2 />,
+            element: <Navigate to="subsidy-calculator-v3" />,
           },
           {
             path: "subsidy-calculator-v3",
