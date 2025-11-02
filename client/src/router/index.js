@@ -14,6 +14,7 @@ import Tools from "@/pages/Tools";
 import SubsidyCalculator from "@/pages/Tools/SubsidyCalculator";
 import SubsidyCalculatorV2 from "@/pages/Tools/SubsidyCalculatorV2";
 import SubsidyCalculatorV3 from "@/pages/Tools/SubsidyCalculatorV3";
+import SchedulePlanner from "@/pages/Tools/SchedulePlanner";
 
 const routers = [
   {
@@ -79,6 +80,10 @@ const routers = [
           {
             path: "subsidy-calculator-v3",
             element: <SubsidyCalculatorV3 />,
+          },
+          {
+            path: "schedule-planner",
+            element: <SchedulePlanner />,
           },
         ],
       },

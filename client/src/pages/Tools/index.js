@@ -1,7 +1,7 @@
 import React from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Layout, Menu } from "antd";
-import { CalculatorOutlined, ToolOutlined } from "@ant-design/icons";
+import { CalculatorOutlined, ToolOutlined, CalendarOutlined } from "@ant-design/icons";
 
 const { Sider, Content } = Layout;
 
@@ -28,6 +28,11 @@ const Tools = () => {
       key: "subsidy-calculator-v3",
       icon: <CalculatorOutlined />,
       label: "补贴计算器V3",
+    },
+    {
+      key: "schedule-planner",
+      icon: <CalendarOutlined />,
+      label: "排坑规划器",
     },
     // 未来可以在这里添加更多工具
   ];
