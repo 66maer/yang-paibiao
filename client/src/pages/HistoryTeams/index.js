@@ -34,6 +34,7 @@ const HistoryTeams = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingTeam, setEditingTeam] = useState(null);
   const [isPriceTrendModalVisible, setIsPriceTrendModalVisible] = useState(false);
+  const [dungeonStats, setDungeonStats] = useState({}); // 存储副本统计数据
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 1000,
@@ -46,6 +47,29 @@ const HistoryTeams = () => {
     const { role } = store.getState().guild;
     return isSuperAdmin || role === "owner" || role === "helper";
   })();
+
+  // 获取副本统计数据
+  const fetchDungeonStats = async () => {
+    try {
+      const res = await request.post("/team/getDungeonStats", {
+        guildId: store.getState().guild.guildId,
+        dungeonName: "", // 空字符串表示获取所有副本的统计
+      });
+      if (res.code !== 0) {
+        throw new Error(res.msg);
+      }
+
+      // 将统计数据转换为 Map 结构，以副本名称为 key
+      const statsMap = {};
+      (res.data.stats || []).forEach((stat) => {
+        statsMap[stat.dungeonName] = stat;
+      });
+      setDungeonStats(statsMap);
+    } catch (err) {
+      console.error("Failed to fetch dungeon stats:", err);
+      // 统计数据获取失败不影响主流程，只记录错误
+    }
+  };
 
   const fetchHistoryTeams = async (page = 1, pageSize = 1000) => {
     setLoading(true);
@@ -72,6 +96,9 @@ const HistoryTeams = () => {
         pageSize,
         total: res.data.totalCount,
       }));
+
+      // 获取统计数据
+      await fetchDungeonStats();
     } catch (err) {
       message.error(err.message);
     } finally {
@@ -100,9 +127,9 @@ const HistoryTeams = () => {
     setIsPriceTrendModalVisible(true);
   };
 
-  const handleAddHistorySuccess = () => {
+  const handleAddHistorySuccess = async () => {
     setIsAddModalVisible(false);
-    fetchHistoryTeams(); // 刷新列表
+    await fetchHistoryTeams(); // 刷新列表（包括统计数据）
     message.success("历史记录添加成功");
   };
 
@@ -111,10 +138,10 @@ const HistoryTeams = () => {
     setIsEditModalVisible(true);
   };
 
-  const handleEditHistorySuccess = () => {
+  const handleEditHistorySuccess = async () => {
     setIsEditModalVisible(false);
     setEditingTeam(null);
-    fetchHistoryTeams(); // 刷新列表
+    await fetchHistoryTeams(); // 刷新列表（包括统计数据）
     message.success("历史记录修改成功");
   };
 
@@ -165,31 +192,12 @@ const HistoryTeams = () => {
       render: (text, record, index) => {
         try {
           const parsedSummary = JSON.parse(text);
+          const salary = parsedSummary.salary || 0;
           const perPersonSalary = parsedSummary.perPersonSalary || 0;
           const currentDungeon = record.dungeons;
 
-          // 按照副本分类计算统计数据
-          const sameTypeDungeonTeams = teams.filter((team) => team.dungeons === currentDungeon);
-          const salaries = sameTypeDungeonTeams
-            .map((team) => {
-              try {
-                return JSON.parse(team.summary || "{}").perPersonSalary || null;
-              } catch {
-                return null;
-              }
-            })
-            .filter((salary) => salary !== null);
-
-          const minSalary = Math.min(...salaries);
-          const maxSalary = Math.max(...salaries);
-          const avgSalary =
-            salaries.length > 0 ? salaries.reduce((sum, salary) => sum + salary, 0) / salaries.length : 0;
-
-          const deviationThreshold = avgSalary * 0.34; // Define a threshold for deviation
-          const isMin = perPersonSalary === minSalary;
-          const isMax = perPersonSalary === maxSalary;
-          const isFarBelowAvg = perPersonSalary < avgSalary - deviationThreshold;
-          const isFarAboveAvg = perPersonSalary > avgSalary + deviationThreshold;
+          // 从后端获取的统计数据中获取该副本的统计信息
+          const stats = dungeonStats[currentDungeon];
 
           const content = (
             <>
@@ -207,34 +215,44 @@ const HistoryTeams = () => {
             </>
           );
 
-          if (isMin && salaries.length > 1) {
-            return (
-              <Badge.Ribbon text="★史低" color="green">
-                {content}
-              </Badge.Ribbon>
-            );
+          // 如果有统计数据，使用统计数据判断
+          if (stats && stats.totalCount > 1) {
+            const isMin = salary === stats.minSalary;
+            const isMax = salary === stats.maxSalary;
+            const deviationThreshold = stats.avgSalary * 0.34;
+            const isFarBelowAvg = salary < stats.avgSalary - deviationThreshold;
+            const isFarAboveAvg = salary > stats.avgSalary + deviationThreshold;
+
+            if (isMin) {
+              return (
+                <Badge.Ribbon text="★史低" color="green">
+                  {content}
+                </Badge.Ribbon>
+              );
+            }
+            if (isMax) {
+              return (
+                <Badge.Ribbon text="★史高" color="red">
+                  {content}
+                </Badge.Ribbon>
+              );
+            }
+            if (isFarBelowAvg) {
+              return (
+                <Badge.Ribbon text="黑鬼" color="purple">
+                  {content}
+                </Badge.Ribbon>
+              );
+            }
+            if (isFarAboveAvg) {
+              return (
+                <Badge.Ribbon text="小红手" color="pink">
+                  {content}
+                </Badge.Ribbon>
+              );
+            }
           }
-          if (isMax && salaries.length > 1) {
-            return (
-              <Badge.Ribbon text="★史高" color="red">
-                {content}
-              </Badge.Ribbon>
-            );
-          }
-          if (isFarBelowAvg) {
-            return (
-              <Badge.Ribbon text="黑鬼" color="purple">
-                {content}
-              </Badge.Ribbon>
-            );
-          }
-          if (isFarAboveAvg) {
-            return (
-              <Badge.Ribbon text="小红手" color="pink">
-                {content}
-              </Badge.Ribbon>
-            );
-          }
+
           return content;
         } catch (e) {
           return text || "暂无记录";

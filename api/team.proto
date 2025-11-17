@@ -213,6 +213,24 @@ service TeamService {
       }
     };
   }
+
+  // 获取副本统计数据
+  rpc GetDungeonStats(GetDungeonStatsRequest) returns (GetDungeonStatsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/team/getDungeonStats"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取副本统计数据"
+      description: "根据公会ID和副本名称获取统计数据"
+      security: {
+        security_requirement: {
+          key: "BearerAuth"
+          value: {}
+        }
+      }
+    };
+  }
 }
 
 // 创建开团请求
@@ -379,4 +397,33 @@ message TemplateInfo {
   string notice = 6;
   string createTime = 7;  // ISO8601 格式
   string updateTime = 8;  // ISO8601 格式
+}
+
+// 获取副本统计数据请求
+message GetDungeonStatsRequest {
+  uint64 guildId = 1;
+  string dungeonName = 2;  // 副本名称，可选。如果为空，返回该公会所有副本的统计
+}
+
+// 获取副本统计数据响应
+message GetDungeonStatsResponse {
+  repeated DungeonStatsInfo stats = 1;
+}
+
+// 副本统计信息
+message DungeonStatsInfo {
+  uint64 id = 1;
+  uint64 guildId = 2;
+  string dungeonName = 3;
+  int32 totalCount = 4;
+  int32 minSalary = 5;
+  int32 maxSalary = 6;
+  double avgSalary = 7;
+  int32 minPerPersonSalary = 8;
+  int32 maxPerPersonSalary = 9;
+  double avgPerPersonSalary = 10;
+  uint64 minSalaryTeamId = 11;
+  uint64 maxSalaryTeamId = 12;
+  string createTime = 13;  // ISO8601 格式
+  string updateTime = 14;  // ISO8601 格式
 }
