@@ -16,6 +16,7 @@ import (
 	"XiaoYang/internal/database"
 	"XiaoYang/internal/ecode"
 	"XiaoYang/internal/model"
+	"XiaoYang/internal/service"
 	"XiaoYang/internal/utils"
 
 	"github.com/go-dev-frame/sponge/pkg/logger"
@@ -25,23 +26,31 @@ import (
 var _ XiaoYangV1.TeamServiceLogicer = (*teamServiceHandler)(nil)
 
 type teamServiceHandler struct {
-	userDao         dao.UsersDao
-	teamServiceDao  dao.TeamsDao
-	guildMemberDao  dao.GuildMembersDao
-	teamTemplateDao dao.TeamTemplatesDao
+	userDao            dao.UsersDao
+	teamServiceDao     dao.TeamsDao
+	guildMemberDao     dao.GuildMembersDao
+	teamTemplateDao    dao.TeamTemplatesDao
+	dungeonStatsDao    dao.DungeonStatsDao
+	dungeonStatsService *service.DungeonStatsService
 }
 
 // NewTeamServiceHandler create a handler
 func NewTeamServiceHandler() XiaoYangV1.TeamServiceLogicer {
+	teamsDao := dao.NewTeamsDao(
+		database.GetDB(),
+		cache.NewTeamsCache(database.GetCacheType()),
+	)
+	dungeonStatsDao := dao.NewDungeonStatsDao(
+		database.GetDB(),
+		cache.NewDungeonStatsCache(database.GetCacheType()),
+	)
+
 	return &teamServiceHandler{
 		userDao: dao.NewUsersDao(
 			database.GetDB(),
 			cache.NewUsersCache(database.GetCacheType()),
 		),
-		teamServiceDao: dao.NewTeamsDao(
-			database.GetDB(),
-			cache.NewTeamsCache(database.GetCacheType()),
-		),
+		teamServiceDao: teamsDao,
 		teamTemplateDao: dao.NewTeamTemplatesDao(
 			database.GetDB(),
 			cache.NewTeamTemplatesCache(database.GetCacheType()),
@@ -50,6 +59,8 @@ func NewTeamServiceHandler() XiaoYangV1.TeamServiceLogicer {
 			database.GetDB(),
 			cache.NewGuildMembersCache(database.GetCacheType()),
 		),
+		dungeonStatsDao:     dungeonStatsDao,
+		dungeonStatsService: service.NewDungeonStatsService(teamsDao, dungeonStatsDao),
 	}
 }
 
@@ -130,6 +141,16 @@ func (h *teamServiceHandler) CloseTeam(ctx context.Context, req *XiaoYangV1.Clos
 		return nil, ecode.ErrCloseTeamTeamService.Err("关闭团队失败: " + err.Error())
 	}
 
+	// 异步更新统计数据
+	go func() {
+		bgCtx := context.Background()
+		if err := h.dungeonStatsService.UpdateStatsForTeam(bgCtx, data.GuildID, data.Dungeons); err != nil {
+			logger.Warn("Failed to update dungeon stats", logger.Err(err),
+				logger.Any("guildId", data.GuildID),
+				logger.Any("dungeonName", data.Dungeons))
+		}
+	}()
+
 	return &XiaoYangV1.CloseTeamResponse{Success: true}, nil
 }
 
@@ -147,6 +168,10 @@ func (h *teamServiceHandler) UpdateTeam(ctx context.Context, req *XiaoYangV1.Upd
 		return nil, ecode.ErrUpdateTeamTeamService.Err("获取团队信息失败: " + err.Error())
 	}
 
+	// 保存旧的副本名称，用于检测是否改变
+	oldDungeon := data.Dungeons
+	oldGuildID := data.GuildID
+
 	// 更新字段
 	data.Title = req.Title
 	data.Dungeons = req.Dungeons
@@ -163,6 +188,25 @@ func (h *teamServiceHandler) UpdateTeam(ctx context.Context, req *XiaoYangV1.Upd
 	if err != nil {
 		logger.Warn("UpdateByID error", logger.Err(err))
 		return nil, ecode.ErrUpdateTeamTeamService.Err("更新团队信息失败: " + err.Error())
+	}
+
+	// 如果副本名称改变了且团队已关闭（有summary），需要更新两个副本的统计数据
+	if oldDungeon != data.Dungeons && data.CloseTime != nil && data.Summary != nil {
+		go func() {
+			bgCtx := context.Background()
+			// 更新旧副本的统计
+			if err := h.dungeonStatsService.UpdateStatsForTeam(bgCtx, oldGuildID, oldDungeon); err != nil {
+				logger.Warn("Failed to update old dungeon stats", logger.Err(err),
+					logger.Any("guildId", oldGuildID),
+					logger.Any("oldDungeonName", oldDungeon))
+			}
+			// 更新新副本的统计
+			if err := h.dungeonStatsService.UpdateStatsForTeam(bgCtx, data.GuildID, data.Dungeons); err != nil {
+				logger.Warn("Failed to update new dungeon stats", logger.Err(err),
+					logger.Any("guildId", data.GuildID),
+					logger.Any("newDungeonName", data.Dungeons))
+			}
+		}()
 	}
 
 	return &XiaoYangV1.UpdateTeamResponse{Success: true}, nil
@@ -448,6 +492,67 @@ func (h *teamServiceHandler) ListTemplates(ctx context.Context, req *XiaoYangV1.
 	}
 
 	return &XiaoYangV1.ListTemplatesResponse{Templates: templates}, nil
+}
+
+// GetDungeonStats 获取副本统计数据
+func (h *teamServiceHandler) GetDungeonStats(ctx context.Context, req *XiaoYangV1.GetDungeonStatsRequest) (*XiaoYangV1.GetDungeonStatsResponse, error) {
+	err := req.Validate()
+	if err != nil {
+		logger.Warn("req.Validate error", logger.Err(err))
+		return nil, ecode.StatusInvalidParams.Err("请求参数无效: " + err.Error())
+	}
+
+	var stats []*model.DungeonStats
+
+	if req.DungeonName != "" {
+		// 获取指定副本的统计数据
+		stat, err := h.dungeonStatsService.GetStatsByGuildAndDungeon(ctx, int(req.GuildId), req.DungeonName)
+		if err != nil {
+			logger.Warn("GetStatsByGuildAndDungeon error", logger.Err(err))
+			// 如果统计数据不存在，返回空列表而不是错误
+			return &XiaoYangV1.GetDungeonStatsResponse{Stats: []*XiaoYangV1.DungeonStatsInfo{}}, nil
+		}
+		stats = []*model.DungeonStats{stat}
+	} else {
+		// 获取该公会所有副本的统计数据
+		stats, err = h.dungeonStatsService.GetAllStatsByGuild(ctx, int(req.GuildId))
+		if err != nil {
+			logger.Warn("GetAllStatsByGuild error", logger.Err(err))
+			return nil, ecode.StatusInternalServerError.Err("获取统计数据失败: " + err.Error())
+		}
+	}
+
+	// 转换为响应格式
+	statsInfo := make([]*XiaoYangV1.DungeonStatsInfo, len(stats))
+	for i, stat := range stats {
+		minTeamID := uint64(0)
+		if stat.MinSalaryTeamID != nil {
+			minTeamID = uint64(*stat.MinSalaryTeamID)
+		}
+		maxTeamID := uint64(0)
+		if stat.MaxSalaryTeamID != nil {
+			maxTeamID = uint64(*stat.MaxSalaryTeamID)
+		}
+
+		statsInfo[i] = &XiaoYangV1.DungeonStatsInfo{
+			Id:                   stat.ID,
+			GuildId:              uint64(stat.GuildID),
+			DungeonName:          stat.DungeonName,
+			TotalCount:           int32(stat.TotalCount),
+			MinSalary:            int32(stat.MinSalary),
+			MaxSalary:            int32(stat.MaxSalary),
+			AvgSalary:            stat.AvgSalary,
+			MinPerPersonSalary:   int32(stat.MinPerPersonSalary),
+			MaxPerPersonSalary:   int32(stat.MaxPerPersonSalary),
+			AvgPerPersonSalary:   stat.AvgPerPersonSalary,
+			MinSalaryTeamId:      minTeamID,
+			MaxSalaryTeamId:      maxTeamID,
+			CreateTime:           utils.TimePtrToISO8601(stat.CreateTime),
+			UpdateTime:           utils.TimePtrToISO8601(stat.UpdateTime),
+		}
+	}
+
+	return &XiaoYangV1.GetDungeonStatsResponse{Stats: statsInfo}, nil
 }
 
 func (h *teamServiceHandler) getNicknames(ctx context.Context, createrID, closeID int, closeTime *time.Time) (string, string, error) {
