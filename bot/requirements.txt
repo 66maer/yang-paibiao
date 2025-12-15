@@ -1,3 +1,0 @@
-psycopg2_binary==2.9.10
-pyppeteer==2.0.0
-qq_botpy==1.2.1

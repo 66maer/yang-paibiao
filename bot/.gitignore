@@ -1,4 +1,0 @@
-config.yaml
-*.log
-cache/
-__pycache__/
