@@ -1,0 +1,74 @@
+.screenshot-content {
+  width: 1010px;
+}
+
+.screenshot-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lock-icon {
+  margin-top: 6px;
+}
+
+.screenshot-pre {
+  margin-top: 0;
+}
+
+.screenshot-footer {
+  text-align: right;
+  font-size: 12px;
+  color: #888;
+}
+
+.candidate-item {
+  display: flex;
+  width: 160px;
+  height: 50px;
+  align-items: center;
+  margin: auto;
+}
+
+.candidate-content {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.candidate-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.candidate-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.candidate-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.candidate-character {
+  font-size: 0.8rem;
+}
+
+.candidate-status {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+.status-replace {
+  background-color: #aaa;
+}
+
+.status-lie {
+  background-color: #dd0;
+}

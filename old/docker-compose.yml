@@ -1,0 +1,46 @@
+version: '3.7'
+services:
+  xiaoyang-client:
+    image: docker.io/66maer/xiaoyang-client:latest
+    restart: always
+    ports:
+      - "80:80"
+
+  xiaoyang-server:
+    image: docker.io/66maer/xiaoyang-server:latest
+    container_name: xiao-yang
+    restart: always
+    command: ["./XiaoYang", "-c", "/app/configs/XiaoYang.yml"]
+    volumes:
+      - $PWD/XiaoYang/configs:/app/configs
+    ports:
+      - "8080:8080"   # http port
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]   # http health check, note: mirror must contain curl command
+
+      interval: 10s         # interval time
+      timeout: 5s           # timeout time
+      retries: 3              # number of retries
+      start_period: 10s  # how long after start-up does the check begin
+
+  psql_db:
+    image: postgres:16.3
+    container_name: psql_db
+    env_file:
+      - .env.prod
+    volumes:
+      - ./psql_db_data:/var/lib/postgresql/data
+      - ./sql:/sql
+    ports:
+      - "5432:5432"
+    restart: always
+
+  xiaoyang-bot:
+    image: docker.io/66maer/xiaoyang-bot:latest
+    container_name: xiaoyang-bot
+    restart: always
+    volumes:
+      - ./bot/logs:/app/logs
+      - ./bot/cache:/app/cache
+      - ./bot/config.yaml:/app/config.yaml
+      
