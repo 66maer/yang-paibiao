@@ -18,4 +18,4 @@ fi
 
 # 启动服务
 echo "正在启动开发服务器..."
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 9500

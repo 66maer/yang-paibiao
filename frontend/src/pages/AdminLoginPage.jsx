@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardBody, CardHeader, Input, Button } from '@heroui/react';
-import { userLogin } from '../api/auth';
+import { adminLogin } from '../api/auth';
 import useAuthStore from '../stores/authStore';
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   
   const [formData, setFormData] = useState({
-    qq_number: '',
+    username: '',
     password: '',
   });
   const [loading, setLoading] = useState(false);
@@ -21,37 +21,37 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await userLogin(formData.qq_number, formData.password);
+      const response = await adminLogin(formData.username, formData.password);
       
       // 保存 token 到 localStorage
-      localStorage.setItem('user_token', response.access_token);
+      localStorage.setItem('admin_token', response.access_token);
       
       // 更新全局状态
-      setAuth(response.access_token, 'user');
+      setAuth(response.access_token, 'admin');
       
-      // 跳转到用户首页（根据实际情况调整）
-      navigate('/');
+      // 跳转到后台首页
+      navigate('/admin');
     } catch (err) {
-      setError(err || '登录失败，请检查QQ号和密码');
+      setError(err || '登录失败，请检查用户名和密码');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col gap-2 pb-6">
-          <h1 className="text-2xl font-bold text-center">小秧排表</h1>
-          <p className="text-sm text-default-500 text-center">请使用QQ号登录</p>
+          <h1 className="text-2xl font-bold text-center">管理员后台</h1>
+          <p className="text-sm text-default-500 text-center">请使用管理员账号登录</p>
         </CardHeader>
         <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
-              label="QQ号"
-              placeholder="请输入QQ号"
-              value={formData.qq_number}
-              onChange={(e) => setFormData({ ...formData, qq_number: e.target.value })}
+              label="用户名"
+              placeholder="请输入管理员用户名"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               isRequired
               autoFocus
             />
@@ -78,13 +78,6 @@ export default function LoginPage() {
             >
               登录
             </Button>
-
-            <div className="text-center text-sm text-default-500">
-              还没有账号？{' '}
-              <Link to="/register" className="text-primary hover:underline">
-                立即注册
-              </Link>
-            </div>
           </form>
         </CardBody>
       </Card>

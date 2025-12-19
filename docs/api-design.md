@@ -58,43 +58,9 @@
 
 ---
 
-## 1. 认证接口 (`/api/v2/auth`)
+## 1. 用户认证接口 (`/api/v2/auth`)
 
-### 1.1 系统管理员登录
-
-- **路径**: `POST /auth/admin/login`
-- **权限**: 公开
-- **描述**: 系统管理员登录
-
-**请求体**:
-
-```json
-{
-  "username": "admin",
-  "password": "123456"
-}
-```
-
-**响应**:
-
-```json
-{
-  "code": 0,
-  "message": "success",
-  "data": {
-    "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-    "token_type": "bearer",
-    "expires_in": 86400,
-    "user": {
-      "id": 1,
-      "username": "admin",
-      "last_login_at": "2025-12-18T10:00:00"
-    }
-  }
-}
-```
-
-### 1.2 用户注册
+### 1.1 用户注册
 
 - **路径**: `POST /auth/register`
 - **权限**: 公开
@@ -125,7 +91,7 @@
 }
 ```
 
-### 1.3 用户登录
+### 1.2 用户登录
 
 - **路径**: `POST /auth/login`
 - **权限**: 公开
@@ -161,7 +127,7 @@
 }
 ```
 
-### 1.4 刷新令牌
+### 1.3 刷新令牌
 
 - **路径**: `POST /auth/refresh`
 - **权限**: 需要认证
@@ -187,7 +153,7 @@ Authorization: Bearer <token>
 }
 ```
 
-### 1.5 登出
+### 1.4 登出
 
 - **路径**: `POST /auth/logout`
 - **权限**: 需要认证
@@ -196,6 +162,50 @@ Authorization: Bearer <token>
 ---
 
 ## 2. 系统管理接口 (`/api/v2/admin`)
+
+### 2.0 管理员认证
+
+#### 2.0.1 管理员登录
+
+- **路径**: `POST /admin/auth/login`
+- **权限**: 公开
+- **描述**: 系统管理员登录
+
+**请求体**:
+
+```json
+{
+  "username": "admin",
+  "password": "123456"
+}
+```
+
+**响应**:
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+    "token_type": "bearer",
+    "expires_in": 86400,
+    "admin": {
+      "id": 1,
+      "username": "admin",
+      "last_login_at": "2025-12-18T10:00:00"
+    }
+  }
+}
+```
+
+**说明**: 管理员和普通用户的认证体系是分离的，使用不同的 token
+
+#### 2.0.2 管理员登出
+
+- **路径**: `POST /admin/auth/logout`
+- **权限**: 系统管理员
+- **描述**: 管理员登出
 
 ### 2.1 群组管理
 

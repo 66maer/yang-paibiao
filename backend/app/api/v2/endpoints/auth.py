@@ -1,5 +1,5 @@
 """
-认证相关API端点
+用户认证相关API端点
 """
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -22,15 +22,14 @@ from app.schemas.auth import (
     RefreshTokenRequest,
     Token,
     UserInfo,
-    AdminInfo
 )
 from app.schemas.common import Response
-from app.api.deps import get_current_user, get_current_admin
+from app.api.deps import get_current_user
 
 router = APIRouter()
 
 
-@router.post("/user/register", response_model=Response[UserInfo])
+@router.post("/register", response_model=Response[UserInfo])
 async def register_user(
     data: RegisterRequest,
     db: AsyncSession = Depends(get_db)
@@ -69,13 +68,13 @@ async def register_user(
     await db.refresh(new_user)
 
     return Response(
-        code=200,
+        code=0,
         message="注册成功",
         data=UserInfo.model_validate(new_user)
     )
 
 
-@router.post("/user/login", response_model=Response[Token])
+@router.post("/login", response_model=Response[Token])
 async def login_user(
     data: LoginRequest,
     db: AsyncSession = Depends(get_db)
@@ -115,7 +114,7 @@ async def login_user(
     refresh_token = create_refresh_token(token_data)
 
     return Response(
-        code=200,
+        code=0,
         message="登录成功",
         data=Token(
             access_token=access_token,
@@ -124,49 +123,17 @@ async def login_user(
     )
 
 
-@router.post("/admin/login", response_model=Response[Token])
-async def login_admin(
-    data: LoginRequest,
-    db: AsyncSession = Depends(get_db)
+@router.post("/logout")
+async def logout_user(
+    current_user: User = Depends(get_current_user)
 ):
     """
-    管理员登录
-
-    - **username**: 管理员用户名
-    - **password**: 密码
+    用户登出
+    需要用户认证
     """
-    # 查找管理员
-    result = await db.execute(
-        select(SystemAdmin).where(SystemAdmin.username == data.username)
-    )
-    admin = result.scalar_one_or_none()
-
-    if not admin or not verify_password(data.password, admin.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户名或密码错误"
-        )
-
-    # 更新最后登录时间
-    admin.last_login_at = datetime.utcnow()
-    await db.commit()
-
-    # 生成令牌
-    token_data = {
-        "sub": str(admin.id),
-        "user_type": "admin"
-    }
-
-    access_token = create_access_token(token_data)
-    refresh_token = create_refresh_token(token_data)
-
     return Response(
-        code=200,
-        message="登录成功",
-        data=Token(
-            access_token=access_token,
-            refresh_token=refresh_token
-        )
+        code=0,
+        message="登出成功"
     )
 
 
@@ -233,7 +200,7 @@ async def refresh_token(
     new_refresh_token = create_refresh_token(token_data)
 
     return Response(
-        code=200,
+        code=0,
         message="令牌刷新成功",
         data=Token(
             access_token=access_token,
@@ -242,7 +209,7 @@ async def refresh_token(
     )
 
 
-@router.get("/user/me", response_model=Response[UserInfo])
+@router.get("/me", response_model=Response[UserInfo])
 async def get_user_info(
     current_user: User = Depends(get_current_user)
 ):
@@ -251,22 +218,7 @@ async def get_user_info(
     需要用户认证
     """
     return Response(
-        code=200,
+        code=0,
         message="获取成功",
         data=UserInfo.model_validate(current_user)
-    )
-
-
-@router.get("/admin/me", response_model=Response[AdminInfo])
-async def get_admin_info(
-    current_admin: SystemAdmin = Depends(get_current_admin)
-):
-    """
-    获取当前管理员信息
-    需要管理员认证
-    """
-    return Response(
-        code=200,
-        message="获取成功",
-        data=AdminInfo.model_validate(current_admin)
     )

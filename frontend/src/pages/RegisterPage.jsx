@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardBody, CardHeader, Input, Button } from '@heroui/react';
-import { userLogin } from '../api/auth';
-import useAuthStore from '../stores/authStore';
+import { userRegister } from '../api/auth';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
   
   const [formData, setFormData] = useState({
     qq_number: '',
     password: '',
+    confirmPassword: '',
+    nickname: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,21 +18,29 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // 验证密码
+    if (formData.password !== formData.confirmPassword) {
+      setError('两次输入的密码不一致');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('密码至少需要6位');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await userLogin(formData.qq_number, formData.password);
+      await userRegister(formData.qq_number, formData.password, formData.nickname);
       
-      // 保存 token 到 localStorage
-      localStorage.setItem('user_token', response.access_token);
-      
-      // 更新全局状态
-      setAuth(response.access_token, 'user');
-      
-      // 跳转到用户首页（根据实际情况调整）
-      navigate('/');
+      // 注册成功，跳转到登录页
+      navigate('/login', { 
+        state: { message: '注册成功，请登录' } 
+      });
     } catch (err) {
-      setError(err || '登录失败，请检查QQ号和密码');
+      setError(err || '注册失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -42,8 +50,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-100 dark:from-gray-900 dark:to-gray-800">
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col gap-2 pb-6">
-          <h1 className="text-2xl font-bold text-center">小秧排表</h1>
-          <p className="text-sm text-default-500 text-center">请使用QQ号登录</p>
+          <h1 className="text-2xl font-bold text-center">注册新账号</h1>
+          <p className="text-sm text-default-500 text-center">加入小秧排表</p>
         </CardHeader>
         <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -56,11 +64,26 @@ export default function LoginPage() {
               autoFocus
             />
             <Input
+              label="昵称"
+              placeholder="请输入昵称"
+              value={formData.nickname}
+              onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+              isRequired
+            />
+            <Input
               label="密码"
               type="password"
-              placeholder="请输入密码"
+              placeholder="请输入密码（至少6位）"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              isRequired
+            />
+            <Input
+              label="确认密码"
+              type="password"
+              placeholder="请再次输入密码"
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
               isRequired
             />
             
@@ -76,13 +99,13 @@ export default function LoginPage() {
               isLoading={loading}
               className="w-full"
             >
-              登录
+              注册
             </Button>
 
             <div className="text-center text-sm text-default-500">
-              还没有账号？{' '}
-              <Link to="/register" className="text-primary hover:underline">
-                立即注册
+              已有账号？{' '}
+              <Link to="/login" className="text-primary hover:underline">
+                立即登录
               </Link>
             </div>
           </form>
