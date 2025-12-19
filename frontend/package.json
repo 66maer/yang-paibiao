@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@heroui/react": "^2.8.6",
+    "@react-aria/visually-hidden": "^3.8.29",
     "axios": "^1.13.2",
+    "clsx": "^2.1.1",
     "framer-motion": "^12.23.26",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

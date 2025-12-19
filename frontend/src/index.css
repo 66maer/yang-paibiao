@@ -2,6 +2,9 @@
 @source '../node_modules/@heroui/theme/dist';
 @plugin './hero.ts';
 
+/* Tailwind v4 Dark Mode - Class Strategy */
+@variant dark (&:where(.dark, .dark *));
+
 /* 字体定义 */
 @font-face {
   font-family: 'Aa偷吃可爱长大的';
@@ -22,6 +25,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 暗色模式背景 */
+html.dark body {
+  background-color: #18181b;
+  color: #e4e4e7;
 }
 
 /* 自定义滚动条样式 */

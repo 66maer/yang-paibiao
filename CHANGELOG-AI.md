@@ -4,6 +4,95 @@
 
 ---
 
+## 2025-12-20 - Tailwind v4 Dark Mode 配置修复
+
+### 问题描述
+
+主题切换功能实现后，发现切换主题时：
+
+- ✅ 卡片组件的颜色正常切换
+- ❌ 页面背景渐变色不切换
+- ✅ HTML 元素的 class 正常变化（light/dark）
+
+### 排查过程
+
+1. **useTheme Hook 检查**
+
+   - 确认 `document.documentElement.classList` 正确添加/移除 'light'/'dark' 类
+   - localStorage 持久化正常工作
+   - 初始化逻辑正确
+
+2. **浏览器调试**
+
+   - 使用开发者工具确认 `<html>` 元素 class 确实在变化
+   - 页面背景 div 的 class 包含 `dark:from-gray-900 dark:to-gray-800`
+   - 但 Computed Styles 中背景色没有响应 dark 类
+
+3. **Tailwind v4 配置问题定位**
+   - Tailwind v4 采用 CSS-first 配置方式
+   - 默认没有启用 class-based dark mode
+   - 需要使用 `@variant` 指令明确定义 dark mode 选择器
+
+### 解决方案
+
+在 `src/index.css` 中添加 Tailwind v4 的 dark mode variant 定义：
+
+```css
+/* Tailwind v4 Dark Mode - Class Strategy */
+@variant dark (&:where(.dark, .dark *));
+```
+
+这个配置告诉 Tailwind：
+
+- 使用 class-based 策略（而非 media query）
+- 当元素或其祖先元素有 `.dark` 类时，启用 `dark:` 前缀
+- `:where()` 伪类保持低优先级，避免干扰其他样式
+
+### 技术要点
+
+#### Tailwind v4 vs v3 的差异
+
+**Tailwind v3**:
+
+```js
+// tailwind.config.js
+module.exports = {
+  darkMode: "class", // 直接配置
+};
+```
+
+**Tailwind v4**:
+
+```css
+/* index.css */
+@variant dark (&:where(.dark, .dark *));
+```
+
+#### @variant 指令语法
+
+- `@variant` 定义自定义变体
+- `dark` 是变体名称
+- `(&:where(.dark, .dark *))` 是选择器模式
+  - `&` 代表应用该变体的元素
+  - `.dark` 匹配自身有 dark 类的元素
+  - `.dark *` 匹配 dark 类元素的所有后代
+
+### 完成内容
+
+- ✅ 修复 Tailwind v4 dark mode 配置
+- ✅ 页面背景渐变色正确响应主题切换
+- ✅ useTheme Hook 优化初始化逻辑
+- ✅ 全站主题切换功能完整可用
+
+### 当前状态
+
+- ✅ 主题切换功能完全正常
+- ✅ 卡片和背景都能正确切换
+- ✅ 主题持久化工作正常
+- ✅ 初始加载时主题正确应用
+
+---
+
 ## 2025-12-19 - UI 主题优化（可爱粉色风格）
 
 ### 主要任务
@@ -24,7 +113,7 @@
 
 #### 2. 可爱字体引入
 
-- **指令**: 复制并配置 Aa偷吃可爱长大的字体
+- **指令**: 复制并配置 Aa 偷吃可爱长大的字体
 - **完成**:
   - 从参考项目复制 `AaCute.woff` 字体文件
   - 创建 `src/styles/fonts.css` 配置字体
@@ -47,7 +136,7 @@
 
 - **指令**: 美化滚动条和添加工具类
 - **完成**:
-  - 自定义滚动条样式（宽度8px、圆角、半透明）
+  - 自定义滚动条样式（宽度 8px、圆角、半透明）
   - 添加滚动条 hover 效果
   - 创建 `.hide-scrollbar` 工具类
 

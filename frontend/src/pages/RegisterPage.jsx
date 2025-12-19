@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Card, CardBody, CardHeader, Input, Button } from '@heroui/react';
+import { CardBody, CardHeader, Input, Button } from '@heroui/react';
 import { userRegister } from '../api/auth';
+import HoverEffectCard from '../components/HoverEffectCard';
+import ThemeSwitch from '../components/ThemeSwitch';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -47,70 +49,137 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-100 dark:from-gray-900 dark:to-gray-800">
-      <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-col gap-2 pb-6">
-          <h1 className="text-2xl font-bold text-center">注册新账号</h1>
-          <p className="text-sm text-default-500 text-center">加入小秧排表</p>
-        </CardHeader>
-        <CardBody>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Input
-              label="QQ号"
-              placeholder="请输入QQ号"
-              value={formData.qq_number}
-              onChange={(e) => setFormData({ ...formData, qq_number: e.target.value })}
-              isRequired
-              autoFocus
-            />
-            <Input
-              label="昵称"
-              placeholder="请输入昵称"
-              value={formData.nickname}
-              onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
-              isRequired
-            />
-            <Input
-              label="密码"
-              type="password"
-              placeholder="请输入密码（至少6位）"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              isRequired
-            />
-            <Input
-              label="确认密码"
-              type="password"
-              placeholder="请再次输入密码"
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              isRequired
-            />
-            
-            {error && (
-              <div className="text-sm text-danger bg-danger-50 dark:bg-danger-900/20 p-3 rounded-lg">
-                {error}
-              </div>
-            )}
-            
-            <Button 
-              type="submit" 
-              color="primary" 
-              isLoading={loading}
-              className="w-full"
-            >
-              注册
-            </Button>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-100 dark:from-gray-900 dark:to-gray-800 p-4">
+      <div className="w-full max-w-md">
+        <HoverEffectCard
+          className="items-center gap-4 pt-0 pb-6 bg-default-50"
+          maxXRotation={3}
+          maxYRotation={3}
+        >
+          <CardHeader className="flex flex-col gap-2 pb-6 pt-10 relative">
+            <ThemeSwitch className="absolute right-4 top-4" />
+            <h1 className="text-3xl font-bold text-center bg-gradient-to-b from-pink-500 to-purple-600 bg-clip-text text-transparent">
+              注册新账号
+            </h1>
+            <p className="text-sm text-default-500 text-center">加入小秧排表</p>
+          </CardHeader>
+          <CardBody className="flex flex-col gap-5 py-5 px-5 md:px-10">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <Input
+                label="QQ号"
+                placeholder="请输入QQ号"
+                value={formData.qq_number}
+                onChange={(e) => setFormData({ ...formData, qq_number: e.target.value })}
+                isRequired
+                autoFocus
+                classNames={{
+                  inputWrapper: [
+                    'shadow-xl',
+                    'bg-default-100/70',
+                    'dark:bg-default/60',
+                    'backdrop-blur-xl',
+                    'backdrop-saturate-200',
+                    'hover:bg-default-200/70',
+                    'dark:hover:bg-default/70',
+                    'group-data-[focus=true]:bg-default-100/50',
+                    'dark:group-data-[focus=true]:bg-default/60',
+                    '!cursor-text',
+                  ],
+                }}
+              />
+              <Input
+                label="昵称"
+                placeholder="请输入昵称"
+                value={formData.nickname}
+                onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                isRequired
+                classNames={{
+                  inputWrapper: [
+                    'shadow-xl',
+                    'bg-default-100/70',
+                    'dark:bg-default/60',
+                    'backdrop-blur-xl',
+                    'backdrop-saturate-200',
+                    'hover:bg-default-200/70',
+                    'dark:hover:bg-default/70',
+                    'group-data-[focus=true]:bg-default-100/50',
+                    'dark:group-data-[focus=true]:bg-default/60',
+                    '!cursor-text',
+                  ],
+                }}
+              />
+              <Input
+                label="密码"
+                type="password"
+                placeholder="请输入密码（至少6位）"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                isRequired
+                classNames={{
+                  inputWrapper: [
+                    'shadow-xl',
+                    'bg-default-100/70',
+                    'dark:bg-default/60',
+                    'backdrop-blur-xl',
+                    'backdrop-saturate-200',
+                    'hover:bg-default-200/70',
+                    'dark:hover:bg-default/70',
+                    'group-data-[focus=true]:bg-default-100/50',
+                    'dark:group-data-[focus=true]:bg-default/60',
+                    '!cursor-text',
+                  ],
+                }}
+              />
+              <Input
+                label="确认密码"
+                type="password"
+                placeholder="请再次输入密码"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                isRequired
+                classNames={{
+                  inputWrapper: [
+                    'shadow-xl',
+                    'bg-default-100/70',
+                    'dark:bg-default/60',
+                    'backdrop-blur-xl',
+                    'backdrop-saturate-200',
+                    'hover:bg-default-200/70',
+                    'dark:hover:bg-default/70',
+                    'group-data-[focus=true]:bg-default-100/50',
+                    'dark:group-data-[focus=true]:bg-default/60',
+                    '!cursor-text',
+                  ],
+                }}
+              />
+              
+              {error && (
+                <div className="text-sm text-danger bg-danger-50 dark:bg-danger-900/20 p-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+              
+              <Button 
+                type="submit" 
+                color="primary" 
+                isLoading={loading}
+                className="w-full mt-2"
+                size="lg"
+                variant="shadow"
+              >
+                注册
+              </Button>
 
-            <div className="text-center text-sm text-default-500">
-              已有账号？{' '}
-              <Link to="/login" className="text-primary hover:underline">
-                立即登录
-              </Link>
-            </div>
-          </form>
-        </CardBody>
-      </Card>
+              <div className="text-center text-sm text-default-500">
+                已有账号？{' '}
+                <Link to="/login" className="text-primary hover:underline font-medium">
+                  立即登录
+                </Link>
+              </div>
+            </form>
+          </CardBody>
+        </HoverEffectCard>
+      </div>
     </div>
   );
 }
