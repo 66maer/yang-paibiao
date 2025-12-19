@@ -25,16 +25,25 @@ export default function LoginPage() {
     try {
       const response = await userLogin(formData.qq_number, formData.password);
       
+      // 检查响应数据结构
+      const tokenData = response.data || response;
+      const accessToken = tokenData.access_token;
+      
+      if (!accessToken) {
+        throw new Error('登录失败：未获取到访问令牌');
+      }
+      
       // 保存 token 到 localStorage
-      localStorage.setItem('user_token', response.access_token);
+      localStorage.setItem('access_token', accessToken);
       
       // 更新全局状态
-      setAuth(response.access_token, 'user');
+      setAuth(accessToken, 'user');
       
-      // 跳转到用户首页（根据实际情况调整）
-      navigate('/');
+      // 跳转到用户首页
+      navigate('/user', { replace: true });
     } catch (err) {
-      setError(err || '登录失败，请检查QQ号和密码');
+      console.error('登录错误:', err);
+      setError(typeof err === 'string' ? err : err.message || '登录失败，请检查QQ号和密码');
     } finally {
       setLoading(false);
     }

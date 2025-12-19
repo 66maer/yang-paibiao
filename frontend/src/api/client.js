@@ -34,14 +34,18 @@ apiClient.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response;
 
-      // 401 未授权，清除 token 并跳转到登录页
+      // 401 未授权，清除 token（但不自动跳转，让组件处理）
       if (status === 401) {
         localStorage.removeItem("access_token");
-        window.location.href = "/login";
+        // 只在非登录页面时才跳转
+        if (!window.location.pathname.includes("/login")) {
+          window.location.href = "/admin/login";
+        }
       }
 
       // 返回错误信息
-      return Promise.reject(data?.detail || "请求失败");
+      const errorMessage = data?.detail || data?.message || "请求失败";
+      return Promise.reject(errorMessage);
     }
 
     return Promise.reject(error.message || "网络错误");

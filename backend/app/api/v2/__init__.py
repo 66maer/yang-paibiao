@@ -14,9 +14,9 @@ api_router.include_router(
     tags=["用户认证"]
 )
 
-# 注册管理员路由
+# 注册管理员路由（群组管理、订阅管理等）
 api_router.include_router(
     admin.api_router,
     prefix="/admin",
-    tags=["管理员"]
+    tags=["管理后台"]
 )

@@ -107,7 +107,7 @@ async def login_user(
     # 生成令牌
     token_data = {
         "sub": str(user.id),
-        "user_type": "user"
+        "type": "user"  # 统一使用 type 字段
     }
 
     access_token = create_access_token(token_data)
@@ -156,7 +156,7 @@ async def refresh_token(
             detail="无效的刷新令牌"
         )
 
-    user_type = payload.get("user_type")
+    user_type = payload.get("type")  # 统一使用 type 字段
     user_id = payload.get("sub")
 
     if not user_type or not user_id:
@@ -193,7 +193,7 @@ async def refresh_token(
     # 生成新令牌
     token_data = {
         "sub": user_id,
-        "user_type": user_type
+        "type": user_type  # 统一使用 type 字段
     }
 
     access_token = create_access_token(token_data)

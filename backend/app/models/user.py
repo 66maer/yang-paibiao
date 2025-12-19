@@ -3,6 +3,7 @@
 """
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, ARRAY, Text
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 
@@ -62,6 +63,9 @@ class User(Base):
         nullable=True,
         comment="删除时间（软删除）"
     )
+
+    # 关系
+    owned_guilds = relationship("Guild", back_populates="owner", foreign_keys="Guild.owner_id")
 
     def __repr__(self):
         return f"<User(id={self.id}, qq_number='{self.qq_number}', nickname='{self.nickname}')>"

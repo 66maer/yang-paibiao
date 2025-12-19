@@ -44,7 +44,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_type = payload.get("user_type")
+    user_type = payload.get("type")  # 修改为 type
     user_id = payload.get("sub")
 
     if user_type != "user" or not user_id:
@@ -96,7 +96,7 @@ async def get_current_admin(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_type = payload.get("user_type")
+    user_type = payload.get("type")  # 修改为 type
     admin_id = payload.get("sub")
 
     if user_type != "admin" or not admin_id:

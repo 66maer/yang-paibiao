@@ -55,7 +55,7 @@ async def login_admin(
     # 生成令牌
     token_data = {
         "sub": str(admin.id),
-        "user_type": "admin"
+        "type": "admin"  # 统一使用 type 字段
     }
 
     access_token = create_access_token(token_data)

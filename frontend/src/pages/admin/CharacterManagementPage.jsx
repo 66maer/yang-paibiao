@@ -1,0 +1,478 @@
+import { useState } from 'react'
+import useSWR from 'swr'
+import {
+  Card,
+  CardHeader,
+  CardBody,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Input,
+  Button,
+  Pagination,
+  Chip,
+  Tooltip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+  Select,
+  SelectItem,
+} from '@heroui/react'
+import {
+  getAllCharacters,
+  createCharacter,
+  updateCharacter,
+  deleteCharacter,
+} from '../../api/characters'
+
+// 常见心法列表
+const XINFA_LIST = [
+  '冰心诀', '云裳心经', '花间游', '离经易道',
+  '补天诀', '相知', '莫问', '灵素',
+  '毒经', '傲血战意', '铁牢律', '明尊琉璃体',
+  '易筋经', '洗髓经', '焚影圣诀', '明教',
+  '天罗诡道', '惊羽诀', '太玄经', '凌海诀',
+  '孤锋诀', '北傲诀', '山居剑意', '问水诀',
+  '分山劲', '铁骨衣', '笑尘诀', '隐龙诀',
+]
+
+// 常见服务器列表
+const SERVER_LIST = [
+  '长安城', '剑胆琴心', '飞龙在天', '蝶恋花',
+  '唯我独尊', '梦江南', '斗转星移', '青梅煮酒',
+  '电信一区', '电信二区', '电信三区', '电信四区',
+  '双线一区', '双线二区', '双线三区', '双线四区',
+]
+
+export default function CharacterManagementPage() {
+  const [page, setPage] = useState(1)
+  const [keyword, setKeyword] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [filterServer, setFilterServer] = useState('')
+  const [filterXinfa, setFilterXinfa] = useState('')
+  const pageSize = 20
+
+  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure()
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure()
+  
+  const [selectedChar, setSelectedChar] = useState(null)
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    server: '',
+    xinfa: '',
+    remark: '',
+  })
+  const [editForm, setEditForm] = useState({
+    name: '',
+    server: '',
+    xinfa: '',
+    remark: '',
+  })
+
+  // 获取角色列表
+  const { data, error, mutate } = useSWR(
+    ['characters', page, keyword, filterServer, filterXinfa],
+    () =>
+      getAllCharacters({
+        page,
+        page_size: pageSize,
+        keyword,
+        server: filterServer || undefined,
+        xinfa: filterXinfa || undefined,
+      }),
+    { revalidateOnFocus: false }
+  )
+
+  const characters = data?.data?.items || []
+  const total = data?.data?.total || 0
+  const pages = data?.data?.pages || 0
+
+  const handleSearch = () => {
+    setKeyword(searchInput)
+    setPage(1)
+  }
+
+  const handleCreate = async () => {
+    if (!createForm.name || !createForm.server || !createForm.xinfa) {
+      alert('请填写所有必填项')
+      return
+    }
+
+    try {
+      await createCharacter(createForm)
+      mutate()
+      onCreateClose()
+      setCreateForm({ name: '', server: '', xinfa: '', remark: '' })
+      alert('创建成功')
+    } catch (error) {
+      alert(error.response?.data?.detail || error.response?.data?.message || '创建失败')
+    }
+  }
+
+  const handleEdit = (char) => {
+    setSelectedChar(char)
+    setEditForm({
+      name: char.name || '',
+      server: char.server || '',
+      xinfa: char.xinfa || '',
+      remark: char.remark || '',
+    })
+    onEditOpen()
+  }
+
+  const handleUpdate = async () => {
+    try {
+      await updateCharacter(selectedChar.id, editForm)
+      mutate()
+      onEditClose()
+      alert('更新成功')
+    } catch (error) {
+      alert(error.response?.data?.detail || error.response?.data?.message || '更新失败')
+    }
+  }
+
+  const handleDelete = async (charId, charName) => {
+    if (!confirm(`确定要删除角色 ${charName} 吗？`)) return
+
+    try {
+      await deleteCharacter(charId)
+      mutate()
+      alert('删除成功')
+    } catch (error) {
+      alert(error.response?.data?.detail || error.response?.data?.message || '删除失败')
+    }
+  }
+
+  const resetFilters = () => {
+    setKeyword('')
+    setSearchInput('')
+    setFilterServer('')
+    setFilterXinfa('')
+    setPage(1)
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <Card className="bg-danger-50 dark:bg-danger-100/10">
+          <CardBody>
+            <p className="text-danger">加载失败: {error.message}</p>
+          </CardBody>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-8 space-y-6">
+      {/* 标题 */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+            角色管理 ⚔️
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            管理所有游戏角色
+          </p>
+        </div>
+        <Button color="primary" size="lg" onClick={onCreateOpen}>
+          + 创建角色
+        </Button>
+      </div>
+
+      {/* 搜索和筛选栏 */}
+      <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl shadow-lg">
+        <CardBody>
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-4">
+              <Input
+                placeholder="搜索角色名或心法..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                className="flex-1"
+                variant="bordered"
+              />
+              <Select
+                placeholder="服务器"
+                className="w-48"
+                selectedKeys={filterServer ? [filterServer] : []}
+                onChange={(e) => {
+                  setFilterServer(e.target.value)
+                  setPage(1)
+                }}
+                variant="bordered"
+              >
+                {SERVER_LIST.map((server) => (
+                  <SelectItem key={server} value={server}>
+                    {server}
+                  </SelectItem>
+                ))}
+              </Select>
+              <Select
+                placeholder="心法"
+                className="w-48"
+                selectedKeys={filterXinfa ? [filterXinfa] : []}
+                onChange={(e) => {
+                  setFilterXinfa(e.target.value)
+                  setPage(1)
+                }}
+                variant="bordered"
+              >
+                {XINFA_LIST.map((xinfa) => (
+                  <SelectItem key={xinfa} value={xinfa}>
+                    {xinfa}
+                  </SelectItem>
+                ))}
+              </Select>
+              <Button color="primary" onClick={handleSearch} className="px-8">
+                搜索
+              </Button>
+              {(keyword || filterServer || filterXinfa) && (
+                <Button color="default" variant="flat" onClick={resetFilters}>
+                  清除
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* 角色列表 */}
+      <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl shadow-lg">
+        <CardHeader className="flex justify-between">
+          <div>
+            <h2 className="text-xl font-bold">角色列表</h2>
+            <p className="text-sm text-gray-500">共 {total} 个角色</p>
+          </div>
+        </CardHeader>
+        <CardBody>
+          <Table aria-label="角色列表">
+            <TableHeader>
+              <TableColumn>ID</TableColumn>
+              <TableColumn>角色名</TableColumn>
+              <TableColumn>服务器</TableColumn>
+              <TableColumn>心法</TableColumn>
+              <TableColumn>备注</TableColumn>
+              <TableColumn>创建时间</TableColumn>
+              <TableColumn>操作</TableColumn>
+            </TableHeader>
+            <TableBody
+              items={characters}
+              emptyContent={
+                <div className="text-center py-8 text-gray-500">
+                  {keyword || filterServer || filterXinfa
+                    ? '没有找到匹配的角色'
+                    : '暂无角色数据'}
+                </div>
+              }
+            >
+              {(char) => (
+                <TableRow key={char.id}>
+                  <TableCell>{char.id}</TableCell>
+                  <TableCell>
+                    <div className="font-medium">{char.name}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Chip color="secondary" variant="flat" size="sm">
+                      {char.server}
+                    </Chip>
+                  </TableCell>
+                  <TableCell>
+                    <Chip color="primary" variant="flat" size="sm">
+                      {char.xinfa}
+                    </Chip>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[200px] truncate text-sm text-gray-600">
+                      {char.remark || '-'}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(char.created_at).toLocaleDateString('zh-CN')}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Tooltip content="编辑">
+                        <Button
+                          size="sm"
+                          color="primary"
+                          variant="flat"
+                          onClick={() => handleEdit(char)}
+                        >
+                          编辑
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content="删除" color="danger">
+                        <Button
+                          size="sm"
+                          color="danger"
+                          variant="flat"
+                          onClick={() => handleDelete(char.id, char.name)}
+                        >
+                          删除
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+
+          {/* 分页 */}
+          {pages > 1 && (
+            <div className="flex justify-center mt-4">
+              <Pagination
+                total={pages}
+                page={page}
+                onChange={setPage}
+                color="primary"
+                showControls
+              />
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
+      {/* 创建角色模态框 */}
+      <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="lg">
+        <ModalContent>
+          <ModalHeader>
+            <h3 className="text-xl font-bold">创建角色</h3>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <Input
+                label="角色名 *"
+                placeholder="请输入角色名"
+                value={createForm.name}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, name: e.target.value })
+                }
+                isRequired
+              />
+              <Select
+                label="服务器 *"
+                placeholder="请选择服务器"
+                selectedKeys={createForm.server ? [createForm.server] : []}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, server: e.target.value })
+                }
+                isRequired
+              >
+                {SERVER_LIST.map((server) => (
+                  <SelectItem key={server} value={server}>
+                    {server}
+                  </SelectItem>
+                ))}
+              </Select>
+              <Select
+                label="心法 *"
+                placeholder="请选择心法"
+                selectedKeys={createForm.xinfa ? [createForm.xinfa] : []}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, xinfa: e.target.value })
+                }
+                isRequired
+              >
+                {XINFA_LIST.map((xinfa) => (
+                  <SelectItem key={xinfa} value={xinfa}>
+                    {xinfa}
+                  </SelectItem>
+                ))}
+              </Select>
+              <Input
+                label="备注"
+                placeholder="请输入备注（可选）"
+                value={createForm.remark}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, remark: e.target.value })
+                }
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onClick={onCreateClose}>
+              取消
+            </Button>
+            <Button color="primary" onClick={handleCreate}>
+              创建
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* 编辑角色模态框 */}
+      <Modal isOpen={isEditOpen} onClose={onEditClose} size="lg">
+        <ModalContent>
+          <ModalHeader>
+            <h3 className="text-xl font-bold">编辑角色</h3>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <Input
+                label="角色名"
+                placeholder="请输入角色名"
+                value={editForm.name}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, name: e.target.value })
+                }
+              />
+              <Select
+                label="服务器"
+                placeholder="请选择服务器"
+                selectedKeys={editForm.server ? [editForm.server] : []}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, server: e.target.value })
+                }
+              >
+                {SERVER_LIST.map((server) => (
+                  <SelectItem key={server} value={server}>
+                    {server}
+                  </SelectItem>
+                ))}
+              </Select>
+              <Select
+                label="心法"
+                placeholder="请选择心法"
+                selectedKeys={editForm.xinfa ? [editForm.xinfa] : []}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, xinfa: e.target.value })
+                }
+              >
+                {XINFA_LIST.map((xinfa) => (
+                  <SelectItem key={xinfa} value={xinfa}>
+                    {xinfa}
+                  </SelectItem>
+                ))}
+              </Select>
+              <Input
+                label="备注"
+                placeholder="请输入备注"
+                value={editForm.remark}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, remark: e.target.value })
+                }
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onClick={onEditClose}>
+              取消
+            </Button>
+            <Button color="primary" onClick={handleUpdate}>
+              保存
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </div>
+  )
+}

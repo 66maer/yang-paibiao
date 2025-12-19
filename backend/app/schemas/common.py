@@ -60,6 +60,28 @@ class PageData(BaseModel, Generic[DataT]):
         }
 
 
+class PaginatedResponse(BaseModel, Generic[DataT]):
+    """
+    分页响应模型（与 PageData 类似，但包含 pages 字段）
+    """
+    items: list[DataT] = Field(description="数据列表")
+    total: int = Field(description="总记录数")
+    page: int = Field(description="当前页码")
+    page_size: int = Field(description="每页大小")
+    pages: int = Field(description="总页数")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "items": [],
+                "total": 100,
+                "page": 1,
+                "page_size": 20,
+                "pages": 5
+            }
+        }
+
+
 class PageParams(BaseModel):
     """
     分页参数模型
@@ -81,3 +103,7 @@ def success(data: Any = None, message: str = "操作成功") -> dict:
 def error(message: str = "操作失败", code: int = 400, data: Any = None) -> dict:
     """错误响应辅助函数"""
     return Response(code=code, message=message, data=data).model_dump()
+
+
+# 别名，方便使用
+ResponseModel = Response

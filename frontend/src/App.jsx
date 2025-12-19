@@ -5,6 +5,9 @@ import RegisterPage from './pages/RegisterPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminLayout from './layouts/AdminLayout';
 import AdminDashboard from './pages/AdminDashboard';
+import GuildManagementPage from './pages/admin/GuildManagementPage';
+import UserManagementPage from './pages/admin/UserManagementPage';
+import CharacterManagementPage from './pages/admin/CharacterManagementPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function AppContent() {
@@ -30,6 +33,9 @@ function AppContent() {
           }
         >
           <Route index element={<AdminDashboard />} />
+          <Route path="guilds" element={<GuildManagementPage />} />
+          <Route path="users" element={<UserManagementPage />} />
+          <Route path="characters" element={<CharacterManagementPage />} />
         </Route>
         
         {/* 默认重定向到用户登录 */}
