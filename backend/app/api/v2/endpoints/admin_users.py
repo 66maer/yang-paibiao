@@ -3,7 +3,7 @@
 """
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, any_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_admin, get_db
@@ -15,6 +15,7 @@ from app.schemas.user import (
     UserListResponse,
 )
 from app.schemas.common import ResponseModel
+from app.core.security import get_password_hash
 from datetime import datetime
 
 router = APIRouter()
@@ -23,7 +24,7 @@ router = APIRouter()
 @router.get("", response_model=ResponseModel[UserListResponse])
 async def list_users(
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(20, ge=1, le=10000, description="每页数量"),
     keyword: Optional[str] = Query(None, description="搜索关键词（QQ号或昵称）"),
     current_admin: SystemAdmin = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
@@ -32,7 +33,7 @@ async def list_users(
     获取用户列表（管理员）
     
     - **page**: 页码（默认1）
-    - **page_size**: 每页数量（默认20，最大100）
+    - **page_size**: 每页数量（默认20，最大10000）
     - **keyword**: 搜索关键词（可选）
     """
     # 构建查询
@@ -44,6 +45,7 @@ async def list_users(
             or_(
                 User.qq_number.ilike(f"%{keyword}%"),
                 User.nickname.ilike(f"%{keyword}%"),
+                User.other_nicknames.any(keyword)  # 搜索other_nicknames数组
             )
         )
     
@@ -148,3 +150,29 @@ async def delete_user(
     await db.commit()
     
     return ResponseModel(message="用户删除成功")
+
+
+@router.post("/{user_id}/reset-password", response_model=ResponseModel)
+async def reset_user_password(
+    user_id: int,
+    current_admin: SystemAdmin = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """重置用户密码（管理员）"""
+    result = await db.execute(
+        select(User).where(User.id == user_id, User.deleted_at.is_(None))
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="用户不存在"
+        )
+    
+    # 重置密码为 123456
+    user.password_hash = get_password_hash("123456")
+    user.updated_at = datetime.utcnow()
+    await db.commit()
+    
+    return ResponseModel(message=f"用户 {user.nickname} 的密码已重置为 123456")

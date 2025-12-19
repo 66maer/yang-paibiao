@@ -100,7 +100,7 @@ export default function CharacterManagementPage() {
 
   const handleCreate = async () => {
     if (!createForm.name || !createForm.server || !createForm.xinfa) {
-      alert('请填写所有必填项')
+      showError('请填写所有必填项')
       return
     }
 
@@ -109,9 +109,9 @@ export default function CharacterManagementPage() {
       mutate()
       onCreateClose()
       setCreateForm({ name: '', server: '', xinfa: '', remark: '' })
-      alert('创建成功')
+      showSuccess('创建成功')
     } catch (error) {
-      alert(error.response?.data?.detail || error.response?.data?.message || '创建失败')
+      showError(error.response?.data?.detail || error.response?.data?.message || '创建失败')
     }
   }
 
@@ -131,21 +131,22 @@ export default function CharacterManagementPage() {
       await updateCharacter(selectedChar.id, editForm)
       mutate()
       onEditClose()
-      alert('更新成功')
+      showSuccess('更新成功')
     } catch (error) {
-      alert(error.response?.data?.detail || error.response?.data?.message || '更新失败')
+      showError(error.response?.data?.detail || error.response?.data?.message || '更新失败')
     }
   }
 
   const handleDelete = async (charId, charName) => {
-    if (!confirm(`确定要删除角色 ${charName} 吗？`)) return
+    const confirmed = await showConfirm(`确定要删除角色 ${charName} 吗？`)
+    if (!confirmed) return
 
     try {
       await deleteCharacter(charId)
       mutate()
-      alert('删除成功')
+      showSuccess('删除成功')
     } catch (error) {
-      alert(error.response?.data?.detail || error.response?.data?.message || '删除失败')
+      showError(error.response?.data?.detail || error.response?.data?.message || '删除失败')
     }
   }
 

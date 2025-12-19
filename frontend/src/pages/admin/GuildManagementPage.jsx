@@ -25,17 +25,10 @@ import {
   Spinner,
 } from '@heroui/react'
 import { getGuildList, createGuild, updateGuild, getGuildDetail, deleteGuild, transferGuildOwner } from '../../api/guilds'
-
-// 服务器列表
-const SERVERS = [
-  '剑胆琴心',
-  '长安城',
-  '电信一区',
-  '电信二区',
-  '电信三区',
-  '电信四区',
-  '电信五区',
-]
+import { getGuildSubscriptions, createSubscription, updateSubscription, deleteSubscription } from '../../api/subscriptions'
+import { ALL_SERVERS } from '../../config/servers'
+import UserSelector from '../../components/UserSelector'
+import { showSuccess, showError, showConfirm } from '../../utils/toast.jsx'
 
 export default function GuildManagementPage() {
   const [page, setPage] = useState(1)
@@ -47,8 +40,9 @@ export default function GuildManagementPage() {
   // 模态框状态
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false)
   const [selectedGuild, setSelectedGuild] = useState(null)
+  const [guildSubscriptions, setGuildSubscriptions] = useState([])
   const [isLoading, setIsLoading] = useState(false)
 
   // 表单数据
@@ -65,6 +59,15 @@ export default function GuildManagementPage() {
       features: { max_teams: 100, max_members: 200 },
       notes: '初始订阅',
     },
+  })
+
+  // 订阅表单数据
+  const [subscriptionFormData, setSubscriptionFormData] = useState({
+    guild_id: null,
+    start_date: new Date().toISOString().split('T')[0],
+    end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    features: { max_teams: 100, max_members: 200 },
+    notes: '',
   })
 
   // 构建查询参数
@@ -109,8 +112,9 @@ export default function GuildManagementPage() {
           notes: '初始订阅',
         },
       })
+      showSuccess('创建成功')
     } catch (err) {
-      alert('创建失败：' + (err.response?.data?.detail || err.message))
+      showError('创建失败：' + (err.response?.data?.detail || err.message))
     } finally {
       setIsLoading(false)
     }
@@ -127,8 +131,9 @@ export default function GuildManagementPage() {
       })
       setIsEditModalOpen(false)
       mutate()
+      showSuccess('更新成功')
     } catch (err) {
-      alert('更新失败：' + (err.response?.data?.detail || err.message))
+      showError('更新失败：' + (err.response?.data?.detail || err.message))
     } finally {
       setIsLoading(false)
     }
@@ -146,25 +151,74 @@ export default function GuildManagementPage() {
     setIsEditModalOpen(true)
   }
 
-  // 查看详情
-  const viewDetail = async (guildId) => {
+  // 查看订阅管理
+  const viewSubscriptions = async (guild) => {
+    setSelectedGuild(guild)
     try {
-      const response = await getGuildDetail(guildId)
-      setSelectedGuild(response.data)
-      setIsDetailModalOpen(true)
+      const response = await getGuildSubscriptions(guild.id)
+      setGuildSubscriptions(response || [])
+      setSubscriptionFormData({
+        guild_id: guild.id,
+        start_date: new Date().toISOString().split('T')[0],
+        end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        features: { max_teams: 100, max_members: 200 },
+        notes: '',
+      })
+      setIsSubscriptionModalOpen(true)
     } catch (err) {
-      alert('获取详情失败：' + (err.response?.data?.detail || err.message))
+      showError('获取订阅历史失败：' + (err.response?.data?.detail || err.message))
+    }
+  }
+
+  // 添加订阅
+  const handleAddSubscription = async () => {
+    setIsLoading(true)
+    try {
+      await createSubscription(subscriptionFormData)
+      const response = await getGuildSubscriptions(selectedGuild.id)
+      setGuildSubscriptions(response || [])
+      mutate()
+      showSuccess('订阅添加成功')
+      // 重置表单
+      setSubscriptionFormData({
+        guild_id: selectedGuild.id,
+        start_date: new Date().toISOString().split('T')[0],
+        end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        features: { max_teams: 100, max_members: 200 },
+        notes: '',
+      })
+    } catch (err) {
+      showError('添加订阅失败：' + (err.response?.data?.detail || err.message))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 删除订阅
+  const handleDeleteSubscription = async (subscriptionId) => {
+    const confirmed = await showConfirm('确定要删除此订阅记录吗？')
+    if (!confirmed) return
+    try {
+      await deleteSubscription(subscriptionId)
+      const response = await getGuildSubscriptions(selectedGuild.id)
+      setGuildSubscriptions(response || [])
+      mutate()
+      showSuccess('删除成功')
+    } catch (err) {
+      showError('删除失败：' + (err.response?.data?.detail || err.message))
     }
   }
 
   // 删除群组
   const handleDelete = async (guildId) => {
-    if (!confirm('确定要删除此群组吗？')) return
+    const confirmed = await showConfirm('确定要删除此群组吗？')
+    if (!confirmed) return
     try {
       await deleteGuild(guildId)
       mutate()
+      showSuccess('删除成功')
     } catch (err) {
-      alert('删除失败：' + (err.response?.data?.detail || err.message))
+      showError('删除失败：' + (err.response?.data?.detail || err.message))
     }
   }
 
@@ -223,7 +277,7 @@ export default function GuildManagementPage() {
               onChange={(e) => setFilterServer(e.target.value)}
               className="max-w-xs"
             >
-              {SERVERS.map((server) => (
+              {ALL_SERVERS.map((server) => (
                 <SelectItem key={server} value={server}>
                   {server}
                 </SelectItem>
@@ -265,7 +319,14 @@ export default function GuildManagementPage() {
                   <TableColumn>订阅状态</TableColumn>
                   <TableColumn>操作</TableColumn>
                 </TableHeader>
-                <TableBody items={guilds}>
+                <TableBody 
+                  items={guilds}
+                  emptyContent={
+                    <div className="text-center py-8 text-gray-500">
+                      暂无群组数据
+                    </div>
+                  }
+                >
                   {(guild) => (
                     <TableRow key={guild.id}>
                       <TableCell>{guild.id}</TableCell>
@@ -319,9 +380,9 @@ export default function GuildManagementPage() {
                             size="sm"
                             color="primary"
                             variant="flat"
-                            onPress={() => viewDetail(guild.id)}
+                            onPress={() => viewSubscriptions(guild)}
                           >
-                            详情
+                            订阅管理
                           </Button>
                           <Button
                             size="sm"
@@ -401,17 +462,17 @@ export default function GuildManagementPage() {
                 onSelectionChange={(keys) => setFormData({ ...formData, server: Array.from(keys)[0] })}
                 isRequired
               >
-                {SERVERS.map((server) => (
+                {ALL_SERVERS.map((server) => (
                   <SelectItem key={server} value={server}>
                     {server}
                   </SelectItem>
                 ))}
               </Select>
-              <Input
-                label="群主QQ号"
-                placeholder="请输入群主的QQ号"
+              <UserSelector
+                label="群主"
+                placeholder="搜索用户昵称或QQ号选择群主"
                 value={formData.owner_qq_number}
-                onValueChange={(val) => setFormData({ ...formData, owner_qq_number: val })}
+                onChange={(qqNumber) => setFormData({ ...formData, owner_qq_number: qqNumber })}
                 isRequired
               />
               <Textarea
@@ -490,7 +551,7 @@ export default function GuildManagementPage() {
                 onSelectionChange={(keys) => setFormData({ ...formData, server: Array.from(keys)[0] })}
                 isRequired
               >
-                {SERVERS.map((server) => (
+                {ALL_SERVERS.map((server) => (
                   <SelectItem key={server} value={server}>
                     {server}
                   </SelectItem>
@@ -514,129 +575,121 @@ export default function GuildManagementPage() {
         </ModalContent>
       </Modal>
 
-      {/* 详情模态框 */}
+      {/* 订阅管理模态框 */}
       <Modal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => setIsSubscriptionModalOpen(false)}
         size="3xl"
         scrollBehavior="inside"
       >
         <ModalContent>
-          <ModalHeader>群组详情</ModalHeader>
-          <ModalBody>
+          <ModalHeader>
             {selectedGuild && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-semibold mb-3">基本信息</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-500">群QQ号：</span>
-                      <span className="font-medium">{selectedGuild.guild_qq_number}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">UKEY：</span>
-                      <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                        {selectedGuild.ukey}
-                      </code>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">群组名称：</span>
-                      <span className="font-medium">{selectedGuild.name}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">服务器：</span>
-                      <span className="font-medium">{selectedGuild.server}</span>
-                    </div>
-                  </div>
-                  {selectedGuild.description && (
-                    <div className="mt-4">
-                      <span className="text-gray-500">描述：</span>
-                      <p className="mt-1">{selectedGuild.description}</p>
-                    </div>
-                  )}
+              <div>
+                <div className="text-xl">订阅管理</div>
+                <div className="text-sm font-normal text-gray-500 mt-1">
+                  {selectedGuild.name} ({selectedGuild.guild_qq_number})
                 </div>
-
-                <div>
-                  <h3 className="font-semibold mb-3">群主信息</h3>
-                  {selectedGuild.owner && (
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">昵称：</span>
-                        <span className="font-medium">{selectedGuild.owner.nickname}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">QQ号：</span>
-                        <span className="font-medium">{selectedGuild.owner.qq_number}</span>
-                      </div>
-                    </div>
-                  )}
+              </div>
+            )}
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-6">
+              {/* 添加新订阅 */}
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <h3 className="font-semibold mb-3">添加新订阅</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="开始日期"
+                    type="date"
+                    value={subscriptionFormData.start_date}
+                    onValueChange={(val) =>
+                      setSubscriptionFormData({ ...subscriptionFormData, start_date: val })
+                    }
+                  />
+                  <Input
+                    label="结束日期"
+                    type="date"
+                    value={subscriptionFormData.end_date}
+                    onValueChange={(val) =>
+                      setSubscriptionFormData({ ...subscriptionFormData, end_date: val })
+                    }
+                  />
                 </div>
+                <Input
+                  label="备注"
+                  placeholder="订阅备注（可选）"
+                  className="mt-4"
+                  value={subscriptionFormData.notes}
+                  onValueChange={(val) =>
+                    setSubscriptionFormData({ ...subscriptionFormData, notes: val })
+                  }
+                />
+                <Button
+                  color="primary"
+                  className="mt-4"
+                  onPress={handleAddSubscription}
+                  isLoading={isLoading}
+                >
+                  添加订阅
+                </Button>
+              </div>
 
-                {selectedGuild.current_subscription && (
-                  <div>
-                    <h3 className="font-semibold mb-3">当前订阅</h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">状态：</span>
-                        <Chip
-                          color={selectedGuild.current_subscription.is_active ? 'success' : 'danger'}
-                          size="sm"
-                          className="ml-2"
-                        >
-                          {selectedGuild.current_subscription.is_active ? '有效' : '已过期'}
-                        </Chip>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">有效期：</span>
-                        <span className="font-medium">
-                          {selectedGuild.current_subscription.start_date} ~ {selectedGuild.current_subscription.end_date}
-                        </span>
-                      </div>
-                    </div>
+              {/* 订阅历史列表 */}
+              <div>
+                <h3 className="font-semibold mb-3">订阅历史</h3>
+                {guildSubscriptions.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    暂无订阅记录
                   </div>
-                )}
-
-                {selectedGuild.subscription_history && selectedGuild.subscription_history.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-3">订阅历史</h3>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {selectedGuild.subscription_history.map((sub) => (
-                        <div key={sub.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded text-sm">
-                          <div className="flex justify-between">
-                            <span>
-                              {sub.start_date} ~ {sub.end_date}
-                            </span>
-                            <Chip color={sub.is_active ? 'success' : 'default'} size="sm" variant="flat">
-                              {sub.is_active ? '进行中' : '已结束'}
-                            </Chip>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {guildSubscriptions.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Chip
+                                color={sub.is_active ? 'success' : 'default'}
+                                size="sm"
+                                variant="flat"
+                              >
+                                {sub.is_active ? '有效' : '已过期'}
+                              </Chip>
+                              <span className="text-sm font-medium">
+                                {sub.start_date} ~ {sub.end_date}
+                              </span>
+                            </div>
+                            {sub.notes && (
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {sub.notes}
+                              </p>
+                            )}
+                            <div className="text-xs text-gray-500 mt-2">
+                              创建时间: {new Date(sub.created_at).toLocaleString('zh-CN')}
+                            </div>
                           </div>
-                          {sub.notes && <p className="text-gray-500 mt-1">{sub.notes}</p>}
+                          <Button
+                            size="sm"
+                            color="danger"
+                            variant="flat"
+                            onPress={() => handleDeleteSubscription(sub.id)}
+                          >
+                            删除
+                          </Button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedGuild.stats && (
-                  <div>
-                    <h3 className="font-semibold mb-3">统计信息</h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">成员数：</span>
-                        <span className="font-medium">{selectedGuild.stats.member_count || 0}</span>
                       </div>
-                      <div>
-                        <span className="text-gray-500">团队数：</span>
-                        <span className="font-medium">{selectedGuild.stats.team_count || 0}</span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 )}
               </div>
-            )}
+            </div>
           </ModalBody>
           <ModalFooter>
-            <Button onPress={() => setIsDetailModalOpen(false)}>关闭</Button>
+            <Button onPress={() => setIsSubscriptionModalOpen(false)}>关闭</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

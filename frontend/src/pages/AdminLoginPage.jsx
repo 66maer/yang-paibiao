@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CardBody, CardHeader, Input, Button } from '@heroui/react';
-import { adminLogin } from '../api/auth';
+import { adminLogin, getAdminInfo } from '../api/auth';
 import useAuthStore from '../stores/authStore';
 import HoverEffectCard from '../components/HoverEffectCard';
 import ThemeSwitch from '../components/ThemeSwitch';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const { setAuth } = useAuthStore();
   
   const [formData, setFormData] = useState({
     username: '',
@@ -28,16 +28,17 @@ export default function AdminLoginPage() {
       // 检查响应数据结构
       const tokenData = response.data || response;
       const accessToken = tokenData.access_token;
+      const refreshToken = tokenData.refresh_token;
       
       if (!accessToken) {
         throw new Error('登录失败：未获取到访问令牌');
       }
       
-      // 保存 token 到 localStorage
-      localStorage.setItem('access_token', accessToken);
+      // 获取管理员信息
+      const adminInfo = await getAdminInfo();
       
-      // 更新全局状态
-      setAuth(accessToken, 'admin');
+      // 更新全局状态（包括refresh_token）
+      setAuth(accessToken, refreshToken, adminInfo.data);
       
       // 跳转到后台首页
       navigate('/admin', { replace: true });

@@ -6,7 +6,7 @@ import apiClient from "./client";
  */
 export const getUserList = async (params = {}) => {
   const response = await apiClient.get("/admin/users", { params });
-  return response.data;
+  return response;
 };
 
 /**
@@ -28,6 +28,13 @@ export const updateUser = (userId, data) => {
  */
 export const deleteUser = (userId) => {
   return apiClient.delete(`/admin/users/${userId}`);
+};
+
+/**
+ * 重置用户密码（管理员）
+ */
+export const resetUserPassword = (userId) => {
+  return apiClient.post(`/admin/users/${userId}/reset-password`);
 };
 
 /**

@@ -21,8 +21,11 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
+  Spinner,
+  Avatar,
 } from '@heroui/react'
-import { getUserList, deleteUser, updateUser } from '../../api/users'
+import { getUserList, deleteUser, updateUser, resetUserPassword } from '../../api/users'
+import { showSuccess, showError, showConfirm } from '../../utils/toast.jsx'
 
 export default function UserManagementPage() {
   const [page, setPage] = useState(1)
@@ -55,14 +58,27 @@ export default function UserManagementPage() {
   }
 
   const handleDelete = async (userId, nickname) => {
-    if (!confirm(`确定要删除用户 ${nickname} 吗？`)) return
+    const confirmed = await showConfirm(`确定要删除用户 ${nickname} 吗？`)
+    if (!confirmed) return
 
     try {
       await deleteUser(userId)
       mutate()
-      alert('删除成功')
+      showSuccess('删除成功')
     } catch (error) {
-      alert(error.response?.data?.message || '删除失败')
+      showError(error.response?.data?.message || '删除失败')
+    }
+  }
+
+  const handleResetPassword = async (userId, nickname) => {
+    const confirmed = await showConfirm(`确定要重置用户 ${nickname} 的密码为 123456 吗？`)
+    if (!confirmed) return
+
+    try {
+      await resetUserPassword(userId)
+      showSuccess(`用户 ${nickname} 的密码已重置为 123456`)
+    } catch (error) {
+      showError(error.response?.data?.message || '重置密码失败')
     }
   }
 
@@ -81,9 +97,9 @@ export default function UserManagementPage() {
       await updateUser(selectedUser.id, editForm)
       mutate()
       onClose()
-      alert('更新成功')
+      showSuccess('更新成功')
     } catch (error) {
-      alert(error.response?.data?.message || '更新失败')
+      showError(error.response?.data?.message || '更新失败')
     }
   }
 
@@ -156,24 +172,29 @@ export default function UserManagementPage() {
           </div>
         </CardHeader>
         <CardBody>
-          <Table aria-label="用户列表">
-            <TableHeader>
-              <TableColumn>ID</TableColumn>
-              <TableColumn>QQ号</TableColumn>
-              <TableColumn>昵称</TableColumn>
-              <TableColumn>最后登录</TableColumn>
-              <TableColumn>注册时间</TableColumn>
-              <TableColumn>操作</TableColumn>
-            </TableHeader>
-            <TableBody
-              items={users}
-              emptyContent={
-                <div className="text-center py-8 text-gray-500">
-                  {keyword ? '没有找到匹配的用户' : '暂无用户数据'}
-                </div>
-              }
-            >
-              {(user) => (
+          {!data ? (
+            <div className="flex justify-center py-8">
+              <Spinner />
+            </div>
+          ) : (
+            <Table aria-label="用户列表">
+              <TableHeader>
+                <TableColumn>ID</TableColumn>
+                <TableColumn>QQ号</TableColumn>
+                <TableColumn>昵称</TableColumn>
+                <TableColumn>最后登录</TableColumn>
+                <TableColumn>注册时间</TableColumn>
+                <TableColumn>操作</TableColumn>
+              </TableHeader>
+              <TableBody
+                items={users}
+                emptyContent={
+                  <div className="text-center py-8 text-gray-500">
+                    {keyword ? '没有找到匹配的用户' : '暂无用户数据'}
+                  </div>
+                }
+              >
+                {(user) => (
                 <TableRow key={user.id}>
                   <TableCell>{user.id}</TableCell>
                   <TableCell>
@@ -182,10 +203,10 @@ export default function UserManagementPage() {
                     </Chip>
                   </TableCell>
                   <TableCell>
-                    <div>
+                    <div className="max-w-[200px]">
                       <div className="font-medium">{user.nickname}</div>
                       {user.other_nicknames && user.other_nicknames.length > 0 && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 truncate" title={`别名: ${user.other_nicknames.join(', ')}`}>
                           别名: {user.other_nicknames.join(', ')}
                         </div>
                       )}
@@ -211,6 +232,16 @@ export default function UserManagementPage() {
                           编辑
                         </Button>
                       </Tooltip>
+                      <Tooltip content="重置密码" color="warning">
+                        <Button
+                          size="sm"
+                          color="warning"
+                          variant="flat"
+                          onClick={() => handleResetPassword(user.id, user.nickname)}
+                        >
+                          重置密码
+                        </Button>
+                      </Tooltip>
                       <Tooltip content="删除" color="danger">
                         <Button
                           size="sm"
@@ -224,9 +255,10 @@ export default function UserManagementPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          )}
 
           {/* 分页 */}
           {pages > 1 && (
@@ -244,29 +276,94 @@ export default function UserManagementPage() {
       </Card>
 
       {/* 编辑用户模态框 */}
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
           <ModalHeader>
             <h3 className="text-xl font-bold">编辑用户</h3>
           </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
+              {/* 头像展示 */}
+              <div className="flex items-center gap-4">
+                <Avatar
+                  src={editForm.avatar || undefined}
+                  showFallback
+                  name={editForm.nickname}
+                  size="lg"
+                  className="w-20 h-20"
+                />
+                <div className="flex-1">
+                  <Input
+                    label="头像URL"
+                    placeholder="请输入头像URL"
+                    value={editForm.avatar}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, avatar: e.target.value })
+                    }
+                    description="输入新的URL将实时更新头像预览"
+                  />
+                </div>
+              </div>
+
+              {/* 主昵称 */}
               <Input
-                label="昵称"
-                placeholder="请输入昵称"
+                label="主昵称"
+                placeholder="请输入主昵称"
                 value={editForm.nickname}
                 onChange={(e) =>
                   setEditForm({ ...editForm, nickname: e.target.value })
                 }
+                isRequired
               />
-              <Input
-                label="头像URL"
-                placeholder="请输入头像URL"
-                value={editForm.avatar}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, avatar: e.target.value })
-                }
-              />
+
+              {/* 其他昵称列表 */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  其他昵称
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {editForm.other_nicknames && editForm.other_nicknames.length > 0 ? (
+                    editForm.other_nicknames.map((nick, index) => (
+                      <Chip
+                        key={index}
+                        onClose={() => {
+                          const newNicknames = editForm.other_nicknames.filter(
+                            (_, i) => i !== index
+                          )
+                          setEditForm({ ...editForm, other_nicknames: newNicknames })
+                        }}
+                        variant="flat"
+                        color="primary"
+                      >
+                        {nick}
+                      </Chip>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">暂无其他昵称</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="输入新昵称后按回车添加"
+                    size="sm"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && e.target.value.trim()) {
+                        const newNickname = e.target.value.trim()
+                        if (!editForm.other_nicknames.includes(newNickname)) {
+                          setEditForm({
+                            ...editForm,
+                            other_nicknames: [...editForm.other_nicknames, newNickname],
+                          })
+                        }
+                        e.target.value = ''
+                      }
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  按回车键添加昵称，点击昵称上的 X 可以删除
+                </p>
+              </div>
             </div>
           </ModalBody>
           <ModalFooter>

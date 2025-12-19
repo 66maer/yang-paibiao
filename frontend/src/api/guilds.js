@@ -6,7 +6,7 @@ import apiClient from "./client";
  */
 export const getGuildList = async (params = {}) => {
   const response = await apiClient.get("/admin/guilds", { params });
-  return response.data;
+  return response;
 };
 
 /**
