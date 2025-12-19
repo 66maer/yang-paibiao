@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @source '../node_modules/@heroui/theme/dist';
+@plugin './hero.ts';
 @import './styles/fonts.css';
 
 /* 全局字体配置 */

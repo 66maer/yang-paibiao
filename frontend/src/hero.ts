@@ -1,0 +1,70 @@
+import { heroui } from '@heroui/react';
+
+export default heroui({
+  themes: {
+    light: {
+      colors: {
+        primary: {
+          DEFAULT: '#f31260',
+          foreground: '#fff',
+          50: '#fee7ef',
+          100: '#fdd0df',
+          200: '#faa0bf',
+          300: '#f871a0',
+          400: '#f54180',
+          500: '#f31260',
+          600: '#c20e4d',
+          700: '#920b3a',
+          800: '#610726',
+          900: '#310413',
+        },
+        danger: {
+          DEFAULT: '#DB3694',
+          foreground: '#fff',
+          50: '#FEEAF6',
+          100: '#FDD7DD',
+          200: '#FBAFC4',
+          300: '#F485AE',
+          400: '#E965A3',
+          500: '#DB3694',
+          600: '#BC278B',
+          700: '#991B7C',
+          800: '#77116A',
+          900: '#5E0A5C',
+        },
+      },
+    },
+    dark: {
+      colors: {
+        primary: {
+          DEFAULT: '#f31260',
+          foreground: '#fff',
+          50: '#fee7ef',
+          100: '#fdd0df',
+          200: '#faa0bf',
+          300: '#f871a0',
+          400: '#f54180',
+          500: '#f31260',
+          600: '#c20e4d',
+          700: '#920b3a',
+          800: '#610726',
+          900: '#310413',
+        },
+        danger: {
+          DEFAULT: '#DB3694',
+          foreground: '#fff',
+          50: '#FEEAF6',
+          100: '#FDD7DD',
+          200: '#FBAFC4',
+          300: '#F485AE',
+          400: '#E965A3',
+          500: '#DB3694',
+          600: '#BC278B',
+          700: '#991B7C',
+          800: '#77116A',
+          900: '#5E0A5C',
+        },
+      },
+    },
+  },
+});
