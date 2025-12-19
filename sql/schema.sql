@@ -143,7 +143,6 @@ COMMENT ON COLUMN character_players.updated_at IS '更新时间';
 CREATE INDEX idx_character_players_character_id ON character_players(character_id);
 CREATE INDEX idx_character_players_user_id ON character_players(user_id);
 CREATE INDEX idx_character_players_relation_type ON character_players(relation_type);
-CREATE INDEX idx_character_players_is_primary ON character_players(is_primary);
 
 -- 群组表
 CREATE TABLE guilds (
