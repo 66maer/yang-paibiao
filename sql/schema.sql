@@ -67,6 +67,7 @@ CREATE TABLE users (
     qq_number VARCHAR(20) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     nickname VARCHAR(50) NOT NULL,
+    other_nicknames TEXT[], -- 其他昵称（用于搜索）
     avatar VARCHAR(255),
     last_login_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -79,6 +80,7 @@ COMMENT ON COLUMN users.id IS '用户ID';
 COMMENT ON COLUMN users.qq_number IS 'QQ号';
 COMMENT ON COLUMN users.password_hash IS '密码哈希值';
 COMMENT ON COLUMN users.nickname IS '昵称';
+COMMENT ON COLUMN users.other_nicknames IS '其他昵称（用于搜索）';
 COMMENT ON COLUMN users.avatar IS '头像URL';
 COMMENT ON COLUMN users.last_login_at IS '最后登录时间';
 COMMENT ON COLUMN users.created_at IS '创建时间';
@@ -87,6 +89,7 @@ COMMENT ON COLUMN users.deleted_at IS '删除时间（软删除）';
 
 CREATE INDEX idx_users_qq_number ON users(qq_number) WHERE deleted_at IS NULL;
 CREATE INDEX idx_users_deleted_at ON users(deleted_at);
+CREATE INDEX idx_users_other_nicknames ON users USING GIN (other_nicknames); -- GIN索引用于数组搜索
 
 -- 角色表（角色和玩家是多对多关系）
 CREATE TABLE characters (
@@ -127,7 +130,7 @@ CREATE TABLE character_players (
     UNIQUE(character_id, user_id)
 );
 
-COMMENT ON TABLE character_players IS '角色-玩家关联表（支持代清、换号打等场景）';
+COMMENT ON TABLE character_players IS '角色-玩家关联表';
 COMMENT ON COLUMN character_players.id IS '关联ID';
 COMMENT ON COLUMN character_players.character_id IS '角色ID';
 COMMENT ON COLUMN character_players.user_id IS '用户ID';
@@ -225,7 +228,6 @@ CREATE TABLE teams (
     status VARCHAR(20) DEFAULT 'open', -- 状态: open(开启), completed(完成), cancelled(取消), deleted(删除)
     rule JSONB NOT NULL,
     notice TEXT,
-    summary JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     closed_at TIMESTAMP,
@@ -247,7 +249,6 @@ COMMENT ON COLUMN teams.is_locked IS '是否锁定';
 COMMENT ON COLUMN teams.status IS '状态: open(开启), completed(完成), cancelled(取消), deleted(删除)';
 COMMENT ON COLUMN teams.rule IS '报名规则';
 COMMENT ON COLUMN teams.notice IS '团队告示';
-COMMENT ON COLUMN teams.summary IS '团队总结';
 COMMENT ON COLUMN teams.created_at IS '创建时间';
 COMMENT ON COLUMN teams.updated_at IS '更新时间';
 COMMENT ON COLUMN teams.closed_at IS '关闭时间';
@@ -329,6 +330,72 @@ CREATE INDEX idx_signups_signup_character_id ON signups(signup_character_id);
 CREATE INDEX idx_signups_cancelled_at ON signups(cancelled_at);
 
 -- =============================================
+-- 业务层 - 金团记录
+-- =============================================
+
+-- 金团记录表
+CREATE TABLE gold_team_records (
+    id SERIAL PRIMARY KEY,
+    guild_id INT NOT NULL REFERENCES guilds(id) ON DELETE CASCADE,
+    team_id INT REFERENCES teams(id) ON DELETE SET NULL, -- 关联开团（可选）
+
+    -- 基本信息
+    dungeon VARCHAR(50) NOT NULL,
+    run_date DATE NOT NULL,
+
+    -- 金团数据
+    total_gold DECIMAL(12, 2) DEFAULT 0, -- 总金团
+    worker_count INT DEFAULT 0, -- 打工人数
+    special_drops TEXT[], -- 特殊掉落表（字符串数组）
+
+    -- 黑本人（第一个进本的人）
+    heibenren_user_id INT REFERENCES users(id), -- 黑本人用户ID（可选）
+    heibenren_character_id INT REFERENCES characters(id), -- 黑本人角色ID（可选）
+    heibenren_info JSONB, -- 黑本人显示信息
+    /*
+    示例：
+    {
+      "user_name": "张三",      // 用户名称
+      "character_name": "角色名"  // 角色名称
+    }
+    如果有ID，后端从数据库取值覆盖对应字段；否则使用用户填写的值
+    */
+
+    notes TEXT, -- 备注
+
+    -- 审计字段
+    creator_id INT NOT NULL REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP -- 软删除
+);
+
+COMMENT ON TABLE gold_team_records IS '金团记录表';
+COMMENT ON COLUMN gold_team_records.id IS '记录ID';
+COMMENT ON COLUMN gold_team_records.guild_id IS '群组ID';
+COMMENT ON COLUMN gold_team_records.team_id IS '关联的开团ID（可选）';
+COMMENT ON COLUMN gold_team_records.dungeon IS '副本名称';
+COMMENT ON COLUMN gold_team_records.run_date IS '开团日期';
+COMMENT ON COLUMN gold_team_records.total_gold IS '总金团';
+COMMENT ON COLUMN gold_team_records.worker_count IS '打工人数';
+COMMENT ON COLUMN gold_team_records.special_drops IS '特殊掉落表';
+COMMENT ON COLUMN gold_team_records.heibenren_user_id IS '黑本人用户ID';
+COMMENT ON COLUMN gold_team_records.heibenren_character_id IS '黑本人角色ID';
+COMMENT ON COLUMN gold_team_records.heibenren_info IS '黑本人显示信息';
+COMMENT ON COLUMN gold_team_records.notes IS '备注';
+COMMENT ON COLUMN gold_team_records.creator_id IS '创建者ID';
+COMMENT ON COLUMN gold_team_records.created_at IS '创建时间';
+COMMENT ON COLUMN gold_team_records.updated_at IS '更新时间';
+COMMENT ON COLUMN gold_team_records.deleted_at IS '删除时间';
+
+CREATE INDEX idx_gold_team_records_guild_id ON gold_team_records(guild_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_gold_team_records_team_id ON gold_team_records(team_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_gold_team_records_run_date ON gold_team_records(run_date) WHERE deleted_at IS NULL;
+CREATE INDEX idx_gold_team_records_creator_id ON gold_team_records(creator_id);
+CREATE INDEX idx_gold_team_records_heibenren_user_id ON gold_team_records(heibenren_user_id);
+CREATE INDEX idx_gold_team_records_heibenren_character_id ON gold_team_records(heibenren_character_id);
+
+-- =============================================
 -- 触发器：自动更新 updated_at
 -- =============================================
 
@@ -369,6 +436,9 @@ CREATE TRIGGER update_team_templates_updated_at BEFORE UPDATE ON team_templates
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_signups_updated_at BEFORE UPDATE ON signups
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_gold_team_records_updated_at BEFORE UPDATE ON gold_team_records
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 
