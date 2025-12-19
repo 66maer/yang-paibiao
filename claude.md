@@ -1,4 +1,4 @@
-# 小秧排坊项目重构计划
+# 小秧排表项目重构计划
 
 ## 项目概述
 
@@ -42,78 +42,13 @@
 - **框架**: FastAPI
 - **ORM**: SQLAlchemy 2.0+
 - **数据验证**: Pydantic v2
+- **数据库**: PostgreSQL
+- **缓存**: Redis
 - **数据库迁移**: Alembic
-- **异步**: asyncio + asyncpg
 - **认证**: JWT + bcrypt
+- **日志**: Loguru
+- **测试**: Pytest
 - **API 文档**: OpenAPI (Swagger UI)
-
-#### 目录结构
-
-```
-backend/
-├── app/
-│   ├── __init__.py
-│   ├── main.py                 # FastAPI应用入口
-│   ├── config.py              # 配置管理
-│   ├── database.py            # 数据库连接
-│   ├── dependencies.py        # 依赖注入
-│   │
-│   ├── models/                # SQLAlchemy模型
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── user.py
-│   │   ├── guild.py
-│   │   ├── team.py
-│   │   └── ...
-│   │
-│   ├── schemas/               # Pydantic schemas
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── user.py
-│   │   ├── guild.py
-│   │   └── ...
-│   │
-│   ├── api/                   # API路由
-│   │   ├── __init__.py
-│   │   ├── deps.py           # 路由依赖
-│   │   ├── v1/
-│   │   │   ├── __init__.py
-│   │   │   ├── admin.py      # 系统管理接口
-│   │   │   ├── auth.py       # 认证接口
-│   │   │   ├── users.py      # 用户接口
-│   │   │   ├── guilds.py     # 群组接口
-│   │   │   ├── teams.py      # 开团接口
-│   │   │   └── ...
-│   │
-│   ├── services/              # 业务逻辑层
-│   │   ├── __init__.py
-│   │   ├── admin_service.py
-│   │   ├── user_service.py
-│   │   ├── guild_service.py
-│   │   ├── team_service.py
-│   │   └── ...
-│   │
-│   ├── core/                  # 核心功能
-│   │   ├── __init__.py
-│   │   ├── security.py       # 安全相关（JWT、密码hash）
-│   │   ├── permissions.py    # 权限管理
-│   │   └── exceptions.py     # 自定义异常
-│   │
-│   └── utils/                 # 工具函数
-│       ├── __init__.py
-│       └── ...
-│
-├── alembic/                   # 数据库迁移
-│   ├── versions/
-│   └── env.py
-│
-├── tests/                     # 测试
-│   ├── __init__.py
-│   └── ...
-│
-├── requirements.txt
-└── alembic.ini
-```
 
 ### 3. 前端架构
 
