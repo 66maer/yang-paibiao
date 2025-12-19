@@ -1,7 +1,15 @@
 @import 'tailwindcss';
 @source '../node_modules/@heroui/theme/dist';
 @plugin './hero.ts';
-@import './styles/fonts.css';
+
+/* 字体定义 */
+@font-face {
+  font-family: 'Aa偷吃可爱长大的';
+  src: url('/fonts/AaCute.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* 全局字体配置 */
 body {
@@ -10,11 +18,10 @@ body {
     'PingFang SC',
     'Helvetica Neue',
     'Microsoft YaHei',
-    sans-serif !important;
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-smooth: always;
 }
 
 /* 自定义滚动条样式 */
