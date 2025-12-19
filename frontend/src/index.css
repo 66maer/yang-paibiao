@@ -1,1 +1,54 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@source '../node_modules/@heroui/theme/dist';
+@import './styles/fonts.css';
+
+/* 全局字体配置 */
+body {
+  font-family:
+    'Aa偷吃可爱长大的',
+    'PingFang SC',
+    'Helvetica Neue',
+    'Microsoft YaHei',
+    sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-smooth: always;
+}
+
+/* 自定义滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+  border-radius: 2em;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(147, 147, 153, 0.5);
+  border-radius: 2em;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(147, 147, 153, 0.7);
+}
+
+/* 隐藏滚动条工具类 */
+@layer components {
+  .hide-scrollbar::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar-thumb {
+    background-color: transparent !important;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar-track {
+    background-color: transparent !important;
+  }
+}
