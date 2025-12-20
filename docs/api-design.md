@@ -761,7 +761,7 @@ Authorization: Bearer <token>
 
 ### 4.2 获取我的角色列表
 
-- **路径**: `GET /characters/me`
+- **路径**: `GET /characters/my`
 - **权限**: 需要认证
 - **描述**: 获取当前用户的所有角色
 
