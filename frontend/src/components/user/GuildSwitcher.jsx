@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import useAuthStore from "../../stores/authStore";
 import { switchGuild } from "../../api/user";
 import EditGuildNicknameModal from "./EditGuildNicknameModal";
+import GuildInfoModal from "./GuildInfoModal";
 
 /**
  * 群组切换器组件
@@ -19,6 +20,7 @@ import EditGuildNicknameModal from "./EditGuildNicknameModal";
 export default function GuildSwitcher() {
   const { user, setCurrentGuild } = useAuthStore();
   const [editGuildNicknameOpen, setEditGuildNicknameOpen] = useState(false);
+  const [guildInfoOpen, setGuildInfoOpen] = useState(false);
   const [selectedGuild, setSelectedGuild] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -77,6 +79,12 @@ export default function GuildSwitcher() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // 打开群组信息弹窗
+  const handleViewGuildInfo = () => {
+    setSelectedGuild(currentGuild);
+    setGuildInfoOpen(true);
   };
 
   // 打开修改群昵称弹窗
@@ -156,9 +164,16 @@ export default function GuildSwitcher() {
               </div>
             </DropdownItem>
             <DropdownItem
+              key="view-guild-info"
+              onPress={handleViewGuildInfo}
+              className="text-pink-600 dark:text-pink-400"
+            >
+              ℹ️ 查看群组信息
+            </DropdownItem>
+            <DropdownItem
               key="edit-guild-nickname"
               onPress={handleEditGuildNickname}
-              className="text-pink-600 dark:text-pink-400"
+              className="text-purple-600 dark:text-purple-400"
             >
               ✏️ 修改群昵称
             </DropdownItem>
@@ -203,6 +218,13 @@ export default function GuildSwitcher() {
           )}
         </DropdownMenu>
       </Dropdown>
+
+      {/* 群组信息弹窗 */}
+      <GuildInfoModal
+        isOpen={guildInfoOpen}
+        onClose={() => setGuildInfoOpen(false)}
+        guild={selectedGuild}
+      />
 
       {/* 修改群昵称弹窗 */}
       <EditGuildNicknameModal

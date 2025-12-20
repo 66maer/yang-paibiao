@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../../stores/authStore";
 import ProfileModal from "./ProfileModal";
+import ConfirmDialog from "../ConfirmDialog";
 
 /**
  * 用户菜单组件
@@ -20,13 +21,12 @@ export default function UserMenu() {
   const navigate = useNavigate();
   const { user, clearAuth } = useAuthStore();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   const handleLogout = () => {
-    if (window.confirm("确定要退出登录吗？")) {
-      clearAuth();
-      toast.success("已退出登录");
-      navigate("/login");
-    }
+    clearAuth();
+    toast.success("已退出登录");
+    navigate("/login");
   };
 
   return (
@@ -71,7 +71,7 @@ export default function UserMenu() {
             <DropdownItem
               key="logout"
               color="danger"
-              onPress={handleLogout}
+              onPress={() => setLogoutConfirmOpen(true)}
               className="text-danger"
             >
               🚪 退出登录
@@ -84,6 +84,17 @@ export default function UserMenu() {
       <ProfileModal
         isOpen={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
+      />
+
+      {/* 退出登录确认对话框 */}
+      <ConfirmDialog
+        isOpen={logoutConfirmOpen}
+        onClose={() => setLogoutConfirmOpen(false)}
+        title="退出登录"
+        content="确定要退出登录吗？"
+        confirmText="退出"
+        confirmColor="danger"
+        onConfirm={handleLogout}
       />
     </>
   );

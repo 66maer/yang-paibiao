@@ -9,6 +9,7 @@ import { persist } from "zustand/middleware";
  *   id: 1,
  *   username: 'user123',
  *   nickname: '小明',
+ *   qq_number: '123456789',
  *   other_nicknames: ['昵称1', '昵称2'],
  *   avatar: '',
  *   role: 'user',  // 'admin' | 'user'
@@ -18,7 +19,14 @@ import { persist } from "zustand/middleware";
  *       id: 5,
  *       name: '荻花宫金团',
  *       guild_nickname: '奶妈小明',
- *       role: 'owner'  // 'owner' | 'helper' | 'member'
+ *       role: 'owner',  // 'owner' | 'helper' | 'member'
+ *       qq_group_id: '987654321',
+ *       server_name: '剑胆琴心',
+ *       camp: '浩气盟',
+ *       member_count: 50,
+ *       character_count: 120,
+ *       description: '群组简介',
+ *       created_at: '2025-01-01'
  *     },
  *     ...
  *   ]
@@ -109,9 +117,7 @@ const useAuthStore = create(
         const { user } = get();
         if (user && user.guilds) {
           const updatedGuilds = user.guilds.map((guild) =>
-            guild.id === guildId
-              ? { ...guild, guild_nickname: guildNickname }
-              : guild
+            guild.id === guildId ? { ...guild, guild_nickname: guildNickname } : guild
           );
           set({
             user: {
