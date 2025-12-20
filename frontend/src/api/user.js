@@ -73,3 +73,23 @@ export const uploadAvatar = async (file) => {
     },
   });
 };
+
+/**
+ * 获取群组成员列表
+ * @param {number} guildId - 群组ID
+ */
+export const getGuildMembers = async (guildId) => {
+  return await apiClient.get(`/guilds/${guildId}/members`);
+};
+
+/**
+ * 更新群组成员角色
+ * @param {number} guildId - 群组ID
+ * @param {number} userId - 用户ID
+ * @param {string} role - 角色 (owner, helper, member)
+ */
+export const updateMemberRole = async (guildId, userId, role) => {
+  return await apiClient.put(`/guilds/${guildId}/members/${userId}/role`, {
+    role,
+  });
+};

@@ -129,3 +129,41 @@ class GuildCreateResponse(BaseModel):
     """创建群组响应"""
     guild: GuildDetail
     subscription: Optional[SubscriptionResponse] = None
+
+
+# ============ 群组成员相关 Schemas ============
+
+class GuildMemberUser(BaseModel):
+    """成员用户信息"""
+    id: int
+    qq_number: str
+    nickname: str
+    avatar: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class GuildMemberInfo(BaseModel):
+    """群组成员信息"""
+    id: int
+    user_id: int
+    role: str = Field(..., description="角色: owner, helper, member")
+    group_nickname: Optional[str] = Field(None, description="群内昵称")
+    joined_at: datetime
+    user: GuildMemberUser
+
+    class Config:
+        from_attributes = True
+
+
+class UpdateMemberRole(BaseModel):
+    """更新成员角色"""
+    role: str = Field(..., description="角色: owner, helper, member")
+
+    @classmethod
+    def model_validate(cls, value):
+        if isinstance(value, dict) and 'role' in value:
+            if value['role'] not in ['owner', 'helper', 'member']:
+                raise ValueError('role必须是owner、helper或member之一')
+        return super().model_validate(value)

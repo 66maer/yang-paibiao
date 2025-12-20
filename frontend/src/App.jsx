@@ -11,6 +11,7 @@ import CharacterManagementPage from './pages/admin/CharacterManagementPage';
 import UserLayout from './layouts/UserLayout';
 import BoardPage from './pages/user/BoardPage';
 import GuildHubPage from './pages/user/GuildHubPage';
+import MembersPage from './pages/user/MembersPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import RootRedirect from './components/RootRedirect';
 
@@ -54,7 +55,7 @@ function AppContent() {
           <Route index element={<Navigate to="/user/board" replace />} />
           <Route path="guilds" element={<GuildHubPage />} />
           <Route path="board" element={<BoardPage />} />
-          <Route path="members" element={<BoardPage />} />
+          <Route path="members" element={<MembersPage />} />
           <Route path="characters" element={<BoardPage />} />
           <Route path="team-template" element={<BoardPage />} />
           <Route path="history" element={<BoardPage />} />
