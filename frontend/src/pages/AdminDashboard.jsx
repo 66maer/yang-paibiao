@@ -11,9 +11,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchAdminInfo = async () => {
       try {
-        const data = await getAdminInfo();
-        setAdminInfo(data);
-        setUser(data);
+        const resp = await getAdminInfo();
+        const info = resp?.data ?? resp; // 兼容拦截器返回的包装结构
+        setAdminInfo(info);
+        // 覆盖到全局用户信息，并显式标记为管理员
+        setUser({ ...info, role: 'admin' });
       } catch (error) {
         console.error('获取管理员信息失败:', error);
       } finally {

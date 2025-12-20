@@ -128,7 +128,13 @@ apiClient.interceptors.response.use(
       const { status, data } = error.response;
 
       // 401 未授权，尝试刷新token
-      if (status === 401 && !originalRequest._retry) {
+      // 排除登录和注册接口，这些接口的401不应触发token刷新
+      const isAuthEndpoint =
+        originalRequest.url?.includes("/auth/login") ||
+        originalRequest.url?.includes("/auth/register") ||
+        originalRequest.url?.includes("/admin/auth/login");
+
+      if (status === 401 && !originalRequest._retry && !isAuthEndpoint) {
         originalRequest._retry = true;
 
         try {

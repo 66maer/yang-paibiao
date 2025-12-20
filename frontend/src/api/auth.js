@@ -57,7 +57,7 @@ export const refreshToken = async (refreshToken) => {
  * @returns {Promise} 用户信息对象
  */
 export const getUserInfo = async () => {
-  return apiClient.get("/users/me");
+  return apiClient.get("/auth/me");
 };
 
 /**

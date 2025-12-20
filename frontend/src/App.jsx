@@ -8,7 +8,10 @@ import AdminDashboard from './pages/AdminDashboard';
 import GuildManagementPage from './pages/admin/GuildManagementPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
 import CharacterManagementPage from './pages/admin/CharacterManagementPage';
+import UserLayout from './layouts/UserLayout';
+import BoardPage from './pages/user/BoardPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import RootRedirect from './components/RootRedirect';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -37,9 +40,27 @@ function AppContent() {
           <Route path="users" element={<UserManagementPage />} />
           <Route path="characters" element={<CharacterManagementPage />} />
         </Route>
-        
-        {/* 默认重定向到用户登录 */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* 用户业务页面 */}
+        <Route
+          path="/user"
+          element={
+            <ProtectedRoute requiredRole="user">
+              <UserLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/user/board" replace />} />
+          <Route path="board" element={<BoardPage />} />
+          <Route path="members" element={<BoardPage />} />
+          <Route path="characters" element={<BoardPage />} />
+          <Route path="team-template" element={<BoardPage />} />
+          <Route path="history" element={<BoardPage />} />
+          <Route path="tools" element={<BoardPage />} />
+        </Route>
+
+        {/* 根据用户角色智能重定向 */}
+        <Route path="/" element={<RootRedirect />} />
       </Routes>
     </HeroUIProvider>
   );

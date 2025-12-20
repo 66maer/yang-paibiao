@@ -33,11 +33,14 @@ export default function LoginPage() {
       if (!accessToken) {
         throw new Error('登录失败：未获取到访问令牌');
       }
-      
+
+      // 先保存token到store，这样后续请求才能携带token
+      setAuth(accessToken, refreshToken, null);
+
       // 获取用户信息
       const userInfo = await getUserInfo();
-      
-      // 更新全局状态（包括refresh_token）
+
+      // 更新用户信息到全局状态
       setAuth(accessToken, refreshToken, userInfo.data);
       
       // 跳转到用户首页

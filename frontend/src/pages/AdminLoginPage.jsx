@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CardBody, CardHeader, Input, Button } from '@heroui/react';
 import { adminLogin, getAdminInfo } from '../api/auth';
@@ -8,7 +8,20 @@ import ThemeSwitch from '../components/ThemeSwitch';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
+  const { setAuth, clearAuth } = useAuthStore();
+
+  // 进入管理员登录页时，主动清理可能残留的普通用户会话，避免被路由守卫误判
+  useEffect(() => {
+    try {
+      clearAuth();
+      // 兼容历史代码中用到的本地存储键
+      localStorage.removeItem('access_token');
+      // 若需要彻底重置持久化存储，可开启下面这行（通常不必）：
+      // localStorage.removeItem('auth-storage');
+    } catch (e) {
+      // ignore
+    }
+  }, []);
   
   const [formData, setFormData] = useState({
     username: '',
@@ -34,15 +47,21 @@ export default function AdminLoginPage() {
         throw new Error('登录失败：未获取到访问令牌');
       }
       
-      // 先保存token到store，这样后续请求才能携带token
-      setAuth(accessToken, refreshToken, null);
+      // 先保存token并即时设置角色为 admin，避免路由守卫误跳用户页
+      setAuth(accessToken, refreshToken, { role: 'admin' }, null);
       
       // 获取管理员信息
       const adminInfo = await getAdminInfo();
-      
+
+      // 手动添加 role 字段（后端返回的管理员信息中没有 role）
+      const adminUserData = {
+        ...adminInfo.data,
+        role: 'admin'
+      };
+
       // 更新用户信息到全局状态
-      setAuth(accessToken, refreshToken, adminInfo.data);
-      
+      setAuth(accessToken, refreshToken, adminUserData);
+
       // 跳转到后台首页
       navigate('/admin', { replace: true });
     } catch (err) {

@@ -56,6 +56,34 @@
 
 ---
 
+## 2025-12-20 - 管理员登录误跳用户页修复与清理
+
+### 问题
+
+- 管理员登录成功后被重定向到普通用户页面。
+
+### 根因
+
+- `AdminDashboard` 首屏调用 `setUser(data)` 将全局 `user` 覆盖为不含 `role` 的对象，导致 `ProtectedRoute` 判定为非管理员。
+
+### 修复内容
+
+- `frontend/src/pages/AdminLoginPage.jsx`: 登录后立即 `setAuth(..., { role: 'admin' })`，并在进入 `/admin/login` 首屏清理旧会话（避免旧令牌干扰）。
+- `frontend/src/pages/AdminDashboard.jsx`: 读取 `resp.data` 并 `setUser({ ...info, role: 'admin' })`，避免角色丢失。
+- `frontend/src/components/ProtectedRoute.jsx`: 未认证访问管理员路由时重定向到 `/admin/login`（而非普通登录页）。
+- 清理调试日志：移除 `console.debug`/`groupCollapsed` 等开发日志，保留修复逻辑。
+
+### 影响范围
+
+- 管理员登录与导航稳定性提升；普通用户不会进入管理员页面；状态持久化不再导致误判。
+
+### 验证
+
+1. 前端：`npm run dev` 后访问 `/admin/login`，使用 `admin / 123456.` 登录。
+2. 观察行为：停留在 `/admin`，可正常访问 `/admin/users` 等子路由。
+
+---
+
 ## 2025-12-20 - Tailwind v4 Dark Mode 修复
 
 ### 问题
