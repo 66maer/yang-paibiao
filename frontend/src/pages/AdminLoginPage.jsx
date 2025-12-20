@@ -34,10 +34,13 @@ export default function AdminLoginPage() {
         throw new Error('登录失败：未获取到访问令牌');
       }
       
+      // 先保存token到store，这样后续请求才能携带token
+      setAuth(accessToken, refreshToken, null);
+      
       // 获取管理员信息
       const adminInfo = await getAdminInfo();
       
-      // 更新全局状态（包括refresh_token）
+      // 更新用户信息到全局状态
       setAuth(accessToken, refreshToken, adminInfo.data);
       
       // 跳转到后台首页

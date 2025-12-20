@@ -23,6 +23,7 @@ import {
   useDisclosure,
   Select,
   SelectItem,
+  SelectSection,
 } from '@heroui/react'
 import {
   getAllCharacters,
@@ -30,25 +31,14 @@ import {
   updateCharacter,
   deleteCharacter,
 } from '../../api/characters'
+import { xinfaInfoTable, allXinfaList } from '../../config/xinfa'
+import { ALL_SERVERS, SERVERS } from '../../config/servers'
 
-// 常见心法列表
-const XINFA_LIST = [
-  '冰心诀', '云裳心经', '花间游', '离经易道',
-  '补天诀', '相知', '莫问', '灵素',
-  '毒经', '傲血战意', '铁牢律', '明尊琉璃体',
-  '易筋经', '洗髓经', '焚影圣诀', '明教',
-  '天罗诡道', '惊羽诀', '太玄经', '凌海诀',
-  '孤锋诀', '北傲诀', '山居剑意', '问水诀',
-  '分山劲', '铁骨衣', '笑尘诀', '隐龙诀',
-]
+// 常见心法列表 - 从配置文件中获取所有心法名称
+const XINFA_LIST = allXinfaList.map((key) => xinfaInfoTable[key].name)
 
-// 常见服务器列表
-const SERVER_LIST = [
-  '长安城', '剑胆琴心', '飞龙在天', '蝶恋花',
-  '唯我独尊', '梦江南', '斗转星移', '青梅煮酒',
-  '电信一区', '电信二区', '电信三区', '电信四区',
-  '双线一区', '双线二区', '双线三区', '双线四区',
-]
+// 常见服务器列表 - 从配置文件中获取
+const SERVER_LIST = ALL_SERVERS
 
 export default function CharacterManagementPage() {
   const [page, setPage] = useState(1)
@@ -210,10 +200,14 @@ export default function CharacterManagementPage() {
                 }}
                 variant="bordered"
               >
-                {SERVER_LIST.map((server) => (
-                  <SelectItem key={server} value={server}>
-                    {server}
-                  </SelectItem>
+                {Object.entries(SERVERS).map(([region, servers]) => (
+                  <SelectSection key={region} title={region}>
+                    {servers.map((server) => (
+                      <SelectItem key={server} value={server}>
+                        {server}
+                      </SelectItem>
+                    ))}
+                  </SelectSection>
                 ))}
               </Select>
               <Select
@@ -368,10 +362,14 @@ export default function CharacterManagementPage() {
                 }
                 isRequired
               >
-                {SERVER_LIST.map((server) => (
-                  <SelectItem key={server} value={server}>
-                    {server}
-                  </SelectItem>
+                {Object.entries(SERVERS).map(([region, servers]) => (
+                  <SelectSection key={region} title={region}>
+                    {servers.map((server) => (
+                      <SelectItem key={server} value={server}>
+                        {server}
+                      </SelectItem>
+                    ))}
+                  </SelectSection>
                 ))}
               </Select>
               <Select
@@ -434,10 +432,14 @@ export default function CharacterManagementPage() {
                   setEditForm({ ...editForm, server: e.target.value })
                 }
               >
-                {SERVER_LIST.map((server) => (
-                  <SelectItem key={server} value={server}>
-                    {server}
-                  </SelectItem>
+                {Object.entries(SERVERS).map(([region, servers]) => (
+                  <SelectSection key={region} title={region}>
+                    {servers.map((server) => (
+                      <SelectItem key={server} value={server}>
+                        {server}
+                      </SelectItem>
+                    ))}
+                  </SelectSection>
                 ))}
               </Select>
               <Select
