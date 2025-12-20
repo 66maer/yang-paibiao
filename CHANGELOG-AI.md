@@ -189,6 +189,33 @@ src/
 
 ---
 
+## 2025-12-20 - 群组选择与切换功能优化
+
+### 完成内容
+
+- ✅ 群组切换改为纯前端操作（无需 API 调用）
+- ✅ 移除数据中不存在的"阵营"属性显示
+- ✅ 简化 GuildSwitcher 中的切换群组部分（从 DropdownSection 改为单纯按钮）
+- ✅ 群组卡片和详情弹窗 UI 清理
+
+### 关键文件
+
+- `frontend/src/components/user/GuildSwitcher.jsx` - 简化切换界面
+- `frontend/src/pages/user/GuildHubPage.jsx` - 移除阵营字段
+- `frontend/src/components/user/GuildInfoModal.jsx` - 移除阵营详情
+
+### 技术要点
+
+- 群组切换流程：更新 localStorage + authStore + 页面刷新
+- 前后端分离原则：选择群组是纯前端状态操作，不涉及服务端记录
+
+### 架构决策
+
+- 服务端不记录"当前选择的群组"状态，全部由客户端 localStorage 管理
+- 切换群组只需更新 `selectedGuildId` 和 `currentGuildId`，然后刷新获取新权限
+
+---
+
 ## 用户习惯记录
 
 - **数据库**: 使用共享 PostgreSQL 容器 `shared-postgres`
