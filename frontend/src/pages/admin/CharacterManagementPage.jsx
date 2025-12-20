@@ -21,9 +21,6 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Select,
-  SelectItem,
-  SelectSection,
 } from '@heroui/react'
 import {
   getAllCharacters,
@@ -31,15 +28,8 @@ import {
   updateCharacter,
   deleteCharacter,
 } from '../../api/characters'
-import { xinfaInfoTable, allXinfaList } from '../../config/xinfa'
-import { ALL_SERVERS, SERVERS } from '../../config/servers'
 import XinfaSelector from '../../components/XinfaSelector'
-
-// 常见心法列表 - 从配置文件中获取所有心法名称
-const XINFA_LIST = allXinfaList.map((key) => xinfaInfoTable[key].name)
-
-// 常见服务器列表 - 从配置文件中获取
-const SERVER_LIST = ALL_SERVERS
+import ServerSelector from '../../components/ServerSelector'
 
 export default function CharacterManagementPage() {
   const [page, setPage] = useState(1)
@@ -173,7 +163,7 @@ export default function CharacterManagementPage() {
             管理所有游戏角色
           </p>
         </div>
-        <Button color="primary" size="lg" onClick={onCreateOpen}>
+        <Button color="primary" size="lg" onPress={onCreateOpen}>
           + 创建角色
         </Button>
       </div>
@@ -184,35 +174,30 @@ export default function CharacterManagementPage() {
           <div className="flex flex-col gap-4">
             <div className="flex gap-4">
               <Input
+                label="搜索"
                 placeholder="搜索角色名或心法..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 className="flex-1"
                 variant="bordered"
+                isClearable
+                onClear={() => setSearchInput('')}
               />
-              <Select
-                placeholder="服务器"
+              <ServerSelector
+                label="服务器"
+                placeholder="选择服务器"
                 className="w-48"
-                selectedKeys={filterServer ? [filterServer] : []}
-                onChange={(e) => {
-                  setFilterServer(e.target.value)
+                value={filterServer}
+                onChange={(value) => {
+                  setFilterServer(value)
                   setPage(1)
                 }}
                 variant="bordered"
-              >
-                {Object.entries(SERVERS).map(([region, servers]) => (
-                  <SelectSection key={region} title={region}>
-                    {servers.map((server) => (
-                      <SelectItem key={server} value={server}>
-                        {server}
-                      </SelectItem>
-                    ))}
-                  </SelectSection>
-                ))}
-              </Select>
+              />
               <XinfaSelector
-                placeholder="心法"
+                label="心法"
+                placeholder="选择心法"
                 className="w-48"
                 value={filterXinfa}
                 onChange={(value) => {
@@ -221,11 +206,11 @@ export default function CharacterManagementPage() {
                 }}
                 variant="bordered"
               />
-              <Button color="primary" onClick={handleSearch} className="px-8">
+              <Button color="primary" onPress={handleSearch} className="px-8">
                 搜索
               </Button>
               {(keyword || filterServer || filterXinfa) && (
-                <Button color="default" variant="flat" onClick={resetFilters}>
+                <Button color="default" variant="flat" onPress={resetFilters}>
                   清除
                 </Button>
               )}
@@ -294,7 +279,7 @@ export default function CharacterManagementPage() {
                           size="sm"
                           color="primary"
                           variant="flat"
-                          onClick={() => handleEdit(char)}
+                          onPress={() => handleEdit(char)}
                         >
                           编辑
                         </Button>
@@ -304,7 +289,7 @@ export default function CharacterManagementPage() {
                           size="sm"
                           color="danger"
                           variant="flat"
-                          onClick={() => handleDelete(char.id, char.name)}
+                          onPress={() => handleDelete(char.id, char.name)}
                         >
                           删除
                         </Button>
@@ -348,25 +333,15 @@ export default function CharacterManagementPage() {
                 }
                 isRequired
               />
-              <Select
+              <ServerSelector
                 label="服务器"
                 placeholder="请选择服务器"
-                selectedKeys={createForm.server ? [createForm.server] : []}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, server: e.target.value })
+                value={createForm.server}
+                onChange={(value) =>
+                  setCreateForm({ ...createForm, server: value })
                 }
                 isRequired
-              >
-                {Object.entries(SERVERS).map(([region, servers]) => (
-                  <SelectSection key={region} title={region}>
-                    {servers.map((server) => (
-                      <SelectItem key={server} value={server}>
-                        {server}
-                      </SelectItem>
-                    ))}
-                  </SelectSection>
-                ))}
-              </Select>
+              />
               <XinfaSelector
                 label="心法"
                 value={createForm.xinfa}
@@ -386,10 +361,10 @@ export default function CharacterManagementPage() {
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onClick={onCreateClose}>
+            <Button variant="flat" onPress={onCreateClose}>
               取消
             </Button>
-            <Button color="primary" onClick={handleCreate}>
+            <Button color="primary" onPress={handleCreate}>
               创建
             </Button>
           </ModalFooter>
@@ -412,24 +387,14 @@ export default function CharacterManagementPage() {
                   setEditForm({ ...editForm, name: e.target.value })
                 }
               />
-              <Select
+              <ServerSelector
                 label="服务器"
                 placeholder="请选择服务器"
-                selectedKeys={editForm.server ? [editForm.server] : []}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, server: e.target.value })
+                value={editForm.server}
+                onChange={(value) =>
+                  setEditForm({ ...editForm, server: value })
                 }
-              >
-                {Object.entries(SERVERS).map(([region, servers]) => (
-                  <SelectSection key={region} title={region}>
-                    {servers.map((server) => (
-                      <SelectItem key={server} value={server}>
-                        {server}
-                      </SelectItem>
-                    ))}
-                  </SelectSection>
-                ))}
-              </Select>
+              />
               <XinfaSelector
                 label="心法"
                 value={editForm.xinfa}
@@ -448,10 +413,10 @@ export default function CharacterManagementPage() {
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onClick={onEditClose}>
+            <Button variant="flat" onPress={onEditClose}>
               取消
             </Button>
-            <Button color="primary" onClick={handleUpdate}>
+            <Button color="primary" onPress={handleUpdate}>
               保存
             </Button>
           </ModalFooter>

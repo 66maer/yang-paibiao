@@ -18,23 +18,20 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Select,
-  SelectItem,
-  SelectSection,
   Textarea,
   Pagination,
   Spinner,
 } from '@heroui/react'
-import { getGuildList, createGuild, updateGuild, getGuildDetail, deleteGuild, transferGuildOwner } from '../../api/guilds'
-import { getGuildSubscriptions, createSubscription, updateSubscription, deleteSubscription } from '../../api/subscriptions'
-import { ALL_SERVERS, SERVERS } from '../../config/servers'
+import { getGuildList, createGuild, updateGuild, deleteGuild } from '../../api/guilds'
+import { getGuildSubscriptions, createSubscription, deleteSubscription } from '../../api/subscriptions'
 import UserSelector from '../../components/UserSelector'
+import ServerSelector from '../../components/ServerSelector'
 import { showSuccess, showError, showConfirm } from '../../utils/toast.jsx'
 
 export default function GuildManagementPage() {
   const [page, setPage] = useState(1)
-  const [searchQQ, setSearchQQ] = useState('')
-  const [searchUkey, setSearchUkey] = useState('')
+  const [keyword, setKeyword] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [filterServer, setFilterServer] = useState('')
   const pageSize = 20
 
@@ -75,14 +72,13 @@ export default function GuildManagementPage() {
   const queryParams = {
     page,
     page_size: pageSize,
-    ...(searchQQ && { guild_qq_number: searchQQ }),
-    ...(searchUkey && { ukey: searchUkey }),
+    ...(keyword && { keyword }),
     ...(filterServer && { server: filterServer }),
   }
 
   // 获取群组列表
   const { data, error, mutate } = useSWR(
-    ['guilds', page, searchQQ, searchUkey, filterServer],
+    ['guilds', page, keyword, filterServer],
     () => getGuildList(queryParams),
     { revalidateOnFocus: false }
   )
@@ -90,6 +86,20 @@ export default function GuildManagementPage() {
   const guilds = data?.items || []
   const total = data?.total || 0
   const pages = data?.pages || 0
+
+  // 处理搜索
+  const handleSearch = () => {
+    setKeyword(searchInput)
+    setPage(1)
+  }
+
+  // 重置筛选
+  const resetFilters = () => {
+    setKeyword('')
+    setSearchInput('')
+    setFilterServer('')
+    setPage(1)
+  }
 
   // 处理创建
   const handleCreate = async () => {
@@ -253,41 +263,47 @@ export default function GuildManagementPage() {
       </div>
 
       {/* 搜索和筛选 */}
-      <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl">
+      <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl shadow-lg">
         <CardBody>
           <div className="flex gap-4 flex-wrap">
             <Input
-              placeholder="搜索群QQ号"
-              value={searchQQ}
-              onValueChange={setSearchQQ}
-              className="max-w-xs"
+              label="搜索"
+              placeholder="搜索群号、群名称或群标识..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="flex-1"
+              variant="bordered"
               isClearable
-              onClear={() => setSearchQQ('')}
+              onClear={() => setSearchInput('')}
             />
-            <Input
-              placeholder="搜索群组标识(ukey)"
-              value={searchUkey}
-              onValueChange={setSearchUkey}
-              className="max-w-xs"
-              isClearable
-              onClear={() => setSearchUkey('')}
-            />
-            <Select
-              placeholder="筛选服务器"
+            <ServerSelector
+              label="服务器"
+              placeholder="选择服务器"
               value={filterServer}
-              onChange={(e) => setFilterServer(e.target.value)}
-              className="max-w-xs"
+              onChange={(value) => {
+                setFilterServer(value)
+                setPage(1)
+              }}
+              className="w-48"
+              variant="bordered"
+            />
+            <Button
+              color="primary"
+              onPress={handleSearch}
+              className="px-8"
             >
-              {Object.entries(SERVERS).map(([region, servers]) => (
-                <SelectSection key={region} title={region}>
-                  {servers.map((server) => (
-                    <SelectItem key={server} value={server}>
-                      {server}
-                    </SelectItem>
-                  ))}
-                </SelectSection>
-              ))}
-            </Select>
+              搜索
+            </Button>
+            {(keyword || filterServer) && (
+              <Button
+                color="default"
+                variant="flat"
+                onPress={resetFilters}
+              >
+                清除
+              </Button>
+            )}
           </div>
         </CardBody>
       </Card>
@@ -324,11 +340,11 @@ export default function GuildManagementPage() {
                   <TableColumn>订阅状态</TableColumn>
                   <TableColumn>操作</TableColumn>
                 </TableHeader>
-                <TableBody 
+                <TableBody
                   items={guilds}
                   emptyContent={
                     <div className="text-center py-8 text-gray-500">
-                      暂无群组数据
+                      {keyword || filterServer ? '没有找到匹配的群组' : '暂无群组数据'}
                     </div>
                   }
                 >
@@ -460,23 +476,13 @@ export default function GuildManagementPage() {
                 onValueChange={(val) => setFormData({ ...formData, name: val })}
                 isRequired
               />
-              <Select
+              <ServerSelector
                 label="服务器"
                 placeholder="选择服务器"
-                selectedKeys={formData.server ? [formData.server] : []}
-                onSelectionChange={(keys) => setFormData({ ...formData, server: Array.from(keys)[0] })}
+                value={formData.server}
+                onChange={(value) => setFormData({ ...formData, server: value })}
                 isRequired
-              >
-                {Object.entries(SERVERS).map(([region, servers]) => (
-                  <SelectSection key={region} title={region}>
-                    {servers.map((server) => (
-                      <SelectItem key={server} value={server}>
-                        {server}
-                      </SelectItem>
-                    ))}
-                  </SelectSection>
-                ))}
-              </Select>
+              />
               <UserSelector
                 label="群主"
                 placeholder="搜索用户昵称或QQ号选择群主"
@@ -554,22 +560,13 @@ export default function GuildManagementPage() {
                 onValueChange={(val) => setFormData({ ...formData, name: val })}
                 isRequired
               />
-              <Select
+              <ServerSelector
                 label="服务器"
-                selectedKeys={formData.server ? [formData.server] : []}
-                onSelectionChange={(keys) => setFormData({ ...formData, server: Array.from(keys)[0] })}
+                placeholder="请选择服务器"
+                value={formData.server}
+                onChange={(value) => setFormData({ ...formData, server: value })}
                 isRequired
-              >
-                {Object.entries(SERVERS).map(([region, servers]) => (
-                  <SelectSection key={region} title={region}>
-                    {servers.map((server) => (
-                      <SelectItem key={server} value={server}>
-                        {server}
-                      </SelectItem>
-                    ))}
-                  </SelectSection>
-                ))}
-              </Select>
+              />
               <Textarea
                 label="群组描述"
                 value={formData.description}
