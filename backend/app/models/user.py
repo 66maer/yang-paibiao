@@ -66,6 +66,7 @@ class User(Base):
 
     # 关系
     owned_guilds = relationship("Guild", back_populates="owner", foreign_keys="Guild.owner_id")
+    guild_memberships = relationship("GuildMember", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(id={self.id}, qq_number='{self.qq_number}', nickname='{self.nickname}')>"

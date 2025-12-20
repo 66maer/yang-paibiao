@@ -9,7 +9,7 @@ from sqlalchemy import select, func, or_
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
-from app.models import Guild, Subscription, User
+from app.models import Guild, Subscription, User, GuildMember
 from app.schemas.common import PaginatedResponse
 from app.schemas.guild import (
     GuildCreate,
@@ -162,6 +162,15 @@ async def create_guild(
     db.add(guild)
     await db.flush()  # 获取 guild.id
     
+    # 将群主加入成员绑定为 owner
+    owner_membership = GuildMember(
+        guild_id=guild.id,
+        user_id=owner.id,
+        role="owner",
+        group_nickname=None
+    )
+    db.add(owner_membership)
+
     # 创建订阅（如果提供）
     subscription = None
     if guild_data.subscription:
@@ -200,7 +209,7 @@ async def create_guild(
         preferences=guild.preferences or {},
         current_subscription=SubscriptionResponse.from_orm(subscription) if subscription else None,
         subscription_history=[],
-        stats={"member_count": 0, "team_count": 0},
+        stats={"member_count": 1, "team_count": 0},
         created_at=guild.created_at,
         updated_at=guild.updated_at
     )
@@ -355,9 +364,36 @@ async def transfer_guild_owner(
     
     # 转让群主
     guild.owner_id = new_owner.id
-    
+
+    # 更新成员绑定：原群主降级为 admin，新群主绑定为 owner（若无则创建）
+    # 查找原群主成员记录
+    prev_owner_member = (await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild.id,
+            GuildMember.user_id == owner.id
+        )
+    )).scalar_one_or_none()
+    if prev_owner_member:
+        prev_owner_member.role = "helper"
+
+    # 查找新群主成员记录
+    new_owner_member = (await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild.id,
+            GuildMember.user_id == new_owner.id
+        )
+    )).scalar_one_or_none()
+    if new_owner_member:
+        new_owner_member.role = "owner"
+    else:
+        db.add(GuildMember(
+            guild_id=guild.id,
+            user_id=new_owner.id,
+            role="owner"
+        ))
+
     await db.commit()
-    
+
     return {"message": "群主转让成功"}
 
 

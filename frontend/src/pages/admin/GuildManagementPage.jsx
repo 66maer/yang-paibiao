@@ -22,7 +22,7 @@ import {
   Pagination,
   Spinner,
 } from '@heroui/react'
-import { getGuildList, createGuild, updateGuild, deleteGuild } from '../../api/guilds'
+import { getGuildList, createGuild, updateGuild, deleteGuild, transferGuildOwner } from '../../api/guilds'
 import { getGuildSubscriptions, createSubscription, deleteSubscription } from '../../api/subscriptions'
 import UserSelector from '../../components/UserSelector'
 import ServerSelector from '../../components/ServerSelector'
@@ -39,6 +39,7 @@ export default function GuildManagementPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false)
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
   const [selectedGuild, setSelectedGuild] = useState(null)
   const [guildSubscriptions, setGuildSubscriptions] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -66,6 +67,11 @@ export default function GuildManagementPage() {
     end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     features: { max_teams: 100, max_members: 200 },
     notes: '',
+  })
+
+  // 转让群主表单
+  const [transferFormData, setTransferFormData] = useState({
+    new_owner_qq_number: ''
   })
 
   // 构建查询参数
@@ -160,6 +166,13 @@ export default function GuildManagementPage() {
       description: guild.description || '',
     })
     setIsEditModalOpen(true)
+  }
+
+  // 打开转让群主模态框
+  const openTransferModal = (guild) => {
+    setSelectedGuild(guild)
+    setTransferFormData({ new_owner_qq_number: '' })
+    setIsTransferModalOpen(true)
   }
 
   // 查看订阅管理
@@ -404,6 +417,14 @@ export default function GuildManagementPage() {
                             onPress={() => viewSubscriptions(guild)}
                           >
                             订阅管理
+                          </Button>
+                          <Button
+                            size="sm"
+                            color="warning"
+                            variant="flat"
+                            onPress={() => openTransferModal(guild)}
+                          >
+                            转让群主
                           </Button>
                           <Button
                             size="sm"
@@ -700,6 +721,63 @@ export default function GuildManagementPage() {
           </ModalBody>
           <ModalFooter>
             <Button onPress={() => setIsSubscriptionModalOpen(false)}>关闭</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* 转让群主模态框 */}
+      <Modal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+      >
+        <ModalContent>
+          <ModalHeader>转让群主</ModalHeader>
+          <ModalBody>
+            {selectedGuild && (
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600">
+                  当前群主：{selectedGuild.owner?.nickname}（{selectedGuild.owner?.qq_number}）
+                </div>
+                <UserSelector
+                  label="新群主"
+                  placeholder="输入昵称或QQ号搜索并选择用户"
+                  value={transferFormData.new_owner_qq_number}
+                  onChange={(qqNumber) => setTransferFormData({ new_owner_qq_number: qqNumber })}
+                  isRequired
+                />
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => setIsTransferModalOpen(false)}>
+              取消
+            </Button>
+            <Button color="warning" onPress={async () => {
+              if (!transferFormData.new_owner_qq_number) {
+                showError('请选择新群主用户')
+                return
+              }
+              if (selectedGuild?.owner?.qq_number === transferFormData.new_owner_qq_number) {
+                showError('新群主不能与当前群主相同')
+                return
+              }
+              setIsLoading(true)
+              try {
+                await transferGuildOwner(selectedGuild.id, {
+                  new_owner_qq_number: transferFormData.new_owner_qq_number
+                })
+                setIsTransferModalOpen(false)
+                setTransferFormData({ new_owner_qq_number: '' })
+                await mutate()
+                showSuccess('群主转让成功')
+              } catch (err) {
+                showError('转让失败：' + (err.response?.data?.detail || err.message))
+              } finally {
+                setIsLoading(false)
+              }
+            }} isLoading={isLoading}>
+              确认转让
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

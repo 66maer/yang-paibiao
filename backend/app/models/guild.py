@@ -28,5 +28,5 @@ class Guild(Base):
     # 关系
     owner = relationship("User", back_populates="owned_guilds", foreign_keys=[owner_id])
     subscriptions = relationship("Subscription", back_populates="guild", cascade="all, delete-orphan")
-    # TODO: members relationship (guild_members)
+    members = relationship("GuildMember", back_populates="guild", cascade="all, delete-orphan")
     # TODO: teams relationship

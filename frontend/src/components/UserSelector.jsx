@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { Autocomplete, AutocompleteItem } from '@heroui/react'
 import useSWR from 'swr'
 import Fuse from 'fuse.js'
+import { pinyin } from 'pinyin-pro'
 import { getUserList } from '../api/users'
 
 /**
@@ -57,6 +58,34 @@ export default function UserSelector({
   // 判断是否已获取全部用户（如果小于5000，说明数据库就这么多，无需后端搜索）
   const hasAllUsers = allUsers.length < 5000
 
+  // 预处理用户数据，生成拼音与首字母索引，提供更强的前端模糊匹配能力
+  const enhancedUsers = useMemo(() => {
+    if (!allUsers.length) return []
+    const toPinyin = (text) => pinyin(text || '', { toneType: 'none', type: 'array' }).join('')
+    const toInitials = (text) => pinyin(text || '', { pattern: 'first', toneType: 'none', type: 'array' }).join('')
+
+    return allUsers.map((user) => {
+      const names = [user.nickname, ...(user.other_nicknames || [])].filter(Boolean)
+      const pinyins = names.map(toPinyin)
+      const initials = names.map(toInitials)
+      const qq = String(user.qq_number || '')
+
+      const searchText = [
+        ...names,
+        ...pinyins,
+        ...initials,
+        qq,
+      ]
+        .join('|')
+        .toLowerCase()
+
+      return {
+        ...user,
+        searchText,
+      }
+    })
+  }, [allUsers])
+
   // 防抖：延迟0.5秒后更新搜索关键词
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -68,29 +97,28 @@ export default function UserSelector({
 
   // 配置 Fuse.js 模糊搜索（完全在前端运行）
   const fuse = useMemo(() => {
-    if (!allUsers.length) return null
-    
-    return new Fuse(allUsers, {
+    if (!enhancedUsers.length) return null
+    return new Fuse(enhancedUsers, {
       keys: [
         { name: 'nickname', weight: 2 },
         { name: 'other_nicknames', weight: 1.5 },
         { name: 'qq_number', weight: 1 },
+        { name: 'searchText', weight: 2 }, // 拼音与首字母聚合搜索
       ],
-      threshold: 0.4,  // 稍微提高容错度
+      threshold: 0.4,
       includeScore: true,
       minMatchCharLength: 1,
       ignoreLocation: true,
       shouldSort: true,
     })
-  }, [allUsers])
+  }, [enhancedUsers])
 
   // 前端模糊搜索（使用实时的 searchKeyword，保证输入即搜）
   const frontendResults = useMemo(() => {
-    if (!searchKeyword || !fuse) return allUsers.slice(0, 50) // 默认显示前50个
-    
+    if (!searchKeyword || !fuse) return enhancedUsers.slice(0, 50)
     const results = fuse.search(searchKeyword)
     return results.slice(0, 50).map(result => result.item)
-  }, [allUsers, searchKeyword, fuse])
+  }, [enhancedUsers, searchKeyword, fuse])
 
   // 当前端搜索结果为空且有搜索关键词时，启用后端搜索（防抖后的关键词）
   // 只有在用户数量达到5000（可能还有更多）时才启用后端搜索
@@ -124,11 +152,19 @@ export default function UserSelector({
   }, [frontendResults, backendSearchEnabled, backendUsers, searchKeyword, allUsers])
 
   // 处理用户显示文本
-  const getUserDisplayText = (user) => {
-    const nicknames = [user.nickname, ...(user.other_nicknames || [])]
-      .filter(Boolean)
-      .join(', ')
-    return `${nicknames} (${user.qq_number})`
+  const getPrimaryNickname = (user) => {
+    if (user.nickname) return user.nickname
+    const other = (user.other_nicknames || []).find(Boolean)
+    return other || String(user.qq_number || '')
+  }
+
+  const getOtherNicknamesText = (user) => {
+    const others = (user.other_nicknames || []).filter(Boolean)
+    if (!others.length) return ''
+    // 不包含主昵称，避免重复
+    const primary = user.nickname || ''
+    const filtered = others.filter(n => n !== primary)
+    return filtered.join(', ')
   }
 
   const isLoading = isLoadingAll || isLoadingBackend
@@ -155,8 +191,21 @@ export default function UserSelector({
       }
     >
       {displayUsers.map((user) => (
-        <AutocompleteItem key={user.qq_number} value={user.qq_number}>
-          {getUserDisplayText(user)}
+        <AutocompleteItem
+          key={user.qq_number}
+          value={user.qq_number}
+          textValue={`${getPrimaryNickname(user)} (${user.qq_number})`}
+        >
+          <div className="flex flex-col min-w-0">
+            <div className="text-sm font-medium">
+              {getPrimaryNickname(user)} ({user.qq_number})
+            </div>
+            {getOtherNicknamesText(user) && (
+              <div className="text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis">
+                {getOtherNicknamesText(user)}
+              </div>
+            )}
+          </div>
         </AutocompleteItem>
       ))}
     </Autocomplete>
