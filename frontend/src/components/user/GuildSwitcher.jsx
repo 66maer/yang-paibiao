@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Dropdown,
   DropdownTrigger,
@@ -19,6 +20,7 @@ import GuildInfoModal from "./GuildInfoModal";
  */
 export default function GuildSwitcher() {
   const { user, setCurrentGuild } = useAuthStore();
+  const navigate = useNavigate();
   const [editGuildNicknameOpen, setEditGuildNicknameOpen] = useState(false);
   const [guildInfoOpen, setGuildInfoOpen] = useState(false);
   const [selectedGuild, setSelectedGuild] = useState(null);
@@ -68,6 +70,7 @@ export default function GuildSwitcher() {
       setIsLoading(true);
       await switchGuild(guildId);
       setCurrentGuild(guildId);
+      localStorage.setItem("selectedGuildId", String(guildId));
 
       const newGuild = user?.guilds?.find((g) => g.id === guildId);
       toast.success(`已切换到 ${newGuild?.name}`);
@@ -188,6 +191,13 @@ export default function GuildSwitcher() {
                   "text-purple-600 dark:text-purple-400 text-xs font-semibold",
               }}
             >
+              <DropdownItem
+                key="open-guild-hub"
+                className="text-pink-600 dark:text-pink-400"
+                onPress={() => navigate('/user/guilds')}
+              >
+                🗂️ 打开群组选择页
+              </DropdownItem>
               {user.guilds
                 .filter((guild) => guild.id !== currentGuild.id)
                 .map((guild) => (

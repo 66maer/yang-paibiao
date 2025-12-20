@@ -20,5 +20,15 @@ export default function RootRedirect() {
     return <Navigate to="/admin" replace />;
   }
 
-  return <Navigate to="/user/board" replace />;
+  // 普通用户：根据是否有有效选择的群组进行跳转
+  const guilds = Array.isArray(user?.guilds) ? user.guilds : [];
+  const localSelectedRaw = localStorage.getItem('selectedGuildId');
+  const localSelectedId = localSelectedRaw ? parseInt(localSelectedRaw, 10) : null;
+  const hasLocalValid = !!(localSelectedId && guilds.some(g => g.id === localSelectedId));
+
+  if (hasLocalValid || guilds.length === 1) {
+    return <Navigate to="/user/board" replace />;
+  }
+
+  return <Navigate to="/user/guilds" replace />;
 }

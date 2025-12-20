@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { CardBody, CardHeader, Input, Button } from '@heroui/react';
 import { userLogin, getUserInfo } from '../api/auth';
+import { switchGuild } from '../api/user';
 import useAuthStore from '../stores/authStore';
 import HoverEffectCard from '../components/HoverEffectCard';
 import ThemeSwitch from '../components/ThemeSwitch';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
+  const { setAuth, setCurrentGuild } = useAuthStore();
   
   const [formData, setFormData] = useState({
     qq_number: '',
@@ -41,10 +42,45 @@ export default function LoginPage() {
       const userInfo = await getUserInfo();
 
       // 更新用户信息到全局状态
-      setAuth(accessToken, refreshToken, userInfo.data);
-      
-      // 跳转到用户首页
-      navigate('/user', { replace: true });
+      const userData = userInfo.data;
+      setAuth(accessToken, refreshToken, userData);
+
+      // 登录后优化跳转逻辑
+      const guilds = Array.isArray(userData?.guilds) ? userData.guilds : [];
+      const localSelectedRaw = localStorage.getItem('selectedGuildId');
+      const localSelectedId = localSelectedRaw ? parseInt(localSelectedRaw, 10) : null;
+      const hasLocalValid = !!(localSelectedId && guilds.some(g => g.id === localSelectedId));
+
+      if (hasLocalValid) {
+        // 本地存在合法选择：若与服务端不同则同步，然后直跳面板
+        if (userData.current_guild_id !== localSelectedId) {
+          try {
+            await switchGuild(localSelectedId);
+            setCurrentGuild(localSelectedId);
+          } catch (_) {
+            // 同步失败不阻塞跳转
+          }
+        }
+        navigate('/user/board', { replace: true });
+        return;
+      }
+
+      if (guilds.length === 1) {
+        // 只有一个群组：自动选择并跳转
+        const onlyId = guilds[0].id;
+        localStorage.setItem('selectedGuildId', String(onlyId));
+        if (userData.current_guild_id !== onlyId) {
+          try {
+            await switchGuild(onlyId);
+            setCurrentGuild(onlyId);
+          } catch (_) {}
+        }
+        navigate('/user/board', { replace: true });
+        return;
+      }
+
+      // 多个群组且本地无有效选择：进入中转页
+      navigate('/user/guilds', { replace: true });
     } catch (err) {
       console.error('登录错误:', err);
       setError(typeof err === 'string' ? err : err.message || '登录失败，请检查QQ号和密码');
