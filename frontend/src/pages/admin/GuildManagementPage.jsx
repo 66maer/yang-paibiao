@@ -20,13 +20,14 @@ import {
   ModalFooter,
   Select,
   SelectItem,
+  SelectSection,
   Textarea,
   Pagination,
   Spinner,
 } from '@heroui/react'
 import { getGuildList, createGuild, updateGuild, getGuildDetail, deleteGuild, transferGuildOwner } from '../../api/guilds'
 import { getGuildSubscriptions, createSubscription, updateSubscription, deleteSubscription } from '../../api/subscriptions'
-import { ALL_SERVERS } from '../../config/servers'
+import { ALL_SERVERS, SERVERS } from '../../config/servers'
 import UserSelector from '../../components/UserSelector'
 import { showSuccess, showError, showConfirm } from '../../utils/toast.jsx'
 
@@ -277,10 +278,14 @@ export default function GuildManagementPage() {
               onChange={(e) => setFilterServer(e.target.value)}
               className="max-w-xs"
             >
-              {ALL_SERVERS.map((server) => (
-                <SelectItem key={server} value={server}>
-                  {server}
-                </SelectItem>
+              {Object.entries(SERVERS).map(([region, servers]) => (
+                <SelectSection key={region} title={region}>
+                  {servers.map((server) => (
+                    <SelectItem key={server} value={server}>
+                      {server}
+                    </SelectItem>
+                  ))}
+                </SelectSection>
               ))}
             </Select>
           </div>
@@ -462,10 +467,14 @@ export default function GuildManagementPage() {
                 onSelectionChange={(keys) => setFormData({ ...formData, server: Array.from(keys)[0] })}
                 isRequired
               >
-                {ALL_SERVERS.map((server) => (
-                  <SelectItem key={server} value={server}>
-                    {server}
-                  </SelectItem>
+                {Object.entries(SERVERS).map(([region, servers]) => (
+                  <SelectSection key={region} title={region}>
+                    {servers.map((server) => (
+                      <SelectItem key={server} value={server}>
+                        {server}
+                      </SelectItem>
+                    ))}
+                  </SelectSection>
                 ))}
               </Select>
               <UserSelector
@@ -551,10 +560,14 @@ export default function GuildManagementPage() {
                 onSelectionChange={(keys) => setFormData({ ...formData, server: Array.from(keys)[0] })}
                 isRequired
               >
-                {ALL_SERVERS.map((server) => (
-                  <SelectItem key={server} value={server}>
-                    {server}
-                  </SelectItem>
+                {Object.entries(SERVERS).map(([region, servers]) => (
+                  <SelectSection key={region} title={region}>
+                    {servers.map((server) => (
+                      <SelectItem key={server} value={server}>
+                        {server}
+                      </SelectItem>
+                    ))}
+                  </SelectSection>
                 ))}
               </Select>
               <Textarea

@@ -138,7 +138,7 @@ export const xinfaInfoTable = {
   },
   xiaochen: {
     name: "笑尘诀",
-    nickname: ["丐帮", "笑尘诀", "帅比", "无敌心法", "最强心法"],
+    nickname: ["丐帮", "笑尘诀", "帅比"],
     menpai: "丐帮",
     icon: "xiaochen.png",
     color: "#cd853f",

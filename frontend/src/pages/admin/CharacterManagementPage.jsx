@@ -33,6 +33,7 @@ import {
 } from '../../api/characters'
 import { xinfaInfoTable, allXinfaList } from '../../config/xinfa'
 import { ALL_SERVERS, SERVERS } from '../../config/servers'
+import XinfaSelector from '../../components/XinfaSelector'
 
 // 常见心法列表 - 从配置文件中获取所有心法名称
 const XINFA_LIST = allXinfaList.map((key) => xinfaInfoTable[key].name)
@@ -210,22 +211,16 @@ export default function CharacterManagementPage() {
                   </SelectSection>
                 ))}
               </Select>
-              <Select
+              <XinfaSelector
                 placeholder="心法"
                 className="w-48"
-                selectedKeys={filterXinfa ? [filterXinfa] : []}
-                onChange={(e) => {
-                  setFilterXinfa(e.target.value)
+                value={filterXinfa}
+                onChange={(value) => {
+                  setFilterXinfa(value)
                   setPage(1)
                 }}
                 variant="bordered"
-              >
-                {XINFA_LIST.map((xinfa) => (
-                  <SelectItem key={xinfa} value={xinfa}>
-                    {xinfa}
-                  </SelectItem>
-                ))}
-              </Select>
+              />
               <Button color="primary" onClick={handleSearch} className="px-8">
                 搜索
               </Button>
@@ -345,7 +340,7 @@ export default function CharacterManagementPage() {
           <ModalBody>
             <div className="space-y-4">
               <Input
-                label="角色名 *"
+                label="角色名"
                 placeholder="请输入角色名"
                 value={createForm.name}
                 onChange={(e) =>
@@ -354,7 +349,7 @@ export default function CharacterManagementPage() {
                 isRequired
               />
               <Select
-                label="服务器 *"
+                label="服务器"
                 placeholder="请选择服务器"
                 selectedKeys={createForm.server ? [createForm.server] : []}
                 onChange={(e) =>
@@ -372,21 +367,14 @@ export default function CharacterManagementPage() {
                   </SelectSection>
                 ))}
               </Select>
-              <Select
-                label="心法 *"
-                placeholder="请选择心法"
-                selectedKeys={createForm.xinfa ? [createForm.xinfa] : []}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, xinfa: e.target.value })
+              <XinfaSelector
+                label="心法"
+                value={createForm.xinfa}
+                onChange={(value) =>
+                  setCreateForm({ ...createForm, xinfa: value })
                 }
                 isRequired
-              >
-                {XINFA_LIST.map((xinfa) => (
-                  <SelectItem key={xinfa} value={xinfa}>
-                    {xinfa}
-                  </SelectItem>
-                ))}
-              </Select>
+              />
               <Input
                 label="备注"
                 placeholder="请输入备注（可选）"
@@ -442,20 +430,13 @@ export default function CharacterManagementPage() {
                   </SelectSection>
                 ))}
               </Select>
-              <Select
+              <XinfaSelector
                 label="心法"
-                placeholder="请选择心法"
-                selectedKeys={editForm.xinfa ? [editForm.xinfa] : []}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, xinfa: e.target.value })
+                value={editForm.xinfa}
+                onChange={(value) =>
+                  setEditForm({ ...editForm, xinfa: value })
                 }
-              >
-                {XINFA_LIST.map((xinfa) => (
-                  <SelectItem key={xinfa} value={xinfa}>
-                    {xinfa}
-                  </SelectItem>
-                ))}
-              </Select>
+              />
               <Input
                 label="备注"
                 placeholder="请输入备注"
