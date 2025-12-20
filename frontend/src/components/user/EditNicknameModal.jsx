@@ -10,7 +10,7 @@ import {
 } from "@heroui/react";
 import toast from "react-hot-toast";
 import useAuthStore from "../../stores/authStore";
-import { updateUserNickname } from "../../api/user";
+import { updateUserInfo } from "../../api/user";
 
 /**
  * 修改用户昵称弹窗
@@ -39,7 +39,7 @@ export default function EditNicknameModal({ isOpen, onClose }) {
 
     try {
       setIsLoading(true);
-      await updateUserNickname(nickname.trim());
+      await updateUserInfo({ nickname: nickname.trim() });
       updateStoreNickname(nickname.trim());
       toast.success("昵称修改成功");
       onClose();

@@ -139,7 +139,7 @@ async def update_current_user(
     return ResponseModel(data=UserResponse.model_validate(current_user))
 
 
-@router.post("/me/change-password", response_model=ResponseModel)
+@router.put("/me/password", response_model=ResponseModel)
 async def change_password(
     password_data: UserChangePassword,
     current_user: User = Depends(get_current_user),

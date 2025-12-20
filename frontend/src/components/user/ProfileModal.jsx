@@ -18,7 +18,7 @@ import useAuthStore from "../../stores/authStore";
 import EditNicknameModal from "./EditNicknameModal";
 import ChangePasswordModal from "./ChangePasswordModal";
 import NicknameManager from "./NicknameManager";
-import { updateOtherNicknames } from "../../api/user";
+import { updateUserInfo } from "../../api/user";
 
 /**
  * 信息项组件 - 参考 napcat-webui-frontend 的 SystemInfoItem
@@ -46,7 +46,7 @@ export default function ProfileModal({ isOpen, onClose }) {
 
   // 更新其他昵称
   const handleUpdateNicknames = async (nicknames) => {
-    await updateOtherNicknames(nicknames);
+    await updateUserInfo({ other_nicknames: nicknames });
     updateStoreNicknames(nicknames);
   };
 

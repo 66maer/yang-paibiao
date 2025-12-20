@@ -15,7 +15,7 @@ export const getCurrentUser = async () => {
  * 获取用户所属的所有群组
  */
 export const getUserGuilds = async () => {
-  return await apiClient.get("/user/guilds");
+  return await apiClient.get("/users/me/guilds");
 };
 
 /**
@@ -27,31 +27,24 @@ export const switchGuild = async (guildId) => {
 };
 
 /**
- * 修改用户昵称
- * @param {string} nickname - 新昵称
+ * 更新用户信息（昵称、其他昵称、头像等）
+ * @param {Object} userData - 用户数据
+ * @param {string} userData.nickname - 昵称（可选）
+ * @param {string[]} userData.other_nicknames - 其他昵称数组（可选）
+ * @param {string} userData.avatar - 头像URL（可选）
  */
-export const updateUserNickname = async (nickname) => {
-  return await apiClient.put("/user/profile", { nickname });
+export const updateUserInfo = async (userData) => {
+  return await apiClient.put("/users/me", userData);
 };
 
 /**
- * 修改用户的其他昵称列表
- * @param {string[]} otherNicknames - 其他昵称数组
- */
-export const updateOtherNicknames = async (otherNicknames) => {
-  return await apiClient.put("/user/other-nicknames", {
-    other_nicknames: otherNicknames,
-  });
-};
-
-/**
- * 修改群昵称
+ * 修改群内昵称
  * @param {number} guildId - 群组ID
- * @param {string} guildNickname - 新的群昵称
+ * @param {string} nickname - 新的群内昵称
  */
-export const updateGuildNickname = async (guildId, guildNickname) => {
-  return await apiClient.put(`/user/guilds/${guildId}/nickname`, {
-    guild_nickname: guildNickname,
+export const updateGuildNickname = async (guildId, nickname) => {
+  return await apiClient.put(`/guilds/${guildId}/members/me/nickname`, {
+    group_nickname: nickname,
   });
 };
 
@@ -61,7 +54,7 @@ export const updateGuildNickname = async (guildId, guildNickname) => {
  * @param {string} newPassword - 新密码
  */
 export const changePassword = async (oldPassword, newPassword) => {
-  return await apiClient.put("/user/change-password", {
+  return await apiClient.put("/users/me/password", {
     old_password: oldPassword,
     new_password: newPassword,
   });
