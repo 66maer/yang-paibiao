@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_admin, get_current_user, get_db
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.models.user import User
+from app.models.guild_member import GuildMember
+from app.models.guild import Guild
 from app.models.admin import SystemAdmin
 from app.schemas.user import (
     UserRegister,
@@ -19,6 +21,7 @@ from app.schemas.user import (
     UserResponse,
     UserLoginResponse,
     UserListResponse,
+    UserGuildItem,
 )
 from app.schemas.common import ResponseModel
 
@@ -164,6 +167,41 @@ async def change_password(
     await db.commit()
     
     return ResponseModel(message="密码修改成功")
+
+
+@router.get("/me/guilds", response_model=ResponseModel[list[UserGuildItem]])
+async def get_my_guilds(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取当前用户加入的所有群组（仅活跃成员）
+    返回字段与前端约定保持一致：id, name, server_name, role, guild_nickname, qq_group_id, joined_at
+    """
+    stmt = (
+        select(GuildMember, Guild)
+        .join(Guild, GuildMember.guild_id == Guild.id)
+        .where(
+            GuildMember.user_id == current_user.id,
+            GuildMember.left_at.is_(None)
+        )
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    items: list[UserGuildItem] = []
+    for gm, guild in rows:
+        items.append(UserGuildItem(
+            id=guild.id,
+            name=guild.name,
+            server_name=guild.server,
+            role=gm.role,
+            guild_nickname=gm.group_nickname,
+            qq_group_id=guild.guild_qq_number,
+            joined_at=gm.joined_at,
+        ))
+
+    return ResponseModel(data=items)
 
 
 # ==================== 管理员接口 ====================

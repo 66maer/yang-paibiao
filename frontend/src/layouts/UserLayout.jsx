@@ -18,6 +18,7 @@ export default function UserLayout() {
     (g) => g.id === user?.current_guild_id
   );
   const currentRole = currentGuild?.role || "member";
+  const hasCurrentGuild = !!currentGuild;
 
   // 根据权限过滤菜单
   const menuItems = getFilteredMenu(currentRole);
@@ -44,26 +45,28 @@ export default function UserLayout() {
               </span>
             </Link>
 
-            {/* 功能菜单 */}
-            <nav className="hidden md:flex items-center gap-1">
-              {menuItems.map((item) => (
-                <Link key={item.key} to={item.path}>
-                  <Button
-                    size="sm"
-                    variant={isActive(item.path) ? "flat" : "light"}
-                    color={isActive(item.path) ? "primary" : "default"}
-                    className={`font-medium transition-all ${
-                      isActive(item.path)
-                        ? "bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 text-pink-600 dark:text-pink-400"
-                        : ""
-                    }`}
-                  >
-                    <span className="mr-1">{item.icon}</span>
-                    {item.label}
-                  </Button>
-                </Link>
-              ))}
-            </nav>
+            {/* 功能菜单：仅在已选择当前群组时展示 */}
+            {hasCurrentGuild && (
+              <nav className="hidden md:flex items-center gap-1">
+                {menuItems.map((item) => (
+                  <Link key={item.key} to={item.path}>
+                    <Button
+                      size="sm"
+                      variant={isActive(item.path) ? "flat" : "light"}
+                      color={isActive(item.path) ? "primary" : "default"}
+                      className={`font-medium transition-all ${
+                        isActive(item.path)
+                          ? "bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 text-pink-600 dark:text-pink-400"
+                          : ""
+                      }`}
+                    >
+                      <span className="mr-1">{item.icon}</span>
+                      {item.label}
+                    </Button>
+                  </Link>
+                ))}
+              </nav>
+            )}
 
             {/* 右侧区域：主题 -> 群组切换 -> 用户 */}
             <div className="flex items-center gap-3">

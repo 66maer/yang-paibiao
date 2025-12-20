@@ -68,3 +68,16 @@ class UserListResponse(BaseModel):
     page: int
     page_size: int
     pages: int
+
+
+class UserGuildItem(BaseModel):
+    """当前用户的群组条目"""
+    id: int
+    name: str
+    server_name: str
+    role: str
+    guild_nickname: str | None = None
+    qq_group_id: str | None = None
+    joined_at: datetime | None = None
+
+    model_config = {"from_attributes": True}

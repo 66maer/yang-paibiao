@@ -2,6 +2,7 @@
 认证相关的Pydantic模型
 """
 from typing import Optional
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 
@@ -44,6 +45,8 @@ class UserInfo(BaseModel):
     nickname: str = Field(description="昵称")
     avatar: Optional[str] = Field(default=None, description="头像URL")
     other_nicknames: Optional[list[str]] = Field(default=None, description="其他昵称")
+    last_login_at: Optional[datetime] = Field(default=None, description="最后登录时间")
+    created_at: Optional[datetime] = Field(default=None, description="创建时间")
 
     class Config:
         from_attributes = True

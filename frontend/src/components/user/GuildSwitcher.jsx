@@ -59,8 +59,8 @@ export default function GuildSwitcher() {
     }
   };
 
-  // 切换群组
-  const handleSwitchGuild = async (guildId) => {
+  // 切换群组（纯前端操作）
+  const handleSwitchGuild = (guildId) => {
     if (guildId === user?.current_guild_id) {
       toast.error("已经在当前群组了");
       return;
@@ -68,7 +68,7 @@ export default function GuildSwitcher() {
 
     try {
       setIsLoading(true);
-      await switchGuild(guildId);
+      // 更新前端状态
       setCurrentGuild(guildId);
       localStorage.setItem("selectedGuildId", String(guildId));
 
@@ -78,8 +78,7 @@ export default function GuildSwitcher() {
       // 刷新页面以更新权限相关的内容
       window.location.reload();
     } catch (error) {
-      toast.error(error.response?.data?.message || "切换群组失败");
-    } finally {
+      toast.error("切换群组失败");
       setIsLoading(false);
     }
   };
@@ -138,8 +137,8 @@ export default function GuildSwitcher() {
           >
             <DropdownItem
               key="current-guild-info"
-              isReadOnly
-              className="cursor-default opacity-100 hover:bg-transparent"
+              onPress={handleViewGuildInfo}
+              className="cursor-pointer"
             >
               <div className="flex flex-col gap-2 py-2">
                 <div className="flex items-center gap-2">
@@ -167,13 +166,6 @@ export default function GuildSwitcher() {
               </div>
             </DropdownItem>
             <DropdownItem
-              key="view-guild-info"
-              onPress={handleViewGuildInfo}
-              className="text-pink-600 dark:text-pink-400"
-            >
-              ℹ️ 查看群组信息
-            </DropdownItem>
-            <DropdownItem
               key="edit-guild-nickname"
               onPress={handleEditGuildNickname}
               className="text-purple-600 dark:text-purple-400"
@@ -182,49 +174,15 @@ export default function GuildSwitcher() {
             </DropdownItem>
           </DropdownSection>
 
-          {/* 切换群组列表 */}
-          {user?.guilds && user.guilds.length > 1 && (
-            <DropdownSection
-              title="切换群组"
-              classNames={{
-                heading:
-                  "text-purple-600 dark:text-purple-400 text-xs font-semibold",
-              }}
+          {/* 切换群组按钮 */}
+          {user?.guilds && user.guilds.length > 0 && (
+            <DropdownItem
+              key="open-guild-hub"
+              className="text-pink-600 dark:text-pink-400"
+              onPress={() => navigate('/user/guilds')}
             >
-              <DropdownItem
-                key="open-guild-hub"
-                className="text-pink-600 dark:text-pink-400"
-                onPress={() => navigate('/user/guilds')}
-              >
-                🗂️ 打开群组选择页
-              </DropdownItem>
-              {user.guilds
-                .filter((guild) => guild.id !== currentGuild.id)
-                .map((guild) => (
-                  <DropdownItem
-                    key={guild.id}
-                    onPress={() => handleSwitchGuild(guild.id)}
-                  >
-                    <div className="flex items-center justify-between py-1">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">
-                          {guild.name}
-                        </span>
-                        <span className="text-xs text-default-500">
-                          {guild.guild_nickname}
-                        </span>
-                      </div>
-                      <Chip
-                        size="sm"
-                        variant="flat"
-                        color={getRoleColor(guild.role)}
-                      >
-                        {getRoleLabel(guild.role)}
-                      </Chip>
-                    </div>
-                  </DropdownItem>
-                ))}
-            </DropdownSection>
+              🗂️ 切换群组
+            </DropdownItem>
           )}
         </DropdownMenu>
       </Dropdown>

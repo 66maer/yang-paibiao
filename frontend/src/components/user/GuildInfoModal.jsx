@@ -128,11 +128,6 @@ export default function GuildInfoModal({ isOpen, onClose, guild }) {
                 value={guild.server_name || "未设置"}
               />
 
-              <InfoItem
-                title="阵营"
-                icon="⚔️"
-                value={guild.camp || "未设置"}
-              />
             </div>
 
             <Divider />

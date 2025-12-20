@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardBody, CardHeader, Button, Chip } from "@heroui/react";
 import toast from "react-hot-toast";
 import useAuthStore from "../../stores/authStore";
-import { switchGuild } from "../../api/user";
 
 /**
  * 群组中转页：登录后的初始页/切换群组页
@@ -43,26 +42,21 @@ export default function GuildHubPage() {
     }
   };
 
-  const doSwitchGuild = async (guildId) => {
+  const doSwitchGuild = (guildId) => {
     if (!guildId) return;
-    if (guildId === currentGuildId) {
-      // 已是当前群组，直接进入
-      localStorage.setItem("selectedGuildId", String(guildId));
-      navigate("/user/board", { replace: true });
-      return;
-    }
-
+    
     try {
       setLoadingGuildId(guildId);
-      await switchGuild(guildId);
+      // 更新前端状态
       setCurrentGuild(guildId);
       localStorage.setItem("selectedGuildId", String(guildId));
+      
       const newGuild = guilds.find((g) => g.id === guildId);
       toast.success(`已切换到 ${newGuild?.name || "群组"}`);
+      
       navigate("/user/board", { replace: true });
     } catch (error) {
-      toast.error(error?.response?.data?.message || "切换群组失败");
-    } finally {
+      toast.error("切换群组失败");
       setLoadingGuildId(null);
     }
   };
@@ -111,7 +105,6 @@ export default function GuildHubPage() {
               <CardBody className="flex flex-col gap-3">
                 <div className="text-xs text-default-500">
                   <div>服务器：{guild.server_name || "--"}</div>
-                  <div>阵营：{guild.camp || "--"}</div>
                   <div>群人数：{guild.member_count ?? "--"}</div>
                 </div>
                 <Button

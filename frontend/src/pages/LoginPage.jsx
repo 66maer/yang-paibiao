@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { CardBody, CardHeader, Input, Button } from '@heroui/react';
 import { userLogin, getUserInfo } from '../api/auth';
-import { switchGuild } from '../api/user';
 import useAuthStore from '../stores/authStore';
 import HoverEffectCard from '../components/HoverEffectCard';
 import ThemeSwitch from '../components/ThemeSwitch';
@@ -38,11 +37,17 @@ export default function LoginPage() {
       // 先保存token到store，这样后续请求才能携带token
       setAuth(accessToken, refreshToken, null);
 
-      // 获取用户信息
-      const userInfo = await getUserInfo();
+      // 获取用户信息和群组列表
+      const [userInfo, guildsInfo] = await Promise.all([
+        getUserInfo(),
+        import('../api/user').then(m => m.getUserGuilds())
+      ]);
+
+      const userData = userInfo.data;
+      // 将群组数据添加到用户信息中
+      userData.guilds = guildsInfo.data || [];
 
       // 更新用户信息到全局状态
-      const userData = userInfo.data;
       setAuth(accessToken, refreshToken, userData);
 
       // 登录后优化跳转逻辑
@@ -52,15 +57,8 @@ export default function LoginPage() {
       const hasLocalValid = !!(localSelectedId && guilds.some(g => g.id === localSelectedId));
 
       if (hasLocalValid) {
-        // 本地存在合法选择：若与服务端不同则同步，然后直跳面板
-        if (userData.current_guild_id !== localSelectedId) {
-          try {
-            await switchGuild(localSelectedId);
-            setCurrentGuild(localSelectedId);
-          } catch (_) {
-            // 同步失败不阻塞跳转
-          }
-        }
+        // 本地存在合法选择：直接设置并跳转
+        setCurrentGuild(localSelectedId);
         navigate('/user/board', { replace: true });
         return;
       }
@@ -68,13 +66,8 @@ export default function LoginPage() {
       if (guilds.length === 1) {
         // 只有一个群组：自动选择并跳转
         const onlyId = guilds[0].id;
+        setCurrentGuild(onlyId);
         localStorage.setItem('selectedGuildId', String(onlyId));
-        if (userData.current_guild_id !== onlyId) {
-          try {
-            await switchGuild(onlyId);
-            setCurrentGuild(onlyId);
-          } catch (_) {}
-        }
         navigate('/user/board', { replace: true });
         return;
       }
