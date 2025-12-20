@@ -27,8 +27,8 @@ export default function RootRedirect() {
   const hasLocalValid = !!(localSelectedId && guilds.some(g => g.id === localSelectedId));
 
   if (hasLocalValid || guilds.length === 1) {
-    return <Navigate to="/user/board" replace />;
+    return <Navigate to="/board" replace />;
   }
 
-  return <Navigate to="/user/guilds" replace />;
+  return <Navigate to="/guilds" replace />;
 }

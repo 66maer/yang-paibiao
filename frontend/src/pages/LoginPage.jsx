@@ -59,7 +59,7 @@ export default function LoginPage() {
       if (hasLocalValid) {
         // 本地存在合法选择：直接设置并跳转
         setCurrentGuild(localSelectedId);
-        navigate('/user/board', { replace: true });
+        navigate('/board', { replace: true });
         return;
       }
 
@@ -68,12 +68,12 @@ export default function LoginPage() {
         const onlyId = guilds[0].id;
         setCurrentGuild(onlyId);
         localStorage.setItem('selectedGuildId', String(onlyId));
-        navigate('/user/board', { replace: true });
+        navigate('/board', { replace: true });
         return;
       }
 
       // 多个群组且本地无有效选择：进入中转页
-      navigate('/user/guilds', { replace: true });
+      navigate('/guilds', { replace: true });
     } catch (err) {
       console.error('登录错误:', err);
       setError(typeof err === 'string' ? err : err.message || '登录失败，请检查QQ号和密码');

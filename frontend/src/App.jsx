@@ -14,6 +14,8 @@ import GuildHubPage from './pages/user/GuildHubPage';
 import MembersPage from './pages/user/MembersPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import RootRedirect from './components/RootRedirect';
+import NotFoundPage from './pages/NotFoundPage';
+import DebugTeamBoardPage from './pages/DebugTeamBoardPage';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -24,6 +26,9 @@ function AppContent() {
         {/* 用户登录和注册 */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+
+        {/* 组件调试页面（无需登录） */}
+        <Route path="/debug/team-board" element={<DebugTeamBoardPage />} />
         
         {/* 管理员登录页面 */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -45,25 +50,26 @@ function AppContent() {
 
         {/* 用户业务页面 */}
         <Route
-          path="/user"
           element={
             <ProtectedRoute requiredRole="user">
               <UserLayout />
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/user/board" replace />} />
-          <Route path="guilds" element={<GuildHubPage />} />
-          <Route path="board" element={<BoardPage />} />
-          <Route path="members" element={<MembersPage />} />
-          <Route path="characters" element={<BoardPage />} />
-          <Route path="team-template" element={<BoardPage />} />
-          <Route path="history" element={<BoardPage />} />
-          <Route path="tools" element={<BoardPage />} />
+          <Route path="/guilds" element={<GuildHubPage />} />
+          <Route path="/board" element={<BoardPage />} />
+          <Route path="/members" element={<MembersPage />} />
+          <Route path="/characters" element={<BoardPage />} />
+          <Route path="/team-template" element={<BoardPage />} />
+          <Route path="/history" element={<BoardPage />} />
+          <Route path="/tools" element={<BoardPage />} />
         </Route>
 
         {/* 根据用户角色智能重定向 */}
         <Route path="/" element={<RootRedirect />} />
+
+        {/* 404 页面 - 必须放在最后 */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </HeroUIProvider>
   );

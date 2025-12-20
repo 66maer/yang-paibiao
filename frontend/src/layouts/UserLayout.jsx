@@ -34,7 +34,7 @@ export default function UserLayout() {
           <div className="flex justify-between items-center h-16">
             {/* Logo + 品牌名 */}
             <Link
-              to="/user/board"
+              to="/board"
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">

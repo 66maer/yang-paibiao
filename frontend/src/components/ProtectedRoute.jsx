@@ -21,7 +21,7 @@ export default function ProtectedRoute({ children, requiredRole }) {
   if (requiredRole === 'admin') {
     if (user?.role !== 'admin') {
       // 非管理员重定向到用户页面
-      return <Navigate to="/user/board" replace />;
+      return <Navigate to="/board" replace />;
     }
   }
 

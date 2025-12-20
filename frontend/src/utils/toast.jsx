@@ -31,6 +31,17 @@ export const showInfo = (message) => {
 }
 
 /**
+ * 警告提示
+ */
+export const showWarning = (message) => {
+  toast(message, {
+    duration: 3000,
+    position: 'top-center',
+    icon: '⚠️',
+  })
+}
+
+/**
  * 确认对话框
  * @param {string} message - 确认消息
  * @returns {Promise<boolean>} - 用户选择结果
@@ -66,6 +77,17 @@ export const showConfirm = (message) => {
       position: 'top-center',
     })
   })
+}
+
+/**
+ * Toast 工具对象（统一接口）
+ */
+export const showToast = {
+  success: showSuccess,
+  error: showError,
+  info: showInfo,
+  warning: showWarning,
+  confirm: showConfirm,
 }
 
 export default toast

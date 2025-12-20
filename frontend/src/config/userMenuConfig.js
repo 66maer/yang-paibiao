@@ -12,42 +12,42 @@ const userMenuConfig = [
   {
     key: "board",
     label: "开团看板",
-    path: "/user/board",
+    path: "/board",
     icon: "📋",
     // 所有角色都可访问
   },
   {
     key: "members",
     label: "成员管理",
-    path: "/user/members",
+    path: "/members",
     icon: "👥",
     allowedRoles: ["owner"], // 仅群主
   },
   {
     key: "characters",
     label: "我的角色",
-    path: "/user/characters",
+    path: "/characters",
     icon: "⚔️",
     // 所有角色都可访问
   },
   {
     key: "team-template",
     label: "开团模板",
-    path: "/user/team-template",
+    path: "/team-template",
     icon: "📝",
     allowedRoles: ["owner", "helper"], // 群主和管理员
   },
   {
     key: "history",
     label: "历史开团",
-    path: "/user/history",
+    path: "/history",
     icon: "📜",
     // 所有角色都可访问
   },
   {
     key: "tools",
     label: "小工具",
-    path: "/user/tools",
+    path: "/tools",
     icon: "🔧",
     // 所有角色都可访问
   },

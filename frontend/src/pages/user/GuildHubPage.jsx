@@ -53,8 +53,8 @@ export default function GuildHubPage() {
       
       const newGuild = guilds.find((g) => g.id === guildId);
       toast.success(`已切换到 ${newGuild?.name || "群组"}`);
-      
-      navigate("/user/board", { replace: true });
+
+      navigate("/board", { replace: true });
     } catch (error) {
       toast.error("切换群组失败");
       setLoadingGuildId(null);

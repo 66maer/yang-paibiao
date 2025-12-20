@@ -179,7 +179,7 @@ export default function GuildSwitcher() {
             <DropdownItem
               key="open-guild-hub"
               className="text-pink-600 dark:text-pink-400"
-              onPress={() => navigate('/user/guilds')}
+              onPress={() => navigate('/guilds')}
             >
               🗂️ 切换群组
             </DropdownItem>
