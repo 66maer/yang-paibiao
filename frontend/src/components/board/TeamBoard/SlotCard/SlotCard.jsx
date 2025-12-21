@@ -6,54 +6,47 @@ import FilledSlotCard from "./FilledSlotCard";
 import EditableOverlay from "./EditableOverlay";
 import { RuleEditorModal, AssignModal } from "../Modals";
 import { RuleTooltip, SignupTooltip } from "../Tooltips";
-import { getNextPresenceStatus } from "../utils";
-import { presenceOrder } from "../constants";
 
 /**
  * 坑位卡片组件
  * 根据是否有报名者显示不同的卡片样式
- * - 无报名者：显示 EmptySlotCard
- * - 有报名者：显示 FilledSlotCard
+ * - 无报名者：显示 EmptySlotCard（规则卡片）
+ * - 有报名者：显示 FilledSlotCard（报名卡片）
  *
- * 支持多种模式：
- * - view: 查看模式（仅展示）
- * - edit: 编辑模式（可编辑规则、指定成员）
- * - drag: 拖动模式（可拖动排序）
- * - mark: 标记模式（可标记进组状态）
- *
- * 功能：
- * - 鼠标悬停显示详细信息悬浮提示
- * - 点击卡片触发 onSlotClick 回调
- * - edit/mark 模式下悬停显示编辑按钮
- * - 支持规则编辑弹窗
- * - 支持团长指定弹窗
- * - 支持切换进组状态
+ * 支持五种模式：
+ * 1. view: 浏览模式（根据报名情况展示，有tooltips，无按钮）
+ * 2. edit-rule: 规则编辑模式（全部展示规则卡片，点击打开编辑弹窗）
+ * 3. assign: 指定报名模式（浏览模式+指定/修改/删除按钮）
+ * 4. drag: 拖动模式（浏览模式+可拖动，禁用tooltips）
+ * 5. mark: 进组标记模式（浏览模式+进组/鸽子/召唤/清除按钮）
  */
 const SlotCard = ({
   slotIndex,
   rule,
   signup,
-  mode,
-  draggable,
+  mode = "view",
   onRuleChange,
   onAssign,
+  onAssignDelete,
   onPresenceChange,
   onSlotClick,
 }) => {
   const [ruleModalOpen, setRuleModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
-
-  // 是否可编辑（编辑或标记模式）
-  const isEditable = mode === "edit" || mode === "mark";
+  const [presenceStatus, setPresenceStatus] = useState(signup?.presence || "pending");
 
   /**
-   * 循环切换进组状态
+   * 处理点击卡片
    */
-  const cyclePresence = () => {
-    if (!onPresenceChange) return;
-    const currentStatus = signup?.presence || signup?.status || "pending";
-    const nextStatus = getNextPresenceStatus(currentStatus, presenceOrder);
-    onPresenceChange(slotIndex, nextStatus);
+  const handleCardClick = () => {
+    // 规则编辑模式：直接打开规则编辑弹窗
+    if (mode === "edit-rule") {
+      setRuleModalOpen(true);
+      return;
+    }
+
+    // 其他模式触发回调
+    onSlotClick?.(slotIndex, signup);
   };
 
   /**
@@ -61,6 +54,7 @@ const SlotCard = ({
    */
   const handleRuleSave = (nextRule) => {
     onRuleChange?.(slotIndex, nextRule);
+    setRuleModalOpen(false);
   };
 
   /**
@@ -68,14 +62,42 @@ const SlotCard = ({
    */
   const handleAssignSave = (assignData) => {
     onAssign?.(slotIndex, assignData);
+    setAssignModalOpen(false);
+  };
+
+  /**
+   * 删除指定
+   */
+  const handleAssignDelete = () => {
+    onAssignDelete?.(slotIndex);
+  };
+
+  /**
+   * 设置进组状态
+   */
+  const handlePresenceChange = (status) => {
+    setPresenceStatus(status);
+    onPresenceChange?.(slotIndex, status);
+  };
+
+  /**
+   * 召唤功能
+   */
+  const handleSummon = () => {
+    console.log("召唤功能待开发");
   };
 
   // 渲染卡片内容
-  const cardBody = signup ? (
-    <FilledSlotCard signup={signup} rule={rule} draggable={draggable} />
-  ) : (
-    <EmptySlotCard slotIndex={slotIndex} rule={rule} />
-  );
+  // 规则编辑模式：全部展示规则卡片
+  // 其他模式：根据报名情况展示
+  const cardBody =
+    mode === "edit-rule" ? (
+      <EmptySlotCard slotIndex={slotIndex} rule={rule} />
+    ) : signup ? (
+      <FilledSlotCard signup={signup} presenceStatus={presenceStatus} />
+    ) : (
+      <EmptySlotCard slotIndex={slotIndex} rule={rule} />
+    );
 
   // 渲染悬浮提示内容
   const tooltipContent = signup ? (
@@ -84,27 +106,42 @@ const SlotCard = ({
     <RuleTooltip rule={rule} />
   );
 
+  // 是否显示 tooltip（拖动模式禁用）
+  const showTooltip = mode !== "drag";
+
+  // 是否显示编辑层
+  // assign模式：总是显示（空白卡片显示"指定"按钮）
+  // mark模式：仅在有报名信息时显示
+  const showOverlay = mode === "assign" || (mode === "mark" && signup);
+
   return (
-    <div className="relative w-[250px] h-[120px]">
+    <div className="relative w-[250px] h-[120px] group">
       {/* 卡片主体 */}
       <motion.div
-        whileHover={{ scale: 1.01 }}
-        className="relative h-full"
-        onClick={() => onSlotClick?.(slotIndex, signup)}
+        whileHover={{ scale: 1.05 }}
+        className="relative h-full cursor-pointer"
+        onClick={handleCardClick}
       >
-        <Tooltip content={tooltipContent} delay={150} placement="top">
-          {cardBody}
-        </Tooltip>
+        {showTooltip ? (
+          <Tooltip content={tooltipContent} delay={150} placement="top">
+            {cardBody}
+          </Tooltip>
+        ) : (
+          cardBody
+        )}
 
         {/* 编辑层覆盖 */}
-        {isEditable && (
-          <EditableOverlay
-            mode={mode}
-            signup={signup}
-            onRuleClick={() => setRuleModalOpen(true)}
-            onAssignClick={() => setAssignModalOpen(true)}
-            onPresenceClick={cyclePresence}
-          />
+        {showOverlay && (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <EditableOverlay
+              mode={mode}
+              signup={signup}
+              onAssignClick={() => setAssignModalOpen(true)}
+              onAssignDelete={handleAssignDelete}
+              onPresenceChange={handlePresenceChange}
+              onSummon={handleSummon}
+            />
+          </div>
         )}
       </motion.div>
 

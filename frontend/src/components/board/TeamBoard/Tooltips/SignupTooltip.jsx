@@ -17,7 +17,7 @@ const SignupTooltip = ({ signup, rule }) => {
       <div className="flex items-center gap-2">
         {xinfa && <img src={`/xinfa/${xinfa.icon}`} alt={xinfa.name} className="w-6 h-6 rounded" />}
         <div>
-          <div className="text-sm font-semibold">{signup?.signupName || signup?.characterName || "未命名"}</div>
+          <div className="text-sm font-semibold">{signup?.signupName || "[未知成员]"}</div>
           <div className="text-xs text-default-500">{signup?.characterName || "未填写角色"}</div>
         </div>
       </div>

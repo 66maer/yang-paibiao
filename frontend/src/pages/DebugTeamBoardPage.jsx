@@ -13,6 +13,7 @@ const mockSignups = [
     characterXinfa: "huajian",
     isRich: false,
     isProxy: false,
+    proxyUserName: "",
     isLock: true,
     lockSlot: 0,
     clientType: "旗舰",
@@ -25,7 +26,9 @@ const mockSignups = [
     characterXinfa: "yunchang",
     isRich: false,
     isProxy: false,
-    isLock: false,
+    proxyUserName: "",
+    isLock: true,
+    lockSlot: 5,
     clientType: "无界",
     presence: "pending",
   },
@@ -36,7 +39,9 @@ const mockSignups = [
     characterXinfa: "fenying",
     isRich: false,
     isProxy: true,
-    isLock: false,
+    proxyUserName: "代报人张三",
+    isLock: true,
+    lockSlot: 10,
     clientType: "旗舰",
     presence: "pending",
   },
@@ -47,9 +52,11 @@ const mockSignups = [
     characterXinfa: "xiaochen",
     isRich: true,
     isProxy: false,
-    isLock: false,
+    proxyUserName: "",
+    isLock: true,
+    lockSlot: 15,
     clientType: "旗舰",
-    presence: "pending",
+    presence: "absent",
   },
 ];
 
@@ -67,10 +74,11 @@ const buildDemoRules = () => {
 };
 
 const modes = [
-  { key: "view", label: "浏览" },
-  { key: "edit", label: "编辑规则" },
-  { key: "mark", label: "进组标记" },
-  { key: "drag", label: "拖动排序" },
+  { key: "view", label: "浏览模式" },
+  { key: "edit-rule", label: "规则编辑模式" },
+  { key: "assign", label: "指定报名模式" },
+  { key: "drag", label: "拖动模式" },
+  { key: "mark", label: "进组标记模式" },
 ];
 
 export default function DebugTeamBoardPage() {
@@ -89,21 +97,29 @@ export default function DebugTeamBoardPage() {
 
   const handleAssign = (idx, payload) => {
     setSignups((prev) => {
+      // 先删除该坑位的现有指定
+      const filtered = prev.filter((s) => s.lockSlot !== idx);
+
       const id = `assign-${Date.now()}`;
       const signup = {
         id,
-        signupName: payload.signupName || "团长指定",
-        characterName: payload.characterName || "未命名",
+        signupName: payload.signupName || "[未知成员]",
+        characterName: payload.characterName || "未填写角色",
         characterXinfa: payload.characterXinfa,
-        isRich: payload.isRich,
-        isProxy: payload.isProxy,
+        isRich: payload.isRich || false,
+        isProxy: payload.isProxy || false,
+        proxyUserName: payload.proxyUserName || "",
         isLock: true,
         lockSlot: idx,
-        clientType: payload.clientType,
+        clientType: payload.clientType || "",
         presence: "pending",
       };
-      return [...prev, signup];
+      return [...filtered, signup];
     });
+  };
+
+  const handleAssignDelete = (idx) => {
+    setSignups((prev) => prev.filter((s) => s.lockSlot !== idx));
   };
 
   const handlePresenceChange = (idx, status) => {
@@ -154,6 +170,7 @@ export default function DebugTeamBoardPage() {
         mode={mode}
         onRuleChange={handleRuleChange}
         onAssign={handleAssign}
+        onAssignDelete={handleAssignDelete}
         onPresenceChange={handlePresenceChange}
         onReorder={handleReorder}
       />

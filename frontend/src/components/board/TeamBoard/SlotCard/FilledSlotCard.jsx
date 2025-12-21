@@ -1,27 +1,21 @@
 import { Chip } from "@heroui/react";
 import { xinfaInfoTable } from "../../../../config/xinfa";
-import { RuleTag, PresenceBadge } from "../Badges";
-import { getPresenceStatus } from "../utils";
 
 /**
  * 已报名卡片组件
  * 当坑位有报名者时显示
- * - 显示心法图标和背景渐变色
- * - 显示门派背景图案
- * - 显示报名者昵称和角色名
- * - 显示进组状态标记
- * - 显示客户端类型、老板、锁定等标签
- * - 显示代报标记
- * - 显示规则标签
- * - 拖动模式下显示拖动提示
+ * - 三层布局结构：
+ *   第一层（25%高度）：左侧心法图标 + 右侧标签（老板、锁定、代报名）
+ *   第二层（55%高度）：用户昵称 + 角色昵称
+ *   第三层（20%高度）：代报名用户昵称（如有）
+ * - 支持进组状态遮罩层显示
  */
-const FilledSlotCard = ({ signup, rule, draggable }) => {
+const FilledSlotCard = ({ signup, presenceStatus }) => {
   const xinfa = signup?.characterXinfa ? xinfaInfoTable[signup.characterXinfa] : null;
-  const presence = getPresenceStatus(signup);
 
   return (
     <div
-      className="relative h-full p-3 rounded-xl text-white shadow-md overflow-hidden"
+      className="relative h-full rounded-xl text-white shadow-md overflow-hidden"
       style={{
         background: xinfa ? `linear-gradient(135deg, ${xinfa.color}, #1f1f1f)` : "#1f1f1f",
       }}
@@ -34,55 +28,83 @@ const FilledSlotCard = ({ signup, rule, draggable }) => {
         }}
       />
 
-      {/* 内容区域 */}
-      <div className="relative flex flex-col gap-2 h-full">
-        {/* 顶部：基本信息 + 状态标签 */}
-        <div className="flex items-start justify-between gap-2">
-          {/* 左侧：心法图标 + 昵称/角色名 */}
-          <div className="flex items-center gap-2">
-            {xinfa && <img src={`/xinfa/${xinfa.icon}`} alt={xinfa.name} className="w-9 h-9 rounded" />}
-            <div>
-              <div className="text-sm font-bold leading-tight">
-                {signup.signupName || signup.characterName || "未知"}
-              </div>
-              <div className="text-xs opacity-80 leading-tight">
-                {signup.characterName || "未填写角色"}
-              </div>
-            </div>
+      {/* 内容区域 - 三层布局 */}
+      <div className="relative flex flex-col h-full p-3">
+        {/* 第一层：心法图标 + 标签 (25%高度) */}
+        <div className="flex items-start justify-between" style={{ height: "25%" }}>
+          {/* 左侧：心法图标（占用中间层空间，超出显示） */}
+          <div className="relative z-10">
+            {xinfa && (
+              <img
+                src={`/xinfa/${xinfa.icon}`}
+                alt={xinfa.name}
+                className="w-10 h-10 rounded shadow-lg"
+              />
+            )}
           </div>
 
-          {/* 右侧：进组状态 + 其他标签 */}
-          <div className="flex flex-col items-end gap-1">
-            {presence && <PresenceBadge status={presence} />}
-            <div className="flex gap-1">
-              {signup.clientType && (
-                <Chip size="sm" variant="flat" color="default">
-                  {signup.clientType}
-                </Chip>
-              )}
-              {signup.isRich && (
-                <Chip size="sm" variant="flat" color="secondary">
-                  老板
-                </Chip>
-              )}
-              {signup.isLock && (
-                <Chip size="sm" variant="flat" color="danger">
-                  锁定
-                </Chip>
-              )}
-            </div>
+          {/* 右侧：标签 */}
+          <div className="flex gap-1 flex-wrap justify-end">
+            {signup.isRich && (
+              <Chip size="sm" variant="flat" color="secondary">
+                老板
+              </Chip>
+            )}
+            {signup.isLock && (
+              <Chip size="sm" variant="flat" color="danger">
+                锁定
+              </Chip>
+            )}
+            {signup.isProxy && (
+              <Chip size="sm" variant="flat" color="primary">
+                代报名
+              </Chip>
+            )}
           </div>
         </div>
 
-        {/* 底部：代报 + 规则标签 + 拖动提示 */}
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex gap-2 text-xs opacity-80">
-            {signup.isProxy && <Chip size="sm" variant="flat">代报</Chip>}
-            <RuleTag rule={rule} />
+        {/* 第二层：用户昵称 + 角色昵称 (55%高度) */}
+        <div className="flex flex-col justify-center items-center text-center" style={{ height: "55%" }}>
+          {/* 用户昵称 - 主要，加粗，字号大 */}
+          <div className="text-2xl font-bold leading-tight mb-1">
+            {signup.signupName || signup.characterName || "未知"}
           </div>
-          {draggable && <div className="text-xs opacity-70">⇅ 拖动</div>}
+          {/* 角色昵称 - 次要，字号小 */}
+          <div className="text-sm opacity-80 leading-tight">
+            {signup.characterName || "未填写角色"}
+          </div>
+        </div>
+
+        {/* 第三层：代报名用户昵称 (20%高度) */}
+        <div className="flex items-end justify-end" style={{ height: "20%" }}>
+          {signup.isProxy && signup.proxyUserName && (
+            <div className="text-xs opacity-70">代报：{signup.proxyUserName}</div>
+          )}
         </div>
       </div>
+
+      {/* 进组状态遮罩层 */}
+      {presenceStatus && presenceStatus !== "pending" && (
+        <>
+          {/* 亮色蒙版 */}
+          <div className="absolute inset-0 bg-white/50 pointer-events-none rounded-xl" />
+
+          {/* 状态图片 - 左下角 */}
+          <div className="absolute bottom-2 left-2 pointer-events-none">
+            <img
+              src={
+                presenceStatus === "present"
+                  ? "/status/已进组.png"
+                  : presenceStatus === "absent"
+                  ? "/status/标记鸽子.png"
+                  : null
+              }
+              alt={presenceStatus === "present" ? "已进组" : "标记鸽子"}
+              className="w-20 h-auto opacity-90"
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };

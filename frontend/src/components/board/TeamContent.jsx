@@ -316,7 +316,7 @@ const WaitlistList = ({ waitlist = [] }) => {
                   </div>
                 )}
                 <div className="space-y-1">
-                  <div className="text-sm font-semibold">{member.signupName || member.characterName || "未命名"}</div>
+                  <div className="text-sm font-semibold">{member.signupName || "[未知成员]"}</div>
                   <div className="text-xs text-default-500">{member.characterName || "未填写角色"}</div>
                   <div className="flex gap-1 flex-wrap text-xs">
                     {member.isRich && (
