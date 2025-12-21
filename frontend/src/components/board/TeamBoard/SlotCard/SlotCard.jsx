@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Tooltip } from "@heroui/react";
+import { Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
 import { motion } from "framer-motion";
 import EmptySlotCard from "./EmptySlotCard";
 import FilledSlotCard from "./FilledSlotCard";
@@ -14,10 +14,10 @@ import { RuleTooltip, SignupTooltip } from "../Tooltips";
  * - 有报名者：显示 FilledSlotCard（报名卡片）
  *
  * 支持五种模式：
- * 1. view: 浏览模式（根据报名情况展示，有tooltips，无按钮）
- * 2. edit-rule: 规则编辑模式（全部展示规则卡片，点击打开编辑弹窗）
+ * 1. view: 浏览模式（根据报名情况展示，点击显示popover，无按钮）
+ * 2. edit-rule: 规则编辑模式（全部展示规则卡片，点击打开编辑弹窗，禁用popover）
  * 3. assign: 指定报名模式（浏览模式+指定/修改/删除按钮）
- * 4. drag: 拖动模式（浏览模式+可拖动，禁用tooltips）
+ * 4. drag: 拖动模式（浏览模式+可拖动，禁用popover）
  * 5. mark: 进组标记模式（浏览模式+进组/鸽子/召唤/清除按钮）
  */
 const SlotCard = ({
@@ -34,6 +34,7 @@ const SlotCard = ({
   const [ruleModalOpen, setRuleModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [presenceStatus, setPresenceStatus] = useState(signup?.presence || "pending");
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   /**
    * 处理点击卡片
@@ -45,7 +46,13 @@ const SlotCard = ({
       return;
     }
 
-    // 其他模式触发回调
+    // 拖动模式：不做任何处理
+    if (mode === "drag") {
+      return;
+    }
+
+    // 其他模式：切换 popover 并触发回调
+    setIsPopoverOpen(!isPopoverOpen);
     onSlotClick?.(slotIndex, signup);
   };
 
@@ -100,14 +107,14 @@ const SlotCard = ({
     );
 
   // 渲染悬浮提示内容
-  const tooltipContent = signup ? (
+  const popoverContent = signup ? (
     <SignupTooltip signup={signup} rule={rule} />
   ) : (
     <RuleTooltip rule={rule} />
   );
 
-  // 是否显示 tooltip（拖动模式禁用）
-  const showTooltip = mode !== "drag";
+  // 是否显示 popover（规则编辑模式和拖动模式禁用）
+  const showPopover = mode !== "drag" && mode !== "edit-rule";
 
   // 是否显示编辑层
   // assign模式：总是显示（空白卡片显示"指定"按钮）
@@ -117,33 +124,63 @@ const SlotCard = ({
   return (
     <div className="relative w-[250px] h-[120px] group">
       {/* 卡片主体 */}
-      <motion.div
-        whileHover={{ scale: 1.05 }}
-        className="relative h-full cursor-pointer"
-        onClick={handleCardClick}
-      >
-        {showTooltip ? (
-          <Tooltip content={tooltipContent} delay={150} placement="top">
-            {cardBody}
-          </Tooltip>
-        ) : (
-          cardBody
-        )}
+      {showPopover ? (
+        <Popover
+          isOpen={isPopoverOpen}
+          onOpenChange={setIsPopoverOpen}
+          placement="top"
+          showArrow
+        >
+          <PopoverTrigger>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="relative h-full cursor-pointer"
+              onClick={handleCardClick}
+            >
+              {cardBody}
 
-        {/* 编辑层覆盖 */}
-        {showOverlay && (
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-            <EditableOverlay
-              mode={mode}
-              signup={signup}
-              onAssignClick={() => setAssignModalOpen(true)}
-              onAssignDelete={handleAssignDelete}
-              onPresenceChange={handlePresenceChange}
-              onSummon={handleSummon}
-            />
-          </div>
-        )}
-      </motion.div>
+              {/* 编辑层覆盖 */}
+              {showOverlay && (
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <EditableOverlay
+                    mode={mode}
+                    signup={signup}
+                    onAssignClick={() => setAssignModalOpen(true)}
+                    onAssignDelete={handleAssignDelete}
+                    onPresenceChange={handlePresenceChange}
+                    onSummon={handleSummon}
+                  />
+                </div>
+              )}
+            </motion.div>
+          </PopoverTrigger>
+          <PopoverContent className="min-w-[200px] max-w-[600px]">
+            {popoverContent}
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          className="relative h-full cursor-pointer"
+          onClick={handleCardClick}
+        >
+          {cardBody}
+
+          {/* 编辑层覆盖 */}
+          {showOverlay && (
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <EditableOverlay
+                mode={mode}
+                signup={signup}
+                onAssignClick={() => setAssignModalOpen(true)}
+                onAssignDelete={handleAssignDelete}
+                onPresenceChange={handlePresenceChange}
+                onSummon={handleSummon}
+              />
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {/* 规则编辑弹窗 */}
       <RuleEditorModal
