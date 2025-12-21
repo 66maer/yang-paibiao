@@ -1,13 +1,11 @@
 """
 Alembic环境配置
-支持异步数据库迁移
+使用同步方式进行数据库迁移
 """
-import asyncio
 from logging.config import fileConfig
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
@@ -17,10 +15,12 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.core.config import settings
-from app.database import Base
+from app.models.base import Base
 
-# 导入所有模型以确保它们被注册
-from app.models import user, admin
+# 导入所有模型以确保它们被注册到 Base.metadata
+from app.models import (
+    admin, user, character, guild, guild_member, subscription
+)
 
 # Alembic Config对象
 config = context.config
@@ -63,32 +63,26 @@ def do_run_migrations(connection: Connection) -> None:
         context.run_migrations()
 
 
-async def run_async_migrations() -> None:
+def run_migrations_online() -> None:
     """
-    异步模式运行迁移
-    连接到数据库并执行迁移
+    在线模式运行迁移
+    使用同步引擎连接数据库
     """
+    from sqlalchemy import engine_from_config
+
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = db_url
 
-    connectable = async_engine_from_config(
+    connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
+    with connectable.connect() as connection:
+        do_run_migrations(connection)
 
-    await connectable.dispose()
-
-
-def run_migrations_online() -> None:
-    """
-    在线模式运行迁移
-    使用异步引擎连接数据库
-    """
-    asyncio.run(run_async_migrations())
+    connectable.dispose()
 
 
 if context.is_offline_mode():

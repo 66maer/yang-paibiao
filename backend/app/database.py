@@ -3,8 +3,8 @@
 使用 SQLAlchemy 2.0 异步引擎
 """
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base
 from app.core.config import settings
+from app.models.base import Base
 
 # 创建异步引擎
 engine = create_async_engine(
@@ -24,9 +24,6 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
-# 声明基类
-Base = declarative_base()
-
 
 async def get_db() -> AsyncSession:
     """
@@ -41,12 +38,32 @@ async def get_db() -> AsyncSession:
 
 
 async def init_db():
-    """初始化数据库表"""
-    async with engine.begin() as conn:
-        # 导入所有模型以确保它们被注册
-        from app.models import user, admin
-        # 创建所有表
-        await conn.run_sync(Base.metadata.create_all)
+    """
+    初始化数据库
+    使用 Alembic 自动迁移到最新版本
+    """
+    from alembic.config import Config
+    from alembic import command
+    import os
+
+    # 导入所有模型以确保它们被注册到元数据中
+    from app.models import (
+        admin, user, character, guild, guild_member, subscription
+    )
+
+    # 获取 alembic.ini 配置文件路径
+    alembic_cfg_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "alembic.ini"
+    )
+
+    # 创建 Alembic 配置
+    alembic_cfg = Config(alembic_cfg_path)
+
+    # 运行迁移到最新版本
+    print("运行数据库迁移...")
+    command.upgrade(alembic_cfg, "head")
+    print("数据库迁移完成")
 
 
 async def close_db():
