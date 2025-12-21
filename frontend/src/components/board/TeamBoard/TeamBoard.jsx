@@ -74,7 +74,7 @@ const TeamBoard = ({
    * 渲染网格布局（非拖动模式）
    */
   const renderGrid = (items) => (
-    <div className="grid grid-cols-5 gap-1">
+    <div className="grid grid-rows-5 grid-flow-col gap-y-[5px] gap-x-1">
       {items.map((slot) => (
         <SlotCard
           key={slot.slotIndex}
