@@ -11,9 +11,9 @@ import { RuleTag } from "../Badges";
 const EmptySlotCard = ({ slotIndex, rule }) => {
   return (
     <div className="h-full p-3 rounded-xl border border-dashed border-default-300 bg-default-50 dark:bg-default-100 text-default-600">
-      <div className="flex flex-col h-full justify-between">
-        <div className="space-y-2">
-          <div className="text-xs font-semibold text-default-500">{Math.floor(slotIndex / 5) + 1} 队 {slotIndex % 5 + 1}</div>
+      <div className="flex flex-col h-full">
+        <div className="text-xs font-semibold text-default-500">{Math.floor(slotIndex / 5) + 1} 队 {slotIndex % 5 + 1}</div>
+        <div className="flex-1 flex items-center justify-center">
           <RuleTag rule={rule} />
         </div>
       </div>
