@@ -236,7 +236,6 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
                 signupList={memoizedInputs.signupList}
                 view={memoizedInputs.slotView}
                 mode={boardMode}
-                isAdmin={isAdmin}
                 onRuleChange={(slotIndex) =>
                   showToast.info(`已修改 ${slotIndex + 1} 号坑位规则，保存逻辑待接入`)
                 }

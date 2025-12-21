@@ -24,7 +24,7 @@ import { presenceOrder } from "../constants";
  * 功能：
  * - 鼠标悬停显示详细信息悬浮提示
  * - 点击卡片触发 onSlotClick 回调
- * - 编辑模式下悬停显示编辑按钮
+ * - edit/mark 模式下悬停显示编辑按钮
  * - 支持规则编辑弹窗
  * - 支持团长指定弹窗
  * - 支持切换进组状态
@@ -34,7 +34,6 @@ const SlotCard = ({
   rule,
   signup,
   mode,
-  isAdmin,
   draggable,
   onRuleChange,
   onAssign,
@@ -44,8 +43,8 @@ const SlotCard = ({
   const [ruleModalOpen, setRuleModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
 
-  // 是否可编辑（管理员 + 编辑或标记模式）
-  const isEditable = isAdmin && (mode === "edit" || mode === "mark");
+  // 是否可编辑（编辑或标记模式）
+  const isEditable = mode === "edit" || mode === "mark";
 
   /**
    * 循环切换进组状态

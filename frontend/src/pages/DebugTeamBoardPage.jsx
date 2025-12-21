@@ -152,7 +152,6 @@ export default function DebugTeamBoardPage() {
         signupList={signups}
         view={view}
         mode={mode}
-        isAdmin
         onRuleChange={handleRuleChange}
         onAssign={handleAssign}
         onPresenceChange={handlePresenceChange}

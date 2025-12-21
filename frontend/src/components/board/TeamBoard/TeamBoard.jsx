@@ -13,8 +13,7 @@ import { buildSlots, getSignupKey } from "./utils";
  * @param {Array} rules - 坑位规则数组（长度为 25）
  * @param {Array} signupList - 报名列表
  * @param {Array} view - 视图排序信息（报名 ID 与坑位的对应关系）
- * @param {string} mode - 模式（view/edit/drag/mark）
- * @param {boolean} isAdmin - 是否管理员
+ * @param {string} mode - 模式（view/edit/drag/mark），由外部根据权限决定
  * @param {Function} onRuleChange - 规则变化回调 (slotIndex, newRule)
  * @param {Function} onAssign - 团长指定回调 (slotIndex, assignData)
  * @param {Function} onPresenceChange - 进组状态变化回调 (slotIndex, newStatus)
@@ -32,7 +31,6 @@ const TeamBoard = ({
   signupList = [],
   view = [],
   mode = "view",
-  isAdmin = false,
   onRuleChange,
   onAssign,
   onPresenceChange,
@@ -54,7 +52,7 @@ const TeamBoard = ({
   }, [slots, rules]);
 
   // 是否启用拖动
-  const dragEnabled = isAdmin && mode === "drag";
+  const dragEnabled = mode === "drag";
 
   /**
    * 处理拖动重排序
@@ -84,7 +82,6 @@ const TeamBoard = ({
           rule={slot.rule}
           signup={slot.signup}
           mode={mode}
-          isAdmin={isAdmin}
           draggable={dragEnabled}
           onRuleChange={onRuleChange}
           onAssign={onAssign}
@@ -113,7 +110,6 @@ const TeamBoard = ({
             rule={slot.rule}
             signup={slot.signup}
             mode={mode}
-            isAdmin={isAdmin}
             draggable={dragEnabled}
             onRuleChange={onRuleChange}
             onAssign={onAssign}
@@ -149,7 +145,11 @@ const TeamBoard = ({
           <Chip size="sm" variant="bordered">
             左键点击查看详情
           </Chip>
-          {isAdmin && <Chip size="sm" variant="bordered">悬停显示编辑</Chip>}
+          {(mode === "edit" || mode === "mark") && (
+            <Chip size="sm" variant="bordered">
+              悬停显示编辑
+            </Chip>
+          )}
         </div>
       </CardHeader>
 
