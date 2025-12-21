@@ -74,7 +74,7 @@ const TeamBoard = ({
    * 渲染网格布局（非拖动模式）
    */
   const renderGrid = (items) => (
-    <div className="grid grid-cols-5 gap-3">
+    <div className="grid grid-cols-5 gap-1">
       {items.map((slot) => (
         <SlotCard
           key={slot.slotIndex}
@@ -101,7 +101,6 @@ const TeamBoard = ({
         <Reorder.Item
           key={slot.slotIndex}
           value={slot}
-          className="h-full"
           dragListener={dragEnabled}
           dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
         >
@@ -122,7 +121,7 @@ const TeamBoard = ({
   );
 
   return (
-    <Card className="w-full">
+    <Card className="w-[1320px]">
       {/* 头部 */}
       <CardHeader className="flex items-center justify-between">
         <div className="flex items-center gap-2">

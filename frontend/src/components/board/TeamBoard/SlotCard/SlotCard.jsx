@@ -85,7 +85,7 @@ const SlotCard = ({
   );
 
   return (
-    <div className="relative">
+    <div className="relative w-[250px] h-[120px]">
       {/* 卡片主体 */}
       <motion.div
         whileHover={{ scale: 1.01 }}
