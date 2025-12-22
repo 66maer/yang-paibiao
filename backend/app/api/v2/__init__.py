@@ -4,6 +4,7 @@ API v2 路由模块
 from fastapi import APIRouter
 from app.api.v2.endpoints import auth
 from app.api.v2.endpoints import guilds as guilds_user
+from app.api.v2.endpoints import teams
 from app.api.v2 import admin
 from app.api.v2 import users
 
@@ -33,4 +34,10 @@ api_router.include_router(
 api_router.include_router(
     guilds_user.router,
     tags=["群组用户接口"]
+)
+
+# 开团相关用户接口
+api_router.include_router(
+    teams.router,
+    tags=["团队/开团"]
 )
