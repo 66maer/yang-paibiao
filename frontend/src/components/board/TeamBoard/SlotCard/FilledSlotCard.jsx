@@ -1,5 +1,6 @@
-import { Chip } from "@heroui/react";
+import { Chip, Avatar } from "@heroui/react";
 import { xinfaInfoTable } from "../../../../config/xinfa";
+import { LockIcon } from "../../../icons";
 
 /**
  * 已报名卡片组件
@@ -17,7 +18,7 @@ const FilledSlotCard = ({ signup, presenceStatus }) => {
     <div
       className="relative h-full rounded-xl text-white shadow-md overflow-hidden"
       style={{
-        background: xinfa ? `linear-gradient(135deg, ${xinfa.color}, #1f1f1f)` : "#1f1f1f",
+        background: xinfa ? `linear-gradient(135deg, ${xinfa.color}, #070707ff)` : "#1f1f1f",
       }}
     >
       {/* 门派背景图案 */}
@@ -29,37 +30,22 @@ const FilledSlotCard = ({ signup, presenceStatus }) => {
       />
 
       {/* 内容区域 - 三层布局 */}
-      <div className="relative flex flex-col h-full p-3">
+      <div className="relative flex flex-col h-full p-2">
         {/* 第一层：心法图标 + 标签 (25%高度) */}
         <div className="flex items-start justify-between" style={{ height: "25%" }}>
           {/* 左侧：心法图标（占用中间层空间，超出显示） */}
           <div className="relative z-10">
-            {xinfa && (
-              <img
-                src={`/xinfa/${xinfa.icon}`}
-                alt={xinfa.name}
-                className="w-10 h-10 rounded shadow-lg"
-              />
-            )}
+            {xinfa && <img src={`/xinfa/${xinfa.icon}`} alt={xinfa.name} className="w-10 h-10 rounded shadow-lg" />}
           </div>
 
           {/* 右侧：标签 */}
           <div className="flex gap-1 flex-wrap justify-end">
             {signup.isRich && (
-              <Chip size="sm" variant="flat" color="secondary">
+              <Chip size="sm" variant="faded" color="secondary" avatar={<img src="/rich.svg" alt="老板坑" />}>
                 老板
               </Chip>
             )}
-            {signup.isLock && (
-              <Chip size="sm" variant="flat" color="danger">
-                锁定
-              </Chip>
-            )}
-            {signup.isProxy && (
-              <Chip size="sm" variant="flat" color="primary">
-                代报名
-              </Chip>
-            )}
+            {signup.isLock && <LockIcon />}
           </div>
         </div>
 
@@ -70,15 +56,13 @@ const FilledSlotCard = ({ signup, presenceStatus }) => {
             {signup.signupName || signup.characterName || "未知"}
           </div>
           {/* 角色昵称 - 次要，字号小 */}
-          <div className="text-sm opacity-80 leading-tight">
-            {signup.characterName || "未填写角色"}
-          </div>
+          <div className="text-sm opacity-80 leading-tight">{signup.characterName || "未填写角色"}</div>
         </div>
 
         {/* 第三层：代报名用户昵称 (20%高度) */}
         <div className="flex items-end justify-end" style={{ height: "20%" }}>
           {signup.isProxy && signup.proxyUserName && (
-            <div className="text-xs opacity-70">代报：{signup.proxyUserName}</div>
+            <div className="text-xs opacity-70">{signup.proxyUserName}（代报）</div>
           )}
         </div>
       </div>
