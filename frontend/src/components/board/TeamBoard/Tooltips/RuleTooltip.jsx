@@ -33,11 +33,22 @@ const getRuleLabel = (rule) => {
 
   // 按优先级检查各种心法组
   let result = null;
-  if ((result = checkGroup("dps", dpsXinfaList, "/dps.svg", "任意输出心法"))) return result;
-  if ((result = checkGroup("奶妈", naiXinfaList, "/奶妈.svg", "任意治疗心法"))) return result;
-  if ((result = checkGroup("T", tXinfaList, "/T.svg", "任意防御心法"))) return result;
-  if ((result = checkGroup("内功", neigongXinfaList, "/内功.svg", "任意内功心法"))) return result;
-  if ((result = checkGroup("外功", waigongXinfaList, "/外功.svg", "任意外功心法"))) return result;
+  if ((result = checkGroup("dps", dpsXinfaList, "/dps.svg", `输出心法(${dpsXinfaList.length} 种)`))) return result;
+  if ((result = checkGroup("奶妈", naiXinfaList, "/奶妈.svg", `治疗心法(${naiXinfaList.length} 种)`))) return result;
+  if ((result = checkGroup("T", tXinfaList, "/T.svg", `任意防御心法(${tXinfaList.length} 种)`))) return result;
+  if ((result = checkGroup("内功", neigongXinfaList, "/内功.svg", `内功心法(${neigongXinfaList.length} 种)`)))
+    return result;
+  if ((result = checkGroup("外功", waigongXinfaList, "/外功.svg", `外功心法(${waigongXinfaList.length} 种)`)))
+    return result;
+  if (allowXinfaList.length === allXinfaList.length) {
+    return (
+      <div className="flex items-center gap-2">
+        <img src="/jx3.png" alt={`不限心法(${allXinfaList.length} 种)`} className="w-4 h-4" />
+        <span className="text-sm">{`不限心法(${allXinfaList.length} 种)`}</span>
+      </div>
+    );
+  }
+  return `允许以下 ${allowXinfaList.length} 种心法`;
 };
 
 /**
@@ -54,26 +65,23 @@ const RuleTooltip = ({ rule }) => {
       {/* 老板/打工标记 */}
       <div className="flex flex-wrap gap-2 items-center">
         {rule.allowRich && (
-          <Chip size="sm" color="secondary" variant="bordered">
+          <Chip size="sm" variant="bordered" className="border-[#FF9EC5] text-[#FF9EC5]">
             老板坑
           </Chip>
         )}
         {!rule.allowXinfaList || rule.allowXinfaList.length === 0 ? (
-          <Chip size="sm">未开放，联系管理员排坑</Chip>
+          <Chip size="sm" variant="bordered" className="bg-[#A7F3D0]/20 text-[#377370]">
+            未开放，联系管理员排坑
+          </Chip>
         ) : null}
         {rule.allowXinfaList && rule.allowXinfaList.length > 0 && (
-          <Chip size="sm" variant="bordered">
+          <Chip size="sm" variant="bordered" className="border-[#A8D8FF] text-[#7098CC]">
             打工坑
           </Chip>
         )}
         {rule.allowXinfaList && rule.allowXinfaList.length > 0 && (
-          <Chip size="sm" variant="bordered">
+          <Chip size="sm" variant="bordered" className="border-[#D8B4FE] text-[#A074CC]">
             {getRuleLabel(rule)}
-          </Chip>
-        )}
-        {rule.allowXinfaList && rule.allowXinfaList.length > 0 && (
-          <Chip size="sm" variant="bordered">
-            允许 {rule.allowXinfaList.length} 个心法
           </Chip>
         )}
       </div>
@@ -86,15 +94,6 @@ const RuleTooltip = ({ rule }) => {
           const info = xinfaInfoTable[xinfa];
           if (!info) return null;
           return (
-            // <Chip
-            //   key={xinfa}
-            //   size="sm"
-            //   startContent={<img src={`/xinfa/${info.icon}`} alt={info.name} className="w-4 h-4" />}
-            //   variant="flat"
-            // >
-            //   {info.name}
-            // </Chip>
-
             <Avatar key={xinfa} src={`/xinfa/${info.icon}`} alt={info.name} size="sm" isBordered className="w-5 h-5" />
           );
         })}
