@@ -154,7 +154,7 @@ const SlotCard = ({
               )}
             </motion.div>
           </PopoverTrigger>
-          <PopoverContent className="min-w-[200px] max-w-[600px]">
+          <PopoverContent className="min-w-[150px] max-w-[320px]">
             {popoverContent}
           </PopoverContent>
         </Popover>

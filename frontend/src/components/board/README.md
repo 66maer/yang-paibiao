@@ -55,11 +55,13 @@ components/board/
 ### 🎯 对所有用户开放的功能
 
 1. **查看开团列表**
+
    - 左侧导航按日期分组显示所有开团
    - 支持时间排序
    - 显示今天、明天等友好的日期标签
 
 2. **查看开团详情**
+
    - 开团标题、时间、副本信息
    - 大小铁标记状态
    - 团队告示内容
@@ -68,6 +70,7 @@ components/board/
    - 我的报名（留空，待实现）
 
 3. **报名功能**
+
    - 点击"报名"按钮打开报名弹窗
    - 当前为空实现，待后续开发
 
@@ -78,6 +81,7 @@ components/board/
 ### 👑 管理员专属功能
 
 1. **创建开团**
+
    - 点击左侧「开团」按钮进入全页面编辑模式
    - 设置开团标题（支持自动生成）
    - 选择发车时间（支持「不指定时间」选项）
@@ -87,12 +91,14 @@ components/board/
    - 编写团队告示
 
 2. **编辑开团**
+
    - 点击「编辑」按钮进入全页面编辑模式
    - 修改所有开团信息
    - 支持锁定/解锁报名
    - 支持隐藏/显示开团
 
 3. **关闭开团**
+
    - 关闭开团，停止接受报名
 
 4. **编辑模式特性**
@@ -124,6 +130,7 @@ components/board/
 ### 数据结构
 
 #### Team 对象
+
 ```javascript
 {
   id: number,                    // 开团 ID
@@ -161,10 +168,10 @@ components/board/
 ## 使用示例
 
 ```jsx
-import BoardPage from './pages/user/BoardPage';
+import BoardPage from "./pages/user/BoardPage";
 
 // 在路由中使用
-<Route path="/user/board" element={<BoardPage />} />
+<Route path="/user/board" element={<BoardPage />} />;
 ```
 
 ## 权限说明
@@ -176,7 +183,8 @@ import BoardPage from './pages/user/BoardPage';
 ## 样式说明
 
 组件使用了渐变色主题：
-- 主色调：粉色到紫色的渐变（from-pink-* to-purple-*）
+
+- 主色调：粉色到紫色的渐变（from-pink-_ to-purple-_）
 - 深色模式支持
 - 响应式布局（基于 Tailwind CSS Grid）
 
@@ -194,15 +202,19 @@ import BoardPage from './pages/user/BoardPage';
 ## 新增核心组件
 
 ### TeamBoard.jsx
+
 5×5 团队面板组件，支持查看、编辑、拖动、标记等多种模式。
 
 #### 主要功能
+
 1. **坑位显示**
+
    - 未报名：灰白卡片 + 规则信息
    - 已报名：成员卡片 + 心法图标 + 标记徽章
    - Hover 悬浮显示详细信息
 
 2. **管理员编辑**
+
    - `edit` 模式：编辑报名规则（允许心法/老板）
    - `mark` 模式：标记进组状态（待确认/已进组/缺席）
    - `drag` 模式：拖动重排坑位顺序
@@ -213,6 +225,7 @@ import BoardPage from './pages/user/BoardPage';
    - 视图映射恢复顺序
 
 #### Props
+
 ```jsx
 <TeamBoard
   rules={[...]}              // 25个坑位规则
@@ -229,12 +242,15 @@ import BoardPage from './pages/user/BoardPage';
 ```
 
 ### slotAllocation.js (utils)
+
 坑位分配工具函数：
+
 - `allocateSlots(rules, signupList, view)` - 计算最优坑位分配
 - `buildEmptyRules(count)` - 生成空规则列表
 - `getRuleLabel(rule)` - 规则描述文本
 
 #### 匹配规则
+
 ```javascript
 // 老板坑规则
 if (member.isRich) return rule.allowRich;
@@ -248,6 +264,7 @@ return rule.allowXinfaList.includes(member.characterXinfa);
 ## 数据结构
 
 ### Rule（坑位规则）
+
 ```javascript
 {
   allowRich: boolean,         // 允许老板
@@ -256,6 +273,7 @@ return rule.allowXinfaList.includes(member.characterXinfa);
 ```
 
 ### Signup（报名信息）
+
 ```javascript
 {
   id: "unique_id",
@@ -265,18 +283,18 @@ return rule.allowXinfaList.includes(member.characterXinfa);
   isRich: false,              // 老板
   isProxy: false,             // 代报
   isLock: false,              // 锁定坑位
-  clientType: "旗舰",
   presence: "pending",        // 进组状态（新增）
   cancelTime: ""
 }
 ```
 
 ### SlotView（视图映射）
+
 ```javascript
 [
   { signupId: "xxx", slotIndex: 0 },
-  { signupId: "yyy", slotIndex: 3 }
-]
+  { signupId: "yyy", slotIndex: 3 },
+];
 ```
 
 ---
@@ -286,6 +304,7 @@ return rule.allowXinfaList.includes(member.characterXinfa);
 见 [TeamContent.jsx](./TeamContent.jsx) 实现。
 
 核心流程：
+
 1. 从 `team` 对象读取 `slot_rules`, `signup_list`, `slot_view`
 2. 使用 `allocateSlots()` 计算分配结果
 3. 渲染 `<TeamBoard>` 组件
@@ -296,11 +315,13 @@ return rule.allowXinfaList.includes(member.characterXinfa);
 ## 后端字段需求
 
 ### Team 模型需添加
-- `slot_rules: Rule[]` - 坑位规则（25个）
+
+- `slot_rules: Rule[]` - 坑位规则（25 个）
 - `slot_view: SlotView[]` - 视图映射
 - `signup_list: Signup[]` 或 `signups: Signup[]` - 报名列表
 
 ### Signup 模型需添加
+
 - `presence: string` - 进组状态：`"pending"` | `"present"` | `"absent"`
 
 ---
@@ -308,18 +329,21 @@ return rule.allowXinfaList.includes(member.characterXinfa);
 ## 待接入 API
 
 1. **更新坑位规则**
+
    ```
    PATCH /teams/{teamId}/slot_rules
    Body: Rule[]
    ```
 
 2. **团长指定成员**
+
    ```
    POST /teams/{teamId}/assign
    Body: { slotIndex, signupData }
    ```
 
 3. **保存坑位视图**
+
    ```
    PATCH /teams/{teamId}/slot_view
    Body: SlotView[]
@@ -338,16 +362,19 @@ return rule.allowXinfaList.includes(member.characterXinfa);
 ### 管理员操作
 
 1. **编辑规则**
+
    - 点击模式切换按钮 → 「🛠️ 编辑规则」
    - Hover 卡片显示「规则」按钮
    - 弹窗编辑允许心法/老板
 
 2. **团长指定**
+
    - 编辑模式下点击「指定」按钮
    - 填写团员信息、选择心法
    - 保存后该坑位被锁定
 
 3. **进组标记**
+
    - 切换到「✅ 进组标记」模式
    - 点击成员卡片循环状态：待确认 → 已进组 → 缺席
 
@@ -366,10 +393,12 @@ return rule.allowXinfaList.includes(member.characterXinfa);
 ## 注意事项
 
 1. **React Hooks 规则**
+
    - 所有 Hooks 必须在组件顶层调用
    - `useMemo` 依赖数组需准确，避免引用不稳定对象
 
 2. **Lint 兼容**
+
    - 已修复所有 lint 错误
    - 使用 Promise.resolve().then() 延迟 setState 避免 effect 警告
 
@@ -385,7 +414,7 @@ return rule.allowXinfaList.includes(member.characterXinfa);
 - **动画**: Framer Motion (拖拽排序)
 - **样式**: Tailwind CSS + inline styles
 - **状态管理**: React useState + useMemo
-- **图标/资源**: /public/xinfa/*.png, /public/menpai/*.svg
+- **图标/资源**: /public/xinfa/_.png, /public/menpai/_.svg
 
 ---
 
@@ -394,4 +423,3 @@ return rule.allowXinfaList.includes(member.characterXinfa);
 - [心法配置](../../config/xinfa.js)
 - [坑位分配算法](../../utils/slotAllocation.js)
 - [旧版实现参考](/old/client/src/components/SlotPanel.js)
-
