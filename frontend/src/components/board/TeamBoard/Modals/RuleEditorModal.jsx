@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Switch } from "@heroui/react";
 import { allXinfaList, dpsXinfaList, naiXinfaList, tXinfaList, xinfaInfoTable } from "../../../../config/xinfa";
-import { fallbackRule } from "../constants";
+import { fallbackRule } from "../utils";
 
 /**
  * 规则编辑弹窗组件

@@ -1,4 +1,10 @@
-import { fallbackRule } from "./constants";
+/**
+ * 默认规则配置
+ */
+export const fallbackRule = {
+  allowRich: false,
+  allowXinfaList: [],
+};
 
 /**
  * 获取报名记录的唯一标识
@@ -20,32 +26,3 @@ export const buildSlots = (slots, rules) =>
     rule: rules[idx] ?? fallbackRule,
     signup: slots[idx] ?? null,
   }));
-
-/**
- * 获取报名者的心法信息
- * @param {Object} signup - 报名记录
- * @param {Object} xinfaInfoTable - 心法信息表
- * @returns {Object|null} 心法信息对象
- */
-export const getSignupXinfa = (signup, xinfaInfoTable) => {
-  const xinfaKey = signup?.characterXinfa;
-  return xinfaKey ? xinfaInfoTable[xinfaKey] : null;
-};
-
-/**
- * 获取报名者的进组状态
- * @param {Object} signup - 报名记录
- * @returns {string} 进组状态（present/pending/absent）
- */
-export const getPresenceStatus = (signup) => signup?.presence || signup?.status || "pending";
-
-/**
- * 获取下一个进组状态（用于循环切换）
- * @param {string} currentStatus - 当前状态
- * @param {Array} order - 状态循环顺序
- * @returns {string} 下一个状态
- */
-export const getNextPresenceStatus = (currentStatus, order) => {
-  const idx = order.indexOf(currentStatus);
-  return order[(idx + 1) % order.length];
-};
