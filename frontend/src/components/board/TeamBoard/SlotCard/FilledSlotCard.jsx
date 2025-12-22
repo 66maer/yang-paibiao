@@ -16,14 +16,24 @@ const FilledSlotCard = ({ signup, presenceStatus }) => {
 
   return (
     <div
-      className="relative h-full rounded-xl text-white shadow-md overflow-hidden"
+      className="group relative h-full rounded-xl text-white shadow-md overflow-hidden transition-all duration-300"
       style={{
-        background: xinfa ? `linear-gradient(135deg, ${xinfa.color}, #070707ff)` : "#1f1f1f",
+        background: xinfa ? `linear-gradient(135deg, ${xinfa.color}, #1f1f1f)` : "#1f1f1f",
       }}
     >
+      {/* 悬停时的渐变背景层 */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{
+          background: xinfa
+            ? `linear-gradient(180deg, ${xinfa.color.replace("rgb(", "rgba(").replace(")", ", 0.8)")}, #0a0a0a)`
+            : "#0a0a0a",
+        }}
+      />
+
       {/* 门派背景图案 */}
       <div
-        className="absolute inset-0 opacity-15 bg-cover bg-center"
+        className="absolute inset-0 opacity-15 bg-cover bg-center transition-transform duration-300 group-hover:scale-120"
         style={{
           backgroundImage: xinfa ? `url(/menpai/${xinfa.menpai}.svg)` : undefined,
         }}
