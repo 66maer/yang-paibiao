@@ -69,7 +69,7 @@ const RuleTooltip = ({ rule }) => {
             老板坑
           </Chip>
         )}
-        {!rule.allowXinfaList || rule.allowXinfaList.length === 0 ? (
+        {!rule.allowRich && (!rule.allowXinfaList || rule.allowXinfaList.length === 0) ? (
           <Chip size="sm" variant="bordered" className="bg-[#A7F3D0]/20 text-[#377370]">
             未开放，联系管理员排坑
           </Chip>

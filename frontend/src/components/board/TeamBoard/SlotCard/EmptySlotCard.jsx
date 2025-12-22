@@ -1,4 +1,4 @@
-import { RuleTag } from "../Badges";
+import RuleTag from "./RuleTag";
 
 /**
  * 空坑位卡片组件
