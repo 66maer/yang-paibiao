@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardBody, Spinner } from "@heroui/react";
 import useAuthStore from "../../stores/authStore";
 import { getTeamList } from "../../api/teams";
 import TeamSidebar from "../../components/board/TeamSidebar";
 import TeamContent from "../../components/board/TeamContent";
 import TeamRightPanel from "../../components/board/TeamRightPanel";
-import TeamEditForm from "../../components/board/TeamEditForm";
 import { showToast } from "../../utils/toast";
 import sleepingImg from "../../assets/睡觉.png";
 
@@ -13,12 +13,11 @@ import sleepingImg from "../../assets/睡觉.png";
  * 开团看板页面
  */
 export default function BoardPage() {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const [teams, setTeams] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editingTeam, setEditingTeam] = useState(null);
 
   // 获取当前群组
   const currentGuild = user?.guilds?.find((g) => g.id === user?.current_guild_id);
@@ -57,27 +56,12 @@ export default function BoardPage() {
 
   // 处理创建开团
   const handleCreateTeam = () => {
-    setEditingTeam(null);
-    setIsEditMode(true);
+    navigate("/team/new");
   };
 
   // 处理编辑开团
   const handleEditTeam = (team) => {
-    setEditingTeam(team);
-    setIsEditMode(true);
-  };
-
-  // 处理取消编辑
-  const handleCancelEdit = () => {
-    setIsEditMode(false);
-    setEditingTeam(null);
-  };
-
-  // 处理表单提交成功
-  const handleFormSuccess = () => {
-    setIsEditMode(false);
-    setEditingTeam(null);
-    loadTeams();
+    navigate(`/team/${team.id}/edit`);
   };
 
   // 获取选中的团队详情
@@ -110,52 +94,6 @@ export default function BoardPage() {
       </div>
     );
   }
-
-  // 如果是编辑模式，显示编辑表单
-  if (isEditMode) {
-    return (
-      <div className="h-[calc(100vh-120px)]">
-        <div className="grid grid-cols-12 gap-4 h-full">
-          {/* 左侧导航 */}
-          <div className="col-span-2 overflow-hidden">
-            <TeamSidebar
-              teams={teams}
-              selectedTeamId={editingTeam?.id}
-              onSelectTeam={setSelectedTeamId}
-              isAdmin={isAdmin}
-              onCreateTeam={handleCreateTeam}
-            />
-          </div>
-
-          {/* 右侧内容区域 */}
-          <div className="col-span-10 overflow-hidden">
-            <div className="grid grid-cols-12 gap-4 h-full">
-              {/* 编辑表单 */}
-              <div className="col-span-9 overflow-auto">
-                <TeamEditForm
-                  team={editingTeam}
-                  guildId={currentGuild.id}
-                  onSuccess={handleFormSuccess}
-                  onCancel={handleCancelEdit}
-                />
-              </div>
-
-              {/* 右侧面板 - 编辑模式下的辅助信息 */}
-              <div className="col-span-3 overflow-hidden">
-                <TeamRightPanel
-                  team={editingTeam}
-                  isAdmin={isAdmin}
-                  isEditMode={true}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 正常查看模式
   return (
     <div className="h-[calc(100vh-120px)]">
       <div className="grid grid-cols-12 gap-4 h-full">

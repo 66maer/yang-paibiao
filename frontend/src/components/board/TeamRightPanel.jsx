@@ -12,47 +12,31 @@ export default function TeamRightPanel({ team, isAdmin, isEditMode = false }) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
-          <h3 className="text-lg font-bold text-pink-600 dark:text-pink-400">
-            💡 编辑提示
-          </h3>
+          <h3 className="text-lg font-bold text-pink-600 dark:text-pink-400">💡 编辑提示</h3>
         </CardHeader>
         <Divider />
         <CardBody className="overflow-auto">
           <div className="space-y-4 text-sm">
             <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-              <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">
-                🪄 自动生成标题
-              </h4>
-              <p className="text-default-600 text-xs">
-                填写完时间和副本后，点击「自动生成」按钮可以快速生成标题
-              </p>
+              <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">🪄 自动生成标题</h4>
+              <p className="text-default-600 text-xs">填写完时间和副本后，点击「自动生成」按钮可以快速生成标题</p>
             </div>
 
             <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20">
-              <h4 className="font-semibold text-purple-600 dark:text-purple-400 mb-2">
-                ⏰ 不指定时间
-              </h4>
-              <p className="text-default-600 text-xs">
-                适用于活动团、排表团等不需要具体时间的开团
-              </p>
+              <h4 className="font-semibold text-purple-600 dark:text-purple-400 mb-2">⏰ 不指定时间</h4>
+              <p className="text-default-600 text-xs">适用于活动团、排表团等不需要具体时间的开团</p>
             </div>
 
             <div className="p-3 rounded-lg bg-pink-50 dark:bg-pink-950/20">
-              <h4 className="font-semibold text-pink-600 dark:text-pink-400 mb-2">
-                💎 铁标记
-              </h4>
-              <p className="text-default-600 text-xs">
-                大铁（玄晶）和小铁（陨铁）是否已被预定
-              </p>
+              <h4 className="font-semibold text-pink-600 dark:text-pink-400 mb-2">💎 铁标记</h4>
+              <p className="text-default-600 text-xs">大铁（玄晶）和小铁（陨铁）是否已被预定</p>
             </div>
 
             <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20">
-              <h4 className="font-semibold text-orange-600 dark:text-orange-400 mb-2">
-                🔒 高级设置
-              </h4>
+              <h4 className="font-semibold text-orange-600 dark:text-orange-400 mb-2">🔒 高级设置</h4>
               <p className="text-default-600 text-xs">
-                • 仅管理员可见：隐藏开团，普通成员看不到<br />
-                • 锁定报名：禁止新的报名
+                • 仅管理员可见：隐藏开团，普通成员看不到，群机器人也查不到
+                <br />• 锁定报名：开启后禁止普通用户自由报名
               </p>
             </div>
           </div>
@@ -77,9 +61,7 @@ export default function TeamRightPanel({ team, isAdmin, isEditMode = false }) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-2">
-        <h3 className="text-lg font-bold text-pink-600 dark:text-pink-400">
-          {isAdmin ? "管理面板" : "我的信息"}
-        </h3>
+        <h3 className="text-lg font-bold text-pink-600 dark:text-pink-400">{isAdmin ? "管理面板" : "我的信息"}</h3>
       </CardHeader>
       <Divider />
       <CardBody className="overflow-auto p-0">

@@ -12,6 +12,7 @@ import UserLayout from './layouts/UserLayout';
 import BoardPage from './pages/user/BoardPage';
 import GuildHubPage from './pages/user/GuildHubPage';
 import MembersPage from './pages/user/MembersPage';
+import TeamEditPage from './pages/user/TeamEditPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import RootRedirect from './components/RootRedirect';
 import NotFoundPage from './pages/NotFoundPage';
@@ -19,9 +20,9 @@ import DebugTeamBoardPage from './pages/DebugTeamBoardPage';
 
 function AppContent() {
   const navigate = useNavigate();
-  
+
   return (
-    <HeroUIProvider navigate={navigate}>
+    <HeroUIProvider navigate={navigate} locale="zh-CN">
       <Routes>
         {/* 用户登录和注册 */}
         <Route path="/login" element={<LoginPage />} />
@@ -58,6 +59,8 @@ function AppContent() {
         >
           <Route path="/guilds" element={<GuildHubPage />} />
           <Route path="/board" element={<BoardPage />} />
+          <Route path="/team/new" element={<TeamEditPage />} />
+          <Route path="/team/:teamId/edit" element={<TeamEditPage />} />
           <Route path="/members" element={<MembersPage />} />
           <Route path="/characters" element={<BoardPage />} />
           <Route path="/team-template" element={<BoardPage />} />
