@@ -242,6 +242,9 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
                 onAssign={(slotIndex, payload) =>
                   showToast.info(`已指定 ${slotIndex + 1} 号坑位，待接入后端: ${payload.signupName || "未命名"}`)
                 }
+                onAssignDelete={(slotIndex) =>
+                  showToast.success(`已删除 ${slotIndex + 1} 号坑位的指定，待接入后端`)
+                }
                 onPresenceChange={(slotIndex, status) =>
                   showToast.success(`已标记坑位 ${slotIndex + 1} 为 ${status}`)
                 }

@@ -16,6 +16,7 @@ import { buildSlots, getSignupKey } from "./utils";
  * @param {string} mode - 模式（view/edit/drag/mark），由外部根据权限决定
  * @param {Function} onRuleChange - 规则变化回调 (slotIndex, newRule)
  * @param {Function} onAssign - 团长指定回调 (slotIndex, assignData)
+ * @param {Function} onAssignDelete - 团长删除指定回调 (slotIndex)
  * @param {Function} onPresenceChange - 进组状态变化回调 (slotIndex, newStatus)
  * @param {Function} onReorder - 重排序回调 (mapping: [{ slotIndex, signupId }])
  * @param {Function} onSlotClick - 坑位点击回调 (slotIndex, signup)
@@ -33,6 +34,7 @@ const TeamBoard = ({
   mode = "view",
   onRuleChange,
   onAssign,
+  onAssignDelete,
   onPresenceChange,
   onReorder,
   onSlotClick,
@@ -85,6 +87,7 @@ const TeamBoard = ({
           draggable={dragEnabled}
           onRuleChange={onRuleChange}
           onAssign={onAssign}
+          onAssignDelete={onAssignDelete}
           onPresenceChange={onPresenceChange}
           onSlotClick={onSlotClick}
         />
@@ -112,6 +115,7 @@ const TeamBoard = ({
             draggable={dragEnabled}
             onRuleChange={onRuleChange}
             onAssign={onAssign}
+            onAssignDelete={onAssignDelete}
             onPresenceChange={onPresenceChange}
             onSlotClick={onSlotClick}
           />

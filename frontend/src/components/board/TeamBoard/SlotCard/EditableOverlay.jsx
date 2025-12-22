@@ -4,13 +4,12 @@ import { TrashIcon } from "../../../icons";
 /**
  * 编辑层覆盖组件
  * 根据模式显示不同的按钮组
- * - assign: 指定报名模式（指定/修改 + 删除按钮）
+ * - assign: 指定报名模式（右上角删除按钮）
  * - mark: 进组标记模式（进组/鸽子/召唤/清除按钮）
  */
 const EditableOverlay = ({
   mode,
   signup,
-  onAssignClick,
   onAssignDelete,
   onPresenceChange,
   onSummon,
@@ -18,32 +17,23 @@ const EditableOverlay = ({
   // 指定报名模式
   if (mode === "assign") {
     return (
-      <div className="absolute inset-0 rounded-xl bg-black/10 flex items-end justify-center p-2 pointer-events-none">
-        <div className="flex items-center gap-2 pointer-events-auto">
-          {/* 指定/修改按钮 - 始终居中 */}
-          <Button
-            size="sm"
-            color="primary"
-            variant="solid"
-            onPress={onAssignClick}
-          >
-            {signup ? "修改" : "指定"}
-          </Button>
-
-          {/* 删除按钮 - 仅在有报名信息时显示 */}
-          {signup && (
-            <Button
-              size="sm"
-              color="danger"
-              variant="light"
-              isIconOnly
-              onPress={onAssignDelete}
+      <>
+        {/* 删除按钮 - 仅在有报名信息时在右上角显示，带浅色背景衬底 */}
+        {signup && (
+          <div className="absolute top-2 right-2 z-10 pointer-events-auto">
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // 阻止事件冒泡，避免触发卡片点击
+                onAssignDelete();
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/80 hover:bg-white/95 backdrop-blur-sm transition-all hover:scale-110 shadow-sm"
+              aria-label="删除报名"
             >
-              <TrashIcon size={16} />
-            </Button>
-          )}
-        </div>
-      </div>
+              <TrashIcon size={16} className="text-danger" />
+            </button>
+          </div>
+        )}
+      </>
     );
   }
 

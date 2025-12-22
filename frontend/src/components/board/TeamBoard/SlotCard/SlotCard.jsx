@@ -46,6 +46,12 @@ const SlotCard = ({
       return;
     }
 
+    // 指定报名模式：直接打开指定弹窗
+    if (mode === "assign") {
+      setAssignModalOpen(true);
+      return;
+    }
+
     // 拖动模式：不做任何处理
     if (mode === "drag") {
       return;
@@ -145,7 +151,6 @@ const SlotCard = ({
                   <EditableOverlay
                     mode={mode}
                     signup={signup}
-                    onAssignClick={() => setAssignModalOpen(true)}
                     onAssignDelete={handleAssignDelete}
                     onPresenceChange={handlePresenceChange}
                     onSummon={handleSummon}
@@ -172,7 +177,6 @@ const SlotCard = ({
               <EditableOverlay
                 mode={mode}
                 signup={signup}
-                onAssignClick={() => setAssignModalOpen(true)}
                 onAssignDelete={handleAssignDelete}
                 onPresenceChange={handlePresenceChange}
                 onSummon={handleSummon}
