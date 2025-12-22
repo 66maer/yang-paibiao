@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Switch } from "@heroui/react";
 import { allXinfaList, xinfaInfoTable } from "../../../../config/xinfa";
-import { clientTypeOptions } from "../constants";
 
 /**
  * 团长指定弹窗组件
@@ -11,7 +10,6 @@ import { clientTypeOptions } from "../constants";
  * - 心法
  * - 是否老板坑
  * - 是否代报
- * - 客户端类型
  */
 const AssignModal = ({ open, onClose, defaultXinfa, onSave }) => {
   const [form, setForm] = useState({
@@ -20,7 +18,6 @@ const AssignModal = ({ open, onClose, defaultXinfa, onSave }) => {
     characterXinfa: defaultXinfa || allXinfaList[0],
     isRich: false,
     isProxy: false,
-    clientType: "旗舰",
   });
 
   // 同步外部心法变化
@@ -90,17 +87,6 @@ const AssignModal = ({ open, onClose, defaultXinfa, onSave }) => {
                   代报
                 </Switch>
               </div>
-
-              {/* 客户端类型 */}
-              <Select
-                label="客户端"
-                selectedKeys={new Set([form.clientType])}
-                onSelectionChange={(keys) => updateField("clientType", Array.from(keys)[0])}
-              >
-                {clientTypeOptions.map((item) => (
-                  <SelectItem key={item.key}>{item.label}</SelectItem>
-                ))}
-              </Select>
             </ModalBody>
 
             <ModalFooter>

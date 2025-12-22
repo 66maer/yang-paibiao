@@ -22,11 +22,5 @@ export const presenceColors = {
   absent: "danger",
 };
 
-// 客户端类型选项
-export const clientTypeOptions = [
-  { key: "旗舰", label: "旗舰端" },
-  { key: "无界", label: "无界端" },
-];
-
 // 进组状态循环顺序
 export const presenceOrder = ["pending", "present", "absent"];

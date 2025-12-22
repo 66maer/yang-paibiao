@@ -22,9 +22,8 @@ const SignupTooltip = ({ signup, rule }) => {
         </div>
       </div>
 
-      {/* 报名者标签（客户端、老板、代报、锁定） */}
+      {/* 报名者标签（老板、代报、锁定） */}
       <div className="flex gap-2 flex-wrap text-xs text-default-500">
-        {signup?.clientType && <Chip size="sm">{signup.clientType}</Chip>}
         {signup?.isRich && (
           <Chip size="sm" color="secondary" variant="flat">
             老板

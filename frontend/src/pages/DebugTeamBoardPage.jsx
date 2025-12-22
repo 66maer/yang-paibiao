@@ -16,7 +16,6 @@ const mockSignups = [
     proxyUserName: "",
     isLock: true,
     lockSlot: 0,
-    clientType: "旗舰",
     presence: "present",
   },
   {
@@ -29,7 +28,6 @@ const mockSignups = [
     proxyUserName: "",
     isLock: true,
     lockSlot: 5,
-    clientType: "无界",
     presence: "pending",
   },
   {
@@ -42,7 +40,6 @@ const mockSignups = [
     proxyUserName: "代报人张三",
     isLock: true,
     lockSlot: 10,
-    clientType: "旗舰",
     presence: "pending",
   },
   {
@@ -55,7 +52,6 @@ const mockSignups = [
     proxyUserName: "",
     isLock: true,
     lockSlot: 15,
-    clientType: "旗舰",
     presence: "absent",
   },
 ];
@@ -111,7 +107,6 @@ export default function DebugTeamBoardPage() {
         proxyUserName: payload.proxyUserName || "",
         isLock: true,
         lockSlot: idx,
-        clientType: payload.clientType || "",
         presence: "pending",
       };
       return [...filtered, signup];
