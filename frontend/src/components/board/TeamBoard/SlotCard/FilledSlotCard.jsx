@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Chip, Avatar } from "@heroui/react";
 import { xinfaInfoTable } from "../../../../config/xinfa";
 import { LockIcon } from "../../../icons";
@@ -10,9 +11,20 @@ import { LockIcon } from "../../../icons";
  *   第二层（55%高度）：用户昵称 + 角色昵称
  *   第三层（20%高度）：代报名用户昵称（如有）
  * - 支持进组状态遮罩层显示
+ * - 支持鼠标跟随高亮效果
  */
 const FilledSlotCard = ({ signup, presenceStatus }) => {
   const xinfa = signup?.characterXinfa ? xinfaInfoTable[signup.characterXinfa] : null;
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMousePosition({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
 
   return (
     <div
@@ -20,14 +32,18 @@ const FilledSlotCard = ({ signup, presenceStatus }) => {
       style={{
         background: xinfa ? `linear-gradient(135deg, ${xinfa.color}, #1f1f1f)` : "#1f1f1f",
       }}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {/* 悬停时的渐变背景层 */}
+      {/* 鼠标跟随的径向渐变层 */}
       <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        className="absolute inset-0 transition-opacity duration-500"
         style={{
           background: xinfa
-            ? `linear-gradient(180deg, ${xinfa.color.replace("rgb(", "rgba(").replace(")", ", 0.8)")}, #0a0a0a)`
+            ? `radial-gradient(circle 400px at ${mousePosition.x}px ${mousePosition.y}px, ${xinfa.color.replace("rgb(", "rgba(").replace(")", ", 0.9)")}, #0a0a0a 70%)`
             : "#0a0a0a",
+          opacity: isHovered ? 1 : 0,
         }}
       />
 
