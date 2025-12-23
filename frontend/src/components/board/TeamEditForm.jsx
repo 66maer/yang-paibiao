@@ -16,6 +16,10 @@ import { format } from "date-fns";
 import { parseDateTime, now, getLocalTimeZone } from "@internationalized/date";
 import { createTeam, updateTeam } from "../../api/teams";
 import { showToast } from "../../utils/toast";
+import { getTemplateList, createTemplate } from "../../api/templates";
+import TeamBoard from "./TeamBoard/TeamBoard";
+import { buildEmptyRules } from "../../utils/slotAllocation";
+import useAuthStore from "../../stores/authStore";
 
 // 副本列表（暂时硬编码，未来从后端获取）
 const DUNGEONS = [
@@ -35,6 +39,7 @@ const DUNGEONS = [
 export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel }) {
   const isEdit = !!team;
   const [loading, setLoading] = useState(false);
+  const { user } = useAuthStore();
 
   // 获取当天 19:30 的默认时间（CalendarDateTime 格式）
   const getDefaultDateTime = () => {
@@ -87,6 +92,13 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
     selected_template: "",
   });
 
+  // 团队面板：规则数组（在创建/编辑团队时用于“保存为模板”或“应用模板”）
+  const [boardRules, setBoardRules] = useState(buildEmptyRules());
+
+  // 模板列表
+  const [templates, setTemplates] = useState([]);
+  const [tplLoading, setTplLoading] = useState(false);
+
   // 初始化表单数据
   useEffect(() => {
     if (team) {
@@ -108,6 +120,24 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
       });
     }
   }, [team]);
+
+  // 加载模板列表
+  useEffect(() => {
+    const loadTemplates = async () => {
+      if (!guildId) return;
+      try {
+        setTplLoading(true);
+        const resp = await getTemplateList(guildId);
+        setTemplates(resp.data || []);
+      } catch (e) {
+        // 列表失败不阻塞开团表单
+        console.warn("加载模板列表失败", e);
+      } finally {
+        setTplLoading(false);
+      }
+    };
+    loadTemplates();
+  }, [guildId]);
 
   // 更新表单字段
   const updateField = (field, value) => {
@@ -245,6 +275,44 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
       showToast.error(error || "保存开团失败");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 应用模板：用模板的 notice 与 rules 覆盖当前表单的告示与面板规则
+  const handleApplyTemplate = () => {
+    if (!formData.selected_template) {
+      showToast.error("请先选择一个模板");
+      return;
+    }
+    const tpl = templates.find((t) => String(t.id) === String(formData.selected_template));
+    if (!tpl) {
+      showToast.error("模板不存在或已被删除");
+      return;
+    }
+    updateField("notice", tpl.notice || "");
+    setBoardRules(Array.isArray(tpl.rules) && tpl.rules.length ? tpl.rules : buildEmptyRules());
+    showToast.success("已应用模板");
+  };
+
+  // 保存为模板：将当前 notice 与 boardRules 保存为新模板
+  const handleSaveAsTemplate = async () => {
+    if (!guildId) return;
+    try {
+      setTplLoading(true);
+      const payload = {
+        title: formData.title?.trim() || null,
+        notice: formData.notice || "",
+        rules: boardRules || [],
+      };
+      await createTemplate(guildId, payload);
+      showToast.success("已保存为模板");
+      // 刷新模板列表
+      const resp = await getTemplateList(guildId);
+      setTemplates(resp.data || []);
+    } catch (e) {
+      showToast.error(e || "保存模板失败");
+    } finally {
+      setTplLoading(false);
     }
   };
 
@@ -444,22 +512,24 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
               <Select
                 label="使用模板"
                 placeholder="请选择模板"
-                selectedKeys={formData.selected_template ? [formData.selected_template] : []}
+                selectedKeys={formData.selected_template ? [String(formData.selected_template)] : []}
                 onChange={(e) => updateField("selected_template", e.target.value)}
-                isDisabled
+                isDisabled={tplLoading}
                 classNames={{
-                  label: "text-default-400",
+                  label: "text-pink-600 dark:text-pink-400 font-semibold",
                 }}
                 className="flex-1"
               >
-                <SelectItem key="template1" value="template1">
-                  模板1（功能开发中）
-                </SelectItem>
+                {templates.map((tpl) => (
+                  <SelectItem key={tpl.id} value={String(tpl.id)}>
+                    {tpl.title || `模板 #${tpl.id}`}
+                  </SelectItem>
+                ))}
               </Select>
-              <Button size="lg" color="primary" variant="flat" isDisabled>
+              <Button size="lg" color="primary" variant="flat" onPress={handleApplyTemplate} isDisabled={tplLoading}>
                 应用模板
               </Button>
-              <Button size="lg" color="secondary" variant="flat" isDisabled>
+              <Button size="lg" color="secondary" variant="flat" onPress={handleSaveAsTemplate} isDisabled={tplLoading}>
                 保存为模板
               </Button>
             </div>
@@ -487,15 +557,21 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
 
           <Divider />
 
-          {/* 团队面板部分（待实现） */}
+          {/* 团队面板（规则编辑模式） */}
           <div>
-            <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">团队面板</h3>
-            <div className="p-8 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-2 border-dashed border-default-300">
-              <div className="text-center text-default-400">
-                <div className="text-4xl mb-2">🚧</div>
-                <p className="text-sm">团队面板功能开发中...</p>
-              </div>
-            </div>
+            <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">团队面板（规则编辑）</h3>
+            <TeamBoard
+              rules={boardRules}
+              signupList={[]}
+              mode="edit-rule"
+              onRuleChange={(slotIndex, nextRule) => {
+                setBoardRules((prev) => {
+                  const next = [...prev];
+                  next[slotIndex] = { ...next[slotIndex], ...nextRule };
+                  return next;
+                });
+              }}
+            />
           </div>
         </div>
       </CardBody>

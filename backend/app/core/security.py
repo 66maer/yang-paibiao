@@ -84,10 +84,11 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
+    # 使用独立的 token_type 字段标记令牌类型，避免与用户类型字段冲突
     to_encode.update({
         "exp": expire,
         "iat": datetime.utcnow(),
-        "type": "refresh"
+        "token_type": "refresh"
     })
 
     encoded_jwt = jwt.encode(
@@ -136,8 +137,10 @@ def verify_token(token: str, token_type: str = "access") -> Optional[Dict[str, A
     if payload is None:
         return None
 
-    # 检查刷新令牌类型
-    if token_type == "refresh" and payload.get("type") != "refresh":
-        return None
+    # 检查刷新令牌类型（与用户类型字段解耦）
+    if token_type == "refresh":
+        token_type_claim = payload.get("token_type") or payload.get("type")
+        if token_type_claim != "refresh":
+            return None
 
     return payload

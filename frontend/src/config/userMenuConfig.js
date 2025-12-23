@@ -31,9 +31,9 @@ const userMenuConfig = [
     // 所有角色都可访问
   },
   {
-    key: "team-template",
+    key: "templates",
     label: "开团模板",
-    path: "/team-template",
+    path: "/templates",
     icon: "📝",
     allowedRoles: ["owner", "helper"], // 群主和管理员
   },

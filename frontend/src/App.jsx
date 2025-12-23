@@ -1,22 +1,24 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { HeroUIProvider } from '@heroui/react';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import AdminLoginPage from './pages/AdminLoginPage';
-import AdminLayout from './layouts/AdminLayout';
-import AdminDashboard from './pages/AdminDashboard';
-import GuildManagementPage from './pages/admin/GuildManagementPage';
-import UserManagementPage from './pages/admin/UserManagementPage';
-import CharacterManagementPage from './pages/admin/CharacterManagementPage';
-import UserLayout from './layouts/UserLayout';
-import BoardPage from './pages/user/BoardPage';
-import GuildHubPage from './pages/user/GuildHubPage';
-import MembersPage from './pages/user/MembersPage';
-import TeamEditPage from './pages/user/TeamEditPage';
-import ProtectedRoute from './components/ProtectedRoute';
-import RootRedirect from './components/RootRedirect';
-import NotFoundPage from './pages/NotFoundPage';
-import DebugTeamBoardPage from './pages/DebugTeamBoardPage';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { HeroUIProvider } from "@heroui/react";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import AdminLoginPage from "./pages/AdminLoginPage";
+import AdminLayout from "./layouts/AdminLayout";
+import AdminDashboard from "./pages/AdminDashboard";
+import GuildManagementPage from "./pages/admin/GuildManagementPage";
+import UserManagementPage from "./pages/admin/UserManagementPage";
+import CharacterManagementPage from "./pages/admin/CharacterManagementPage";
+import UserLayout from "./layouts/UserLayout";
+import BoardPage from "./pages/user/BoardPage";
+import GuildHubPage from "./pages/user/GuildHubPage";
+import MembersPage from "./pages/user/MembersPage";
+import TeamEditPage from "./pages/user/TeamEditPage";
+import ProtectedRoute from "./components/ProtectedRoute";
+import RootRedirect from "./components/RootRedirect";
+import NotFoundPage from "./pages/NotFoundPage";
+import DebugTeamBoardPage from "./pages/DebugTeamBoardPage";
+import TemplatesPage from "./pages/user/TemplatesPage";
+import TemplateEditPage from "./pages/user/TemplateEditPage";
 
 function AppContent() {
   const navigate = useNavigate();
@@ -30,10 +32,10 @@ function AppContent() {
 
         {/* 组件调试页面（无需登录） */}
         <Route path="/debug/team-board" element={<DebugTeamBoardPage />} />
-        
+
         {/* 管理员登录页面 */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
-        
+
         {/* 管理后台 */}
         <Route
           path="/admin"
@@ -63,7 +65,9 @@ function AppContent() {
           <Route path="/team/:teamId/edit" element={<TeamEditPage />} />
           <Route path="/members" element={<MembersPage />} />
           <Route path="/characters" element={<BoardPage />} />
-          <Route path="/team-template" element={<BoardPage />} />
+          <Route path="/templates" element={<TemplatesPage />} />
+          <Route path="/templates/new" element={<TemplateEditPage />} />
+          <Route path="/templates/:templateId/edit" element={<TemplateEditPage />} />
           <Route path="/history" element={<BoardPage />} />
           <Route path="/tools" element={<BoardPage />} />
         </Route>

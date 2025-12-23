@@ -148,10 +148,10 @@
 
 | 接口         | 方法   | 路径                                         | 状态 | 备注   |
 | ------------ | ------ | -------------------------------------------- | ---- | ------ |
-| 创建模板     | POST   | `/guilds/{guild_id}/templates`               | ❌   | 未实现 |
-| 获取模板列表 | GET    | `/guilds/{guild_id}/templates`               | ❌   | 未实现 |
-| 更新模板     | PUT    | `/guilds/{guild_id}/templates/{template_id}` | ❌   | 未实现 |
-| 删除模板     | DELETE | `/guilds/{guild_id}/templates/{template_id}` | ❌   | 未实现 |
+| 创建模板     | POST   | `/guilds/{guild_id}/templates`               | ✅   | 已实现 |
+| 获取模板列表 | GET    | `/guilds/{guild_id}/templates`               | ✅   | 已实现 |
+| 更新模板     | PUT    | `/guilds/{guild_id}/templates/{template_id}` | ✅   | 已实现 |
+| 删除模板     | DELETE | `/guilds/{guild_id}/templates/{template_id}` | ✅   | 已实现 |
 
 ### 1️⃣2️⃣ 报名管理接口 (`/guilds/{guild_id}/teams/{team_id}/signups`)
 
