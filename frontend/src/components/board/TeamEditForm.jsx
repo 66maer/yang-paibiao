@@ -118,6 +118,12 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
         auto_generate_title: false, // 编辑模式默认关闭
         selected_template: "",
       });
+      // 加载团队的规则数据
+      if (Array.isArray(team.rules) && team.rules.length > 0) {
+        setBoardRules(team.rules);
+      } else {
+        setBoardRules(buildEmptyRules());
+      }
     }
   }, [team]);
 
@@ -254,11 +260,13 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
         title: formData.title.trim(),
         team_time: formData.no_specific_time ? null : calendarDateTimeToISO(formData.team_time),
         dungeon: formData.dungeon,
+        max_members: 25, // 默认25人团
         is_xuanjing_booked: formData.is_xuanjing_booked,
         is_yuntie_booked: formData.is_yuntie_booked,
         is_hidden: formData.is_hidden,
         is_locked: formData.is_locked,
         notice: formData.notice.trim(),
+        rules: boardRules, // 包含团队面板规则
       };
 
       if (isEdit) {

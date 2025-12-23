@@ -31,6 +31,7 @@ async def create_team(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    """创建开团"""
     # 验证群组存在
     guild_result = await db.execute(select(Guild).where(Guild.id == guild_id, Guild.deleted_at.is_(None)))
     guild = guild_result.scalar_one_or_none()
@@ -48,7 +49,22 @@ async def create_team(
     gm = gm_result.scalar_one_or_none()
     _ensure_member_with_role(gm, roles=["owner", "helper"]) 
 
-    team = Team(guild_id=guild_id, name=payload.name)
+    # 创建团队，将 rules 转换为 JSON
+    team = Team(
+        guild_id=guild_id,
+        creator_id=current_user.id,
+        title=payload.title,
+        team_time=payload.team_time,
+        dungeon=payload.dungeon,
+        max_members=payload.max_members,
+        is_xuanjing_booked=payload.is_xuanjing_booked,
+        is_yuntie_booked=payload.is_yuntie_booked,
+        is_hidden=payload.is_hidden,
+        is_locked=payload.is_locked,
+        notice=payload.notice,
+        rule=[r.model_dump() for r in payload.rules] if payload.rules else [],
+        status="open"
+    )
     db.add(team)
     await db.commit()
     await db.refresh(team)
@@ -62,6 +78,7 @@ async def list_teams(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    """获取开团列表"""
     # 需为该群成员
     gm_result = await db.execute(
         select(GuildMember).where(
@@ -73,7 +90,13 @@ async def list_teams(
     if gm_result.scalar_one_or_none() is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="非该群组成员")
 
-    result = await db.execute(select(Team).where(Team.guild_id == guild_id))
+    # 获取所有非删除状态的团队
+    result = await db.execute(
+        select(Team).where(
+            Team.guild_id == guild_id,
+            Team.status != "deleted"
+        ).order_by(Team.team_time.desc())
+    )
     teams = result.scalars().all()
     return success([TeamOut.model_validate(t) for t in teams], message="获取成功")
 
@@ -85,6 +108,7 @@ async def get_team(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    """获取开团详情"""
     # 需为该群成员
     gm_result = await db.execute(
         select(GuildMember).where(
@@ -96,7 +120,13 @@ async def get_team(
     if gm_result.scalar_one_or_none() is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="非该群组成员")
 
-    result = await db.execute(select(Team).where(Team.id == team_id, Team.guild_id == guild_id))
+    result = await db.execute(
+        select(Team).where(
+            Team.id == team_id,
+            Team.guild_id == guild_id,
+            Team.status != "deleted"
+        )
+    )
     team = result.scalar_one_or_none()
     if team is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="团队不存在")
@@ -111,6 +141,7 @@ async def update_team(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    """更新开团信息"""
     # 权限：群主或管理员
     gm_result = await db.execute(
         select(GuildMember).where(
@@ -122,13 +153,39 @@ async def update_team(
     gm = gm_result.scalar_one_or_none()
     _ensure_member_with_role(gm, roles=["owner", "helper"]) 
 
-    result = await db.execute(select(Team).where(Team.id == team_id, Team.guild_id == guild_id))
+    result = await db.execute(
+        select(Team).where(
+            Team.id == team_id,
+            Team.guild_id == guild_id,
+            Team.status != "deleted"
+        )
+    )
     team = result.scalar_one_or_none()
     if team is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="团队不存在")
 
-    if payload.name is not None:
-        team.name = payload.name
+    # 更新字段
+    if payload.title is not None:
+        team.title = payload.title
+    if payload.team_time is not None:
+        team.team_time = payload.team_time
+    if payload.dungeon is not None:
+        team.dungeon = payload.dungeon
+    if payload.max_members is not None:
+        team.max_members = payload.max_members
+    if payload.is_xuanjing_booked is not None:
+        team.is_xuanjing_booked = payload.is_xuanjing_booked
+    if payload.is_yuntie_booked is not None:
+        team.is_yuntie_booked = payload.is_yuntie_booked
+    if payload.is_hidden is not None:
+        team.is_hidden = payload.is_hidden
+    if payload.is_locked is not None:
+        team.is_locked = payload.is_locked
+    if payload.notice is not None:
+        team.notice = payload.notice
+    if payload.rules is not None:
+        team.rule = [r.model_dump() for r in payload.rules]
+
     await db.commit()
     await db.refresh(team)
 
@@ -142,6 +199,7 @@ async def delete_team(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    """删除开团（软删除）"""
     # 权限：群主或管理员
     gm_result = await db.execute(
         select(GuildMember).where(
@@ -153,11 +211,18 @@ async def delete_team(
     gm = gm_result.scalar_one_or_none()
     _ensure_member_with_role(gm, roles=["owner", "helper"]) 
 
-    result = await db.execute(select(Team).where(Team.id == team_id, Team.guild_id == guild_id))
+    result = await db.execute(
+        select(Team).where(
+            Team.id == team_id,
+            Team.guild_id == guild_id,
+            Team.status != "deleted"
+        )
+    )
     team = result.scalar_one_or_none()
     if team is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="团队不存在")
 
-    await db.delete(team)
+    # 软删除：更新状态
+    team.status = "deleted"
     await db.commit()
     return success(message="删除成功")
