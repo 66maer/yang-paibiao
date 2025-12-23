@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import { Card, CardBody, CardHeader, Chip, Divider } from "@heroui/react";
 import { allocateSlots, buildEmptyRules } from "../../../utils/slotAllocation";
 import SlotCard from "./SlotCard";
 import { buildSlots } from "./utils";
@@ -216,44 +215,7 @@ const TeamBoard = ({
     </div>
   );
 
-  return (
-    <Card className="w-[1320px]">
-      {/* 头部 */}
-      <CardHeader className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-pink-600 dark:text-pink-400">团队面板</span>
-          <Chip size="sm" variant="flat" color="secondary">
-            5 x 5
-          </Chip>
-          {dragEnabled && (
-            <Chip size="sm" color="warning" variant="flat">
-              拖动以重排坑位
-            </Chip>
-          )}
-          {mode === "mark" && (
-            <Chip size="sm" color="success" variant="flat">
-              标记进组 / 缺席
-            </Chip>
-          )}
-        </div>
-        <div className="flex gap-1 text-xs text-default-500">
-          <Chip size="sm" variant="bordered">
-            左键点击查看详情
-          </Chip>
-          {(mode === "edit" || mode === "mark") && (
-            <Chip size="sm" variant="bordered">
-              悬停显示编辑
-            </Chip>
-          )}
-        </div>
-      </CardHeader>
-
-      <Divider />
-
-      {/* 主体 */}
-      <CardBody>{dragEnabled ? renderDragGrid(displayItems) : renderGrid(displayItems)}</CardBody>
-    </Card>
-  );
+  return <div className="w-[1300px]">{dragEnabled ? renderDragGrid(displayItems) : renderGrid(displayItems)}</div>;
 };
 
 export default TeamBoard;

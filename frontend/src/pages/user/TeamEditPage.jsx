@@ -68,12 +68,8 @@ export default function TeamEditPage() {
       <div className="flex items-center justify-center h-[calc(100vh-120px)]">
         <div className="text-center space-y-4">
           <div className="text-6xl">📋</div>
-          <h2 className="text-2xl font-bold text-pink-600 dark:text-pink-400">
-            请先选择群组
-          </h2>
-          <p className="text-default-600">
-            您需要先选择一个群组才能创建开团
-          </p>
+          <h2 className="text-2xl font-bold text-pink-600 dark:text-pink-400">请先选择群组</h2>
+          <p className="text-default-600">您需要先选择一个群组才能创建开团</p>
         </div>
       </div>
     );
@@ -93,21 +89,12 @@ export default function TeamEditPage() {
       <div className="grid grid-cols-12 gap-4 h-full">
         {/* 左侧：编辑表单 */}
         <div className="col-span-9 overflow-auto">
-          <TeamEditForm
-            team={team}
-            guildId={currentGuild.id}
-            onSuccess={handleFormSuccess}
-            onCancel={handleCancel}
-          />
+          <TeamEditForm team={team} guildId={currentGuild.id} onSuccess={handleFormSuccess} onCancel={handleCancel} />
         </div>
 
         {/* 右侧：辅助信息面板 */}
         <div className="col-span-3 overflow-hidden">
-          <TeamRightPanel
-            team={team}
-            isAdmin={isAdmin}
-            isEditMode={true}
-          />
+          <TeamRightPanel team={team} isAdmin={isAdmin} isEditMode={true} />
         </div>
       </div>
     </div>
