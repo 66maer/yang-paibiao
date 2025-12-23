@@ -365,7 +365,7 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
               onPress={toggleAutoGenerate}
               className="min-w-32 h-14"
             >
-              {formData.auto_generate_title ? "✨ 自动生成(已开启)" : "当前为手动输入模式"}
+              {formData.auto_generate_title ? "✨ 自动标题(已开启)" : "当前为手动输入模式"}
             </Button>
           </div>
 
@@ -453,61 +453,66 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
 
           <Divider />
 
-          {/* 第三行：大小铁设置 */}
-          <div>
-            <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">铁标记设置</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50">
-                <Switch
-                  isSelected={formData.is_xuanjing_booked}
-                  onValueChange={(value) => updateField("is_xuanjing_booked", value)}
-                >
-                  <span className="text-sm font-medium">
-                    💎 大铁{" "}
-                    <span className="text-xs text-default-500">
-                      {formData.is_xuanjing_booked ? "(大包)" : "(大拍)"}
+          {/* 第三行：铁标记设置 + 权限设置 */}
+          <div className="grid grid-cols-2 gap-6">
+            {/* 左侧：铁标记设置 */}
+            <div>
+              <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">大小铁标记设置</h3>
+              <div className="flex flex-nowrap gap-1">
+                <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50 flex-1">
+                  <Switch
+                    isSelected={formData.is_xuanjing_booked}
+                    onValueChange={(value) => updateField("is_xuanjing_booked", value)}
+                  >
+                    <span className="text-sm font-medium flex items-center gap-2">
+                      <img src="/玄晶.png" alt="玄晶" className="w-5 h-5" />
+                      玄晶{" "}
+                      <span className="text-xs text-default-500">
+                        {formData.is_xuanjing_booked ? "(大包)" : "(大拍)"}
+                      </span>
                     </span>
-                  </span>
-                </Switch>
+                  </Switch>
+                </div>
+                <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50 flex-1">
+                  <Switch
+                    isSelected={formData.is_yuntie_booked}
+                    onValueChange={(value) => updateField("is_yuntie_booked", value)}
+                  >
+                    <span className="text-sm font-medium flex items-center gap-2">
+                      <img src="/陨铁.png" alt="陨铁" className="w-5 h-5" />
+                      陨铁{" "}
+                      <span className="text-xs text-default-500">
+                        {formData.is_yuntie_booked ? "(小包)" : "(小拍)"}
+                      </span>
+                    </span>
+                  </Switch>
+                </div>
               </div>
-              <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50">
-                <Switch
-                  isSelected={formData.is_yuntie_booked}
-                  onValueChange={(value) => updateField("is_yuntie_booked", value)}
-                >
-                  <span className="text-sm font-medium">
-                    ⚙️ 小铁{" "}
-                    <span className="text-xs text-default-500">{formData.is_yuntie_booked ? "(小包)" : "(小拍)"}</span>
-                  </span>
-                </Switch>
+            </div>
+
+            {/* 右侧：权限设置 */}
+            <div>
+              <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">权限设置</h3>
+              <div className="flex flex-nowrap gap-1">
+                <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50 flex-1">
+                  <Switch isSelected={formData.is_hidden} onValueChange={(value) => updateField("is_hidden", value)}>
+                    <span className="text-sm font-medium">👁️ 仅管理员可见</span>
+                  </Switch>
+                </div>
+                <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50 flex-1">
+                  <Switch isSelected={formData.is_locked} onValueChange={(value) => updateField("is_locked", value)}>
+                    <span className="text-sm font-medium">🔒 锁定自由报名（排表模式）</span>
+                  </Switch>
+                </div>
               </div>
             </div>
           </div>
 
           <Divider />
 
-          {/* 第四行：权限设置 */}
+          {/* 团队面板 模板 */}
           <div>
-            <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">权限设置</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50">
-                <Switch isSelected={formData.is_hidden} onValueChange={(value) => updateField("is_hidden", value)}>
-                  <span className="text-sm font-medium">👁️ 仅管理员可见</span>
-                </Switch>
-              </div>
-              <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50">
-                <Switch isSelected={formData.is_locked} onValueChange={(value) => updateField("is_locked", value)}>
-                  <span className="text-sm font-medium">🔒 锁定自由报名（排表模式）</span>
-                </Switch>
-              </div>
-            </div>
-          </div>
-
-          <Divider />
-
-          {/* 第五行：使用模板 */}
-          <div>
-            <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">模板设置</h3>
+            <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">团队面板</h3>
             <div className="flex items-end gap-3">
               <Select
                 label="使用模板"
@@ -535,9 +540,7 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
             </div>
           </div>
 
-          <Divider />
-
-          {/* 第六行：团队告示 */}
+          {/* 团队面板 告示 */}
           <div>
             <Textarea
               label="团队告示"
@@ -555,11 +558,8 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
             />
           </div>
 
-          <Divider />
-
           {/* 团队面板（规则编辑模式） */}
           <div>
-            <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">团队面板（规则编辑）</h3>
             <TeamBoard
               rules={boardRules}
               signupList={[]}

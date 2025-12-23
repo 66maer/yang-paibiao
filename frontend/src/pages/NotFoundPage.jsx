@@ -1,7 +1,6 @@
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@heroui/react';
-import useAuthStore from '../stores/authStore';
-import notFoundImg from '../assets/404.png';
+import { useNavigate } from "react-router-dom";
+import { Button } from "@heroui/react";
+import useAuthStore from "../stores/authStore";
 
 /**
  * 404 页面未找到
@@ -12,14 +11,14 @@ export default function NotFoundPage() {
 
   const handleGoHome = () => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
-    if (user?.role === 'admin') {
-      navigate('/admin');
+    if (user?.role === "admin") {
+      navigate("/admin");
     } else {
-      navigate('/');
+      navigate("/");
     }
   };
 
@@ -29,22 +28,14 @@ export default function NotFoundPage() {
         <div className="mb-8">
           {/* 404 图片 */}
           <div className="mb-6 flex justify-center">
-            <img
-              src={notFoundImg}
-              alt="404"
-              className="w-64 h-auto object-contain animate-pulse"
-            />
+            <img src="/404.png" alt="404" className="w-64 h-auto object-contain animate-pulse" />
           </div>
 
           <h1 className="text-9xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
             404
           </h1>
-          <h2 className="text-2xl font-semibold text-default-700 dark:text-default-300 mt-4">
-            页面未找到
-          </h2>
-          <p className="text-default-500 mt-2">
-            抱歉，你访问的页面不存在或已被删除
-          </p>
+          <h2 className="text-2xl font-semibold text-default-700 dark:text-default-300 mt-4">页面未找到</h2>
+          <p className="text-default-500 mt-2">抱歉，你访问的页面不存在或已被删除</p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

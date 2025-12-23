@@ -7,7 +7,6 @@ import TeamSidebar from "../../components/board/TeamSidebar";
 import TeamContent from "../../components/board/TeamContent";
 import TeamRightPanel from "../../components/board/TeamRightPanel";
 import { showToast } from "../../utils/toast";
-import sleepingImg from "../../assets/睡觉.png";
 
 /**
  * 开团看板页面
@@ -74,12 +73,8 @@ export default function BoardPage() {
           <CardBody className="p-12">
             <div className="text-center space-y-4">
               <div className="text-6xl">📋</div>
-              <h2 className="text-2xl font-bold text-pink-600 dark:text-pink-400">
-                请先选择群组
-              </h2>
-              <p className="text-default-600">
-                您需要先选择一个群组才能查看开团看板
-              </p>
+              <h2 className="text-2xl font-bold text-pink-600 dark:text-pink-400">请先选择群组</h2>
+              <p className="text-default-600">您需要先选择一个群组才能查看开团看板</p>
             </div>
           </CardBody>
         </Card>
@@ -114,31 +109,19 @@ export default function BoardPage() {
             <div className="grid grid-cols-12 gap-4 h-full">
               {/* 团队详情 */}
               <div className="col-span-8 overflow-auto">
-                <TeamContent
-                  team={selectedTeam}
-                  isAdmin={isAdmin}
-                  onEdit={handleEditTeam}
-                  onRefresh={loadTeams}
-                />
+                <TeamContent team={selectedTeam} isAdmin={isAdmin} onEdit={handleEditTeam} onRefresh={loadTeams} />
               </div>
 
               {/* 右侧面板 - 我的报名/候补列表 或 候补列表/报名日志 */}
               <div className="col-span-4 overflow-hidden">
-                <TeamRightPanel
-                  team={selectedTeam}
-                  isAdmin={isAdmin}
-                />
+                <TeamRightPanel team={selectedTeam} isAdmin={isAdmin} />
               </div>
             </div>
           ) : (
             <Card className="h-full">
               <CardBody className="flex items-center justify-center">
                 <div className="text-center space-y-4">
-                  <img
-                    src={sleepingImg}
-                    alt="暂无开团"
-                    className="w-128 h-64 object-contain mx-auto"
-                  />
+                  <img src="/睡觉.png" alt="暂无开团" className="w-128 h-64 object-contain mx-auto" />
                   <p className="text-default-500 text-2xl">尊重夕阳红命运...</p>
                 </div>
               </CardBody>
