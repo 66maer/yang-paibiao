@@ -14,9 +14,7 @@ export default function UserLayout() {
   const location = useLocation();
 
   // 获取当前群组
-  const currentGuild = user?.guilds?.find(
-    (g) => g.id === user?.current_guild_id
-  );
+  const currentGuild = user?.guilds?.find((g) => g.id === user?.current_guild_id);
   const currentRole = currentGuild?.role || "member";
   const hasCurrentGuild = !!currentGuild;
 
@@ -33,10 +31,7 @@ export default function UserLayout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo + 品牌名 */}
-            <Link
-              to="/board"
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-            >
+            <Link to="/board" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
                 小
               </div>
@@ -79,16 +74,14 @@ export default function UserLayout() {
       </header>
 
       {/* 主内容区 */}
-      <main className="flex-1 container mx-auto px-4 py-6">
+      <main className="flex-1 container max-w-[1660px] mx-auto px-4 py-6">
         <Outlet />
       </main>
 
       {/* 页脚 */}
       <footer className="border-t border-pink-200 dark:border-pink-900 py-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-sm text-default-500">
-            小秧排表 © 2025 - 剑网三排标系统
-          </p>
+          <p className="text-sm text-default-500">小秧排表 © 2025 - 剑网三排标系统</p>
         </div>
       </footer>
     </div>
