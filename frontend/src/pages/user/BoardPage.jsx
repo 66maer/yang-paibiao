@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { startOfDay } from "date-fns";
 import { Card, CardBody, Spinner } from "@heroui/react";
 import useAuthStore from "../../stores/authStore";
 import { getTeamList } from "../../api/teams";
@@ -33,12 +34,21 @@ export default function BoardPage() {
         status: "open",
       });
 
-      const teamList = response.data?.items || [];
-      setTeams(teamList);
+      const rawList = response.data?.items || response.data?.data || response.data || [];
+      const sortedTeams = [...rawList].sort((a, b) => new Date(a.team_time) - new Date(b.team_time));
+      setTeams(sortedTeams);
 
-      // 如果没有选中的团队，自动选中第一个
-      if (!selectedTeamId && teamList.length > 0) {
-        setSelectedTeamId(teamList[0].id);
+      // 自动选中距离今天最近的未来开团（忽略具体时间），否则选最早的一车
+      if (sortedTeams.length === 0) {
+        setSelectedTeamId(null);
+      } else {
+        const hasSelected = sortedTeams.some((team) => team.id === selectedTeamId);
+        if (!hasSelected) {
+          const today = startOfDay(new Date());
+          const futureTeams = sortedTeams.filter((team) => startOfDay(new Date(team.team_time)) >= today);
+          const preferredTeam = futureTeams[0] || sortedTeams[0];
+          setSelectedTeamId(preferredTeam.id);
+        }
       }
     } catch (error) {
       console.error("加载开团列表失败:", error);
@@ -108,12 +118,12 @@ export default function BoardPage() {
           {selectedTeam ? (
             <div className="grid grid-cols-12 gap-4 h-full">
               {/* 团队详情 */}
-              <div className="col-span-8 overflow-auto">
+              <div className="col-span-10 overflow-auto">
                 <TeamContent team={selectedTeam} isAdmin={isAdmin} onEdit={handleEditTeam} onRefresh={loadTeams} />
               </div>
 
               {/* 右侧面板 - 我的报名/候补列表 或 候补列表/报名日志 */}
-              <div className="col-span-4 overflow-hidden">
+              <div className="col-span-2 overflow-hidden">
                 <TeamRightPanel team={selectedTeam} isAdmin={isAdmin} />
               </div>
             </div>
