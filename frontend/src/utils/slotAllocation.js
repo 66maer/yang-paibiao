@@ -61,7 +61,7 @@ const fitsRule = (rule, signup) => {
 };
 
 // Hungarian-style bipartite matching for optimal slot allocation
-export function allocateSlots(ruleList = [], signupList = [], view = []) {
+export function allocateSlots(ruleList = [], signupList = []) {
   const rules = buildRuleList(ruleList);
   const slotsCount = rules.length;
   const cleansedSignups = Array.isArray(signupList) ? signupList.filter((m) => !m.cancelTime && !m.cancel_time) : [];
@@ -121,8 +121,8 @@ export function allocateSlots(ruleList = [], signupList = [], view = []) {
   const matchedMembers = new Set(matchToSlot.keys());
   const waitlist = unlockedMembers.filter((_, idx) => !matchedMembers.has(idx));
 
-  const appliedView = applyViewMapping(result, normalizeView(view));
-  return { slots: appliedView, waitlist };
+  // 仅返回按规则分配的结果，不在此阶段应用任何视觉映射
+  return { slots: result, waitlist };
 }
 
 // Lightweight helper to build a blank rule list for UI scaffolding

@@ -21,7 +21,8 @@ import { RuleTooltip, SignupTooltip } from "../Tooltips";
  * 5. mark: 进组标记模式（浏览模式+进组/鸽子/召唤/清除按钮）
  */
 const SlotCard = ({
-  slotIndex,
+  slotIndex, // 逻辑数据索引（不受视觉映射影响）
+  displayIndex, // 视觉展示索引（受视觉映射影响，用于 n队n 文案）
   rule,
   signup,
   mode = "view",
@@ -105,19 +106,15 @@ const SlotCard = ({
   // 其他模式：根据报名情况展示
   const cardBody =
     mode === "edit-rule" ? (
-      <EmptySlotCard slotIndex={slotIndex} rule={rule} />
+      <EmptySlotCard slotIndex={slotIndex} displayIndex={displayIndex} rule={rule} />
     ) : signup ? (
       <FilledSlotCard signup={signup} presenceStatus={presenceStatus} />
     ) : (
-      <EmptySlotCard slotIndex={slotIndex} rule={rule} />
+      <EmptySlotCard slotIndex={slotIndex} displayIndex={displayIndex} rule={rule} />
     );
 
   // 渲染悬浮提示内容
-  const popoverContent = signup ? (
-    <SignupTooltip signup={signup} rule={rule} />
-  ) : (
-    <RuleTooltip rule={rule} />
-  );
+  const popoverContent = signup ? <SignupTooltip signup={signup} rule={rule} /> : <RuleTooltip rule={rule} />;
 
   // 是否显示 popover（规则编辑模式和拖动模式禁用）
   const showPopover = mode !== "drag" && mode !== "edit-rule";
@@ -131,12 +128,7 @@ const SlotCard = ({
     <div className="relative w-[250px] h-[120px] group">
       {/* 卡片主体 */}
       {showPopover ? (
-        <Popover
-          isOpen={isPopoverOpen}
-          onOpenChange={setIsPopoverOpen}
-          placement="top"
-          showArrow
-        >
+        <Popover isOpen={isPopoverOpen} onOpenChange={setIsPopoverOpen} placement="top" showArrow>
           <PopoverTrigger>
             <motion.div
               whileHover={{ scale: 1.05 }}
@@ -164,11 +156,7 @@ const SlotCard = ({
           </PopoverContent>
         </Popover>
       ) : (
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="relative h-full cursor-pointer"
-          onClick={handleCardClick}
-        >
+        <motion.div whileHover={{ scale: 1.05 }} className="relative h-full cursor-pointer" onClick={handleCardClick}>
           {cardBody}
 
           {/* 编辑层覆盖 */}

@@ -1,13 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Chip,
-  Divider,
-  Tooltip,
-} from "@heroui/react";
+import { Card, CardBody, CardHeader, Button, Chip, Divider, Tooltip } from "@heroui/react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import SignupModal from "./SignupModal";
@@ -45,10 +37,10 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
     return buildEmptyRules();
   }, [memoizedInputs.rawRules]);
 
-  // Calculate slot allocation with memoization
+  // Calculate slot allocation with memoization（不应用视觉映射）
   const allocation = useMemo(() => {
-    return allocateSlots(rules, memoizedInputs.signupList, memoizedInputs.slotView);
-  }, [rules, memoizedInputs.signupList, memoizedInputs.slotView]);
+    return allocateSlots(rules, memoizedInputs.signupList);
+  }, [rules, memoizedInputs.signupList]);
 
   if (!team) return null;
 
@@ -89,9 +81,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
                   </Chip>
                 </Tooltip>
               )}
-              <h2 className="text-2xl font-bold text-pink-600 dark:text-pink-400">
-                {team.title || "未命名开团"}
-              </h2>
+              <h2 className="text-2xl font-bold text-pink-600 dark:text-pink-400">{team.title || "未命名开团"}</h2>
               {team.is_hidden && (
                 <Chip size="sm" variant="flat" color="default">
                   仅管理员可见
@@ -104,22 +94,12 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
               {isAdmin && (
                 <>
                   <Tooltip content="编辑开团">
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      color="primary"
-                      onPress={() => onEdit(team)}
-                    >
+                    <Button size="sm" variant="flat" color="primary" onPress={() => onEdit(team)}>
                       ✏️ 编辑
                     </Button>
                   </Tooltip>
                   <Tooltip content="关闭开团">
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      color="danger"
-                      onPress={handleCloseTeam}
-                    >
+                    <Button size="sm" variant="flat" color="danger" onPress={handleCloseTeam}>
                       ❌ 关闭
                     </Button>
                   </Tooltip>
@@ -142,23 +122,13 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
           {/* 基础信息标签 */}
           <div className="flex flex-wrap gap-2">
             {/* 副本 */}
-            <Chip
-              size="sm"
-              variant="flat"
-              color="primary"
-              startContent={<span>🏛️</span>}
-            >
+            <Chip size="sm" variant="flat" color="primary" startContent={<span>🏛️</span>}>
               {team.dungeon || "未指定副本"}
             </Chip>
 
             {/* 时间 */}
             {teamTime && (
-              <Chip
-                size="sm"
-                variant="flat"
-                color="secondary"
-                startContent={<span>🕐</span>}
-              >
+              <Chip size="sm" variant="flat" color="secondary" startContent={<span>🕐</span>}>
                 {format(teamTime, "yyyy-MM-dd HH:mm", { locale: zhCN })}
               </Chip>
             )}
@@ -192,13 +162,9 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
             {/* 团队告示 */}
             {team.notice && (
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-default-600">
-                  📢 团队告示
-                </h3>
+                <h3 className="text-sm font-semibold text-default-600">📢 团队告示</h3>
                 <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50">
-                  <p className="text-sm text-default-700 dark:text-default-300 whitespace-pre-wrap">
-                    {team.notice}
-                  </p>
+                  <p className="text-sm text-default-700 dark:text-default-300 whitespace-pre-wrap">{team.notice}</p>
                 </div>
               </div>
             )}
@@ -236,21 +202,13 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
                 signupList={memoizedInputs.signupList}
                 view={memoizedInputs.slotView}
                 mode={boardMode}
-                onRuleChange={(slotIndex) =>
-                  showToast.info(`已修改 ${slotIndex + 1} 号坑位规则，保存逻辑待接入`)
-                }
+                onRuleChange={(slotIndex) => showToast.info(`已修改 ${slotIndex + 1} 号坑位规则，保存逻辑待接入`)}
                 onAssign={(slotIndex, payload) =>
                   showToast.info(`已指定 ${slotIndex + 1} 号坑位，待接入后端: ${payload.signupName || "未命名"}`)
                 }
-                onAssignDelete={(slotIndex) =>
-                  showToast.success(`已删除 ${slotIndex + 1} 号坑位的指定，待接入后端`)
-                }
-                onPresenceChange={(slotIndex, status) =>
-                  showToast.success(`已标记坑位 ${slotIndex + 1} 为 ${status}`)
-                }
-                onReorder={(mapping) =>
-                  showToast.success(`已更新坑位顺序，待保存 view 字段，映射数量 ${mapping.length}`)
-                }
+                onAssignDelete={(slotIndex) => showToast.success(`已删除 ${slotIndex + 1} 号坑位的指定，待接入后端`)}
+                onPresenceChange={(slotIndex, status) => showToast.success(`已标记坑位 ${slotIndex + 1} 为 ${status}`)}
+                onReorder={(newView) => showToast.success(`已更新视觉映射（长度 ${newView.length}），请保存到后端`)}
               />
             </div>
 
@@ -282,11 +240,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
       </Card>
 
       {/* 报名模态框 */}
-      <SignupModal
-        isOpen={isSignupModalOpen}
-        onClose={() => setIsSignupModalOpen(false)}
-        team={team}
-      />
+      <SignupModal isOpen={isSignupModalOpen} onClose={() => setIsSignupModalOpen(false)} team={team} />
     </>
   );
 }
@@ -308,7 +262,11 @@ const WaitlistList = ({ waitlist = [] }) => {
       {waitlist.map((member, idx) => {
         const xinfa = member.characterXinfa ? xinfaInfoTable[member.characterXinfa] : null;
         return (
-          <Card key={`${member.id || idx}-${member.characterName || idx}`} shadow="none" className="border border-default-200">
+          <Card
+            key={`${member.id || idx}-${member.characterName || idx}`}
+            shadow="none"
+            className="border border-default-200"
+          >
             <CardBody className="flex items-center justify-between gap-3 py-3">
               <div className="flex items-center gap-3">
                 {xinfa ? (

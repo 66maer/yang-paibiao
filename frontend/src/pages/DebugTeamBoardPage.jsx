@@ -131,8 +131,8 @@ export default function DebugTeamBoardPage() {
     setSignups((prev) => prev.map((item) => (item.lockSlot === idx ? { ...item, presence: status } : item)));
   };
 
-  const handleReorder = (mapping) => {
-    setView(mapping);
+  const handleReorder = (newView) => {
+    setView(newView);
   };
 
   const resetAll = () => {
@@ -186,13 +186,13 @@ export default function DebugTeamBoardPage() {
         </CardHeader>
         <Divider />
         <CardBody>
-          {view.length === 0 ? (
-            <div className="text-default-500 text-sm">暂无映射，拖动后这里会显示 slotIndex → signupId</div>
+          {!view || view.length === 0 ? (
+            <div className="text-default-500 text-sm">暂无映射，拖动后这里会显示 视觉索引 → 数据坑位索引</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-default-600">
-              {view.map((v) => (
-                <div key={`${v.slotIndex}-${v.signupId}`} className="p-2 rounded bg-default-100">
-                  坑位 {v.slotIndex + 1} → {v.signupId}
+              {view.map((dataIdx, visualIdx) => (
+                <div key={`${visualIdx}-${dataIdx}`} className="p-2 rounded bg-default-100">
+                  视觉 {visualIdx + 1} → 数据坑位 {dataIdx + 1}
                 </div>
               ))}
             </div>
