@@ -28,15 +28,15 @@ export default function TeamRightPanel({ team, isAdmin, isEditMode = false }) {
             </div>
 
             <div className="p-3 rounded-lg bg-pink-50 dark:bg-pink-950/20">
-              <h4 className="font-semibold text-pink-600 dark:text-pink-400 mb-2">💎 铁标记</h4>
+              <h4 className="font-semibold text-pink-600 dark:text-pink-400 mb-2">💎 大小铁标记</h4>
               <p className="text-default-600 text-xs">大铁（玄晶）和小铁（陨铁）是否已被预定</p>
             </div>
 
             <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20">
-              <h4 className="font-semibold text-orange-600 dark:text-orange-400 mb-2">🔒 高级设置</h4>
+              <h4 className="font-semibold text-orange-600 dark:text-orange-400 mb-2">🔒 权限设置</h4>
               <p className="text-default-600 text-xs">
                 • 仅管理员可见：隐藏开团，普通成员看不到，群机器人也查不到
-                <br />• 锁定报名：开启后禁止普通用户自由报名
+                <br />• 锁定自由报名：开启后禁止普通用户自由报名 （一般是排表模式）
               </p>
             </div>
           </div>
