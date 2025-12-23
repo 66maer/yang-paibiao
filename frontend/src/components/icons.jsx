@@ -199,5 +199,39 @@ export const CopyIcon = ({ size = 16, width, height, ...props }) => (
   </svg>
 );
 
+// 头像勾选图标 - 确认操作
+export const CheckIcon = ({ size, height, width, ...props }) => {
+  return (
+    <svg fill="none" height={size || height || 18} viewBox="0 0 24 24" width={size || width || 18} {...props}>
+      <path
+        d="M7.75 11.9999L10.58 14.8299L16.25 9.16992"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+      />
+    </svg>
+  );
+};
+
+// 方框勾选图标 - 全选操作
+export const CheckSquareIcon = ({ size = 16, width, height, ...props }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size || width}
+    height={size || height}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+    <path d="M9 12l2 2 4-4"></path>
+  </svg>
+);
+
 // 在这里添加更多图标...
 // 使用命令提取图标: awk '/^export const IconName/,/^\);$/' /path/to/icons.tsx
