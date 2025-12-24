@@ -86,17 +86,7 @@ export default function TeamEditPage() {
 
   return (
     <div className="h-[calc(100vh-120px)] px-10">
-      <div className="grid grid-cols-12 gap-4 h-full">
-        {/* 左侧：编辑表单 */}
-        <div className="col-span-9 overflow-auto">
-          <TeamEditForm team={team} guildId={currentGuild.id} onSuccess={handleFormSuccess} onCancel={handleCancel} />
-        </div>
-
-        {/* 右侧：辅助信息面板 */}
-        <div className="col-span-3 overflow-hidden">
-          <TeamRightPanel team={team} isAdmin={isAdmin} isEditMode={true} />
-        </div>
-      </div>
+      <TeamEditForm team={team} guildId={currentGuild.id} onSuccess={handleFormSuccess} onCancel={handleCancel} />
     </div>
   );
 }
