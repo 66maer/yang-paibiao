@@ -147,6 +147,66 @@ async def get_my_characters(
     ))
 
 
+@router.get("/user/{user_id}", response_model=ResponseModel[CharacterListResponse])
+async def get_user_characters(
+    user_id: int,
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    keyword: Optional[str] = Query(None, description="搜索关键词（角色名或心法）"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取指定用户的角色列表（用户）
+    
+    - **user_id**: 用户ID
+    - **page**: 页码（默认1）
+    - **page_size**: 每页数量（默认20，最大100）
+    - **keyword**: 搜索关键词（可选）
+    """
+    # 构建查询 - 通过关联表查询指定用户的角色
+    query = (
+        select(Character)
+        .join(CharacterPlayer)
+        .where(
+            CharacterPlayer.user_id == user_id,
+            Character.deleted_at.is_(None)
+        )
+    )
+    
+    # 关键词搜索
+    if keyword:
+        query = query.where(
+            or_(
+                Character.name.ilike(f"%{keyword}%"),
+                Character.xinfa.ilike(f"%{keyword}%"),
+            )
+        )
+    
+    # 获取总数
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar()
+    
+    # 分页查询并加载关联数据
+    query = query.options(selectinload(Character.players))
+    query = query.order_by(Character.created_at.desc())
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(query)
+    characters = result.scalars().all()
+    
+    # 计算总页数
+    pages = (total + page_size - 1) // page_size if total > 0 else 0
+    
+    return ResponseModel(data=CharacterListResponse(
+        items=[CharacterResponse.model_validate(char) for char in characters],
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=pages
+    ))
+
+
 @router.get("/{character_id}", response_model=ResponseModel[CharacterResponse])
 async def get_character(
     character_id: int,

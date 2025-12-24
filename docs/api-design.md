@@ -767,7 +767,9 @@ Authorization: Bearer <token>
 
 **查询参数**:
 
-- `relation_type`: 过滤关系类型（owner/shared）
+- `page`: 页码（默认 1）
+- `page_size`: 每页数量（默认 20，最大 100）
+- `keyword`: 搜索关键词（角色名或心法，可选）
 
 **响应**:
 
@@ -775,36 +777,93 @@ Authorization: Bearer <token>
 {
   "code": 0,
   "message": "success",
-  "data": [
-    {
-      "id": 1,
-      "name": "角色名",
-      "server": "剑胆琴心",
-      "xinfa": "花间游",
-      "remark": "装分12000，主T",
-      "relation": {
-        "relation_type": "owner",
-        "priority": 0,
-        "notes": null
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "name": "角色名",
+        "server": "剑胆琴心",
+        "xinfa": "花间游",
+        "remark": "装分12000，主T",
+        "relation": {
+          "relation_type": "owner",
+          "priority": 0,
+          "notes": null
+        },
+        "created_at": "2025-12-18T10:00:00"
       },
-      "created_at": "2025-12-18T10:00:00"
-    },
-    {
-      "id": 2,
-      "name": "另一个角色",
-      "server": "剑胆琴心",
-      "xinfa": "凌雪藏锋",
-      "remark": "装分11500，副T",
-      "relation": {
-        "relation_type": "shared",
-        "priority": 1,
-        "notes": "帮朋友代清，周三有空"
-      },
-      "created_at": "2025-12-15T10:00:00"
-    }
-  ]
+      {
+        "id": 2,
+        "name": "另一个角色",
+        "server": "剑胆琴心",
+        "xinfa": "凌雪藏锋",
+        "remark": "装分11500，副T",
+        "relation": {
+          "relation_type": "shared",
+          "priority": 1,
+          "notes": "帮朋友代清，周三有空"
+        },
+        "created_at": "2025-12-15T10:00:00"
+      }
+    ],
+    "total": 2,
+    "page": 1,
+    "page_size": 20,
+    "pages": 1
+  }
 }
 ```
+
+### 4.2.5 获取指定用户的角色列表
+
+- **路径**: `GET /characters/user/{user_id}`
+- **权限**: 需要认证
+- **描述**: 获取指定用户的所有角色列表（用于在其他组件中快速选择用户的角色）
+
+**查询参数**:
+
+- `page`: 页码（默认 1）
+- `page_size`: 每页数量（默认 20，最大 100）
+- `keyword`: 搜索关键词（角色名或心法，可选）
+
+**响应**:
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "name": "角色名",
+        "server": "剑胆琴心",
+        "xinfa": "花间游",
+        "remark": "装分12000，主T",
+        "created_at": "2025-12-18T10:00:00"
+      },
+      {
+        "id": 2,
+        "name": "另一个角色",
+        "server": "剑胆琴心",
+        "xinfa": "凌雪藏锋",
+        "remark": "装分11500，副T",
+        "created_at": "2025-12-15T10:00:00"
+      }
+    ],
+    "total": 2,
+    "page": 1,
+    "page_size": 20,
+    "pages": 1
+  }
+}
+```
+
+**说明**：
+
+- 此接口返回用户的所有角色（不区分 relation_type）
+- 仅返回角色基本信息，不返回关联信息
+- 用于前端组件快速选择用户的角色
 
 ### 4.3 更新角色基本信息
 

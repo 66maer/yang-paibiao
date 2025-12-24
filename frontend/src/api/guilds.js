@@ -43,3 +43,11 @@ export const deleteGuild = (guildId) => {
 export const transferGuildOwner = (guildId, data) => {
   return apiClient.post(`/admin/guilds/${guildId}/transfer`, data);
 };
+/**
+ * 获取群组成员列表（用户）
+ * 仅需要当前用户是该群组的成员
+ */
+export const getGuildMembers = async (guildId, params = {}) => {
+  const response = await apiClient.get(`/guilds/${guildId}/members`, { params });
+  return response;
+};

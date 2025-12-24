@@ -65,7 +65,7 @@ export default function XinfaSelector({
 
   // 获取选中心法的数据
   const selectedXinfa = useMemo(() => {
-    return xinfaData.find(x => x.name === value)
+    return xinfaData.find(x => x.key === value)
   }, [value, xinfaData])
 
   // 根据搜索文本过滤心法
@@ -156,8 +156,8 @@ export default function XinfaSelector({
     >
       {(xinfa) => (
         <AutocompleteItem
-          key={xinfa.name}
-          value={xinfa.name}
+          key={xinfa.key}
+          value={xinfa.key}
           textValue={xinfa.name}
           startContent={
             <img

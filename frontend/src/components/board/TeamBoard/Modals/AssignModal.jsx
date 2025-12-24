@@ -1,19 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Switch } from "@heroui/react";
+import {
+  Button,
+  Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  Select,
+  SelectItem,
+  Switch,
+} from "@heroui/react";
 import { allXinfaList, xinfaInfoTable } from "../../../../config/xinfa";
+import GroupMemberSelector from "../../../GroupMemberSelector";
 
 /**
  * 团长指定弹窗组件
  * 用于团长强制指定某个坑位的成员
- * - 团员昵称
- * - 角色名
- * - 心法
+ * - 群组成员（使用GroupMemberSelector，统一处理成员+角色+心法选择）
  * - 是否老板坑
  * - 是否代报
  */
 const AssignModal = ({ open, onClose, defaultXinfa, onSave }) => {
   const [form, setForm] = useState({
-    signupName: "",
+    memberId: "",
+    memberName: "",
     characterName: "",
     characterXinfa: defaultXinfa || allXinfaList[0],
     isRich: false,
@@ -43,40 +54,19 @@ const AssignModal = ({ open, onClose, defaultXinfa, onSave }) => {
           <>
             <ModalHeader className="text-lg font-semibold">团长指定</ModalHeader>
             <ModalBody className="space-y-4">
-              {/* 团员昵称 */}
-              <Input
-                label="团员昵称"
-                placeholder="请输入团员昵称"
-                value={form.signupName}
-                onValueChange={(val) => updateField("signupName", val)}
+              {/* 群组成员 + 角色 + 心法选择（统一组件） */}
+              <GroupMemberSelector
+                memberId={form.memberId}
+                onMemberChange={(memberId) => updateField("memberId", memberId)}
+                characterName={form.characterName}
+                onCharacterNameChange={(characterName) => updateField("characterName", characterName)}
+                characterXinfa={form.characterXinfa}
+                onXinfaChange={(xinfa) => updateField("characterXinfa", xinfa)}
+                memberLabel="群组成员"
+                characterLabel="角色名"
+                xinfaLabel="心法"
+                isRequired
               />
-
-              {/* 角色名 */}
-              <Input
-                label="角色名"
-                placeholder="请输入角色名"
-                value={form.characterName}
-                onValueChange={(val) => updateField("characterName", val)}
-              />
-
-              {/* 心法选择 */}
-              <Select
-                label="心法"
-                selectedKeys={new Set([form.characterXinfa])}
-                onSelectionChange={(keys) => updateField("characterXinfa", Array.from(keys)[0])}
-              >
-                {allXinfaList.map((xinfa) => {
-                  const info = xinfaInfoTable[xinfa];
-                  return (
-                    <SelectItem key={xinfa} textValue={info.name}>
-                      <div className="flex items-center gap-2">
-                        <img src={`/xinfa/${info.icon}`} alt={info.name} className="w-6 h-6" />
-                        <span>{info.name}</span>
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </Select>
 
               {/* 老板坑/代报开关 */}
               <div className="flex gap-4">

@@ -17,6 +17,14 @@ export const getMyCharacters = async (params = {}) => {
 };
 
 /**
+ * 获取指定用户的角色列表
+ */
+export const getUserCharacters = async (userId, params = {}) => {
+  const response = await apiClient.get(`/characters/user/${userId}`, { params });
+  return response.data;
+};
+
+/**
  * 获取所有角色列表（管理员）
  */
 export const getAllCharacters = async (params = {}) => {
@@ -50,7 +58,7 @@ export const removeCharacterRelation = (characterId) => {
  */
 export const updateCharacterRelation = (characterId, relationType) => {
   return apiClient.patch(`/characters/${characterId}/relation`, {
-    relation_type: relationType
+    relation_type: relationType,
   });
 };
 

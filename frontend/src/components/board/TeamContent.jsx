@@ -46,7 +46,8 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
 
   const boardModes = [
     { key: "view", label: "浏览", icon: "👀" },
-    { key: "edit", label: "编辑规则", icon: "🛠️", adminOnly: true },
+    { key: "edit-rule", label: "编辑规则", icon: "🛠️", adminOnly: true },
+    { key: "assign", label: "编辑规则", icon: "🛠️", adminOnly: true },
     { key: "mark", label: "进组标记", icon: "✅", adminOnly: true },
     { key: "drag", label: "拖动排序", icon: "🧲", adminOnly: true },
   ];
@@ -260,7 +261,23 @@ const WaitlistList = ({ waitlist = [] }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {waitlist.map((member, idx) => {
-        const xinfa = member.characterXinfa ? xinfaInfoTable[member.characterXinfa] : null;
+        // 获取心法信息（兼容旧数据的中文名称和新数据的key）
+        const getXinfaInfo = (xinfaValue) => {
+          if (!xinfaValue) return null;
+          
+          // 先尝试直接作为key查找
+          if (xinfaInfoTable[xinfaValue]) {
+            return xinfaInfoTable[xinfaValue];
+          }
+          
+          // 如果不是key，则通过中文名称查找（兼容旧数据）
+          const xinfaKey = Object.keys(xinfaInfoTable).find(
+            (key) => xinfaInfoTable[key].name === xinfaValue
+          );
+          return xinfaKey ? xinfaInfoTable[xinfaKey] : null;
+        };
+        
+        const xinfa = getXinfaInfo(member.characterXinfa);
         return (
           <Card
             key={`${member.id || idx}-${member.characterName || idx}`}

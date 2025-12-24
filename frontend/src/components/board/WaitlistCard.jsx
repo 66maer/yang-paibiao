@@ -35,12 +35,23 @@ export default function WaitlistCard({ waitlistItem, isAdmin, onRemove }) {
     dps: "输出",
   };
 
-  // 获取心法信息
-  const xinfa = waitlistItem?.characterXinfa
-    ? xinfaInfoTable[waitlistItem.characterXinfa]
-    : waitlistItem?.xinfa
-    ? Object.values(xinfaInfoTable).find((x) => x.name === waitlistItem.xinfa)
-    : null;
+  // 获取心法信息（兼容旧数据的中文名称和新数据的key）
+  const getXinfaInfo = (xinfaValue) => {
+    if (!xinfaValue) return null;
+    
+    // 先尝试直接作为key查找
+    if (xinfaInfoTable[xinfaValue]) {
+      return xinfaInfoTable[xinfaValue];
+    }
+    
+    // 如果不是key，则通过中文名称查找（兼容旧数据）
+    const xinfaKey = Object.keys(xinfaInfoTable).find(
+      (key) => xinfaInfoTable[key].name === xinfaValue
+    );
+    return xinfaKey ? xinfaInfoTable[xinfaKey] : null;
+  };
+
+  const xinfa = getXinfaInfo(waitlistItem?.characterXinfa) || getXinfaInfo(waitlistItem?.xinfa);
 
   return (
     <div className="p-3 rounded-lg overflow-hidden hover:shadow-md transition-all duration-300 border-2 border-yellow-300 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-950/30 hover:bg-yellow-100 dark:hover:bg-yellow-950/50">
