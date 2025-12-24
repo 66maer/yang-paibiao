@@ -41,6 +41,42 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
   const [loading, setLoading] = useState(false);
   const { user } = useAuthStore();
 
+  // 右侧帮助提示组件
+  const HelpPanel = () => (
+    <Card className="h-full">
+      <CardHeader className="pb-2">
+        <h3 className="text-lg font-bold text-pink-600 dark:text-pink-400">💡 编辑提示</h3>
+      </CardHeader>
+      <Divider />
+      <CardBody className="overflow-auto">
+        <div className="space-y-4 text-sm">
+          <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+            <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">🪄 自动生成标题</h4>
+            <p className="text-default-600 text-xs">填写完时间和副本后，点击「自动生成」按钮可以快速生成标题</p>
+          </div>
+
+          <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20">
+            <h4 className="font-semibold text-purple-600 dark:text-purple-400 mb-2">⏰ 不指定时间</h4>
+            <p className="text-default-600 text-xs">适用于活动团、排表团等不需要具体时间的开团</p>
+          </div>
+
+          <div className="p-3 rounded-lg bg-pink-50 dark:bg-pink-950/20">
+            <h4 className="font-semibold text-pink-600 dark:text-pink-400 mb-2">💎 大小铁标记</h4>
+            <p className="text-default-600 text-xs">大铁（玄晶）和小铁（陨铁）是否已被预定</p>
+          </div>
+
+          <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20">
+            <h4 className="font-semibold text-orange-600 dark:text-orange-400 mb-2">🔒 权限设置</h4>
+            <p className="text-default-600 text-xs">
+              • 仅管理员可见：隐藏开团，普通成员看不到，群机器人也查不到
+              <br />• 锁定自由报名：开启后禁止普通用户自由报名 （一般是排表模式）
+            </p>
+          </div>
+        </div>
+      </CardBody>
+    </Card>
+  );
+
   // 获取当天 19:30 的默认时间（CalendarDateTime 格式）
   const getDefaultDateTime = () => {
     const currentDate = now(getLocalTimeZone());
@@ -325,7 +361,9 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
   };
 
   return (
-    <Card className="h-full">
+    <div className="flex gap-4 h-full">
+      {/* 主编辑区域 */}
+      <Card className="flex-1">
       <CardHeader className="flex items-center justify-between border-b border-pink-200 dark:border-pink-900">
         <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
           {isEdit ? "编辑开团" : "创建开团"}
@@ -584,5 +622,11 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
         </div>
       </CardBody>
     </Card>
+
+      {/* 右侧帮助提示 */}
+      <div className="w-80 flex-shrink-0">
+        <HelpPanel />
+      </div>
+    </div>
   );
 }
