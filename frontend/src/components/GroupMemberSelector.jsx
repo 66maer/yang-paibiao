@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { Autocomplete, AutocompleteItem } from "@heroui/react";
 import useSWR from "swr";
-import Fuse from "fuse.js";
 import { pinyin } from "pinyin-pro";
 import { getGuildMembers } from "../api/guilds";
 import useCurrentGuild from "../hooks/useCurrentGuild";
@@ -78,15 +77,37 @@ export default function GroupMemberSelector({
     const toPinyin = (text) => pinyin(text || "", { toneType: "none", type: "array" }).join("");
     const toInitials = (text) => pinyin(text || "", { pattern: "first", toneType: "none", type: "array" }).join("");
 
-    return members.map((member) => {
-      const userNickname = member.user?.nickname || "";
+    const result = members.map((member) => {
+      const user = member.user || {};
+      const userNickname = user.nickname || "";
       const groupNickname = member.group_nickname || "";
+      const otherNicknames = user.other_nicknames || [];
+      const qqNumber = String(user.qq_number || "");
+
+      // 主昵称拼音
       const pinyinUser = toPinyin(userNickname);
       const initialsUser = toInitials(userNickname);
+
+      // 群昵称拼音
       const pinyinGroup = toPinyin(groupNickname);
       const initialsGroup = toInitials(groupNickname);
 
-      const searchText = [userNickname, groupNickname, pinyinUser, initialsUser, pinyinGroup, initialsGroup]
+      // 其他昵称拼音
+      const otherPinyin = otherNicknames.map(toPinyin);
+      const otherInitials = otherNicknames.map(toInitials);
+
+      const searchText = [
+        userNickname,
+        groupNickname,
+        ...otherNicknames,
+        qqNumber,
+        pinyinUser,
+        initialsUser,
+        pinyinGroup,
+        initialsGroup,
+        ...otherPinyin,
+        ...otherInitials,
+      ]
         .filter(Boolean)
         .join("|")
         .toLowerCase();
@@ -96,31 +117,20 @@ export default function GroupMemberSelector({
         searchText,
       };
     });
+
+    return result;
   }, [members]);
 
-  // 配置 Fuse.js 模糊搜索
-  const fuse = useMemo(() => {
-    if (!enhancedMembers.length) return null;
-    return new Fuse(enhancedMembers, {
-      keys: [
-        { name: "user.nickname", weight: 2 },
-        { name: "group_nickname", weight: 2 },
-        { name: "searchText", weight: 2 },
-      ],
-      threshold: 0.4,
-      includeScore: true,
-      minMatchCharLength: 1,
-      ignoreLocation: true,
-      shouldSort: true,
-    });
-  }, [enhancedMembers]);
-
-  // 前端模糊搜索
+  // 根据搜索关键词过滤成员（参考XinfaSelector的实现）
   const filteredMembers = useMemo(() => {
-    if (!searchKeyword || !fuse) return enhancedMembers.slice(0, 50);
-    const results = fuse.search(searchKeyword);
-    return results.slice(0, 50).map((result) => result.item);
-  }, [enhancedMembers, searchKeyword, fuse]);
+    // 如果没有搜索关键词，显示前50个成员
+    if (!searchKeyword.trim()) {
+      return enhancedMembers.slice(0, 50);
+    }
+
+    const searchKey = searchKeyword.toLowerCase().trim();
+    return enhancedMembers.filter((member) => member.searchText.includes(searchKey)).slice(0, 50);
+  }, [enhancedMembers, searchKeyword]);
 
   // 处理成员显示文本（参考UserSelector格式）
   const getPrimaryNickname = (member) => {
@@ -157,10 +167,11 @@ export default function GroupMemberSelector({
         selectedKey={memberId ? String(memberId) : null}
         onSelectionChange={(key) => {
           onMemberChange?.(key);
-          // 选中后填充输入框为所选成员的展示名
+          // 选中后填充输入框为所选成员的主昵称，确保能匹配到
           const selected = (members || []).find((m) => String(m.user_id) === String(key));
           if (selected) {
-            setSearchKeyword(getDisplayName(selected));
+            const primaryName = getPrimaryNickname(selected);
+            setSearchKeyword(primaryName);
           }
         }}
         inputValue={searchKeyword}
@@ -171,8 +182,10 @@ export default function GroupMemberSelector({
         className="w-full"
         allowsCustomValue={false}
         description={!effectiveGuildId ? "请先选择群组" : undefined}
+        items={filteredMembers}
+        defaultItems={filteredMembers}
       >
-        {filteredMembers.map((member) => (
+        {(member) => (
           <AutocompleteItem key={member.user_id} value={String(member.user_id)} textValue={getDisplayName(member)}>
             <div className="flex flex-col min-w-0">
               <div className="text-sm font-medium">
@@ -190,7 +203,7 @@ export default function GroupMemberSelector({
               )}
             </div>
           </AutocompleteItem>
-        ))}
+        )}
       </Autocomplete>
 
       {/* 角色卡片（仅当有成员且有效群组时显示） */}
@@ -200,9 +213,13 @@ export default function GroupMemberSelector({
           value={characterName}
           onChange={(name) => {
             onCharacterNameChange?.(name);
+          }}
+          onRoleSelect={(name, xinfa) => {
+            onCharacterNameChange?.(name);
             // 当选择角色卡片时，自动填入对应心法
-            const charactersData = members.find((m) => String(m.user_id) === String(memberId));
-            // 这里需要从MemberRoleSelector获取角色数据，暂时先不自动填入
+            if (xinfa) {
+              onXinfaChange?.(xinfa);
+            }
           }}
           label={characterLabel}
           placeholder="选择或输入角色名..."

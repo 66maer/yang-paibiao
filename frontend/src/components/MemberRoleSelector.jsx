@@ -12,6 +12,7 @@ import { xinfaInfoTable } from "../config/xinfa";
  * @param {number} props.memberId - 成员ID
  * @param {string} props.value - 当前选中的角色名
  * @param {Function} props.onChange - 角色名变化回调 (characterName) => void
+ * @param {Function} props.onRoleSelect - 角色卡片选中回调 (characterName, xinfa) => void
  * @param {string} props.label - 输入框标签
  * @param {string} props.placeholder - 输入框占位符
  * @param {boolean} props.isRequired - 是否必填
@@ -21,6 +22,7 @@ export default function MemberRoleSelector({
   memberId,
   value,
   onChange,
+  onRoleSelect,
   label = "角色名",
   placeholder = "选择或输入角色名...",
   isRequired = false,
@@ -53,9 +55,23 @@ export default function MemberRoleSelector({
   };
 
   // 处理点击角色卡片
-  const handleSelectCharacter = (characterName) => {
+  const handleSelectCharacter = (character) => {
+    const characterName = character.name;
     setInputValue(characterName);
     onChange?.(characterName);
+
+    // 获取心法key（兼容旧数据的中文名称和新数据的key）
+    let xinfaKey = null;
+    if (character.xinfa && xinfaInfoTable[character.xinfa]) {
+      // 直接作为key查找
+      xinfaKey = character.xinfa;
+    } else if (character.xinfa) {
+      // 通过中文名称查找（兼容旧数据）
+      xinfaKey = Object.keys(xinfaInfoTable).find((key) => xinfaInfoTable[key].name === character.xinfa);
+    }
+
+    // 调用onRoleSelect回调
+    onRoleSelect?.(characterName, xinfaKey);
   };
 
   // 是否有角色数据可以展示
@@ -92,17 +108,23 @@ export default function MemberRoleSelector({
                   const xinfa = getXinfaInfo(character.xinfa);
                   const isSelected = inputValue === character.name;
 
+                  // 心法颜色样式
+                  const xinfaColor = xinfa?.color || "#6b7280";
+                  const gradientStyle = {
+                    background: isSelected
+                      ? `linear-gradient(135deg, ${xinfaColor}, ${xinfaColor}dd)`
+                      : `linear-gradient(135deg, ${xinfaColor}20, ${xinfaColor}10)`,
+                    border: isSelected ? `2px solid ${xinfaColor}` : `1px solid ${xinfaColor}40`,
+                  };
+
                   return (
                     <button
                       key={character.id}
-                      onClick={() => handleSelectCharacter(character.name)}
+                      onClick={() => handleSelectCharacter(character)}
+                      style={gradientStyle}
                       className={`
-                        flex items-center gap-2 px-3 py-2 rounded-md transition
-                        ${
-                          isSelected
-                            ? "bg-primary text-white ring-2 ring-primary"
-                            : "bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700"
-                        }
+                        flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 hover:scale-105
+                        ${isSelected ? "text-white shadow-lg" : "text-gray-800 dark:text-gray-200 hover:shadow-md"}
                       `}
                     >
                       {xinfa && (
@@ -110,7 +132,9 @@ export default function MemberRoleSelector({
                       )}
                       <div className="flex flex-col items-start">
                         <span className="text-sm font-medium">{xinfa?.name || "未知心法"}</span>
-                        <span className="text-xs text-gray-500">{character.name}</span>
+                        <span className={`text-xs ${isSelected ? "text-white/80" : "text-gray-500"}`}>
+                          {character.name}
+                        </span>
                       </div>
                     </button>
                   );

@@ -138,6 +138,7 @@ class GuildMemberUser(BaseModel):
     id: int
     qq_number: str
     nickname: str
+    other_nicknames: Optional[List[str]] = Field(None, description="其他昵称（用于搜索）")
     avatar: Optional[str] = None
 
     class Config:
