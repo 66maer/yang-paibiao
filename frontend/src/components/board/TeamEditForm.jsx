@@ -364,264 +364,270 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
     <div className="flex gap-4 h-full">
       {/* 主编辑区域 */}
       <Card className="flex-1">
-      <CardHeader className="flex items-center justify-between border-b border-pink-200 dark:border-pink-900">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-          {isEdit ? "编辑开团" : "创建开团"}
-        </h2>
-        <div className="flex items-center gap-2">
-          <Button color="default" variant="light" onPress={onCancel} isDisabled={loading}>
-            取消
-          </Button>
-          <Button
-            color="primary"
-            className="bg-gradient-to-r from-pink-500 to-purple-500"
-            onPress={handleSubmit}
-            isLoading={loading}
-          >
-            {isEdit ? "保存修改" : "创建开团"}
-          </Button>
-        </div>
-      </CardHeader>
-
-      <CardBody className="overflow-auto">
-        <div className="space-y-6">
-          {/* 第一行：开团标题 + 自动生成开关 */}
-          <div className="flex items-end gap-3">
-            <Input
-              label="开团标题"
-              placeholder="请输入开团标题"
-              value={formData.title}
-              onValueChange={(value) => updateField("title", value)}
-              isRequired
-              variant="flat"
-              maxLength={30}
-              isDisabled={formData.auto_generate_title}
-              endContent={
-                <span className="text-xs text-default-400 whitespace-nowrap">{formData.title.length}/30</span>
-              }
-              classNames={{
-                label: "text-pink-600 dark:text-pink-400 font-semibold",
-              }}
-              className="flex-1"
-            />
+        <CardHeader className="flex items-center justify-between border-b border-pink-200 dark:border-pink-900">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+            {isEdit ? "编辑开团" : "创建开团"}
+          </h2>
+          <div className="flex items-center gap-2">
+            <Button color="default" variant="light" onPress={onCancel} isDisabled={loading}>
+              取消
+            </Button>
             <Button
-              size="lg"
-              color={formData.auto_generate_title ? "secondary" : "default"}
-              variant={formData.auto_generate_title ? "solid" : "bordered"}
-              onPress={toggleAutoGenerate}
-              className="min-w-32 h-14"
+              color="primary"
+              className="bg-gradient-to-r from-pink-500 to-purple-500"
+              onPress={handleSubmit}
+              isLoading={loading}
             >
-              {formData.auto_generate_title ? "✨ 自动标题(已开启)" : "当前为手动输入模式"}
+              {isEdit ? "保存修改" : "创建开团"}
             </Button>
           </div>
+        </CardHeader>
 
-          <Divider />
-
-          {/* 第二行：发车时间 + 选择副本 */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <DatePicker
-                label="发车时间"
-                value={formData.no_specific_time ? null : formData.team_time}
-                onChange={(value) => updateField("team_time", value)}
-                isDisabled={formData.no_specific_time}
-                isRequired={!formData.no_specific_time}
-                granularity="minute"
-                hourCycle={24}
-                hideTimeZone
-                showMonthAndYearPickers
-                calendarProps={{
-                  focusedValue: formData.team_time,
-                  defaultFocusedValue: formData.team_time || getDefaultDateTime(),
-                }}
-                classNames={{
-                  label: "text-pink-600 dark:text-pink-400 font-semibold",
-                }}
-              />
-              {/* 快捷时间按钮 */}
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  color="primary"
-                  variant="flat"
-                  onPress={() => setPresetTime(19, 50, "今天第一车 19:50")}
-                  isDisabled={formData.no_specific_time}
-                  className="flex-1"
-                >
-                  🚗 第一车 19:50
-                </Button>
-                <Button
-                  size="sm"
-                  color="secondary"
-                  variant="flat"
-                  onPress={() => setPresetTime(22, 0, "今天第二车 22:00")}
-                  isDisabled={formData.no_specific_time}
-                  className="flex-1"
-                >
-                  🚙 第二车 22:00
-                </Button>
-
-                <Switch
-                  size="sm"
-                  isSelected={formData.no_specific_time}
-                  onValueChange={(value) => {
-                    updateField("no_specific_time", value);
-                    if (value) {
-                      updateField("team_time", null);
-                    } else {
-                      // 恢复默认时间
-                      updateField("team_time", getDefaultDateTime());
-                    }
-                  }}
-                >
-                  <span className="text-sm text-default-600">不指定具体时间</span>
-                </Switch>
-              </div>
-            </div>
-
-            <Select
-              label="选择副本"
-              placeholder="请选择副本"
-              selectedKeys={formData.dungeon ? [formData.dungeon] : []}
-              onChange={(e) => updateField("dungeon", e.target.value)}
-              isRequired
-              classNames={{
-                label: "text-pink-600 dark:text-pink-400 font-semibold",
-              }}
-            >
-              {DUNGEONS.map((dungeon) => (
-                <SelectItem key={dungeon.value} value={dungeon.value}>
-                  {dungeon.label}
-                </SelectItem>
-              ))}
-            </Select>
-          </div>
-
-          <Divider />
-
-          {/* 第三行：铁标记设置 + 权限设置 */}
-          <div className="grid grid-cols-2 gap-6">
-            {/* 左侧：铁标记设置 */}
-            <div>
-              <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">大小铁标记设置</h3>
-              <div className="flex flex-nowrap gap-1">
-                <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50 flex-1">
-                  <Switch
-                    isSelected={formData.is_xuanjing_booked}
-                    onValueChange={(value) => updateField("is_xuanjing_booked", value)}
-                  >
-                    <span className="text-sm font-medium flex items-center gap-2">
-                      <img src="/玄晶.png" alt="玄晶" className="w-5 h-5" />
-                      玄晶{" "}
-                      <span className="text-xs text-default-500">
-                        {formData.is_xuanjing_booked ? "(大包)" : "(大拍)"}
-                      </span>
-                    </span>
-                  </Switch>
-                </div>
-                <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50 flex-1">
-                  <Switch
-                    isSelected={formData.is_yuntie_booked}
-                    onValueChange={(value) => updateField("is_yuntie_booked", value)}
-                  >
-                    <span className="text-sm font-medium flex items-center gap-2">
-                      <img src="/陨铁.png" alt="陨铁" className="w-5 h-5" />
-                      陨铁{" "}
-                      <span className="text-xs text-default-500">
-                        {formData.is_yuntie_booked ? "(小包)" : "(小拍)"}
-                      </span>
-                    </span>
-                  </Switch>
-                </div>
-              </div>
-            </div>
-
-            {/* 右侧：权限设置 */}
-            <div>
-              <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">权限设置</h3>
-              <div className="flex flex-nowrap gap-1">
-                <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50 flex-1">
-                  <Switch isSelected={formData.is_hidden} onValueChange={(value) => updateField("is_hidden", value)}>
-                    <span className="text-sm font-medium">👁️ 仅管理员可见</span>
-                  </Switch>
-                </div>
-                <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50 flex-1">
-                  <Switch isSelected={formData.is_locked} onValueChange={(value) => updateField("is_locked", value)}>
-                    <span className="text-sm font-medium">🔒 锁定自由报名（排表模式）</span>
-                  </Switch>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <Divider />
-
-          {/* 团队面板 模板 */}
-          <div>
-            <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">团队面板</h3>
+        <CardBody className="overflow-auto">
+          <div className="space-y-6">
+            {/* 第一行：开团标题 + 自动生成开关 */}
             <div className="flex items-end gap-3">
-              <Select
-                label="使用模板"
-                placeholder="请选择模板"
-                selectedKeys={formData.selected_template ? [String(formData.selected_template)] : []}
-                onChange={(e) => updateField("selected_template", e.target.value)}
-                isDisabled={tplLoading}
+              <Input
+                label="开团标题"
+                placeholder="请输入开团标题"
+                value={formData.title}
+                onValueChange={(value) => updateField("title", value)}
+                isRequired
+                variant="flat"
+                maxLength={30}
+                isDisabled={formData.auto_generate_title}
+                endContent={
+                  <span className="text-xs text-default-400 whitespace-nowrap">{formData.title.length}/30</span>
+                }
                 classNames={{
                   label: "text-pink-600 dark:text-pink-400 font-semibold",
                 }}
                 className="flex-1"
+              />
+              <Button
+                size="lg"
+                color={formData.auto_generate_title ? "secondary" : "default"}
+                variant={formData.auto_generate_title ? "solid" : "bordered"}
+                onPress={toggleAutoGenerate}
+                className="min-w-32 h-14"
               >
-                {templates.map((tpl) => (
-                  <SelectItem key={tpl.id} value={String(tpl.id)}>
-                    {tpl.title || `模板 #${tpl.id}`}
+                {formData.auto_generate_title ? "✨ 自动标题(已开启)" : "当前为手动输入模式"}
+              </Button>
+            </div>
+
+            <Divider />
+
+            {/* 第二行：发车时间 + 选择副本 */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <DatePicker
+                  label="发车时间"
+                  value={formData.no_specific_time ? null : formData.team_time}
+                  onChange={(value) => updateField("team_time", value)}
+                  isDisabled={formData.no_specific_time}
+                  isRequired={!formData.no_specific_time}
+                  granularity="minute"
+                  hourCycle={24}
+                  hideTimeZone
+                  showMonthAndYearPickers
+                  calendarProps={{
+                    focusedValue: formData.team_time,
+                    defaultFocusedValue: formData.team_time || getDefaultDateTime(),
+                  }}
+                  classNames={{
+                    label: "text-pink-600 dark:text-pink-400 font-semibold",
+                  }}
+                />
+                {/* 快捷时间按钮 */}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    color="primary"
+                    variant="flat"
+                    onPress={() => setPresetTime(19, 50, "今天第一车 19:50")}
+                    isDisabled={formData.no_specific_time}
+                    className="flex-1"
+                  >
+                    🚗 第一车 19:50
+                  </Button>
+                  <Button
+                    size="sm"
+                    color="secondary"
+                    variant="flat"
+                    onPress={() => setPresetTime(22, 0, "今天第二车 22:00")}
+                    isDisabled={formData.no_specific_time}
+                    className="flex-1"
+                  >
+                    🚙 第二车 22:00
+                  </Button>
+
+                  <Switch
+                    size="sm"
+                    isSelected={formData.no_specific_time}
+                    onValueChange={(value) => {
+                      updateField("no_specific_time", value);
+                      if (value) {
+                        updateField("team_time", null);
+                      } else {
+                        // 恢复默认时间
+                        updateField("team_time", getDefaultDateTime());
+                      }
+                    }}
+                  >
+                    <span className="text-sm text-default-600">不指定具体时间</span>
+                  </Switch>
+                </div>
+              </div>
+
+              <Select
+                label="选择副本"
+                placeholder="请选择副本"
+                selectedKeys={formData.dungeon ? [formData.dungeon] : []}
+                onChange={(e) => updateField("dungeon", e.target.value)}
+                isRequired
+                classNames={{
+                  label: "text-pink-600 dark:text-pink-400 font-semibold",
+                }}
+              >
+                {DUNGEONS.map((dungeon) => (
+                  <SelectItem key={dungeon.value} value={dungeon.value}>
+                    {dungeon.label}
                   </SelectItem>
                 ))}
               </Select>
-              <Button size="lg" color="primary" variant="flat" onPress={handleApplyTemplate} isDisabled={tplLoading}>
-                应用模板
-              </Button>
-              <Button size="lg" color="secondary" variant="flat" onPress={handleSaveAsTemplate} isDisabled={tplLoading}>
-                保存为模板
-              </Button>
+            </div>
+
+            <Divider />
+
+            {/* 第三行：铁标记设置 + 权限设置 */}
+            <div className="grid grid-cols-2 gap-6">
+              {/* 左侧：铁标记设置 */}
+              <div>
+                <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">大小铁标记设置</h3>
+                <div className="flex flex-nowrap gap-1">
+                  <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50 flex-1">
+                    <Switch
+                      isSelected={formData.is_xuanjing_booked}
+                      onValueChange={(value) => updateField("is_xuanjing_booked", value)}
+                    >
+                      <span className="text-sm font-medium flex items-center gap-2">
+                        <img src="/玄晶.png" alt="玄晶" className="w-5 h-5" />
+                        玄晶{" "}
+                        <span className="text-xs text-default-500">
+                          {formData.is_xuanjing_booked ? "(大包)" : "(大拍)"}
+                        </span>
+                      </span>
+                    </Switch>
+                  </div>
+                  <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50 flex-1">
+                    <Switch
+                      isSelected={formData.is_yuntie_booked}
+                      onValueChange={(value) => updateField("is_yuntie_booked", value)}
+                    >
+                      <span className="text-sm font-medium flex items-center gap-2">
+                        <img src="/陨铁.png" alt="陨铁" className="w-5 h-5" />
+                        陨铁{" "}
+                        <span className="text-xs text-default-500">
+                          {formData.is_yuntie_booked ? "(小包)" : "(小拍)"}
+                        </span>
+                      </span>
+                    </Switch>
+                  </div>
+                </div>
+              </div>
+
+              {/* 右侧：权限设置 */}
+              <div>
+                <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">权限设置</h3>
+                <div className="flex flex-nowrap gap-1">
+                  <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50 flex-1">
+                    <Switch isSelected={formData.is_hidden} onValueChange={(value) => updateField("is_hidden", value)}>
+                      <span className="text-sm font-medium">👁️ 仅管理员可见</span>
+                    </Switch>
+                  </div>
+                  <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50 flex-1">
+                    <Switch isSelected={formData.is_locked} onValueChange={(value) => updateField("is_locked", value)}>
+                      <span className="text-sm font-medium">🔒 锁定自由报名（排表模式）</span>
+                    </Switch>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Divider />
+
+            {/* 团队面板 模板 */}
+            <div>
+              <h3 className="text-sm font-semibold text-pink-600 dark:text-pink-400 mb-3">团队面板</h3>
+              <div className="flex items-end gap-3">
+                <Select
+                  label="使用模板"
+                  placeholder="请选择模板"
+                  selectedKeys={formData.selected_template ? [String(formData.selected_template)] : []}
+                  onChange={(e) => updateField("selected_template", e.target.value)}
+                  isDisabled={tplLoading}
+                  classNames={{
+                    label: "text-pink-600 dark:text-pink-400 font-semibold",
+                  }}
+                  className="flex-1"
+                >
+                  {templates.map((tpl) => (
+                    <SelectItem key={tpl.id} value={String(tpl.id)}>
+                      {tpl.title || `模板 #${tpl.id}`}
+                    </SelectItem>
+                  ))}
+                </Select>
+                <Button size="lg" color="primary" variant="flat" onPress={handleApplyTemplate} isDisabled={tplLoading}>
+                  应用模板
+                </Button>
+                <Button
+                  size="lg"
+                  color="secondary"
+                  variant="flat"
+                  onPress={handleSaveAsTemplate}
+                  isDisabled={tplLoading}
+                >
+                  保存为模板
+                </Button>
+              </div>
+            </div>
+
+            {/* 团队面板 告示 */}
+            <div>
+              <Textarea
+                label="团队告示"
+                placeholder="输入团队告示内容（可选）&#10;例如：&#10;- 准时集合，不要迟到&#10;- 自备食物和药品&#10;- 听从指挥"
+                value={formData.notice}
+                onValueChange={(value) => updateField("notice", value)}
+                minRows={6}
+                maxRows={12}
+                maxLength={2000}
+                description={`${formData.notice.length}/2000`}
+                classNames={{
+                  label: "text-pink-600 dark:text-pink-400 font-semibold",
+                  description: "text-xs text-default-400",
+                }}
+              />
+            </div>
+
+            {/* 团队面板（规则编辑模式） */}
+            <div>
+              <TeamBoard
+                rules={boardRules}
+                signupList={[]}
+                mode="edit-rule"
+                onRuleChange={(slotIndex, nextRule) => {
+                  setBoardRules((prev) => {
+                    const next = [...prev];
+                    next[slotIndex] = { ...next[slotIndex], ...nextRule };
+                    return next;
+                  });
+                }}
+              />
             </div>
           </div>
-
-          {/* 团队面板 告示 */}
-          <div>
-            <Textarea
-              label="团队告示"
-              placeholder="输入团队告示内容（可选）&#10;例如：&#10;- 准时集合，不要迟到&#10;- 自备食物和药品&#10;- 听从指挥"
-              value={formData.notice}
-              onValueChange={(value) => updateField("notice", value)}
-              minRows={6}
-              maxRows={12}
-              maxLength={2000}
-              description={`${formData.notice.length}/2000`}
-              classNames={{
-                label: "text-pink-600 dark:text-pink-400 font-semibold",
-                description: "text-xs text-default-400",
-              }}
-            />
-          </div>
-
-          {/* 团队面板（规则编辑模式） */}
-          <div>
-            <TeamBoard
-              rules={boardRules}
-              signupList={[]}
-              mode="edit-rule"
-              onRuleChange={(slotIndex, nextRule) => {
-                setBoardRules((prev) => {
-                  const next = [...prev];
-                  next[slotIndex] = { ...next[slotIndex], ...nextRule };
-                  return next;
-                });
-              }}
-            />
-          </div>
-        </div>
-      </CardBody>
-    </Card>
+        </CardBody>
+      </Card>
 
       {/* 右侧帮助提示 */}
       <div className="w-80 flex-shrink-0">
