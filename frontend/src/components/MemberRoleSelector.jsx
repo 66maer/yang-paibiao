@@ -78,19 +78,17 @@ export default function MemberRoleSelector({
                   // 获取心法信息（兼容旧数据的中文名称和新数据的key）
                   const getXinfaInfo = (xinfaValue) => {
                     if (!xinfaValue) return null;
-                    
+
                     // 先尝试直接作为key查找
                     if (xinfaInfoTable[xinfaValue]) {
                       return xinfaInfoTable[xinfaValue];
                     }
-                    
+
                     // 如果不是key，则通过中文名称查找（兼容旧数据）
-                    const xinfaKey = Object.keys(xinfaInfoTable).find(
-                      (key) => xinfaInfoTable[key].name === xinfaValue
-                    );
+                    const xinfaKey = Object.keys(xinfaInfoTable).find((key) => xinfaInfoTable[key].name === xinfaValue);
                     return xinfaKey ? xinfaInfoTable[xinfaKey] : null;
                   };
-                  
+
                   const xinfa = getXinfaInfo(character.xinfa);
                   const isSelected = inputValue === character.name;
 
@@ -111,7 +109,7 @@ export default function MemberRoleSelector({
                         <img src={`/xinfa/${xinfa.icon}`} alt={xinfa.name} className="w-5 h-5" title={xinfa.name} />
                       )}
                       <div className="flex flex-col items-start">
-                        <span className="text-sm font-medium">{xinfa?.name || '未知心法'}</span>
+                        <span className="text-sm font-medium">{xinfa?.name || "未知心法"}</span>
                         <span className="text-xs text-gray-500">{character.name}</span>
                       </div>
                     </button>

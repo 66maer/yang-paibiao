@@ -264,19 +264,17 @@ const WaitlistList = ({ waitlist = [] }) => {
         // 获取心法信息（兼容旧数据的中文名称和新数据的key）
         const getXinfaInfo = (xinfaValue) => {
           if (!xinfaValue) return null;
-          
+
           // 先尝试直接作为key查找
           if (xinfaInfoTable[xinfaValue]) {
             return xinfaInfoTable[xinfaValue];
           }
-          
+
           // 如果不是key，则通过中文名称查找（兼容旧数据）
-          const xinfaKey = Object.keys(xinfaInfoTable).find(
-            (key) => xinfaInfoTable[key].name === xinfaValue
-          );
+          const xinfaKey = Object.keys(xinfaInfoTable).find((key) => xinfaInfoTable[key].name === xinfaValue);
           return xinfaKey ? xinfaInfoTable[xinfaKey] : null;
         };
-        
+
         const xinfa = getXinfaInfo(member.characterXinfa);
         return (
           <Card

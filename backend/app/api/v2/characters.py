@@ -51,38 +51,58 @@ async def create_character(
     existing_char = result.scalar_one_or_none()
     
     if existing_char:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"该服务器已存在名为 {character_data.name} 的角色"
+        # 角色已存在，检查当前用户是否已与该角色有映射关系
+        existing_relation = await db.execute(
+            select(CharacterPlayer).where(
+                CharacterPlayer.character_id == existing_char.id,
+                CharacterPlayer.user_id == current_user.id
+            )
         )
-    
-    # 创建角色
-    new_character = Character(
-        name=character_data.name,
-        server=character_data.server,
-        xinfa=character_data.xinfa,
-        remark=character_data.remark,
-    )
-    db.add(new_character)
-    await db.flush()  # 获取 ID
-    
-    # 创建角色-玩家关联（使用用户指定的关系类型）
-    char_player = CharacterPlayer(
-        character_id=new_character.id,
-        user_id=current_user.id,
-        relation_type=character_data.relation_type,
-        priority=0
-    )
-    db.add(char_player)
-    
-    await db.commit()
-    await db.refresh(new_character)
+        char_player_relation = existing_relation.scalar_one_or_none()
+        
+        if char_player_relation:
+            # 用户已与该角色有映射关系，直接返回现有关系
+            character_to_return = existing_char
+        else:
+            # 创建新的用户-角色映射关系
+            char_player = CharacterPlayer(
+                character_id=existing_char.id,
+                user_id=current_user.id,
+                relation_type=character_data.relation_type,
+                priority=0
+            )
+            db.add(char_player)
+            await db.commit()
+            character_to_return = existing_char
+    else:
+        # 角色不存在，创建新角色
+        new_character = Character(
+            name=character_data.name,
+            server=character_data.server,
+            xinfa=character_data.xinfa,
+            remark=character_data.remark,
+        )
+        db.add(new_character)
+        await db.flush()  # 获取 ID
+        
+        # 创建角色-玩家关联（使用用户指定的关系类型）
+        char_player = CharacterPlayer(
+            character_id=new_character.id,
+            user_id=current_user.id,
+            relation_type=character_data.relation_type,
+            priority=0
+        )
+        db.add(char_player)
+        
+        await db.commit()
+        await db.refresh(new_character)
+        character_to_return = new_character
     
     # 加载关联数据
     result = await db.execute(
         select(Character)
         .options(selectinload(Character.players))
-        .where(Character.id == new_character.id)
+        .where(Character.id == character_to_return.id)
     )
     character_with_players = result.scalar_one()
     

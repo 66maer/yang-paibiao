@@ -45,7 +45,7 @@ export default function GroupMemberSelector({
   const [searchKeyword, setSearchKeyword] = useState("");
   const { currentGuildId } = useCurrentGuild();
   const effectiveGuildId = guildId ?? currentGuildId;
-  
+
   // 是否有有效的群组ID（决定是否显示角色卡片）
   const hasValidGuild = Boolean(effectiveGuildId);
 
@@ -201,7 +201,7 @@ export default function GroupMemberSelector({
           onChange={(name) => {
             onCharacterNameChange?.(name);
             // 当选择角色卡片时，自动填入对应心法
-            const charactersData = members.find(m => String(m.user_id) === String(memberId));
+            const charactersData = members.find((m) => String(m.user_id) === String(memberId));
             // 这里需要从MemberRoleSelector获取角色数据，暂时先不自动填入
           }}
           label={characterLabel}
