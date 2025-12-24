@@ -66,11 +66,11 @@ async def create_character(
     db.add(new_character)
     await db.flush()  # 获取 ID
     
-    # 创建角色-玩家关联（当前用户为所有者）
+    # 创建角色-玩家关联（使用用户指定的关系类型）
     char_player = CharacterPlayer(
         character_id=new_character.id,
         user_id=current_user.id,
-        relation_type="owner",
+        relation_type=character_data.relation_type,
         priority=0
     )
     db.add(char_player)
@@ -183,20 +183,19 @@ async def update_character(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """更新角色信息（用户，仅所有者）"""
-    # 查询角色并验证权限
+    """更新角色信息（用户，所有关联用户都可以修改）"""
+    # 查询角色并验证权限（只要用户关联了该角色即可）
     result = await db.execute(
         select(Character)
         .join(CharacterPlayer)
         .where(
             Character.id == character_id,
             CharacterPlayer.user_id == current_user.id,
-            CharacterPlayer.relation_type == "owner",  # 仅所有者可以修改
             Character.deleted_at.is_(None)
         )
     )
     character = result.scalar_one_or_none()
-    
+
     if not character:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -255,31 +254,78 @@ async def delete_character(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """删除角色（软删除）（用户，仅所有者）"""
-    # 查询角色并验证权限
+    """删除角色关联（删除当前用户与角色的关联关系）"""
+    # 查询角色-玩家关联
     result = await db.execute(
-        select(Character)
-        .join(CharacterPlayer)
+        select(CharacterPlayer)
+        .join(Character)
         .where(
-            Character.id == character_id,
+            CharacterPlayer.character_id == character_id,
             CharacterPlayer.user_id == current_user.id,
-            CharacterPlayer.relation_type == "owner",
             Character.deleted_at.is_(None)
         )
     )
-    character = result.scalar_one_or_none()
-    
-    if not character:
+    char_player = result.scalar_one_or_none()
+
+    if not char_player:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="角色不存在或无权删除"
+            detail="角色关联不存在"
         )
-    
-    # 软删除
-    character.deleted_at = datetime.utcnow()
+
+    # 删除关联记录
+    await db.delete(char_player)
     await db.commit()
-    
-    return ResponseModel(message="角色删除成功")
+
+    return ResponseModel(message="角色关联已删除")
+
+
+@router.patch("/{character_id}/relation", response_model=ResponseModel[CharacterResponse])
+async def update_character_relation(
+    character_id: int,
+    relation_data: CharacterPlayerUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """更新角色关系类型（用户）"""
+    # 查询角色-玩家关联
+    result = await db.execute(
+        select(CharacterPlayer)
+        .join(Character)
+        .where(
+            CharacterPlayer.character_id == character_id,
+            CharacterPlayer.user_id == current_user.id,
+            Character.deleted_at.is_(None)
+        )
+    )
+    char_player = result.scalar_one_or_none()
+
+    if not char_player:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="角色关联不存在"
+        )
+
+    # 更新关系类型
+    if relation_data.relation_type is not None:
+        char_player.relation_type = relation_data.relation_type
+    if relation_data.priority is not None:
+        char_player.priority = relation_data.priority
+    if relation_data.notes is not None:
+        char_player.notes = relation_data.notes
+
+    char_player.updated_at = datetime.utcnow()
+    await db.commit()
+
+    # 返回更新后的角色信息
+    result = await db.execute(
+        select(Character)
+        .options(selectinload(Character.players))
+        .where(Character.id == character_id)
+    )
+    character = result.scalar_one()
+
+    return ResponseModel(data=CharacterResponse.model_validate(character))
 
 
 # ==================== 管理员接口 ====================

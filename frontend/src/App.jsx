@@ -19,6 +19,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import DebugTeamBoardPage from "./pages/DebugTeamBoardPage";
 import TemplatesPage from "./pages/user/TemplatesPage";
 import TemplateEditPage from "./pages/user/TemplateEditPage";
+import CharactersPage from "./pages/user/CharactersPage";
 
 function AppContent() {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ function AppContent() {
           <Route path="/team/new" element={<TeamEditPage />} />
           <Route path="/team/:teamId/edit" element={<TeamEditPage />} />
           <Route path="/members" element={<MembersPage />} />
-          <Route path="/characters" element={<BoardPage />} />
+          <Route path="/characters" element={<CharactersPage />} />
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/templates/new" element={<TemplateEditPage />} />
           <Route path="/templates/:templateId/edit" element={<TemplateEditPage />} />

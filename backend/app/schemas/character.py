@@ -12,6 +12,14 @@ class CharacterCreate(BaseModel):
     server: str = Field(..., min_length=1, max_length=30, description="服务器")
     xinfa: str = Field(..., min_length=1, max_length=20, description="心法")
     remark: Optional[str] = Field(None, description="备注")
+    relation_type: str = Field(default="owner", description="关系类型: owner(特别关注), shared(一般关注)")
+
+    @field_validator('relation_type')
+    @classmethod
+    def validate_relation_type(cls, v: str) -> str:
+        if v not in ['owner', 'shared']:
+            raise ValueError('关系类型必须是 owner 或 shared')
+        return v
 
 
 class CharacterUpdate(BaseModel):
