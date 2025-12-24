@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Card, CardBody, Input, Spinner } from "@heroui/react";
+import { Card, CardBody, Input, Spinner, Badge } from "@heroui/react";
 import useSWR from "swr";
 import { getUserCharacters } from "../api/characters";
 import { xinfaInfoTable } from "../config/xinfa";
+import { sortCharacters } from "../utils/characterSort";
 
 /**
  * 成员角色选择组件
@@ -41,7 +42,11 @@ export default function MemberRoleSelector({
     }
   );
 
-  const characters = useMemo(() => charactersData?.items || [], [charactersData]);
+  const characters = useMemo(() => {
+    const rawCharacters = charactersData?.items || [];
+    // 使用排序工具函数进行排序
+    return sortCharacters(rawCharacters, memberId);
+  }, [charactersData, memberId]);
 
   // 同步外部 value 变化
   useEffect(() => {
@@ -108,12 +113,19 @@ export default function MemberRoleSelector({
                   const xinfa = getXinfaInfo(character.xinfa);
                   const isSelected = inputValue === character.name;
 
+                  // 获取当前成员的角色关联信息（优先级和备注）
+                  const playerInfo = character.players?.find((p) => p.user_id === memberId);
+                  const priority = playerInfo?.priority ?? 0;
+                  const notes = playerInfo?.notes || character.remark || "";
+
                   // 心法颜色样式
                   const xinfaColor = xinfa?.color || "#6b7280";
+
+                  // 根据是否选中调整渐变色
                   const gradientStyle = {
                     background: isSelected
-                      ? `linear-gradient(135deg, ${xinfaColor}, ${xinfaColor}dd)`
-                      : `linear-gradient(135deg, ${xinfaColor}20, ${xinfaColor}10)`,
+                      ? `linear-gradient(135deg, ${xinfaColor}ee, ${xinfaColor}66)`
+                      : `linear-gradient(135deg, ${xinfaColor}50, ${xinfaColor}10)`,
                     border: isSelected ? `2px solid ${xinfaColor}` : `1px solid ${xinfaColor}40`,
                   };
 
@@ -123,18 +135,37 @@ export default function MemberRoleSelector({
                       onClick={() => handleSelectCharacter(character)}
                       style={gradientStyle}
                       className={`
-                        flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 hover:scale-105
+                        flex items-start gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105
                         ${isSelected ? "text-white shadow-lg" : "text-gray-800 dark:text-gray-200 hover:shadow-md"}
+                        w-[180px]
                       `}
                     >
+                      {/* 心法图标 + 优先级Badge */}
                       {xinfa && (
-                        <img src={`/xinfa/${xinfa.icon}`} alt={xinfa.name} className="w-5 h-5" title={xinfa.name} />
+                        <div className="relative flex-shrink-0">
+                          {/* 优先级Badge显示在左下角，一直显示 */}
+                          <img
+                            src={`/xinfa/${xinfa.icon}`}
+                            alt={xinfa.name}
+                            className="w-10 h-10 rounded-md"
+                            title={xinfa.name}
+                          />
+                        </div>
                       )}
-                      <div className="flex flex-col items-start">
-                        <span className="text-sm font-medium">{xinfa?.name || "未知心法"}</span>
-                        <span className={`text-xs ${isSelected ? "text-white/80" : "text-gray-500"}`}>
-                          {character.name}
-                        </span>
+
+                      {/* 右侧：角色名和备注 */}
+                      <div className="flex flex-col items-start min-w-0 flex-1 gap-0.5">
+                        <span className="text-sm font-semibold truncate w-full text-left">{character.name}</span>
+                        {notes && (
+                          <p
+                            className={`text-[12px] leading-tight w-full line-clamp-2  text-left ${
+                              isSelected ? "text-white/70" : "text-gray-500 dark:text-gray-400"
+                            }`}
+                            title={notes}
+                          >
+                            {notes}
+                          </p>
+                        )}
                       </div>
                     </button>
                   );
