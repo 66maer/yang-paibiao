@@ -6,6 +6,7 @@ from app.api.v2.endpoints import auth
 from app.api.v2.endpoints import guilds as guilds_user
 from app.api.v2.endpoints import teams
 from app.api.v2.endpoints import templates
+from app.api.v2.endpoints import signups
 from app.api.v2 import admin
 from app.api.v2 import users
 
@@ -47,4 +48,10 @@ api_router.include_router(
 api_router.include_router(
     templates.router,
     tags=["开团模板"]
+)
+
+# 报名管理接口
+api_router.include_router(
+    signups.router,
+    tags=["报名管理"]
 )

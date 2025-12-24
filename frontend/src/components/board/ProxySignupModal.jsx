@@ -5,9 +5,11 @@ import { createSignup } from "../../api/signups";
 import { showToast } from "../../utils/toast";
 
 /**
- * 自己报名弹窗
+ * 代报名弹窗
  */
-export default function SignupModal({ isOpen, onClose, guildId, teamId, team, user, onSuccess }) {
+export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, team, user, onSuccess }) {
+  const [signupUserId, setSignupUserId] = useState("");
+  const [signupCharacterId, setSignupCharacterId] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [characterName, setCharacterName] = useState("");
   const [xinfa, setXinfa] = useState("");
@@ -16,37 +18,44 @@ export default function SignupModal({ isOpen, onClose, guildId, teamId, team, us
 
   useEffect(() => {
     if (isOpen) {
-      setPlayerName(user?.nickname || "");
+      setSignupUserId("");
+      setSignupCharacterId("");
+      setPlayerName("");
       setCharacterName("");
       setXinfa("");
       setIsRich(false);
       setSubmitting(false);
     }
-  }, [isOpen, user]);
+  }, [isOpen]);
 
   const handleSubmit = async () => {
+    if (!playerName) {
+      showToast.error("请填写报名者名称");
+      return;
+    }
     if (!xinfa) {
       showToast.error("请选择心法");
       return;
     }
+
     try {
       setSubmitting(true);
       await createSignup(guildId, teamId, {
-        signup_user_id: null,
-        signup_character_id: null,
+        signup_user_id: signupUserId ? Number(signupUserId) : null,
+        signup_character_id: signupCharacterId ? Number(signupCharacterId) : null,
         signup_info: {
-          submitter_name: user?.nickname || playerName || "我",
-          player_name: playerName || user?.nickname || "",
+          submitter_name: user?.nickname || "我",
+          player_name: playerName,
           character_name: characterName,
           xinfa,
         },
         is_rich: isRich,
       });
-      showToast.success("报名成功");
+      showToast.success("代报名成功");
       onSuccess?.();
       onClose?.();
     } catch (e) {
-      showToast.error(e || "报名失败");
+      showToast.error(e || "代报名失败");
     } finally {
       setSubmitting(false);
     }
@@ -60,15 +69,15 @@ export default function SignupModal({ isOpen, onClose, guildId, teamId, team, us
       backdrop="blur"
       scrollBehavior="inside"
       classNames={{
-        base: "bg-gradient-to-br from-pink-50 to-purple-50 dark:from-gray-900 dark:to-gray-800",
-        header: "border-b border-pink-200 dark:border-pink-900",
-        footer: "border-t border-pink-200 dark:border-pink-900",
+        base: "bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800",
+        header: "border-b border-blue-200 dark:border-blue-900",
+        footer: "border-t border-blue-200 dark:border-blue-900",
       }}
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-            📝 报名开团
+          <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            👥 代报名
           </h2>
           {team && <p className="text-sm text-default-500 font-normal">{team.title || "未命名开团"}</p>}
         </ModalHeader>
@@ -76,9 +85,10 @@ export default function SignupModal({ isOpen, onClose, guildId, teamId, team, us
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="报名者名称"
-              placeholder="默认使用你的昵称"
+              placeholder="必填，显示在名单中"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
+              isRequired
             />
             <XinfaSelector label="心法" value={xinfa} onChange={setXinfa} isRequired variant="flat" />
             <Input
@@ -93,14 +103,31 @@ export default function SignupModal({ isOpen, onClose, guildId, teamId, team, us
               </Switch>
             </div>
           </div>
-          <p className="text-xs text-default-500">提交后会自动使用你的账号昵称作为提交者名称，心法为必填项。</p>
+
+          <div className="rounded-lg border border-default-200 dark:border-default-700 p-3 space-y-2 bg-default-50 dark:bg-default-50/5">
+            <p className="text-xs text-default-500">如果被代报的人/角色在系统内，可填 ID 便于自动补全信息（可留空）。</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Input
+                label="系统内用户ID"
+                placeholder="可选"
+                value={signupUserId}
+                onChange={(e) => setSignupUserId(e.target.value.replace(/[^0-9]/g, ""))}
+              />
+              <Input
+                label="系统内角色ID"
+                placeholder="可选"
+                value={signupCharacterId}
+                onChange={(e) => setSignupCharacterId(e.target.value.replace(/[^0-9]/g, ""))}
+              />
+            </div>
+          </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="light" onPress={onClose} isDisabled={submitting}>
             取消
           </Button>
           <Button color="primary" onPress={handleSubmit} isLoading={submitting}>
-            确认报名
+            确认代报
           </Button>
         </ModalFooter>
       </ModalContent>

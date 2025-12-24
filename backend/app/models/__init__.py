@@ -10,6 +10,7 @@ from app.models.guild_member import GuildMember
 from app.models.subscription import Subscription
 from app.models.team import Team
 from app.models.template import TeamTemplate
+from app.models.signup import Signup
 
 __all__ = [
 	"SystemAdmin",
@@ -21,4 +22,5 @@ __all__ = [
 	"Subscription",
 	"Team",
 	"TeamTemplate",
+	"Signup",
 ]

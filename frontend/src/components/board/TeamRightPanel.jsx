@@ -3,6 +3,8 @@ import { Card, CardBody, CardHeader, Divider, Tabs, Tab, Button } from "@heroui/
 import useAuthStore from "../../stores/authStore";
 import SignupCard from "./SignupCard";
 import WaitlistCard from "./WaitlistCard";
+import SignupModal from "./SignupModal";
+import ProxySignupModal from "./ProxySignupModal";
 
 /**
  * 右侧面板 - 报名信息与候补列表
@@ -12,26 +14,29 @@ import WaitlistCard from "./WaitlistCard";
 export default function TeamRightPanel({ team, isAdmin }) {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [showProxyModal, setShowProxyModal] = useState(false);
 
   // TODO: 从 API 获取报名数据
   const mySignup = null; // 当前用户的报名
   const myProxySignups = []; // 当前用户的代报名列表
   const waitlist = []; // 候补列表
 
+  // TODO: 从 API 获取报名数据
+  const reloadSignups = () => {};
+
   /**
    * 处理报名
    */
   const handleSignup = async () => {
-    // TODO: 调用报名 API
-    console.log("处理报名");
+    setShowSignupModal(true);
   };
 
   /**
    * 处理代报名
    */
   const handleProxySignup = async () => {
-    // TODO: 打开代报名弹窗
-    console.log("处理代报名");
+    setShowProxyModal(true);
   };
 
   /**
@@ -171,6 +176,26 @@ export default function TeamRightPanel({ team, isAdmin }) {
           </Tab>
         </Tabs>
       </CardBody>
+
+      <SignupModal
+        isOpen={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        guildId={team?.guild_id}
+        teamId={team?.id}
+        team={team}
+        user={user}
+        onSuccess={reloadSignups}
+      />
+
+      <ProxySignupModal
+        isOpen={showProxyModal}
+        onClose={() => setShowProxyModal(false)}
+        guildId={team?.guild_id}
+        teamId={team?.id}
+        team={team}
+        user={user}
+        onSuccess={reloadSignups}
+      />
     </Card>
   );
 }

@@ -31,9 +31,9 @@
 | 9. 群组成员管理         | 6      | 3      | 0        | 3      | 🟡 50%     |
 | 10. 开团管理            | 6      | 6      | 0        | 0      | 🟢 100%    |
 | 11. 开团模板            | 4      | 4      | 0        | 0      | 🟢 100%    |
-| 12. 报名管理            | 6      | 0      | 0        | 6      | 🔴 0%      |
+| 12. 报名管理            | 6      | 6      | 0        | 0      | 🟢 100%    |
 | 13. 金团记录            | 6      | 0      | 0        | 6      | 🔴 0%      |
-| **总计**                | **72** | **55** | **0**    | **17** | **🟡 76%** |
+| **总计**                | **72** | **61** | **0**    | **11** | **🟢 85%** |
 
 ---
 
@@ -158,12 +158,12 @@
 
 | 接口                   | 方法   | 路径                                                            | 状态 | 备注   |
 | ---------------------- | ------ | --------------------------------------------------------------- | ---- | ------ |
-| 提交报名               | POST   | `/guilds/{guild_id}/teams/{team_id}/signups`                    | ❌   | 未实现 |
-| 获取报名列表（含历史） | GET    | `/guilds/{guild_id}/teams/{team_id}/signups`                    | ❌   | 未实现 |
-| 更新报名信息           | PUT    | `/guilds/{guild_id}/teams/{team_id}/signups/{signup_id}`        | ❌   | 未实现 |
-| 锁定报名位置           | POST   | `/guilds/{guild_id}/teams/{team_id}/signups/{signup_id}/lock`   | ❌   | 未实现 |
-| 标记缺席               | POST   | `/guilds/{guild_id}/teams/{team_id}/signups/{signup_id}/absent` | ❌   | 未实现 |
-| 取消报名               | DELETE | `/guilds/{guild_id}/teams/{team_id}/signups/{signup_id}`        | ❌   | 未实现 |
+| 提交报名               | POST   | `/guilds/{guild_id}/teams/{team_id}/signups`                    | ✅   | 已实现 |
+| 获取报名列表（含历史） | GET    | `/guilds/{guild_id}/teams/{team_id}/signups`                    | ✅   | 已实现 |
+| 更新报名信息           | PUT    | `/guilds/{guild_id}/teams/{team_id}/signups/{signup_id}`        | ✅   | 已实现 |
+| 锁定报名位置           | POST   | `/guilds/{guild_id}/teams/{team_id}/signups/{signup_id}/lock`   | ✅   | 已实现 |
+| 标记缺席               | POST   | `/guilds/{guild_id}/teams/{team_id}/signups/{signup_id}/absent` | ✅   | 已实现 |
+| 取消报名               | DELETE | `/guilds/{guild_id}/teams/{team_id}/signups/{signup_id}`        | ✅   | 已实现 |
 
 ### 1️⃣3️⃣ 金团记录接口 (`/guilds/{guild_id}/gold-records`)
 
