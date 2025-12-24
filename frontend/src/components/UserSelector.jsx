@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { Autocomplete, AutocompleteItem } from "@heroui/react";
 import useSWR from "swr";
-import Fuse from "fuse.js";
 import { pinyin } from "pinyin-pro";
 import { getUserList } from "../api/users";
 
@@ -66,7 +65,7 @@ export default function UserSelector({
     const toPinyin = (text) => pinyin(text || "", { toneType: "none", type: "array" }).join("");
     const toInitials = (text) => pinyin(text || "", { pattern: "first", toneType: "none", type: "array" }).join("");
 
-    return allUsers.map((user) => {
+    const result = allUsers.map((user) => {
       const names = [user.nickname, ...(user.other_nicknames || [])].filter(Boolean);
       const pinyins = names.map(toPinyin);
       const initials = names.map(toInitials);
@@ -79,6 +78,14 @@ export default function UserSelector({
         searchText,
       };
     });
+
+    console.log("[UserSelector] 预处理用户数据完成:", {
+      totalUsers: result.length,
+      sampleSearchText: result[0]?.searchText,
+      sampleUser: { nickname: result[0]?.nickname, other_nicknames: result[0]?.other_nicknames, qq: result[0]?.qq_number },
+    });
+
+    return result;
   }, [allUsers]);
 
   // 防抖：延迟0.5秒后更新搜索关键词
@@ -90,30 +97,31 @@ export default function UserSelector({
     return () => clearTimeout(timer);
   }, [searchKeyword]);
 
-  // 配置 Fuse.js 模糊搜索（完全在前端运行）
-  const fuse = useMemo(() => {
-    if (!enhancedUsers.length) return null;
-    return new Fuse(enhancedUsers, {
-      keys: [
-        { name: "nickname", weight: 2 },
-        { name: "other_nicknames", weight: 1.5 },
-        { name: "qq_number", weight: 1 },
-        { name: "searchText", weight: 2 }, // 拼音与首字母聚合搜索
-      ],
-      threshold: 0.4,
-      includeScore: true,
-      minMatchCharLength: 1,
-      ignoreLocation: true,
-      shouldSort: true,
-    });
-  }, [enhancedUsers]);
-
-  // 前端模糊搜索（使用实时的 searchKeyword，保证输入即搜）
+  // 前端简单字符串匹配（参考 GroupMemberSelector 的实现）
   const frontendResults = useMemo(() => {
-    if (!searchKeyword || !fuse) return enhancedUsers.slice(0, 50);
-    const results = fuse.search(searchKeyword);
-    return results.slice(0, 50).map((result) => result.item);
-  }, [enhancedUsers, searchKeyword, fuse]);
+    // 如果没有搜索关键词，显示前50个用户
+    if (!searchKeyword.trim()) {
+      console.log("[UserSelector] 无搜索关键词，返回前50个用户");
+      return enhancedUsers.slice(0, 50);
+    }
+
+    const searchKey = searchKeyword.toLowerCase().trim();
+    const filtered = enhancedUsers.filter((user) => user.searchText.includes(searchKey));
+
+    console.log("[UserSelector] 前端搜索:", {
+      searchKeyword,
+      searchKey,
+      totalUsers: enhancedUsers.length,
+      matchedCount: filtered.length,
+      sampleMatched: filtered.slice(0, 3).map(u => ({
+        nickname: u.nickname,
+        qq: u.qq_number,
+        searchText: u.searchText.substring(0, 100) + "..."
+      })),
+    });
+
+    return filtered.slice(0, 50);
+  }, [enhancedUsers, searchKeyword]);
 
   // 当前端搜索结果为空且有搜索关键词时，启用后端搜索（防抖后的关键词）
   // 只有在用户数量达到5000（可能还有更多）时才启用后端搜索
@@ -132,18 +140,32 @@ export default function UserSelector({
 
   // 最终展示的用户列表：优先使用前端搜索结果，为空时使用后端结果
   const displayUsers = useMemo(() => {
+    let result;
+    let source;
+
     if (frontendResults.length > 0) {
-      return frontendResults;
+      result = frontendResults;
+      source = "前端搜索";
+    } else if (backendSearchEnabled && backendUsers.length > 0) {
+      result = backendUsers;
+      source = "后端搜索";
+    } else if (!searchKeyword) {
+      result = allUsers.slice(0, 50);
+      source = "默认列表";
+    } else {
+      result = [];
+      source = "空结果";
     }
-    // 前端搜不到且后端有搜索结果时，使用后端结果
-    if (backendSearchEnabled && backendUsers.length > 0) {
-      return backendUsers;
-    }
-    // 没有搜索关键词时，显示部分用户
-    if (!searchKeyword) {
-      return allUsers.slice(0, 50);
-    }
-    return [];
+
+    console.log("[UserSelector] 最终展示列表:", {
+      source,
+      count: result.length,
+      searchKeyword,
+      backendSearchEnabled,
+      frontendResultsCount: frontendResults.length,
+    });
+
+    return result;
   }, [frontendResults, backendSearchEnabled, backendUsers, searchKeyword, allUsers]);
 
   // 处理用户显示文本
@@ -180,8 +202,10 @@ export default function UserSelector({
       className="w-full"
       allowsCustomValue={false}
       description={backendSearchEnabled && displayUsers.length > 0 ? "从服务器搜索到的结果" : undefined}
+      items={displayUsers}
+      defaultItems={displayUsers}
     >
-      {displayUsers.map((user) => (
+      {(user) => (
         <AutocompleteItem
           key={user.qq_number}
           value={String(user[returnField])}
@@ -198,7 +222,7 @@ export default function UserSelector({
             )}
           </div>
         </AutocompleteItem>
-      ))}
+      )}
     </Autocomplete>
   );
 }
