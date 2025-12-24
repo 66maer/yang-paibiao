@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader, Divider, Tabs, Tab, Button } from "@heroui/react";
 import useAuthStore from "../../stores/authStore";
 import SignupCard from "./SignupCard";
@@ -21,6 +21,13 @@ export default function TeamRightPanel({ team, isAdmin }) {
   const mySignup = null; // 当前用户的报名
   const myProxySignups = []; // 当前用户的代报名列表
   const waitlist = []; // 候补列表
+
+  // 检查当前用户是否已在该车报名
+  const hasUserSignedUp = useMemo(() => {
+    if (!team || !user) return false;
+    const signupList = team.signup_list || team.signups || [];
+    return signupList.some((signup) => signup.user_id === user.id);
+  }, [team, user]);
 
   // TODO: 从 API 获取报名数据
   const reloadSignups = () => {};
@@ -71,7 +78,36 @@ export default function TeamRightPanel({ team, isAdmin }) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-2">
-        <h3 className="text-lg font-bold text-pink-600 dark:text-pink-400">报名管理</h3>
+        <div className="w-full flex gap-2">
+          {team.is_locked ? (
+            // 团队已锁定时显示禁用按钮
+            <Button color="warning" variant="flat" className="flex-1" isDisabled>
+              🔒 团队锁定，无法报名
+            </Button>
+          ) : (
+            // 团队未锁定时显示报名和代报名按钮
+            <>
+              <Button
+                color="primary"
+                className="flex-1 bg-gradient-to-r from-pink-500 to-purple-500"
+                onPress={handleSignup}
+                isLoading={loading}
+                isDisabled={hasUserSignedUp}
+              >
+                {hasUserSignedUp ? "✅ 已报名" : "✨ 立即报名"}
+              </Button>
+              <Button
+                color="secondary"
+                variant="flat"
+                className="flex-1"
+                onPress={handleProxySignup}
+                isLoading={loading}
+              >
+                👥 代报名
+              </Button>
+            </>
+          )}
+        </div>
       </CardHeader>
       <Divider />
       <CardBody className="overflow-auto p-0">
@@ -90,32 +126,10 @@ export default function TeamRightPanel({ team, isAdmin }) {
             <div className="p-4 space-y-4">
               {!mySignup ? (
                 // 未报名状态
-                <div className="space-y-4">
-                  <div className="p-8 rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-2 border-dashed border-default-300">
-                    <div className="text-center text-default-400">
-                      <div className="text-4xl mb-2">📝</div>
-                      <p className="text-sm mb-4">你还没有报名</p>
-                      <div className="flex gap-2 justify-center">
-                        <Button
-                          color="primary"
-                          size="lg"
-                          className="bg-gradient-to-r from-pink-500 to-purple-500"
-                          onPress={handleSignup}
-                          isLoading={loading}
-                        >
-                          ✨ 立即报名
-                        </Button>
-                        <Button
-                          color="secondary"
-                          size="lg"
-                          variant="flat"
-                          onPress={handleProxySignup}
-                          isLoading={loading}
-                        >
-                          👥 代报名
-                        </Button>
-                      </div>
-                    </div>
+                <div className="p-8 rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-2 border-dashed border-default-300">
+                  <div className="text-center text-default-400">
+                    <div className="text-4xl mb-2">📝</div>
+                    <p className="text-sm">你还没有报名，点击上方按钮报名</p>
                   </div>
                 </div>
               ) : (
@@ -125,13 +139,6 @@ export default function TeamRightPanel({ team, isAdmin }) {
                   <div>
                     <h4 className="text-sm font-semibold text-default-600 mb-2">我的报名</h4>
                     <SignupCard signup={mySignup} isOwn={true} canDelete={true} onDelete={handleDeleteSignup} />
-                  </div>
-
-                  {/* 代报名按钮 */}
-                  <div>
-                    <Button color="secondary" variant="flat" fullWidth onPress={handleProxySignup} isLoading={loading}>
-                      👥 代报名其他成员
-                    </Button>
                   </div>
 
                   {/* 代报名列表 */}

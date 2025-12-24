@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Card, CardBody, CardHeader, Button, Chip, Divider, Tooltip } from "@heroui/react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import SignupModal from "./SignupModal";
 import { closeTeam } from "../../api/teams";
 import { showToast, showConfirm } from "../../utils/toast";
 import TeamBoard from "./TeamBoard";
@@ -13,7 +12,6 @@ import { xinfaInfoTable } from "../../config/xinfa";
  * 中间内容 - 开团详情
  */
 export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
-  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [boardMode, setBoardMode] = useState("view");
 
   // Always call hooks in the same order - move conditional check below
@@ -69,8 +67,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
   };
 
   return (
-    <>
-      <Card className="h-full">
+    <Card className="h-full">
         <CardHeader className="flex-col items-start gap-3 pb-4">
           {/* 标题行 */}
           <div className="flex items-center justify-between w-full">
@@ -91,33 +88,20 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
             </div>
 
             {/* 操作按钮 */}
-            <div className="flex items-center gap-2">
-              {isAdmin && (
-                <>
-                  <Tooltip content="编辑开团">
-                    <Button size="sm" variant="flat" color="primary" onPress={() => onEdit(team)}>
-                      ✏️ 编辑
-                    </Button>
-                  </Tooltip>
-                  <Tooltip content="关闭开团">
-                    <Button size="sm" variant="flat" color="danger" onPress={handleCloseTeam}>
-                      ❌ 关闭
-                    </Button>
-                  </Tooltip>
-                </>
-              )}
-              <Tooltip content={team.is_locked ? "报名已锁定" : "点击报名"}>
-                <Button
-                  size="md"
-                  color="primary"
-                  className="bg-gradient-to-r from-pink-500 to-purple-500"
-                  isDisabled={team.is_locked}
-                  onPress={() => setIsSignupModalOpen(true)}
-                >
-                  📝 报名
-                </Button>
-              </Tooltip>
-            </div>
+            {isAdmin && (
+              <div className="flex items-center gap-2">
+                <Tooltip content="编辑开团">
+                  <Button size="sm" variant="flat" color="primary" onPress={() => onEdit(team)}>
+                    ✏️ 编辑
+                  </Button>
+                </Tooltip>
+                <Tooltip content="关闭开团">
+                  <Button size="sm" variant="flat" color="danger" onPress={handleCloseTeam}>
+                    ❌ 关闭
+                  </Button>
+                </Tooltip>
+              </div>
+            )}
           </div>
 
           {/* 基础信息标签 */}
@@ -239,10 +223,6 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
           </div>
         </CardBody>
       </Card>
-
-      {/* 报名模态框 */}
-      <SignupModal isOpen={isSignupModalOpen} onClose={() => setIsSignupModalOpen(false)} team={team} />
-    </>
   );
 }
 
