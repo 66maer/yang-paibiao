@@ -5,8 +5,8 @@ import { pinyin } from "pinyin-pro";
 import { getGuildMembers } from "../api/guilds";
 import useCurrentGuild from "../hooks/useCurrentGuild";
 import MemberRoleSelector from "./MemberRoleSelector";
-import { allXinfaList, xinfaInfoTable } from "../config/xinfa";
-import { Select, SelectItem, Input } from "@heroui/react";
+import XinfaSelector from "./XinfaSelector";
+import { Input } from "@heroui/react";
 
 /**
  * 群组成员角色选择器组件
@@ -167,7 +167,7 @@ export default function GroupMemberSelector({
         selectedKey={memberId ? String(memberId) : null}
         onSelectionChange={(key) => {
           onMemberChange?.(key);
-          // 选中后填充输入框为所选成员的主昵称，确保能匹配到
+          // 选中后填充输入框为所选成员的主昵称
           const selected = (members || []).find((m) => String(m.user_id) === String(key));
           if (selected) {
             const primaryName = getPrimaryNickname(selected);
@@ -175,7 +175,16 @@ export default function GroupMemberSelector({
           }
         }}
         inputValue={searchKeyword}
-        onInputChange={setSearchKeyword}
+        onInputChange={(value) => {
+          setSearchKeyword(value);
+          // 如果用户清空或修改输入，清空选择以便重新搜索
+          if (memberId && value !== searchKeyword) {
+            const currentMember = members.find((m) => String(m.user_id) === String(memberId));
+            if (currentMember && value !== getPrimaryNickname(currentMember)) {
+              onMemberChange?.(null);
+            }
+          }
+        }}
         isRequired={isRequired}
         isDisabled={isDisabled || !effectiveGuildId}
         isLoading={isLoading}
@@ -239,29 +248,14 @@ export default function GroupMemberSelector({
       )}
 
       {/* 心法选择 */}
-      <Select
+      <XinfaSelector
         label={xinfaLabel}
         placeholder="选择心法"
-        selectedKeys={characterXinfa ? new Set([characterXinfa]) : new Set()}
-        onSelectionChange={(keys) => {
-          const selectedXinfa = Array.from(keys)[0];
-          onXinfaChange?.(selectedXinfa);
-        }}
-        isRequired={false}
+        value={characterXinfa}
+        onChange={onXinfaChange}
+        isRequired={isRequired}
         isDisabled={isDisabled}
-      >
-        {allXinfaList.map((xinfa) => {
-          const info = xinfaInfoTable[xinfa];
-          return (
-            <SelectItem key={xinfa} textValue={info.name}>
-              <div className="flex items-center gap-2">
-                <img src={`/xinfa/${info.icon}`} alt={info.name} className="w-6 h-6" />
-                <span>{info.name}</span>
-              </div>
-            </SelectItem>
-          );
-        })}
-      </Select>
+      />
     </div>
   );
 }

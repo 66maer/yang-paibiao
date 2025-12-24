@@ -11,7 +11,6 @@ import {
   SelectItem,
   Switch,
 } from "@heroui/react";
-import { allXinfaList, xinfaInfoTable } from "../../../../config/xinfa";
 import GroupMemberSelector from "../../../GroupMemberSelector";
 
 /**
@@ -26,13 +25,13 @@ const AssignModal = ({ open, onClose, defaultXinfa, onSave }) => {
     memberId: "",
     memberName: "",
     characterName: "",
-    characterXinfa: defaultXinfa || allXinfaList[0],
+    characterXinfa: defaultXinfa || "",
     isRich: false,
     isProxy: false,
   });
 
   // 同步外部心法变化
-  const syncedXinfa = useMemo(() => defaultXinfa || allXinfaList[0], [defaultXinfa]);
+  const syncedXinfa = useMemo(() => defaultXinfa || "", [defaultXinfa]);
 
   useEffect(() => {
     // 延迟到下一帧更新状态，避免渲染期间的 setState
