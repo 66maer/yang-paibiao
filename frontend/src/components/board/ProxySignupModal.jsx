@@ -105,7 +105,9 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
           </div>
 
           <div className="rounded-lg border border-default-200 dark:border-default-700 p-3 space-y-2 bg-default-50 dark:bg-default-50/5">
-            <p className="text-xs text-default-500">如果被代报的人/角色在系统内，可填 ID 便于自动补全信息（可留空）。</p>
+            <p className="text-xs text-default-500">
+              如果被代报的人/角色在系统内，可填 ID 便于自动补全信息（可留空）。
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Input
                 label="系统内用户ID"
