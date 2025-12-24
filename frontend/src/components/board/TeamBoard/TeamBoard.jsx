@@ -215,7 +215,7 @@ const TeamBoard = ({
     </div>
   );
 
-  return <div className="w-[1300px]">{dragEnabled ? renderDragGrid(displayItems) : renderGrid(displayItems)}</div>;
+  return <div className="w-[1140px]">{dragEnabled ? renderDragGrid(displayItems) : renderGrid(displayItems)}</div>;
 };
 
 export default TeamBoard;

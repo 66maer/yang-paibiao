@@ -125,7 +125,7 @@ const SlotCard = ({
   const showOverlay = mode === "assign" || (mode === "mark" && signup);
 
   return (
-    <div className="relative w-[250px] h-[120px] group">
+    <div className="relative w-[220px] h-[130px] group">
       {/* 卡片主体 */}
       {showPopover ? (
         <Popover isOpen={isPopoverOpen} onOpenChange={setIsPopoverOpen} placement="top" showArrow>

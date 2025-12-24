@@ -101,9 +101,9 @@ export default function BoardPage() {
   }
   return (
     <div className="h-[calc(100vh-120px)]">
-      <div className="grid grid-cols-12 gap-4 h-full">
+      <div className="grid grid-cols-7 gap-4 h-full">
         {/* 左侧导航 - 开团列表 */}
-        <div className="col-span-2 overflow-hidden">
+        <div className="col-span-1 overflow-hidden">
           <TeamSidebar
             teams={teams}
             selectedTeamId={selectedTeamId}
@@ -114,7 +114,7 @@ export default function BoardPage() {
         </div>
 
         {/* 右侧内容区域 */}
-        <div className="col-span-10 overflow-hidden">
+        <div className="col-span-6 overflow-hidden">
           {selectedTeam ? (
             <div className="grid grid-cols-12 gap-4 h-full">
               {/* 团队详情 */}
