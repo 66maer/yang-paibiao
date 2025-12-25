@@ -10,10 +10,11 @@ import { xinfaInfoTable } from "../../config/xinfa";
  * @param {Object} signup - 报名信息对象
  * @param {string} type - 卡片类型："signup" | "waitlist"
  * @param {number} waitlistOrder - 候补顺序（仅当type为waitlist时）
- * @param {Function} onEdit - 修改报名回调
+ * @param {boolean} isAdmin - 是否是管理员
+ * @param {Object} currentUser - 当前登录用户
  * @param {Function} onDelete - 取消报名回调
  */
-export default function SignupItemCard({ signup, type = "signup", waitlistOrder, onEdit, onDelete }) {
+export default function SignupItemCard({ signup, type = "signup", waitlistOrder, isAdmin, currentUser, onDelete }) {
   const { user } = useAuthStore();
   const [copied, setCopied] = useState("");
 
@@ -32,6 +33,11 @@ export default function SignupItemCard({ signup, type = "signup", waitlistOrder,
 
   // 获取代报名人信息
   const submitterName = signup?.submitterName || "他人";
+
+  // 检查是否有权限取消报名
+  // 管理员可以取消所有报名，或者报名人自己（submitterId 或 userId 是当前用户）可以取消
+  const canDelete =
+    isAdmin || (currentUser?.id && (currentUser.id === signup?.submitterId || currentUser.id === signup?.userId));
 
   // 格式化时间
   const formatTime = (timeStr) => {
@@ -126,18 +132,11 @@ export default function SignupItemCard({ signup, type = "signup", waitlistOrder,
       <div className="text-xs text-default-500">报名时间：{formatTime(signup?.createdAt)}</div>
 
       {/* 操作按钮 */}
-      {(onEdit || onDelete) && (
-        <div className="flex gap-2 pt-2 border-t border-default-200">
-          {onEdit && (
-            <Button size="sm" color="warning" variant="flat" onPress={onEdit} className="flex-1">
-              修改报名
-            </Button>
-          )}
-          {onDelete && (
-            <Button size="sm" color="danger" variant="flat" onPress={onDelete} className="flex-1">
-              取消报名
-            </Button>
-          )}
+      {onDelete && canDelete && (
+        <div className="pt-2 border-t border-default-200">
+          <Button size="sm" color="danger" variant="flat" onPress={onDelete} fullWidth>
+            取消报名
+          </Button>
         </div>
       )}
     </div>

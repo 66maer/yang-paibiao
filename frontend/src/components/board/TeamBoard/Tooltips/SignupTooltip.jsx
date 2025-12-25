@@ -1,15 +1,27 @@
 import { useState } from "react";
-import { Chip, Divider } from "@heroui/react";
+import { Chip, Divider, Button } from "@heroui/react";
 import { xinfaInfoTable } from "../../../../config/xinfa";
 import RuleTooltip from "./RuleTooltip";
 
 /**
  * 报名信息提示组件
  * 显示报名者的详细信息和坑位规则
+ *
+ * Props:
+ * @param {Object} signup - 报名信息对象
+ * @param {Object} rule - 坑位规则对象
+ * @param {boolean} isAdmin - 是否是管理员
+ * @param {Object} currentUser - 当前登录用户
+ * @param {Function} onDelete - 删除报名回调
  */
-const SignupTooltip = ({ signup, rule }) => {
+const SignupTooltip = ({ signup, rule, isAdmin, currentUser, onDelete }) => {
   const [copied, setCopied] = useState("");
   const xinfa = signup?.characterXinfa ? xinfaInfoTable[signup.characterXinfa] : null;
+
+  // 检查是否有权限取消报名
+  // 管理员可以取消所有报名，或者报名人自己（submitterId 或 userId 是当前用户）可以取消
+  const canDelete =
+    isAdmin || (currentUser?.id && (currentUser.id === signup?.submitterId || currentUser.id === signup?.userId));
 
   // 复制QQ号
   const copyToClipboard = async (text, label) => {
@@ -34,7 +46,8 @@ const SignupTooltip = ({ signup, rule }) => {
         }}
         title="点击复制"
       >
-        ({qqNumber}{copied === label && " ✓"})
+        ({qqNumber}
+        {copied === label && " ✓"})
       </span>
     );
   };
@@ -82,9 +95,7 @@ const SignupTooltip = ({ signup, rule }) => {
         <div className="text-xs bg-warning-50 dark:bg-warning-900/20 p-2 rounded space-y-1">
           <div>
             <span className="text-warning-600 dark:text-warning-400 font-medium">代报人：</span>
-            <span className="ml-1 text-default-700 dark:text-default-300">
-              {signup.submitterName || "未知"}
-            </span>
+            <span className="ml-1 text-default-700 dark:text-default-300">{signup.submitterName || "未知"}</span>
             {signup.submitterQqNumber && renderQqNumber(signup.submitterQqNumber, "代报人QQ")}
           </div>
         </div>
@@ -94,6 +105,16 @@ const SignupTooltip = ({ signup, rule }) => {
 
       {/* 坑位规则信息 */}
       <RuleTooltip rule={rule} />
+
+      {/* 删除按钮 */}
+      {onDelete && canDelete && (
+        <>
+          <Divider className="my-1" />
+          <Button size="sm" color="danger" variant="flat" onPress={onDelete} fullWidth className="mt-2">
+            取消报名
+          </Button>
+        </>
+      )}
     </div>
   );
 };

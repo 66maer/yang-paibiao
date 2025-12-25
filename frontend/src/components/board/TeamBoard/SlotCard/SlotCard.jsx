@@ -27,11 +27,14 @@ const SlotCard = ({
   signup,
   mode = "view",
   guildId, // 群组ID（用于AssignModal获取成员列表）
+  isAdmin, // 是否是管理员
+  currentUser, // 当前登录用户
   onRuleChange,
   onAssign,
   onAssignDelete,
   onPresenceChange,
   onSlotClick,
+  onSignupDelete, // 删除报名回调
 }) => {
   const [ruleModalOpen, setRuleModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -116,7 +119,17 @@ const SlotCard = ({
     );
 
   // 渲染悬浮提示内容
-  const popoverContent = signup ? <SignupTooltip signup={signup} rule={rule} /> : <RuleTooltip rule={rule} />;
+  const popoverContent = signup ? (
+    <SignupTooltip
+      signup={signup}
+      rule={rule}
+      isAdmin={isAdmin}
+      currentUser={currentUser}
+      onDelete={() => onSignupDelete?.(signup)}
+    />
+  ) : (
+    <RuleTooltip rule={rule} />
+  );
 
   // 是否显示 popover（规则编辑模式和拖动模式禁用）
   const showPopover = mode !== "drag" && mode !== "edit-rule";

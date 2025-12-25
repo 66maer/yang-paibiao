@@ -31,22 +31,23 @@ const TeamBoard = ({
   view = [],
   mode = "view",
   guildId, // 群组ID（用于AssignModal获取成员列表）
+  isAdmin, // 是否是管理员
+  currentUser, // 当前登录用户
   onRuleChange,
   onAssign,
   onAssignDelete,
   onPresenceChange,
   onReorder,
   onSlotClick,
+  onSignupDelete, // 删除报名回调
 }) => {
   // 分配坑位
   const { slots } = useMemo(() => allocateSlots(rules, signupList), [rules, signupList]);
 
   // assign模式：只显示有slot_position的报名（固定坑位），自动分配的不显示
   const displaySlots = useMemo(() => {
-    if (mode === 'assign') {
-      return slots.map(slot =>
-        slot?.isLock ? slot : null
-      );
+    if (mode === "assign") {
+      return slots.map((slot) => (slot?.isLock ? slot : null));
     }
     return slots;
   }, [slots, mode]);
@@ -154,12 +155,15 @@ const TeamBoard = ({
           signup={slot.signup}
           mode={mode}
           guildId={guildId}
+          isAdmin={isAdmin}
+          currentUser={currentUser}
           draggable={dragEnabled}
           onRuleChange={onRuleChange}
           onAssign={onAssign}
           onAssignDelete={onAssignDelete}
           onPresenceChange={onPresenceChange}
           onSlotClick={onSlotClick}
+          onSignupDelete={onSignupDelete}
         />
       ))}
     </div>
@@ -210,12 +214,15 @@ const TeamBoard = ({
             signup={slot.signup}
             mode={mode}
             guildId={guildId}
+            isAdmin={isAdmin}
+            currentUser={currentUser}
             draggable={dragEnabled}
             onRuleChange={onRuleChange}
             onAssign={onAssign}
             onAssignDelete={onAssignDelete}
             onPresenceChange={onPresenceChange}
             onSlotClick={onSlotClick}
+            onSignupDelete={onSignupDelete}
           />
           {/* 即将被交换的图标 */}
           {hoverIdx === visualIdx && draggedIdx !== null && (

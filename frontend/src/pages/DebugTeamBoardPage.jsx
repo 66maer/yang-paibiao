@@ -212,6 +212,11 @@ export default function DebugTeamBoardPage() {
     setView(newView);
   };
 
+  const handleSignupDelete = (signup) => {
+    // 模拟删除报名
+    setSignups((prev) => prev.filter((s) => s.id !== signup.id));
+  };
+
   const resetAll = () => {
     setRules(buildDemoRules());
     setSignups(mockSignups);
@@ -394,11 +399,14 @@ export default function DebugTeamBoardPage() {
               signupList={signups}
               view={view}
               mode={mode}
+              isAdmin={isAdmin}
+              currentUser={{ id: "test-user-1" }}
               onRuleChange={handleRuleChange}
               onAssign={handleAssign}
               onAssignDelete={handleAssignDelete}
               onPresenceChange={handlePresenceChange}
               onReorder={handleReorder}
+              onSignupDelete={handleSignupDelete}
             />
           </CardBody>
         </Card>
@@ -441,7 +449,9 @@ export default function DebugTeamBoardPage() {
                         signup={item}
                         type="waitlist"
                         waitlistOrder={item.waitlist_order}
-                        onDelete={isAdmin ? () => setWaitlist((prev) => prev.filter((w) => w.id !== item.id)) : undefined}
+                        onDelete={
+                          isAdmin ? () => setWaitlist((prev) => prev.filter((w) => w.id !== item.id)) : undefined
+                        }
                       />
                     </div>
                   ))

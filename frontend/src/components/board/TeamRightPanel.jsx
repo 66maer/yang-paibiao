@@ -5,7 +5,7 @@ import useAuthStore from "../../stores/authStore";
 import SignupItemCard from "./SignupItemCard";
 import SignupModal from "./SignupModal";
 import ProxySignupModal from "./ProxySignupModal";
-import { getSignups } from "../../api/signups";
+import { getSignups, cancelSignup } from "../../api/signups";
 import { allocateSlots, buildEmptyRules } from "../../utils/slotAllocation";
 import { transformSignups } from "../../utils/signupTransform";
 
@@ -86,11 +86,14 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
    * 处理删除报名
    */
   const handleDeleteSignup = async (signup) => {
-    // TODO: 调用删除报名 API
-    console.log("删除报名", signup);
-    // 删除成功后需要刷新数据
-    await reloadSignups();
-    await onRefresh?.();
+    try {
+      await cancelSignup(team.guild_id, team.id, signup.id);
+      // 删除成功后刷新数据
+      await reloadSignups();
+    } catch (error) {
+      console.error("取消报名失败:", error);
+      alert(error.response?.data?.message || "取消报名失败，请重试");
+    }
   };
 
   /**
@@ -101,7 +104,6 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
     console.log("取消候补", waitlistItem);
     // 取消成功后需要刷新数据
     await reloadSignups();
-    await onRefresh?.();
   };
 
   /**
@@ -182,7 +184,13 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
                   {/* 本人报名信息 */}
                   <div>
                     <h4 className="text-sm font-semibold text-default-600 mb-2">我的报名</h4>
-                    <SignupItemCard signup={mySignup} type="signup" onDelete={() => handleDeleteSignup(mySignup)} />
+                    <SignupItemCard
+                      signup={mySignup}
+                      type="signup"
+                      isAdmin={isAdmin}
+                      currentUser={user}
+                      onDelete={() => handleDeleteSignup(mySignup)}
+                    />
                   </div>
 
                   {/* 代报名列表 */}
@@ -195,6 +203,8 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
                             key={index}
                             signup={signup}
                             type="signup"
+                            isAdmin={isAdmin}
+                            currentUser={user}
                             onDelete={() => handleDeleteSignup(signup)}
                           />
                         ))}
@@ -227,7 +237,9 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
                       signup={item}
                       type="waitlist"
                       waitlistOrder={item.waitlist_order || index + 1}
-                      onDelete={isAdmin ? () => handleRemoveWaitlist(item) : undefined}
+                      isAdmin={isAdmin}
+                      currentUser={user}
+                      onDelete={() => handleRemoveWaitlist(item)}
                     />
                   ))}
                 </div>

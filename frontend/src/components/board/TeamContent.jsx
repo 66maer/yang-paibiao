@@ -4,7 +4,14 @@ import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import useSWR from "swr";
 import { closeTeam, updateTeam } from "../../api/teams";
-import { getSignups, lockSignup, removeSlotAssignment, updatePresenceStatus, createSignup } from "../../api/signups";
+import {
+  getSignups,
+  lockSignup,
+  removeSlotAssignment,
+  updatePresenceStatus,
+  createSignup,
+  cancelSignup,
+} from "../../api/signups";
 import { showToast, showConfirm } from "../../utils/toast";
 import TeamBoard from "./TeamBoard";
 import { buildEmptyRules } from "../../utils/slotAllocation";
@@ -183,6 +190,22 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
     }
   };
 
+  // 删除报名
+  const handleSignupDelete = async (signup) => {
+    const confirmed = await showConfirm(`确定要取消 ${signup?.signupName || "该成员"} 的报名吗？`);
+
+    if (!confirmed) return;
+
+    try {
+      await cancelSignup(team.guild_id, team.id, signup.id);
+      showToast.success("已取消报名");
+      await mutateSignups(); // 刷新报名列表
+    } catch (error) {
+      console.error("取消报名失败:", error);
+      showToast.error(error?.response?.data?.message || "取消报名失败");
+    }
+  };
+
   return (
     <Card className="h-full">
       <CardHeader className="flex-col items-start gap-3 pb-4">
@@ -305,11 +328,14 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
               view={memoizedInputs.slotView}
               mode={boardMode}
               guildId={team.guild_id}
+              isAdmin={isAdmin}
+              currentUser={user}
               onRuleChange={(slotIndex) => showToast.info(`已修改 ${slotIndex + 1} 号坑位规则，保存逻辑待接入`)}
               onAssign={handleAssign}
               onAssignDelete={handleAssignDelete}
               onPresenceChange={handlePresenceChange}
               onReorder={handleReorder}
+              onSignupDelete={handleSignupDelete}
             />
           </div>
 
