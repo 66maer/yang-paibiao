@@ -74,7 +74,8 @@ export default function SignupItemCard({ signup, type = "signup", waitlistOrder,
         }}
         title="点击复制"
       >
-        ({qqNumber}{copied === label && " ✓"})
+        ({qqNumber}
+        {copied === label && " ✓"})
       </span>
     );
   };
@@ -122,32 +123,18 @@ export default function SignupItemCard({ signup, type = "signup", waitlistOrder,
       </div>
 
       {/* 第五行：报名时间 */}
-      <div className="text-xs text-default-500">
-        报名时间：{formatTime(signup?.createdAt)}
-      </div>
+      <div className="text-xs text-default-500">报名时间：{formatTime(signup?.createdAt)}</div>
 
       {/* 操作按钮 */}
       {(onEdit || onDelete) && (
         <div className="flex gap-2 pt-2 border-t border-default-200">
           {onEdit && (
-            <Button
-              size="sm"
-              color="warning"
-              variant="flat"
-              onPress={onEdit}
-              className="flex-1"
-            >
+            <Button size="sm" color="warning" variant="flat" onPress={onEdit} className="flex-1">
               修改报名
             </Button>
           )}
           {onDelete && (
-            <Button
-              size="sm"
-              color="danger"
-              variant="flat"
-              onPress={onDelete}
-              className="flex-1"
-            >
+            <Button size="sm" color="danger" variant="flat" onPress={onDelete} className="flex-1">
               取消报名
             </Button>
           )}
@@ -174,9 +161,7 @@ export default function SignupItemCard({ signup, type = "signup", waitlistOrder,
             <div className="flex items-start justify-between" style={{ height: "25%" }}>
               {/* 左侧：心法图标 */}
               <div className="relative z-10">
-                {xinfa && (
-                  <img src={`/xinfa/${xinfa.icon}`} alt={xinfa.name} className="w-10 h-10 rounded shadow-lg" />
-                )}
+                {xinfa && <img src={`/xinfa/${xinfa.icon}`} alt={xinfa.name} className="w-8 h-8 rounded shadow-lg" />}
               </div>
 
               {/* 右侧：标签 */}
@@ -203,30 +188,21 @@ export default function SignupItemCard({ signup, type = "signup", waitlistOrder,
             <div className="flex flex-col justify-center items-center text-center" style={{ height: "50%" }}>
               {isSelfSignup ? (
                 // 本人报名：只显示角色名（加粗）
-                <div className="text-2xl font-bold leading-tight">
-                  {signup?.characterName || "[未填写角色]"}
-                </div>
+                <div className="text-2xl font-bold leading-tight">{signup?.characterName || "[未填写角色]"}</div>
               ) : (
                 // 他人报名：两行显示
                 <>
                   {/* 第一行：玩家名（加粗） */}
-                  <div className="text-xl font-bold leading-tight mb-1">
-                    {signup?.signupName || "[未知]"}
-                  </div>
+                  <div className="text-xl font-bold leading-tight mb-1">{signup?.signupName || "[未知]"}</div>
                   {/* 第二行：角色名 心法名（小字） */}
-                  <div className="text-sm opacity-80 leading-tight">
-                    {signup?.characterName || "[未填写角色]"}
-                    {xinfa && <span className="ml-2">· {xinfa.name}</span>}
-                  </div>
+                  <div className="text-sm opacity-80 leading-tight">{signup?.characterName || "[未填写角色]"}</div>
                 </>
               )}
             </div>
 
             {/* 第三层：代报名信息 (25%高度) */}
             <div className="flex items-end justify-end" style={{ height: "25%" }}>
-              {isProxy && (
-                <div className="text-xs opacity-70">{submitterName}（代报）</div>
-              )}
+              {isProxy && <div className="text-xs opacity-70">{submitterName}（代报）</div>}
             </div>
           </div>
         </div>

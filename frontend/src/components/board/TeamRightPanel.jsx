@@ -145,12 +145,7 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
               >
                 {hasUserSignedUp ? "✅ 已报名" : "✨ 立即报名"}
               </Button>
-              <Button
-                color="secondary"
-                variant="flat"
-                className="flex-1"
-                onPress={handleProxySignup}
-              >
+              <Button color="secondary" variant="flat" className="flex-1" onPress={handleProxySignup}>
                 👥 代报名
               </Button>
             </>
@@ -186,19 +181,13 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
                   {/* 本人报名信息 */}
                   <div>
                     <h4 className="text-sm font-semibold text-default-600 mb-2">我的报名</h4>
-                    <SignupItemCard
-                      signup={mySignup}
-                      type="signup"
-                      onDelete={() => handleDeleteSignup(mySignup)}
-                    />
+                    <SignupItemCard signup={mySignup} type="signup" onDelete={() => handleDeleteSignup(mySignup)} />
                   </div>
 
                   {/* 代报名列表 */}
                   {myProxySignups.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-default-600 mb-2">
-                        我的代报名 ({myProxySignups.length})
-                      </h4>
+                      <h4 className="text-sm font-semibold text-default-600 mb-2">代报名 ({myProxySignups.length})</h4>
                       <div className="space-y-2">
                         {myProxySignups.map((signup, index) => (
                           <SignupItemCard

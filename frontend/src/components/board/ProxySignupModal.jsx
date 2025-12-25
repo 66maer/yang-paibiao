@@ -12,6 +12,7 @@ import { getMemberNickname } from "../../utils/memberUtils";
  */
 export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, team, user, onSuccess }) {
   const [memberId, setMemberId] = useState("");
+  const [playerName, setPlayerName] = useState(""); // 改为状态，支持手动输入
   const [characterName, setCharacterName] = useState("");
   const [characterId, setCharacterId] = useState(null);
   const [xinfa, setXinfa] = useState("");
@@ -36,14 +37,17 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
     return members.find((m) => String(m.user_id) === String(memberId));
   }, [memberId, membersData]);
 
-  const playerName = useMemo(() => {
-    if (!selectedMember) return "";
-    return getMemberNickname(selectedMember);
+  // 当选择成员时，自动填充玩家名称
+  useEffect(() => {
+    if (selectedMember) {
+      setPlayerName(getMemberNickname(selectedMember));
+    }
   }, [selectedMember]);
 
   useEffect(() => {
     if (isOpen) {
       setMemberId("");
+      setPlayerName(""); // 重置玩家名称
       setCharacterName("");
       setCharacterId(null);
       setXinfa("");
@@ -53,11 +57,7 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
   }, [isOpen]);
 
   const handleSubmit = async () => {
-    // 验证：必须选择成员和心法
-    if (!memberId) {
-      showToast.error("请选择群组成员");
-      return;
-    }
+    // 验证：必须选择心法
     if (!xinfa) {
       showToast.error("请选择心法");
       return;
@@ -66,11 +66,11 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
     try {
       setSubmitting(true);
       await createSignup(guildId, teamId, {
-        signup_user_id: Number(memberId),
+        signup_user_id: memberId ? Number(memberId) : null, // 允许为空
         signup_character_id: characterId,
         signup_info: {
           submitter_name: user?.nickname || "我",
-          player_name: playerName, // 自动从成员获取
+          player_name: playerName, // 支持手动输入或自动从成员获取
           character_name: characterName || "",
           xinfa,
         },
@@ -112,15 +112,17 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
             guildId={guildId}
             memberId={memberId}
             onMemberChange={setMemberId}
+            onPlayerNameChange={setPlayerName}
             characterName={characterName}
             onCharacterNameChange={setCharacterName}
             onCharacterIdChange={setCharacterId}
             characterXinfa={xinfa}
             onXinfaChange={setXinfa}
-            memberLabel="被代报的群组成员"
+            memberLabel="被代报的群组成员（可选）"
             characterLabel="角色名称"
             xinfaLabel="心法"
             isRequired
+            allowCustomValue={true}
           />
 
           {/* 老板位开关 */}
@@ -130,7 +132,9 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
             </Switch>
           </div>
 
-          <p className="text-xs text-default-500">选择群组成员后，会自动填充报名者名称和角色信息。</p>
+          <p className="text-xs text-default-500">
+            可以选择群组成员或手动输入信息。选择成员后，会自动填充角色信息。
+          </p>
         </ModalBody>
         <ModalFooter>
           <Button variant="light" onPress={onClose} isDisabled={submitting}>

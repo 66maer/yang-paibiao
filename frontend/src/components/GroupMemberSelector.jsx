@@ -17,6 +17,7 @@ import { Input } from "@heroui/react";
  * @param {number} props.guildId - 群组ID（可选，默认使用全局当前群组）
  * @param {string|number} props.memberId - 选中的成员用户ID
  * @param {Function} props.onMemberChange - 成员变化回调 (memberId) => void
+ * @param {Function} props.onPlayerNameChange - 玩家名称输入变化回调 (playerName) => void
  * @param {string} props.characterName - 角色名
  * @param {Function} props.onCharacterNameChange - 角色名变化回调 (name) => void
  * @param {Function} props.onCharacterIdChange - 角色ID变化回调 (characterId) => void
@@ -27,11 +28,13 @@ import { Input } from "@heroui/react";
  * @param {string} props.xinfaLabel - 心法选择标签
  * @param {boolean} props.isRequired - 是否必填
  * @param {boolean} props.isDisabled - 是否禁用
+ * @param {boolean} props.allowCustomValue - 是否允许自定义输入（不仅从列表选择）
  */
 export default function GroupMemberSelector({
   guildId,
   memberId,
   onMemberChange,
+  onPlayerNameChange,
   characterName,
   onCharacterNameChange,
   onCharacterIdChange,
@@ -42,6 +45,7 @@ export default function GroupMemberSelector({
   xinfaLabel = "心法",
   isRequired = false,
   isDisabled = false,
+  allowCustomValue = false,
 }) {
   const [searchKeyword, setSearchKeyword] = useState("");
   const { currentGuildId } = useCurrentGuild();
@@ -179,6 +183,10 @@ export default function GroupMemberSelector({
         inputValue={searchKeyword}
         onInputChange={(value) => {
           setSearchKeyword(value);
+          // 如果允许自定义输入，将输入值传递给父组件作为 player_name
+          if (allowCustomValue) {
+            onPlayerNameChange?.(value);
+          }
           // 如果用户清空或修改输入，清空选择以便重新搜索
           if (memberId && value !== searchKeyword) {
             const currentMember = members.find((m) => String(m.user_id) === String(memberId));
@@ -191,7 +199,7 @@ export default function GroupMemberSelector({
         isDisabled={isDisabled || !effectiveGuildId}
         isLoading={isLoading}
         className="w-full"
-        allowsCustomValue={false}
+        allowsCustomValue={allowCustomValue}
         description={!effectiveGuildId ? "请先选择群组" : undefined}
         items={filteredMembers}
         defaultItems={filteredMembers}
