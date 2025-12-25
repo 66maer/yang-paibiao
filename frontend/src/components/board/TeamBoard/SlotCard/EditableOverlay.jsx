@@ -41,16 +41,16 @@ const EditableOverlay = ({
   if (mode === "mark") {
     return (
       <div className="absolute inset-0 rounded-xl flex items-end justify-center p-2 pointer-events-none">
-        <div className="flex pointer-events-auto" style={{ maxWidth: "90%" }}>
-          {/* 进组按钮 */}
+        <div className="flex pointer-events-auto gap-1" style={{ maxWidth: "90%" }}>
+          {/* 就绪按钮 */}
           <Button
             size="sm"
             color="success"
             variant="solid"
-            onPress={() => onPresenceChange?.("present")}
-            className="rounded-r-none min-w-0 px-2"
+            onPress={() => onPresenceChange?.("ready")}
+            className="min-w-0 px-3"
           >
-            进组
+            就绪
           </Button>
 
           {/* 鸽子按钮 */}
@@ -59,20 +59,9 @@ const EditableOverlay = ({
             color="danger"
             variant="solid"
             onPress={() => onPresenceChange?.("absent")}
-            className="rounded-none min-w-0 px-2"
+            className="min-w-0 px-3"
           >
             鸽子
-          </Button>
-
-          {/* 召唤按钮 */}
-          <Button
-            size="sm"
-            color="primary"
-            variant="solid"
-            onPress={onSummon}
-            className="rounded-none min-w-0 px-2"
-          >
-            召唤
           </Button>
 
           {/* 清除按钮 */}
@@ -80,8 +69,8 @@ const EditableOverlay = ({
             size="sm"
             color="default"
             variant="flat"
-            onPress={() => onPresenceChange?.("pending")}
-            className="rounded-l-none min-w-0 px-2"
+            onPress={() => onPresenceChange?.(null)}
+            className="min-w-0 px-3"
           >
             清除
           </Button>

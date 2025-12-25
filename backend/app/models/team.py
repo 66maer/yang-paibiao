@@ -22,6 +22,7 @@ class Team(Base):
     is_locked = Column(Boolean, default=False, comment="是否锁定")
     status = Column(String(20), default="open", comment="状态: open(开启), completed(完成), cancelled(取消), deleted(删除)")
     rule = Column(JSON, nullable=False, comment="报名规则")
+    slot_view = Column(JSON, nullable=True, comment="坑位视觉映射（用于连连看模式）")
     notice = Column(Text, nullable=True, comment="团队告示")
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, comment="创建时间")
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False, comment="更新时间")

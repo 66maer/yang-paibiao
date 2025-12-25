@@ -26,6 +26,7 @@ const SlotCard = ({
   rule,
   signup,
   mode = "view",
+  guildId, // 群组ID（用于AssignModal获取成员列表）
   onRuleChange,
   onAssign,
   onAssignDelete,
@@ -91,7 +92,8 @@ const SlotCard = ({
    */
   const handlePresenceChange = (status) => {
     setPresenceStatus(status);
-    onPresenceChange?.(slotIndex, status);
+    // 传递 signup.id 而不是 slotIndex，因为进组标记针对的是报名而非坑位
+    onPresenceChange?.(signup?.id, status);
   };
 
   /**
@@ -188,6 +190,7 @@ const SlotCard = ({
         onClose={() => setAssignModalOpen(false)}
         defaultXinfa={signup?.characterXinfa}
         onSave={handleAssignSave}
+        guildId={guildId}
       />
     </div>
   );

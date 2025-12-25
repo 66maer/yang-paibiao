@@ -3,24 +3,26 @@ import { Card, CardBody, CardHeader, Button, Chip, Divider, Tooltip } from "@her
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import useSWR from "swr";
-import { closeTeam } from "../../api/teams";
-import { getSignups } from "../../api/signups";
+import { closeTeam, updateTeam } from "../../api/teams";
+import { getSignups, lockSignup, removeSlotAssignment, updatePresenceStatus, createSignup } from "../../api/signups";
 import { showToast, showConfirm } from "../../utils/toast";
 import TeamBoard from "./TeamBoard";
 import { buildEmptyRules } from "../../utils/slotAllocation";
 import { transformSignups } from "../../utils/signupTransform";
+import useAuthStore from "../../stores/authStore";
 
 /**
  * 中间内容 - 开团详情
  */
 export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
   const [boardMode, setBoardMode] = useState("view");
+  const { user } = useAuthStore();
 
   // Always call hooks in the same order - move conditional check below
   const teamTime = team?.team_time ? new Date(team.team_time) : null;
 
   // 使用 SWR 加载报名数据
-  const { data: signupsData } = useSWR(
+  const { data: signupsData, mutate: mutateSignups } = useSWR(
     team?.guild_id && team?.id ? `signups-${team.guild_id}-${team.id}` : null,
     () => getSignups(team.guild_id, team.id),
     {
@@ -58,7 +60,6 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
 
   const boardModes = [
     { key: "view", label: "浏览", icon: "👀" },
-    { key: "edit-rule", label: "编辑规则", icon: "🛠️", adminOnly: true },
     { key: "assign", label: "排表模式", icon: "🎯", adminOnly: true },
     { key: "mark", label: "进组标记", icon: "✅", adminOnly: true },
     { key: "drag", label: "连连看", icon: "🧲", adminOnly: true },
@@ -77,6 +78,108 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
     } catch (error) {
       console.error("关闭开团失败:", error);
       showToast.error(error || "关闭开团失败");
+    }
+  };
+
+  // 排表模式 - 分配坑位
+  const handleAssign = async (slotIndex, payload) => {
+    let signupId = payload.signupId;
+    const slotPosition = slotIndex + 1; // 转换为1-based索引
+
+    try {
+      // 如果没有 signupId，需要先创建报名
+      if (!signupId) {
+        if (!payload.playerName || !payload.characterXinfa) {
+          showToast.error("请填写玩家名称和心法");
+          return;
+        }
+
+        // 构造报名数据
+        const signupData = {
+          signup_user_id: payload.memberId ? Number(payload.memberId) : null,
+          signup_character_id: null, // 排表模式通常不关联角色ID
+          signup_info: {
+            submitter_name: user?.nickname || "管理员",
+            player_name: payload.playerName,
+            character_name: payload.characterName || "",
+            xinfa: payload.characterXinfa,
+          },
+          is_rich: payload.isRich || false,
+        };
+
+        // 创建报名
+        const createResult = await createSignup(team.guild_id, team.id, signupData);
+        signupId = createResult?.data?.id;
+
+        if (!signupId) {
+          showToast.error("创建报名失败");
+          return;
+        }
+      }
+
+      // 锁定坑位
+      await lockSignup(team.guild_id, team.id, signupId, {
+        slot_position: slotPosition,
+      });
+
+      showToast.success(`已将 ${payload.playerName || "报名"} 分配到 ${slotPosition} 号坑位`);
+      await mutateSignups(); // 刷新报名列表
+    } catch (error) {
+      console.error("分配坑位失败:", error);
+      showToast.error(error?.response?.data?.message || error || "分配坑位失败");
+    }
+  };
+
+  // 排表模式 - 删除坑位分配
+  const handleAssignDelete = async (slotIndex) => {
+    // 从报名列表中找到该坑位对应的报名
+    const signup = signupList.find((s) => s.slot_position === slotIndex + 1);
+    if (!signup) {
+      showToast.error("未找到该坑位的报名");
+      return;
+    }
+
+    try {
+      await removeSlotAssignment(team.guild_id, team.id, signup.id);
+      showToast.success(`已删除 ${slotIndex + 1} 号坑位的分配`);
+      await mutateSignups(); // 刷新报名列表
+    } catch (error) {
+      console.error("删除坑位分配失败:", error);
+      showToast.error(error?.response?.data?.message || "删除坑位分配失败");
+    }
+  };
+
+  // 进组标记模式 - 更新到场状态
+  const handlePresenceChange = async (signupId, status) => {
+    if (!signupId) {
+      showToast.error("未找到报名信息");
+      return;
+    }
+
+    try {
+      await updatePresenceStatus(team.guild_id, team.id, signupId, {
+        presence_status: status, // ready, absent, null
+      });
+      const statusText = status === "ready" ? "就绪" : status === "absent" ? "缺席" : "未标记";
+      showToast.success(`已标记为 ${statusText}`);
+      await mutateSignups(); // 刷新报名列表
+    } catch (error) {
+      console.error("更新到场状态失败:", error);
+      showToast.error(error?.response?.data?.message || "更新到场状态失败");
+    }
+  };
+
+  // 连连看模式 - 保存视觉映射
+  const handleReorder = async (newView) => {
+    try {
+      await updateTeam(team.guild_id, team.id, {
+        slot_view: newView,
+      });
+      showToast.success("已保存视觉映射");
+      onRefresh?.(); // 刷新团队数据
+    } catch (error) {
+      console.error("保存视觉映射失败:", error);
+      showToast.error(error?.response?.data?.message || "保存视觉映射失败");
     }
   };
 
@@ -201,13 +304,12 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
               signupList={memoizedInputs.signupList}
               view={memoizedInputs.slotView}
               mode={boardMode}
+              guildId={team.guild_id}
               onRuleChange={(slotIndex) => showToast.info(`已修改 ${slotIndex + 1} 号坑位规则，保存逻辑待接入`)}
-              onAssign={(slotIndex, payload) =>
-                showToast.info(`已指定 ${slotIndex + 1} 号坑位，待接入后端: ${payload.signupName || "未命名"}`)
-              }
-              onAssignDelete={(slotIndex) => showToast.success(`已删除 ${slotIndex + 1} 号坑位的指定，待接入后端`)}
-              onPresenceChange={(slotIndex, status) => showToast.success(`已标记坑位 ${slotIndex + 1} 为 ${status}`)}
-              onReorder={(newView) => showToast.success(`已更新视觉映射（长度 ${newView.length}），请保存到后端`)}
+              onAssign={handleAssign}
+              onAssignDelete={handleAssignDelete}
+              onPresenceChange={handlePresenceChange}
+              onReorder={handleReorder}
             />
           </div>
 

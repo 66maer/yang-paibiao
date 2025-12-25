@@ -41,7 +41,9 @@ const FilledSlotCard = ({ signup, presenceStatus }) => {
         className="absolute inset-0 transition-opacity duration-500"
         style={{
           background: xinfa
-            ? `radial-gradient(circle 400px at ${mousePosition.x}px ${mousePosition.y}px, ${xinfa.color.replace("rgb(", "rgba(").replace(")", ", 0.9)")}, #0a0a0a 70%)`
+            ? `radial-gradient(circle 400px at ${mousePosition.x}px ${mousePosition.y}px, ${xinfa.color
+                .replace("rgb(", "rgba(")
+                .replace(")", ", 0.9)")}, #0a0a0a 70%)`
             : "#0a0a0a",
           opacity: isHovered ? 1 : 0,
         }}
@@ -94,7 +96,7 @@ const FilledSlotCard = ({ signup, presenceStatus }) => {
       </div>
 
       {/* 进组状态遮罩层 */}
-      {presenceStatus && presenceStatus !== "pending" && (
+      {presenceStatus && (presenceStatus === "ready" || presenceStatus === "absent") && (
         <>
           {/* 亮色蒙版 */}
           <div className="absolute inset-0 bg-white/50 pointer-events-none rounded-xl" />
@@ -103,13 +105,13 @@ const FilledSlotCard = ({ signup, presenceStatus }) => {
           <div className="absolute bottom-2 left-2 pointer-events-none">
             <img
               src={
-                presenceStatus === "present"
+                presenceStatus === "ready"
                   ? "/status/已进组.png"
                   : presenceStatus === "absent"
                   ? "/status/标记鸽子.png"
                   : null
               }
-              alt={presenceStatus === "present" ? "已进组" : "标记鸽子"}
+              alt={presenceStatus === "ready" ? "已进组" : "标记鸽子"}
               className="w-20 h-auto opacity-90"
             />
           </div>

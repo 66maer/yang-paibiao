@@ -29,3 +29,13 @@ export const markSignupAbsent = (guildId, teamId, signupId, payload) => {
 export const cancelSignup = (guildId, teamId, signupId) => {
   return apiClient.delete(`/guilds/${guildId}/teams/${teamId}/signups/${signupId}`);
 };
+
+// 更新到场状态（进组标记模式）
+export const updatePresenceStatus = (guildId, teamId, signupId, payload) => {
+  return apiClient.post(`/guilds/${guildId}/teams/${teamId}/signups/${signupId}/presence`, payload);
+};
+
+// 删除坑位分配（排表模式）
+export const removeSlotAssignment = (guildId, teamId, signupId) => {
+  return apiClient.delete(`/guilds/${guildId}/teams/${teamId}/signups/${signupId}/slot`);
+};

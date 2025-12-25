@@ -18,7 +18,8 @@ from app.schemas.signup import (
     SignupCreate,
     SignupUpdate,
     SignupLockRequest,
-    SignupAbsentRequest,
+    SignupPresenceRequest,
+    SignupAssignRequest,
     SignupOut,
     SignupInfo
 )
@@ -169,7 +170,7 @@ async def _enrich_signup_response(
         "is_rich": signup.is_rich,
         "is_proxy": signup.is_proxy,
         "slot_position": signup.slot_position,
-        "is_absent": signup.is_absent,
+        "presence_status": signup.presence_status,
         "cancelled_at": signup.cancelled_at,
         "cancelled_by": signup.cancelled_by,
         "created_at": signup.created_at,
@@ -243,8 +244,7 @@ async def create_signup(
         signup_info=processed_info,
         is_rich=payload.is_rich,
         is_proxy=is_proxy,
-        priority=0,
-        is_absent=False
+        priority=0
     )
     
     db.add(signup)
@@ -384,42 +384,6 @@ async def lock_signup(
     return success(enriched_signup, message="锁定成功")
 
 
-@router.post("/{guild_id}/teams/{team_id}/signups/{signup_id}/absent", response_model=ResponseModel[SignupOut])
-async def mark_absent(
-    guild_id: int,
-    team_id: int,
-    signup_id: int,
-    payload: SignupAbsentRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """标记缺席"""
-    # 验证团队访问权限，需要管理员权限
-    await _verify_team_access(db, guild_id, team_id, current_user, require_admin=True)
-    
-    # 获取报名
-    result = await db.execute(
-        select(Signup).where(
-            Signup.id == signup_id,
-            Signup.team_id == team_id
-        )
-    )
-    signup = result.scalar_one_or_none()
-    if signup is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="报名不存在")
-    
-    # 标记缺席
-    signup.is_absent = payload.is_absent
-
-    await db.commit()
-    await db.refresh(signup)
-
-    # 使用 enrich 函数处理昵称和 QQ 号
-    enriched_signup = await _enrich_signup_response(db, guild_id, signup)
-
-    return success(enriched_signup, message="标记成功")
-
-
 @router.delete("/{guild_id}/teams/{team_id}/signups/{signup_id}", response_model=ResponseModel)
 async def cancel_signup(
     guild_id: int,
@@ -431,7 +395,7 @@ async def cancel_signup(
     """取消报名"""
     # 验证团队访问权限
     await _verify_team_access(db, guild_id, team_id, current_user, require_admin=False)
-    
+
     # 获取报名
     result = await db.execute(
         select(Signup).where(
@@ -442,19 +406,98 @@ async def cancel_signup(
     signup = result.scalar_one_or_none()
     if signup is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="报名不存在")
-    
+
     # 权限验证：报名提交者或群主/管理员可取消
     member = await _get_guild_member(db, guild_id, current_user.id)
     is_admin = member and member.role in ["owner", "helper"]
     is_submitter = signup.submitter_id == current_user.id
-    
+
     if not (is_submitter or is_admin):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="权限不足")
-    
+
     # 软删除：标记取消时间和取消者
     signup.cancelled_at = datetime.utcnow()
     signup.cancelled_by = current_user.id
-    
+
     await db.commit()
-    
+
     return success(message="取消成功")
+
+
+@router.post("/{guild_id}/teams/{team_id}/signups/{signup_id}/presence", response_model=ResponseModel[SignupOut])
+async def update_presence_status(
+    guild_id: int,
+    team_id: int,
+    signup_id: int,
+    payload: SignupPresenceRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """标记到场状态（进组标记模式）"""
+    # 验证团队访问权限，需要管理员权限
+    await _verify_team_access(db, guild_id, team_id, current_user, require_admin=True)
+
+    # 获取报名
+    result = await db.execute(
+        select(Signup).where(
+            Signup.id == signup_id,
+            Signup.team_id == team_id
+        )
+    )
+    signup = result.scalar_one_or_none()
+    if signup is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="报名不存在")
+
+    # 验证状态值
+    valid_statuses = ["ready", "absent", None]
+    if payload.presence_status not in valid_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"无效的状态值，必须是: {valid_statuses}"
+        )
+
+    # 更新到场状态
+    signup.presence_status = payload.presence_status
+
+    await db.commit()
+    await db.refresh(signup)
+
+    # 使用 enrich 函数处理昵称和 QQ 号
+    enriched_signup = await _enrich_signup_response(db, guild_id, signup)
+
+    return success(enriched_signup, message="标记成功")
+
+
+@router.delete("/{guild_id}/teams/{team_id}/signups/{signup_id}/slot", response_model=ResponseModel[SignupOut])
+async def remove_slot_assignment(
+    guild_id: int,
+    team_id: int,
+    signup_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """删除坑位分配（排表模式）"""
+    # 验证团队访问权限，需要管理员权限
+    await _verify_team_access(db, guild_id, team_id, current_user, require_admin=True)
+
+    # 获取报名
+    result = await db.execute(
+        select(Signup).where(
+            Signup.id == signup_id,
+            Signup.team_id == team_id
+        )
+    )
+    signup = result.scalar_one_or_none()
+    if signup is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="报名不存在")
+
+    # 删除坑位分配
+    signup.slot_position = None
+
+    await db.commit()
+    await db.refresh(signup)
+
+    # 使用 enrich 函数处理昵称和 QQ 号
+    enriched_signup = await _enrich_signup_response(db, guild_id, signup)
+
+    return success(enriched_signup, message="已删除坑位分配")

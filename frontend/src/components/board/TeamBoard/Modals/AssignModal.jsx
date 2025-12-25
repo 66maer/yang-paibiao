@@ -17,13 +17,14 @@ import GroupMemberSelector from "../../../GroupMemberSelector";
  * 团长指定弹窗组件
  * 用于团长强制指定某个坑位的成员
  * - 群组成员（使用GroupMemberSelector，统一处理成员+角色+心法选择）
+ * - 支持自由输入（不限于群组成员）
  * - 是否老板坑
  * - 是否代报
  */
-const AssignModal = ({ open, onClose, defaultXinfa, onSave }) => {
+const AssignModal = ({ open, onClose, defaultXinfa, onSave, guildId }) => {
   const [form, setForm] = useState({
     memberId: "",
-    memberName: "",
+    playerName: "",
     characterName: "",
     characterXinfa: defaultXinfa || "",
     isRich: false,
@@ -55,16 +56,19 @@ const AssignModal = ({ open, onClose, defaultXinfa, onSave }) => {
             <ModalBody className="space-y-4">
               {/* 群组成员 + 角色 + 心法选择（统一组件） */}
               <GroupMemberSelector
+                guildId={guildId}
                 memberId={form.memberId}
                 onMemberChange={(memberId) => updateField("memberId", memberId)}
+                onPlayerNameChange={(playerName) => updateField("playerName", playerName)}
                 characterName={form.characterName}
                 onCharacterNameChange={(characterName) => updateField("characterName", characterName)}
                 characterXinfa={form.characterXinfa}
                 onXinfaChange={(xinfa) => updateField("characterXinfa", xinfa)}
-                memberLabel="群组成员"
+                memberLabel="群组成员（可选）"
                 characterLabel="角色名"
                 xinfaLabel="心法"
                 isRequired
+                allowCustomValue={true}
               />
 
               {/* 老板坑/代报开关 */}

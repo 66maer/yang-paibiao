@@ -185,6 +185,8 @@ async def update_team(
         team.notice = payload.notice
     if payload.rules is not None:
         team.rule = [r.model_dump() for r in payload.rules]
+    if payload.slot_view is not None:
+        team.slot_view = payload.slot_view
 
     await db.commit()
     await db.refresh(team)

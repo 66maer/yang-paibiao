@@ -30,6 +30,7 @@ const TeamBoard = ({
   signupList = [],
   view = [],
   mode = "view",
+  guildId, // 群组ID（用于AssignModal获取成员列表）
   onRuleChange,
   onAssign,
   onAssignDelete,
@@ -40,13 +41,23 @@ const TeamBoard = ({
   // 分配坑位
   const { slots } = useMemo(() => allocateSlots(rules, signupList), [rules, signupList]);
 
+  // assign模式：只显示有slot_position的报名（固定坑位），自动分配的不显示
+  const displaySlots = useMemo(() => {
+    if (mode === 'assign') {
+      return slots.map(slot =>
+        slot?.isLock ? slot : null
+      );
+    }
+    return slots;
+  }, [slots, mode]);
+
   // 构建带索引的坑位数组
-  const [orderedSlots, setOrderedSlots] = useState(() => buildSlots(slots, rules));
+  const [orderedSlots, setOrderedSlots] = useState(() => buildSlots(displaySlots, rules));
 
   // 同步坑位变化
   useEffect(() => {
-    setOrderedSlots(buildSlots(slots, rules));
-  }, [slots, rules]);
+    setOrderedSlots(buildSlots(displaySlots, rules));
+  }, [displaySlots, rules]);
 
   // 是否启用拖动
   const dragEnabled = mode === "drag";
@@ -142,6 +153,7 @@ const TeamBoard = ({
           rule={slot.rule}
           signup={slot.signup}
           mode={mode}
+          guildId={guildId}
           draggable={dragEnabled}
           onRuleChange={onRuleChange}
           onAssign={onAssign}
@@ -197,6 +209,7 @@ const TeamBoard = ({
             rule={slot.rule}
             signup={slot.signup}
             mode={mode}
+            guildId={guildId}
             draggable={dragEnabled}
             onRuleChange={onRuleChange}
             onAssign={onAssign}

@@ -42,9 +42,15 @@ class SignupLockRequest(BaseModel):
     slot_position: int = Field(..., ge=1, le=25, description="锁定位置（1-25）")
 
 
-class SignupAbsentRequest(BaseModel):
-    """标记缺席的请求模型"""
-    is_absent: bool = Field(..., description="是否缺席")
+class SignupPresenceRequest(BaseModel):
+    """标记到场状态的请求模型"""
+    presence_status: Optional[str] = Field(None, description="到场状态: ready(就绪)/absent(缺席)/null(空)")
+
+
+class SignupAssignRequest(BaseModel):
+    """排表模式分配坑位的请求模型"""
+    signup_id: int = Field(..., description="报名ID")
+    slot_position: int = Field(..., ge=1, le=25, description="坑位位置（1-25）")
 
 
 class SignupOut(BaseModel):
@@ -59,7 +65,7 @@ class SignupOut(BaseModel):
     is_rich: bool
     is_proxy: bool
     slot_position: Optional[int] = None
-    is_absent: bool
+    presence_status: Optional[str] = Field(default=None, description="到场状态: ready(就绪)/absent(缺席)/null(空)")
     cancelled_at: Optional[datetime] = None
     cancelled_by: Optional[int] = None
     created_at: datetime

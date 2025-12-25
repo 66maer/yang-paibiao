@@ -18,7 +18,7 @@
  *   is_rich: false,
  *   is_proxy: false,
  *   slot_position: null,
- *   is_absent: false,
+ *   presence_status: null,
  *   cancelled_at: null,
  *   cancelled_by: null,
  *   created_at: "2025-12-24T07:22:39.890561",
@@ -39,7 +39,7 @@
  *   isProxy: false,
  *   isLock: false,
  *   lockSlot: null,
- *   isAbsent: false,
+ *   presence: null,
  *   cancelTime: null,
  *   submitterName: "张三",
  *   createdAt: "2025-12-24T07:22:39.890561"
@@ -77,7 +77,7 @@ export function transformSignup(signup) {
     isProxy: signup.is_proxy || false,
     isLock: signup.slot_position !== null && signup.slot_position !== undefined,
     lockSlot: signup.slot_position,
-    isAbsent: signup.is_absent || false,
+    presence: signup.presence_status || null,
 
     // 取消状态
     cancelTime: signup.cancelled_at,

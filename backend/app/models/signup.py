@@ -66,11 +66,10 @@ class Signup(Base):
         nullable=True,
         comment="锁定位置（1-25或null）"
     )
-    is_absent = Column(
-        Boolean,
-        default=False,
-        nullable=False,
-        comment="是否缺席"
+    presence_status = Column(
+        String(20),
+        nullable=True,
+        comment="到场状态: ready(就绪), absent(缺席), null(未标记)"
     )
     cancelled_at = Column(
         DateTime,

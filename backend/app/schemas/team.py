@@ -42,6 +42,7 @@ class TeamUpdate(BaseModel):
     is_locked: Optional[bool] = None
     notice: Optional[str] = None
     rules: Optional[List[RuleItem]] = None
+    slot_view: Optional[List[int]] = Field(None, description="坑位视觉映射数组（用于连连看模式）")
 
 
 class TeamOut(BaseModel):
@@ -60,6 +61,7 @@ class TeamOut(BaseModel):
     status: str
     notice: Optional[str] = None
     rules: List[RuleItem]
+    slot_view: Optional[List[int]] = Field(default=None, description="坑位视觉映射数组（用于连连看模式）")
     created_at: datetime
     updated_at: datetime
     closed_at: Optional[datetime] = None
