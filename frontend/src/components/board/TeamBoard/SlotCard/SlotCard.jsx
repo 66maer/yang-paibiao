@@ -110,7 +110,7 @@ const SlotCard = ({
     mode === "edit-rule" ? (
       <EmptySlotCard slotIndex={slotIndex} displayIndex={displayIndex} rule={rule} />
     ) : signup ? (
-      <FilledSlotCard signup={signup} presenceStatus={presenceStatus} />
+      <FilledSlotCard signup={signup} presenceStatus={presenceStatus} mode={mode} />
     ) : (
       <EmptySlotCard slotIndex={slotIndex} displayIndex={displayIndex} rule={rule} />
     );

@@ -10,10 +10,10 @@ import { LockIcon } from "../../../icons";
  *   第一层（25%高度）：左侧心法图标 + 右侧标签（老板、锁定、代报名）
  *   第二层（55%高度）：用户昵称 + 角色昵称
  *   第三层（20%高度）：代报名用户昵称（如有）
- * - 支持进组状态遮罩层显示
+ * - 支持进组状态遮罩层显示（仅在 mark 模式）
  * - 支持鼠标跟随高亮效果
  */
-const FilledSlotCard = ({ signup, presenceStatus }) => {
+const FilledSlotCard = ({ signup, presenceStatus, mode = "view" }) => {
   const xinfa = signup?.characterXinfa ? xinfaInfoTable[signup.characterXinfa] : null;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
@@ -95,8 +95,8 @@ const FilledSlotCard = ({ signup, presenceStatus }) => {
         </div>
       </div>
 
-      {/* 进组状态遮罩层 */}
-      {presenceStatus && (presenceStatus === "ready" || presenceStatus === "absent") && (
+      {/* 进组状态遮罩层 - 仅在 mark 模式显示 */}
+      {mode === "mark" && presenceStatus && (presenceStatus === "ready" || presenceStatus === "absent") && (
         <>
           {/* 亮色蒙版 */}
           <div className="absolute inset-0 bg-white/50 pointer-events-none rounded-xl" />
