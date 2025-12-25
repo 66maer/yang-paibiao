@@ -128,13 +128,11 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
           {/* 老板位开关 */}
           <div className="flex items-center gap-3 px-1">
             <Switch isSelected={isRich} onValueChange={setIsRich} color="secondary">
-              老板位（卡位）
+              当老板
             </Switch>
           </div>
 
-          <p className="text-xs text-default-500">
-            可以选择群组成员或手动输入信息。选择成员后，会自动填充角色信息。
-          </p>
+          <p className="text-xs text-default-500">可以选择群组成员或手动输入信息。选择成员后，会自动填充角色信息。</p>
         </ModalBody>
         <ModalFooter>
           <Button variant="light" onPress={onClose} isDisabled={submitting}>

@@ -157,7 +157,7 @@ export default function SignupModal({ isOpen, onClose, guildId, teamId, team, us
           {/* 老板位开关 */}
           <div className="flex items-center gap-3 px-1">
             <Switch isSelected={isRich} onValueChange={setIsRich} color="secondary">
-              老板位（卡位）
+              朕要当老板
             </Switch>
           </div>
 
@@ -178,12 +178,7 @@ export default function SignupModal({ isOpen, onClose, guildId, teamId, team, us
           {/* "保存到我的角色"勾选框（条件显示） */}
           {shouldShowSaveSwitch && (
             <div className="flex items-center gap-2 px-1">
-              <Switch
-                isSelected={saveToMyCharacters}
-                onValueChange={setSaveToMyCharacters}
-                color="success"
-                size="sm"
-              >
+              <Switch isSelected={saveToMyCharacters} onValueChange={setSaveToMyCharacters} color="success" size="sm">
                 <span className="text-sm">保存到我的角色</span>
               </Switch>
             </div>
