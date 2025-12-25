@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Card, CardBody, CardHeader, Button, Chip, Divider, Tabs, Tab, Input, Select, SelectItem } from "@heroui/react";
 import TeamBoard from "../components/board/TeamBoard";
-import SignupCard from "../components/board/SignupCard";
-import WaitlistCard from "../components/board/WaitlistCard";
+import SignupItemCard from "../components/board/SignupItemCard";
 import { buildEmptyRules } from "../utils/slotAllocation";
 import { allXinfaList, xinfaInfoTable } from "../config/xinfa";
 
@@ -418,8 +417,8 @@ export default function DebugTeamBoardPage() {
                   <p className="text-sm text-default-400 text-center py-4">暂无报名</p>
                 ) : (
                   signups.map((signup) => (
-                    <div key={signup.id} className="border-b border-default-200 pb-2 last:border-b-0">
-                      <SignupCard signup={signup} canDelete={false} />
+                    <div key={signup.id} className="mb-2">
+                      <SignupItemCard signup={signup} type="signup" />
                     </div>
                   ))
                 )}
@@ -437,11 +436,12 @@ export default function DebugTeamBoardPage() {
                   <p className="text-sm text-default-400 text-center py-4">暂无候补</p>
                 ) : (
                   waitlist.map((item) => (
-                    <div key={item.id} className="border-b border-yellow-200 pb-2 last:border-b-0">
-                      <WaitlistCard
-                        waitlistItem={item}
-                        isAdmin={isAdmin}
-                        onRemove={() => setWaitlist((prev) => prev.filter((w) => w.id !== item.id))}
+                    <div key={item.id} className="mb-2">
+                      <SignupItemCard
+                        signup={item}
+                        type="waitlist"
+                        waitlistOrder={item.waitlist_order}
+                        onDelete={isAdmin ? () => setWaitlist((prev) => prev.filter((w) => w.id !== item.id)) : undefined}
                       />
                     </div>
                   ))

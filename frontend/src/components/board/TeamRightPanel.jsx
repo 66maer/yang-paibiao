@@ -2,8 +2,7 @@ import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader, Divider, Tabs, Tab, Button } from "@heroui/react";
 import useSWR from "swr";
 import useAuthStore from "../../stores/authStore";
-import SignupCard from "./SignupCard";
-import WaitlistCard from "./WaitlistCard";
+import SignupItemCard from "./SignupItemCard";
 import SignupModal from "./SignupModal";
 import ProxySignupModal from "./ProxySignupModal";
 import { getSignups } from "../../api/signups";
@@ -187,7 +186,11 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
                   {/* 本人报名信息 */}
                   <div>
                     <h4 className="text-sm font-semibold text-default-600 mb-2">我的报名</h4>
-                    <SignupCard signup={mySignup} isOwn={true} canDelete={true} onDelete={handleDeleteSignup} />
+                    <SignupItemCard
+                      signup={mySignup}
+                      type="signup"
+                      onDelete={() => handleDeleteSignup(mySignup)}
+                    />
                   </div>
 
                   {/* 代报名列表 */}
@@ -198,7 +201,12 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
                       </h4>
                       <div className="space-y-2">
                         {myProxySignups.map((signup, index) => (
-                          <SignupCard key={index} signup={signup} canDelete={true} onDelete={handleDeleteSignup} />
+                          <SignupItemCard
+                            key={index}
+                            signup={signup}
+                            type="signup"
+                            onDelete={() => handleDeleteSignup(signup)}
+                          />
                         ))}
                       </div>
                     </div>
@@ -224,7 +232,13 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
                     共 {waitlist.length} 人候补{isAdmin && "（管理员可取消候补）"}
                   </div>
                   {waitlist.map((item, index) => (
-                    <WaitlistCard key={index} waitlistItem={item} isAdmin={isAdmin} onRemove={handleRemoveWaitlist} />
+                    <SignupItemCard
+                      key={index}
+                      signup={item}
+                      type="waitlist"
+                      waitlistOrder={item.waitlist_order || index + 1}
+                      onDelete={isAdmin ? () => handleRemoveWaitlist(item) : undefined}
+                    />
                   ))}
                 </div>
               )}

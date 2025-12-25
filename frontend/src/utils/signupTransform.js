@@ -69,6 +69,9 @@ export function transformSignup(signup) {
     characterName: signupInfo.character_name || "",
     characterXinfa: signupInfo.xinfa || "",
 
+    // 玩家QQ号
+    playerQqNumber: signupInfo.player_qq_number || "",
+
     // 状态标记（驼峰命名）
     isRich: signup.is_rich || false,
     isProxy: signup.is_proxy || false,
@@ -84,6 +87,7 @@ export function transformSignup(signup) {
     // 提交者信息
     submitterName: signupInfo.submitter_name || "",
     submitterId: signup.submitter_id,
+    submitterQqNumber: signupInfo.submitter_qq_number || "",
 
     // 优先级
     priority: signup.priority || 0,
