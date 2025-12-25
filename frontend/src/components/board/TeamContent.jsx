@@ -59,9 +59,9 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
   const boardModes = [
     { key: "view", label: "浏览", icon: "👀" },
     { key: "edit-rule", label: "编辑规则", icon: "🛠️", adminOnly: true },
-    { key: "assign", label: "编辑规则", icon: "🛠️", adminOnly: true },
+    { key: "assign", label: "排表模式", icon: "🎯", adminOnly: true },
     { key: "mark", label: "进组标记", icon: "✅", adminOnly: true },
-    { key: "drag", label: "拖动排序", icon: "🧲", adminOnly: true },
+    { key: "drag", label: "连连看", icon: "🧲", adminOnly: true },
   ];
 
   // 处理关闭开团
