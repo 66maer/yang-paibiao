@@ -8,6 +8,7 @@ import SignupModal from "./SignupModal";
 import ProxySignupModal from "./ProxySignupModal";
 import { getSignups } from "../../api/signups";
 import { allocateSlots, buildEmptyRules } from "../../utils/slotAllocation";
+import { transformSignups } from "../../utils/signupTransform";
 
 /**
  * 右侧面板 - 报名信息与候补列表
@@ -16,7 +17,6 @@ import { allocateSlots, buildEmptyRules } from "../../utils/slotAllocation";
  */
 export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
   const { user } = useAuthStore();
-  const [loading, setLoading] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showProxyModal, setShowProxyModal] = useState(false);
 
@@ -31,18 +31,18 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
     }
   );
 
-  // 获取报名列表
+  // 解析并转换报名列表
   const signupList = useMemo(() => {
-    return signupsData?.data?.items || signupsData?.data || signupsData || [];
+    const rawData = signupsData?.data?.items || signupsData?.data || signupsData || [];
+    return transformSignups(rawData);
   }, [signupsData]);
 
   // 筛选出当前用户的报名（本人报名）
   const mySignup = useMemo(() => {
     if (!user || !signupList) return null;
     return signupList.find((signup) => {
-      const isOwn = signup.user_id === user.id || signup.signup_user_id === user.id;
-      const isProxy = signup.submitted_by === user.id || signup.submitter_user_id === user.id;
-      return isOwn && !isProxy;
+      // 本人报名：signup_user_id 等于当前用户 ID
+      return signup.userId === user.id;
     });
   }, [signupList, user]);
 
@@ -50,9 +50,8 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
   const myProxySignups = useMemo(() => {
     if (!user || !signupList) return [];
     return signupList.filter((signup) => {
-      const submitterId = signup.submitted_by || signup.submitter_user_id;
-      const signupUserId = signup.user_id || signup.signup_user_id;
-      return submitterId === user.id && signupUserId !== user.id;
+      // 代报名：submitter_id 等于当前用户，且 signup_user_id 不等于当前用户（包括 null）
+      return signup.submitterId === user.id && signup.userId !== user.id;
     });
   }, [signupList, user]);
 
@@ -67,9 +66,7 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
   // 检查当前用户是否已在该车报名
   const hasUserSignedUp = useMemo(() => {
     if (!user || !signupList) return false;
-    return signupList.some((signup) =>
-      signup.user_id === user.id || signup.signup_user_id === user.id
-    );
+    return signupList.some((signup) => signup.userId === user.id);
   }, [signupList, user]);
 
   /**
@@ -145,7 +142,6 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
                 color="primary"
                 className="flex-1 bg-gradient-to-r from-pink-500 to-purple-500"
                 onPress={handleSignup}
-                isLoading={loading}
                 isDisabled={hasUserSignedUp}
               >
                 {hasUserSignedUp ? "✅ 已报名" : "✨ 立即报名"}
@@ -155,7 +151,6 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
                 variant="flat"
                 className="flex-1"
                 onPress={handleProxySignup}
-                isLoading={loading}
               >
                 👥 代报名
               </Button>
