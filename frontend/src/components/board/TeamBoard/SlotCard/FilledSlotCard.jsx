@@ -26,11 +26,24 @@ const FilledSlotCard = ({ signup, presenceStatus, mode = "view" }) => {
     });
   };
 
+  // 根据标记状态添加边框阴影（不占用内部空间）
+  const getBorderShadow = () => {
+    if (mode === "mark" && presenceStatus) {
+      if (presenceStatus === "ready") {
+        return "0 0 4px 4px rgb(34, 197, 94)"; // green-500
+      } else if (presenceStatus === "absent") {
+        return "0 0 4px 4px rgb(239, 68, 68)"; // red-500
+      }
+    }
+    return undefined;
+  };
+
   return (
     <div
       className="group relative h-full rounded-xl text-white shadow-md overflow-hidden transition-all duration-300"
       style={{
         background: xinfa ? `linear-gradient(135deg, ${xinfa.color}, #1f1f1f)` : "#1f1f1f",
+        boxShadow: getBorderShadow(),
       }}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
