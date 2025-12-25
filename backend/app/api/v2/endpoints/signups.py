@@ -50,6 +50,45 @@ async def _get_guild_member(
     return result.scalar_one_or_none()
 
 
+async def _get_user_nickname(
+    db: AsyncSession,
+    guild_id: int,
+    user_id: int
+) -> str:
+    """
+    获取用户昵称，优先级：群昵称 > 用户主昵称 > 用户其他昵称
+    """
+    # 先尝试获取群昵称
+    member_result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id == user_id,
+            GuildMember.left_at.is_(None)
+        )
+    )
+    member = member_result.scalar_one_or_none()
+    if member and member.group_nickname:
+        return member.group_nickname
+
+    # 获取用户信息
+    user_result = await db.execute(
+        select(User).where(User.id == user_id, User.deleted_at.is_(None))
+    )
+    user = user_result.scalar_one_or_none()
+    if not user:
+        return "未知用户"
+
+    # 优先返回主昵称
+    if user.nickname:
+        return user.nickname
+
+    # 最后尝试其他昵称
+    if user.other_nicknames and len(user.other_nicknames) > 0:
+        return user.other_nicknames[0]
+
+    return "未知用户"
+
+
 async def _verify_team_access(
     db: AsyncSession,
     guild_id: int,
@@ -82,33 +121,81 @@ async def _verify_team_access(
     return team
 
 
+async def _enrich_signup_response(
+    db: AsyncSession,
+    guild_id: int,
+    signup: Signup
+) -> SignupOut:
+    """
+    在返回 signup 数据时，动态覆盖 signup_info 中的昵称和 QQ 号
+    不修改数据库，仅处理返回数据
+    """
+    # 复制 signup_info（避免修改原始数据）
+    enriched_info = dict(signup.signup_info)
+
+    # 获取提交者的昵称和 QQ 号
+    submitter_nickname = await _get_user_nickname(db, guild_id, signup.submitter_id)
+    submitter_result = await db.execute(
+        select(User).where(User.id == signup.submitter_id, User.deleted_at.is_(None))
+    )
+    submitter = submitter_result.scalar_one_or_none()
+
+    enriched_info["submitter_name"] = submitter_nickname
+    enriched_info["submitter_qq_number"] = submitter.qq_number if submitter else None
+
+    # 如果有 signup_user_id，获取报名者的昵称和 QQ 号
+    if signup.signup_user_id:
+        player_nickname = await _get_user_nickname(db, guild_id, signup.signup_user_id)
+        player_result = await db.execute(
+            select(User).where(User.id == signup.signup_user_id, User.deleted_at.is_(None))
+        )
+        player = player_result.scalar_one_or_none()
+
+        enriched_info["player_name"] = player_nickname
+        enriched_info["player_qq_number"] = player.qq_number if player else None
+    else:
+        # 没有 signup_user_id，player_qq_number 为 None
+        enriched_info["player_qq_number"] = None
+
+    # 创建 SignupOut 对象
+    signup_dict = {
+        "id": signup.id,
+        "team_id": signup.team_id,
+        "submitter_id": signup.submitter_id,
+        "signup_user_id": signup.signup_user_id,
+        "signup_character_id": signup.signup_character_id,
+        "signup_info": enriched_info,
+        "priority": signup.priority,
+        "is_rich": signup.is_rich,
+        "is_proxy": signup.is_proxy,
+        "slot_position": signup.slot_position,
+        "is_absent": signup.is_absent,
+        "cancelled_at": signup.cancelled_at,
+        "cancelled_by": signup.cancelled_by,
+        "created_at": signup.created_at,
+        "updated_at": signup.updated_at
+    }
+
+    return SignupOut(**signup_dict)
+
+
 async def _process_signup_info(
     db: AsyncSession,
     signup_info: SignupInfo,
-    signup_user_id: Optional[int],
-    signup_character_id: Optional[int],
-    submitter: User
+    signup_character_id: Optional[int]
 ) -> dict:
     """
-    处理报名信息的字段覆盖逻辑
+    处理报名信息的字段覆盖逻辑（仅在报名时使用）
+    只检查 signup_character_id，不检查 signup_user_id
     返回处理后的 signup_info 字典
     """
     result_info = {
-        "submitter_name": submitter.nickname,  # 总是使用当前登录用户
-        "player_name": signup_info.player_name,
+        "submitter_name": signup_info.submitter_name,  # 使用前端提供的值
+        "player_name": signup_info.player_name,  # 使用前端提供的值
         "character_name": signup_info.character_name,
         "xinfa": signup_info.xinfa
     }
-    
-    # 如果有 signup_user_id，从数据库取用户昵称覆盖
-    if signup_user_id:
-        user_result = await db.execute(
-            select(User).where(User.id == signup_user_id, User.deleted_at.is_(None))
-        )
-        signup_user = user_result.scalar_one_or_none()
-        if signup_user:
-            result_info["player_name"] = signup_user.nickname
-    
+
     # 如果有 signup_character_id，从数据库取角色名和心法覆盖
     if signup_character_id:
         char_result = await db.execute(
@@ -118,7 +205,7 @@ async def _process_signup_info(
         if character:
             result_info["character_name"] = character.name
             result_info["xinfa"] = character.xinfa
-    
+
     return result_info
 
 
@@ -134,13 +221,11 @@ async def create_signup(
     # 验证团队访问权限
     await _verify_team_access(db, guild_id, team_id, current_user, require_admin=False)
     
-    # 处理 signup_info 字段（ID 覆盖逻辑）
+    # 处理 signup_info 字段（只检查 character_id）
     processed_info = await _process_signup_info(
         db,
         payload.signup_info,
-        payload.signup_user_id,
-        payload.signup_character_id,
-        current_user
+        payload.signup_character_id
     )
     
     # 判断是否代报
@@ -165,8 +250,11 @@ async def create_signup(
     db.add(signup)
     await db.commit()
     await db.refresh(signup)
-    
-    return success(SignupOut.model_validate(signup), message="报名成功")
+
+    # 使用 enrich 函数处理昵称和 QQ 号
+    enriched_signup = await _enrich_signup_response(db, guild_id, signup)
+
+    return success(enriched_signup, message="报名成功")
 
 
 @router.get("/{guild_id}/teams/{team_id}/signups", response_model=ResponseModel[List[SignupOut]])
@@ -187,8 +275,11 @@ async def list_signups(
         ).order_by(Signup.created_at.asc())
     )
     signups = result.scalars().all()
-    
-    return success([SignupOut.model_validate(s) for s in signups], message="获取成功")
+
+    # 使用 enrich 函数处理每个报名的昵称和 QQ 号
+    enriched_signups = [await _enrich_signup_response(db, guild_id, s) for s in signups]
+
+    return success(enriched_signups, message="获取成功")
 
 
 @router.put("/{guild_id}/teams/{team_id}/signups/{signup_id}", response_model=ResponseModel[SignupOut])
@@ -238,22 +329,23 @@ async def update_signup(
         processed_info = await _process_signup_info(
             db,
             payload.signup_info,
-            signup.signup_user_id,
-            signup.signup_character_id,
-            current_user
+            signup.signup_character_id
         )
         signup.signup_info = processed_info
-        
-        # 重新判断是否代报
-        signup.is_proxy = (
-            signup.signup_user_id is None or 
-            signup.signup_user_id != current_user.id
-        )
+
+    # 重新判断是否代报
+    signup.is_proxy = (
+        signup.signup_user_id is None or
+        signup.signup_user_id != current_user.id
+    )
     
     await db.commit()
     await db.refresh(signup)
-    
-    return success(SignupOut.model_validate(signup), message="更新成功")
+
+    # 使用 enrich 函数处理昵称和 QQ 号
+    enriched_signup = await _enrich_signup_response(db, guild_id, signup)
+
+    return success(enriched_signup, message="更新成功")
 
 
 @router.post("/{guild_id}/teams/{team_id}/signups/{signup_id}/lock", response_model=ResponseModel[SignupOut])
@@ -282,11 +374,14 @@ async def lock_signup(
     
     # 锁定位置
     signup.slot_position = payload.slot_position
-    
+
     await db.commit()
     await db.refresh(signup)
-    
-    return success(SignupOut.model_validate(signup), message="锁定成功")
+
+    # 使用 enrich 函数处理昵称和 QQ 号
+    enriched_signup = await _enrich_signup_response(db, guild_id, signup)
+
+    return success(enriched_signup, message="锁定成功")
 
 
 @router.post("/{guild_id}/teams/{team_id}/signups/{signup_id}/absent", response_model=ResponseModel[SignupOut])
@@ -315,11 +410,14 @@ async def mark_absent(
     
     # 标记缺席
     signup.is_absent = payload.is_absent
-    
+
     await db.commit()
     await db.refresh(signup)
-    
-    return success(SignupOut.model_validate(signup), message="标记成功")
+
+    # 使用 enrich 函数处理昵称和 QQ 号
+    enriched_signup = await _enrich_signup_response(db, guild_id, signup)
+
+    return success(enriched_signup, message="标记成功")
 
 
 @router.delete("/{guild_id}/teams/{team_id}/signups/{signup_id}", response_model=ResponseModel)

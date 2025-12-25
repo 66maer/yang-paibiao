@@ -1251,7 +1251,9 @@ Authorization: Bearer <token>
         "signup_character_id": 5,
         "signup_info": {
           "submitter_name": "张三",
+          "submitter_qq_number": "123456789",
           "player_name": "张三",
+          "player_qq_number": "123456789",
           "character_name": "角色名",
           "xinfa": "花间游"
         },
@@ -1268,7 +1270,9 @@ Authorization: Bearer <token>
         "signup_character_id": null,
         "signup_info": {
           "submitter_name": "李四",
+          "submitter_qq_number": "987654321",
           "player_name": "外服朋友",
+          "player_qq_number": null,
           "character_name": "朋友的角色",
           "xinfa": "凌雪藏锋"
         },
@@ -1383,9 +1387,16 @@ Authorization: Bearer <token>
 **业务说明**：
 
 - 统一的报名格式，ID 有就填，没有就填 null 或 -1
-- `signup_info` 包含固定四个字段：提交者名称、报名者名称、角色名称、角色心法
-- 如果有 ID，后端从系统取值覆盖 `signup_info` 对应字段
-- 如果没有 ID，后端使用 `signup_info` 中用户填写的值
+- `signup_info` 包含固定字段：提交者名称、报名者名称、角色名称、角色心法
+- **报名时处理逻辑**：
+  - 只检查 `signup_character_id`，不检查 `signup_user_id`
+  - 如果 `signup_character_id` 存在，从数据库获取角色信息（`character_name` 和 `xinfa`）存入 `signup_info`
+  - 如果 `signup_character_id` 为空，使用 `signup_info` 中用户填写的值
+- **获取报名数据时处理逻辑**（不修改数据库，仅覆盖返回数据）：
+  - 如果 `signup_user_id` 存在，覆盖 `player_name` 为报名者昵称，并添加 `player_qq_number`
+    - 昵称获取优先级：群昵称 > 用户主昵称 > 用户其他昵称
+  - 根据 `submitter_id` 覆盖 `submitter_name` 为提交者昵称，并添加 `submitter_qq_number`
+    - 昵称获取优先级：群昵称 > 用户主昵称 > 用户其他昵称
 - 提交者必须是已登录用户
 
 ### 9.1 提交报名
@@ -1404,16 +1415,16 @@ Authorization: Bearer <token>
     "submitter_name": "提交者名称", // 提交者显示名称（通常从登录信息自动填充）
     "player_name": "报名者名称", // 报名者显示名称
     "character_name": "角色名称", // 角色显示名称
-    "xinfa": "花间游" // 心法（必填）
+    "xinfa": "huajian" // 心法（必填）
   },
   "is_rich": false // 可选，是否老板，默认 false
 }
 ```
 
-**字段处理逻辑**：
+**字段处理逻辑（报名时）**：
 
-- `submitter_name`: 从当前登录用户获取，自动覆盖
-- `player_name`: 如果 `signup_user_id` 有效，从数据库取用户昵称覆盖；否则使用用户填写的值
+- `submitter_name`: 使用 `signup_info` 中前端提供的值（通常从登录信息填充）
+- `player_name`: 使用 `signup_info` 中前端提供的值（报名时不检查 `signup_user_id`）
 - `character_name`: 如果 `signup_character_id` 有效，从数据库取角色名覆盖；否则使用用户填写的值
 - `xinfa`: 如果 `signup_character_id` 有效，从数据库取心法覆盖；否则使用用户填写的值
 
@@ -1421,7 +1432,7 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "signup_user_id": null,
+  "signup_user_id": 1,
   "signup_character_id": 5,
   "signup_info": {
     "submitter_name": "张三",
@@ -1439,13 +1450,13 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "signup_user_id": null,
+  "signup_user_id": 1,
   "signup_character_id": null,
   "signup_info": {
     "submitter_name": "张三",
     "player_name": "张三",
     "character_name": "",
-    "xinfa": "花间游"
+    "xinfa": "huajian"
   },
   "is_rich": false
 }
@@ -1463,7 +1474,7 @@ Authorization: Bearer <token>
     "submitter_name": "张三",
     "player_name": "外服朋友",
     "character_name": "朋友的角色",
-    "xinfa": "凌雪藏锋"
+    "xinfa": "huajian"
   },
   "is_rich": false
 }
@@ -1503,7 +1514,9 @@ Authorization: Bearer <token>
     "signup_character_id": 5,
     "signup_info": {
       "submitter_name": "张三",
+      "submitter_qq_number": "123456789",
       "player_name": "李四",
+      "player_qq_number": "987654321",
       "character_name": "角色名",
       "xinfa": "花间游"
     },
@@ -1517,12 +1530,17 @@ Authorization: Bearer <token>
 }
 ```
 
-**响应字段说明**：
+**响应字段说明**（适用于所有返回 signup 对象的接口）：
 
 - `submitter_id`: 总是有值（当前登录用户）
 - `signup_user_id`: 可能为 null（代报系统外的人）
 - `signup_character_id`: 可能为 null（未录入系统的角色）
-- `signup_info`: 存储最终显示的名称（已由后端处理 ID 覆盖逻辑）
+- `signup_info`: 返回处理后的名称和QQ号（数据库存储原始值，响应时动态覆盖）
+  - `submitter_name`: 根据 `submitter_id` 从数据库获取（优先级：群昵称 > 用户主昵称 > 用户其他昵称）
+  - `submitter_qq_number`: 提交者的QQ号（从 `submitter_id` 获取）
+  - `player_name`: 如果 `signup_user_id` 存在，从数据库获取（优先级：群昵称 > 用户主昵称 > 用户其他昵称）；否则使用原始值
+  - `player_qq_number`: 报名者的QQ号（仅当 `signup_user_id` 存在时填充，否则为 null）
+  - `character_name` 和 `xinfa`: 使用存储的原始值（在报名时已根据 `signup_character_id` 处理）
 - `is_proxy`: 自动判断，`submitter_id != signup_user_id` 或 `signup_user_id` 为 null 时为 true
 
 ### 9.2 获取报名列表（含历史）
@@ -1545,7 +1563,9 @@ Authorization: Bearer <token>
       "signup_character_id": 5,
       "signup_info": {
         "submitter_name": "张三",
+        "submitter_qq_number": "123456789",
         "player_name": "张三",
+        "player_qq_number": "123456789",
         "character_name": "角色名",
         "xinfa": "花间游"
       },
@@ -1564,7 +1584,9 @@ Authorization: Bearer <token>
       "signup_character_id": null,
       "signup_info": {
         "submitter_name": "李四",
+        "submitter_qq_number": "987654321",
         "player_name": "外服朋友",
+        "player_qq_number": null,
         "character_name": "朋友的角色",
         "xinfa": "凌雪藏锋"
       },
@@ -1583,7 +1605,9 @@ Authorization: Bearer <token>
       "signup_character_id": 8,
       "signup_info": {
         "submitter_name": "王五",
+        "submitter_qq_number": "456789123",
         "player_name": "王五",
+        "player_qq_number": "456789123",
         "character_name": "某角色",
         "xinfa": "傲血战意"
       },
@@ -1627,7 +1651,10 @@ Authorization: Bearer <token>
 }
 ```
 
-**说明**：字段处理逻辑与提交报名接口完全相同，ID 有值则覆盖 signup_info 对应字段
+**说明**：
+- 字段处理逻辑与提交报名接口完全相同
+- 仅检查 `signup_character_id`，如果有值则从数据库获取 `character_name` 和 `xinfa` 覆盖 `signup_info` 对应字段
+- 不检查 `signup_user_id`，保持前端提供的 `player_name`
 
 ### 9.4 锁定报名位置
 
@@ -1963,15 +1990,21 @@ Authorization: Bearer <token>
 ### 报名相关
 
 - **统一格式**：ID 有就填，没有就填 null 或 -1
-- **signup_info 固定四个字段**：
-  - `submitter_name`: 提交者名称（从当前登录用户自动获取）
+- **signup_info 字段**：
+  - `submitter_name`: 提交者名称
+  - `submitter_qq_number`: 提交者QQ号
   - `player_name`: 报名者名称
+  - `player_qq_number`: 报名者QQ号（可能为 null）
   - `character_name`: 角色名称
   - `xinfa`: 心法（必填）
-- **字段覆盖逻辑**：
-  - 如果 `signup_user_id` 有效，后端从数据库取用户昵称覆盖 `player_name`
-  - 如果 `signup_character_id` 有效，后端从数据库取角色名和心法覆盖 `character_name` 和 `xinfa`
+- **报名时处理逻辑**：
+  - 只检查 `signup_character_id`，不检查 `signup_user_id`
+  - 如果 `signup_character_id` 有效，后端从数据库获取角色名和心法覆盖 `character_name` 和 `xinfa`
   - 否则使用 `signup_info` 中用户填写的值
+- **获取报名时处理逻辑**（不修改数据库，仅覆盖返回数据）：
+  - 根据 `submitter_id` 从数据库获取提交者昵称和QQ号覆盖 `submitter_name` 和 `submitter_qq_number`
+  - 如果 `signup_user_id` 有效，从数据库获取报名者昵称和QQ号覆盖 `player_name` 和 `player_qq_number`
+  - 昵称获取优先级：群昵称 > 用户主昵称 > 用户其他昵称
 - **报名灵活性**：
   - 可以只报心法，不指定角色（character_name 为空）
   - 可以手动输入角色名，无需提前录入系统

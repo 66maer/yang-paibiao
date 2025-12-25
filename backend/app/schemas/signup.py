@@ -9,7 +9,9 @@ from pydantic import BaseModel, Field
 class SignupInfo(BaseModel):
     """报名信息"""
     submitter_name: str = Field(..., description="提交者显示名称")
+    submitter_qq_number: Optional[str] = Field(default=None, description="提交者QQ号")
     player_name: str = Field(..., description="报名者显示名称")
+    player_qq_number: Optional[str] = Field(default=None, description="报名者QQ号")
     character_name: str = Field(default="", description="角色显示名称")
     xinfa: str = Field(..., min_length=1, description="心法")
 
