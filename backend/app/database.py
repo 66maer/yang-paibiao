@@ -48,7 +48,7 @@ async def init_db():
 
     # 导入所有模型以确保它们被注册到元数据中
     from app.models import (
-        admin, user, character, guild, guild_member, subscription, team
+        admin, user, character, guild, guild_member, subscription, team, signup, template
     )
 
     # 获取 alembic.ini 配置文件路径

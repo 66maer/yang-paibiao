@@ -19,7 +19,7 @@ from app.models.base import Base
 
 # 导入所有模型以确保它们被注册到 Base.metadata
 from app.models import (
-    admin, user, character, guild, guild_member, subscription
+    admin, user, character, guild, guild_member, subscription, team, signup, template
 )
 
 # Alembic Config对象
