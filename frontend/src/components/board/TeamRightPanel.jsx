@@ -1,36 +1,76 @@
 import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader, Divider, Tabs, Tab, Button } from "@heroui/react";
+import useSWR from "swr";
 import useAuthStore from "../../stores/authStore";
 import SignupCard from "./SignupCard";
 import WaitlistCard from "./WaitlistCard";
 import SignupModal from "./SignupModal";
 import ProxySignupModal from "./ProxySignupModal";
+import { getSignups } from "../../api/signups";
+import { allocateSlots, buildEmptyRules } from "../../utils/slotAllocation";
 
 /**
  * 右侧面板 - 报名信息与候补列表
  * - 第一页：报名信息（本人报名 + 代报名列表）
  * - 第二页：候补列表（管理员可取消候补）
  */
-export default function TeamRightPanel({ team, isAdmin }) {
+export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showProxyModal, setShowProxyModal] = useState(false);
 
-  // TODO: 从 API 获取报名数据
-  const mySignup = null; // 当前用户的报名
-  const myProxySignups = []; // 当前用户的代报名列表
-  const waitlist = []; // 候补列表
+  // 使用 SWR 加载报名数据
+  const { data: signupsData, mutate: reloadSignups } = useSWR(
+    team?.guild_id && team?.id ? `signups-${team.guild_id}-${team.id}` : null,
+    () => getSignups(team.guild_id, team.id),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshInterval: 0, // 不自动刷新，只在报名后手动刷新
+    }
+  );
+
+  // 获取报名列表
+  const signupList = useMemo(() => {
+    return signupsData?.data?.items || signupsData?.data || signupsData || [];
+  }, [signupsData]);
+
+  // 筛选出当前用户的报名（本人报名）
+  const mySignup = useMemo(() => {
+    if (!user || !signupList) return null;
+    return signupList.find((signup) => {
+      const isOwn = signup.user_id === user.id || signup.signup_user_id === user.id;
+      const isProxy = signup.submitted_by === user.id || signup.submitter_user_id === user.id;
+      return isOwn && !isProxy;
+    });
+  }, [signupList, user]);
+
+  // 筛选出当前用户的代报名列表
+  const myProxySignups = useMemo(() => {
+    if (!user || !signupList) return [];
+    return signupList.filter((signup) => {
+      const submitterId = signup.submitted_by || signup.submitter_user_id;
+      const signupUserId = signup.user_id || signup.signup_user_id;
+      return submitterId === user.id && signupUserId !== user.id;
+    });
+  }, [signupList, user]);
+
+  // 计算候补列表
+  const waitlist = useMemo(() => {
+    if (!team) return [];
+    const rules = team?.slot_rules || team?.rules || buildEmptyRules();
+    const allocation = allocateSlots(rules, signupList);
+    return allocation.waitlist || [];
+  }, [team, signupList]);
 
   // 检查当前用户是否已在该车报名
   const hasUserSignedUp = useMemo(() => {
-    if (!team || !user) return false;
-    const signupList = team.signup_list || team.signups || [];
-    return signupList.some((signup) => signup.user_id === user.id);
-  }, [team, user]);
-
-  // TODO: 从 API 获取报名数据
-  const reloadSignups = () => {};
+    if (!user || !signupList) return false;
+    return signupList.some((signup) =>
+      signup.user_id === user.id || signup.signup_user_id === user.id
+    );
+  }, [signupList, user]);
 
   /**
    * 处理报名
@@ -52,6 +92,9 @@ export default function TeamRightPanel({ team, isAdmin }) {
   const handleDeleteSignup = async (signup) => {
     // TODO: 调用删除报名 API
     console.log("删除报名", signup);
+    // 删除成功后需要刷新数据
+    await reloadSignups();
+    await onRefresh?.();
   };
 
   /**
@@ -60,6 +103,17 @@ export default function TeamRightPanel({ team, isAdmin }) {
   const handleRemoveWaitlist = async (waitlistItem) => {
     // TODO: 调用取消候补 API
     console.log("取消候补", waitlistItem);
+    // 取消成功后需要刷新数据
+    await reloadSignups();
+    await onRefresh?.();
+  };
+
+  /**
+   * 报名成功后的回调：刷新本组件的报名数据 + 刷新父组件的团队数据
+   */
+  const handleSignupSuccess = async () => {
+    await reloadSignups(); // 刷新报名数据
+    await onRefresh?.(); // 刷新团队数据（更新 signup_list）
   };
 
   if (!team) {
@@ -191,7 +245,7 @@ export default function TeamRightPanel({ team, isAdmin }) {
         teamId={team?.id}
         team={team}
         user={user}
-        onSuccess={reloadSignups}
+        onSuccess={handleSignupSuccess}
       />
 
       <ProxySignupModal
@@ -201,7 +255,7 @@ export default function TeamRightPanel({ team, isAdmin }) {
         teamId={team?.id}
         team={team}
         user={user}
-        onSuccess={reloadSignups}
+        onSuccess={handleSignupSuccess}
       />
     </Card>
   );
