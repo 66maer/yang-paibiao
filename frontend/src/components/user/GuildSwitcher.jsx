@@ -99,15 +99,15 @@ export default function GuildSwitcher() {
         <DropdownTrigger>
           <Button
             variant="bordered"
-            size="sm"
-            className="gap-2 min-w-[160px] border-pink-200 dark:border-pink-800 hover:bg-pink-50 dark:hover:bg-pink-950/30"
+            size="lg"
+            className="gap-2 min-w-[100px] max-w-[200px] border-pink-200 dark:border-pink-800 hover:bg-pink-50 dark:hover:bg-pink-950/30"
             isLoading={isLoading}
           >
             <div className="flex flex-col items-start">
               <span className="text-sm font-semibold text-pink-600 dark:text-pink-400">{currentGuild.name}</span>
               <span className="text-xs text-default-500">{currentGuild.guild_nickname}</span>
             </div>
-            <span className="text-pink-400">▼</span>
+            <span className="text-pink-400"></span>
           </Button>
         </DropdownTrigger>
 

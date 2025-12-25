@@ -5,13 +5,7 @@ import { zhCN } from "date-fns/locale";
 /**
  * 左侧导航 - 开团列表（按日期分组）
  */
-export default function TeamSidebar({
-  teams = [],
-  selectedTeamId,
-  onSelectTeam,
-  isAdmin = false,
-  onCreateTeam
-}) {
+export default function TeamSidebar({ teams = [], selectedTeamId, onSelectTeam, isAdmin = false, onCreateTeam }) {
   // 按日期分组
   const groupedTeams = teams.reduce((groups, team) => {
     const teamDate = new Date(team.team_time);
@@ -29,9 +23,7 @@ export default function TeamSidebar({
   }, {});
 
   // 按日期排序
-  const sortedGroups = Object.values(groupedTeams).sort(
-    (a, b) => a.date - b.date
-  );
+  const sortedGroups = Object.values(groupedTeams).sort((a, b) => a.date - b.date);
 
   // 格式化日期显示
   const formatDateLabel = (date) => {
@@ -51,20 +43,19 @@ export default function TeamSidebar({
   return (
     <Card className="h-full">
       <CardHeader className="pb-2 flex-col gap-2">
-        <div className="w-full flex items-center justify-between">
-          <h3 className="text-lg font-bold text-pink-600 dark:text-pink-400">
-            开团列表
-          </h3>
-        </div>
-        {isAdmin && (
+        {isAdmin ? (
           <Button
             color="primary"
-            size="sm"
+            size="lg"
             className="w-full bg-gradient-to-r from-pink-500 to-purple-500"
             onPress={onCreateTeam}
           >
-            ➕ 开团
+            开团
           </Button>
+        ) : (
+          <div className="w-full flex items-center justify-between">
+            <h3 className="text-lg font-bold text-pink-600 dark:text-pink-400">开团列表</h3>
+          </div>
         )}
       </CardHeader>
       <Divider />
@@ -80,16 +71,10 @@ export default function TeamSidebar({
               <div key={format(group.date, "yyyy-MM-dd")} className="space-y-2">
                 {/* 日期标题 */}
                 <div className="flex items-center gap-2 px-2">
-                  <Chip
-                    size="sm"
-                    color={getDateChipColor(group.date)}
-                    variant="flat"
-                  >
+                  <Chip size="sm" color={getDateChipColor(group.date)} variant="flat">
                     {formatDateLabel(group.date)}
                   </Chip>
-                  <span className="text-xs text-default-400">
-                    {group.teams.length} 车
-                  </span>
+                  <span className="text-xs text-default-400">{group.teams.length} 车</span>
                 </div>
 
                 {/* 该日期下的团队列表 */}
@@ -135,21 +120,49 @@ function TeamItem({ team, isSelected, onClick }) {
       <div className="space-y-1">
         {/* 时间 */}
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-pink-600 dark:text-pink-400">
-            {format(teamTime, "HH:mm")}
-          </span>
+          <span className="text-sm font-bold text-pink-600 dark:text-pink-400">{format(teamTime, "HH:mm")}</span>
           <Chip size="sm" variant="flat" color="primary" className="text-xs">
             {team.dungeon || "未指定"}
           </Chip>
         </div>
 
         {/* 标题 */}
-        <div className="text-xs text-default-700 dark:text-default-300 line-clamp-1">
-          {team.title || "未命名开团"}
-        </div>
+        <div className="text-xs text-default-700 dark:text-default-300 line-clamp-1">{team.title || "未命名开团"}</div>
 
         {/* 状态标签 */}
         <div className="flex items-center gap-1 flex-wrap">
+          {/* 全拍或全包 */}
+          {!team.is_xuanjing_booked && !team.is_yuntie_booked && (
+            <Chip size="sm" variant="flat" color="success" className="text-xs">
+              全拍
+            </Chip>
+          )}
+          {team.is_xuanjing_booked && team.is_yuntie_booked && (
+            <Chip size="sm" variant="flat" color="danger" className="text-xs">
+              大小包
+            </Chip>
+          )}
+          {/* 混合状态 - 显示两个 Chip */}
+          {team.is_xuanjing_booked && !team.is_yuntie_booked && (
+            <>
+              <Chip size="sm" variant="flat" color="danger" className="text-xs">
+                大包
+              </Chip>
+              <Chip size="sm" variant="flat" color="success" className="text-xs">
+                小拍
+              </Chip>
+            </>
+          )}
+          {!team.is_xuanjing_booked && team.is_yuntie_booked && (
+            <>
+              <Chip size="sm" variant="flat" color="success" className="text-xs">
+                大拍
+              </Chip>
+              <Chip size="sm" variant="flat" color="danger" className="text-xs">
+                小包
+              </Chip>
+            </>
+          )}
           {team.is_locked && (
             <Chip size="sm" variant="flat" color="warning" className="text-xs">
               🔒 锁定
@@ -160,9 +173,6 @@ function TeamItem({ team, isSelected, onClick }) {
               👁️ 隐藏
             </Chip>
           )}
-          <Chip size="sm" variant="flat" color="secondary" className="text-xs">
-            {team.signup_count || 0} 人
-          </Chip>
         </div>
       </div>
     </div>

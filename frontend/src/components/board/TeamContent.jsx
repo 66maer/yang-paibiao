@@ -276,14 +276,14 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
           <div className="flex items-center gap-3">
             {team.is_locked && (
               <Tooltip content="报名已锁定">
-                <Chip size="sm" variant="flat" color="warning">
+                <Chip size="lg" variant="flat" color="warning">
                   🔒
                 </Chip>
               </Tooltip>
             )}
-            <h2 className="text-2xl font-bold text-pink-600 dark:text-pink-400">{team.title || "未命名开团"}</h2>
+            <h2 className="text-4xl font-bold text-pink-600 dark:text-pink-400">{team.title || "未命名开团"}</h2>
             {team.is_hidden && (
-              <Chip size="sm" variant="flat" color="default">
+              <Chip size="lg" variant="flat" color="default">
                 仅管理员可见
               </Chip>
             )}
@@ -293,12 +293,12 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
           {isAdmin && (
             <div className="flex items-center gap-2">
               <Tooltip content="编辑开团">
-                <Button size="sm" variant="flat" color="primary" onPress={() => onEdit(team)}>
+                <Button size="md" variant="flat" color="primary" onPress={() => onEdit(team)}>
                   ✏️ 编辑
                 </Button>
               </Tooltip>
               <Tooltip content="关闭开团">
-                <Button size="sm" variant="flat" color="danger" onPress={handleCloseTeam}>
+                <Button size="md" variant="flat" color="danger" onPress={handleCloseTeam}>
                   ❌ 关闭
                 </Button>
               </Tooltip>
@@ -309,33 +309,33 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
         {/* 基础信息标签 */}
         <div className="flex flex-wrap gap-2">
           {/* 副本 */}
-          <Chip size="sm" variant="flat" color="primary" startContent={<span>🏛️</span>}>
+          <Chip size="lg" variant="flat" color="primary" startContent={<span>🏛️</span>}>
             {team.dungeon || "未指定副本"}
           </Chip>
 
           {/* 时间 */}
           {teamTime && (
-            <Chip size="sm" variant="flat" color="secondary" startContent={<span>🕐</span>}>
+            <Chip size="lg" variant="flat" color="secondary" startContent={<span>🕐</span>}>
               {format(teamTime, "yyyy-MM-dd HH:mm", { locale: zhCN })}
             </Chip>
           )}
 
           {/* 大铁 */}
           <Chip
-            size="sm"
+            size="lg"
             variant="flat"
             color={team.is_xuanjing_booked ? "danger" : "success"}
-            startContent={<span>💎</span>}
+            startContent={<img src="/玄晶.png" alt="玄晶" className="w-5 h-5" />}
           >
             {team.is_xuanjing_booked ? "大铁已包" : "大铁可拍"}
           </Chip>
 
           {/* 小铁 */}
           <Chip
-            size="sm"
+            size="lg"
             variant="flat"
             color={team.is_yuntie_booked ? "danger" : "success"}
-            startContent={<span>⚙️</span>}
+            startContent={<img src="/陨铁.png" alt="陨铁" className="w-5 h-5" />}
           >
             {team.is_yuntie_booked ? "小铁已包" : "小铁可拍"}
           </Chip>
@@ -356,7 +356,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
             </div>
           )}
 
-          {/* 团队面板 - 留空 */}
+          {/* 团队面板 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">

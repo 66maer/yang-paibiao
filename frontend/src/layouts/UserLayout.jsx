@@ -28,7 +28,7 @@ export default function UserLayout() {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
       {/* 顶部导航栏 */}
       <header className="sticky top-0 z-50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl shadow-lg border-b border-pink-200 dark:border-pink-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo + 品牌名 */}
             <Link to="/board" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -46,7 +46,7 @@ export default function UserLayout() {
                 {menuItems.map((item) => (
                   <Link key={item.key} to={item.path}>
                     <Button
-                      size="sm"
+                      size="lg"
                       variant={isActive(item.path) ? "flat" : "light"}
                       color={isActive(item.path) ? "primary" : "default"}
                       className={`font-medium transition-all ${
