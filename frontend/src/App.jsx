@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { HeroUIProvider } from "@heroui/react";
+import { ToastProvider } from "@heroui/toast";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
@@ -26,6 +27,7 @@ function AppContent() {
 
   return (
     <HeroUIProvider navigate={navigate} locale="zh-CN">
+      <ToastProvider placement="top-center" toastOffset={80} />
       <Routes>
         {/* 用户登录和注册 */}
         <Route path="/login" element={<LoginPage />} />

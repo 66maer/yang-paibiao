@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardBody, CardHeader, Button, Chip } from "@heroui/react";
-import toast from "react-hot-toast";
+import { showToast } from "../../utils/toast";
 import useAuthStore from "../../stores/authStore";
 
 /**
@@ -44,19 +44,19 @@ export default function GuildHubPage() {
 
   const doSwitchGuild = (guildId) => {
     if (!guildId) return;
-    
+
     try {
       setLoadingGuildId(guildId);
       // 更新前端状态
       setCurrentGuild(guildId);
       localStorage.setItem("selectedGuildId", String(guildId));
-      
+
       const newGuild = guilds.find((g) => g.id === guildId);
-      toast.success(`已切换到 ${newGuild?.name || "群组"}`);
+      showToast.success(`已切换到 ${newGuild?.name || "群组"}`);
 
       navigate("/board", { replace: true });
     } catch (error) {
-      toast.error("切换群组失败");
+      showToast.error("切换群组失败");
       setLoadingGuildId(null);
     }
   };
@@ -86,16 +86,12 @@ export default function GuildHubPage() {
               key={guild.id}
               isHoverable
               className={`border ${
-                guild.id === currentGuildId
-                  ? "border-pink-300 dark:border-pink-700"
-                  : "border-transparent"
+                guild.id === currentGuildId ? "border-pink-300 dark:border-pink-700" : "border-transparent"
               } bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl`}
             >
               <CardHeader className="flex items-center justify-between">
                 <div className="flex flex-col">
-                  <span className="font-semibold text-pink-600 dark:text-pink-400">
-                    {guild.name}
-                  </span>
+                  <span className="font-semibold text-pink-600 dark:text-pink-400">{guild.name}</span>
                   <span className="text-xs text-default-500">{guild.guild_nickname}</span>
                 </div>
                 <Chip size="sm" variant="flat" color={getRoleColor(guild.role)}>

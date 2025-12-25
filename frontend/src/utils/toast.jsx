@@ -1,45 +1,49 @@
-import toast from 'react-hot-toast'
+import { addToast, closeToast } from "@heroui/toast";
 
 /**
  * 成功提示
  */
 export const showSuccess = (message) => {
-  toast.success(message, {
-    duration: 3000,
-    position: 'top-center',
-  })
-}
+  addToast({
+    title: message,
+    color: "success",
+    timeout: 3000,
+  });
+};
 
 /**
  * 错误提示
  */
 export const showError = (message) => {
-  toast.error(message, {
-    duration: 4000,
-    position: 'top-center',
-  })
-}
+  addToast({
+    title: message,
+    color: "danger",
+    timeout: 4000,
+  });
+};
 
 /**
  * 信息提示
  */
 export const showInfo = (message) => {
-  toast(message, {
-    duration: 3000,
-    position: 'top-center',
-  })
-}
+  addToast({
+    title: message,
+    color: "default",
+    timeout: 3000,
+  });
+};
 
 /**
  * 警告提示
  */
 export const showWarning = (message) => {
-  toast(message, {
-    duration: 3000,
-    position: 'top-center',
-    icon: '⚠️',
-  })
-}
+  addToast({
+    title: message,
+    color: "warning",
+    icon: "⚠️",
+    timeout: 3000,
+  });
+};
 
 /**
  * 确认对话框
@@ -48,36 +52,39 @@ export const showWarning = (message) => {
  */
 export const showConfirm = (message) => {
   return new Promise((resolve) => {
-    toast((t) => (
-      <div className="flex flex-col gap-3">
-        <p className="text-sm">{message}</p>
-        <div className="flex gap-2 justify-end">
+    let toastId;
+
+    const handleClose = (result) => {
+      if (toastId) {
+        closeToast(toastId);
+      }
+      resolve(result);
+    };
+
+    toastId = addToast({
+      title: message,
+      description: (
+        <div className="flex gap-2 justify-end mt-3">
           <button
             className="px-4 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
-            onClick={() => {
-              toast.dismiss(t.id)
-              resolve(false)
-            }}
+            onClick={() => handleClose(false)}
           >
             取消
           </button>
           <button
             className="px-4 py-1.5 text-sm bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors"
-            onClick={() => {
-              toast.dismiss(t.id)
-              resolve(true)
-            }}
+            onClick={() => handleClose(true)}
           >
             确定
           </button>
         </div>
-      </div>
-    ), {
-      duration: Infinity,
-      position: 'top-center',
-    })
-  })
-}
+      ),
+      color: "default",
+      timeout: Infinity,
+      hideCloseButton: true,
+    });
+  });
+};
 
 /**
  * Toast 工具对象（统一接口）
@@ -88,6 +95,4 @@ export const showToast = {
   info: showInfo,
   warning: showWarning,
   confirm: showConfirm,
-}
-
-export default toast
+};

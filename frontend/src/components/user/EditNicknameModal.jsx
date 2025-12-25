@@ -1,14 +1,6 @@
 import { useState } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-} from "@heroui/react";
-import toast from "react-hot-toast";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input } from "@heroui/react";
+import { showToast } from "../../utils/toast";
 import useAuthStore from "../../stores/authStore";
 import { updateUserInfo } from "../../api/user";
 
@@ -23,17 +15,17 @@ export default function EditNicknameModal({ isOpen, onClose }) {
   const handleSubmit = async () => {
     // 验证
     if (!nickname || nickname.trim() === "") {
-      toast.error("昵称不能为空");
+      showToast.error("昵称不能为空");
       return;
     }
 
     if (nickname.length > 20) {
-      toast.error("昵称最长20个字符");
+      showToast.error("昵称最长20个字符");
       return;
     }
 
     if (nickname === user?.nickname) {
-      toast.error("昵称未修改");
+      showToast.error("昵称未修改");
       return;
     }
 
@@ -41,10 +33,10 @@ export default function EditNicknameModal({ isOpen, onClose }) {
       setIsLoading(true);
       await updateUserInfo({ nickname: nickname.trim() });
       updateStoreNickname(nickname.trim());
-      toast.success("昵称修改成功");
+      showToast.success("昵称修改成功");
       onClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || "昵称修改失败");
+      showToast.error(error.response?.data?.message || "昵称修改失败");
     } finally {
       setIsLoading(false);
     }
@@ -78,9 +70,7 @@ export default function EditNicknameModal({ isOpen, onClose }) {
               input: "text-pink-900 dark:text-pink-100",
             }}
           />
-          <p className="text-xs text-default-500">
-            当前昵称：{user?.nickname || "未设置"}
-          </p>
+          <p className="text-xs text-default-500">当前昵称：{user?.nickname || "未设置"}</p>
         </ModalBody>
         <ModalFooter>
           <Button variant="light" onPress={onClose} isDisabled={isLoading}>

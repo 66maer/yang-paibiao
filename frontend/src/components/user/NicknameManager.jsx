@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Input, Button, Chip } from "@heroui/react";
-import toast from "react-hot-toast";
+import { showToast } from "../../utils/toast";
 import ConfirmDialog from "../ConfirmDialog";
 
 /**
@@ -23,22 +23,22 @@ export default function NicknameManager({
   const handleAdd = async () => {
     // 验证
     if (!newNickname || newNickname.trim() === "") {
-      toast.error("昵称不能为空");
+      showToast.error("昵称不能为空");
       return;
     }
 
     if (newNickname.length > 20) {
-      toast.error("昵称最长20个字符");
+      showToast.error("昵称最长20个字符");
       return;
     }
 
     if (nicknames.includes(newNickname.trim())) {
-      toast.error("该昵称已存在");
+      showToast.error("该昵称已存在");
       return;
     }
 
     if (nicknames.length >= maxNicknames) {
-      toast.error(`最多添加${maxNicknames}个昵称`);
+      showToast.error(`最多添加${maxNicknames}个昵称`);
       return;
     }
 
@@ -47,9 +47,9 @@ export default function NicknameManager({
       const updatedNicknames = [...nicknames, newNickname.trim()];
       await onUpdate(updatedNicknames);
       setNewNickname("");
-      toast.success("添加成功");
+      showToast.success("添加成功");
     } catch (error) {
-      toast.error(error.response?.data?.message || "添加失败");
+      showToast.error(error.response?.data?.message || "添加失败");
     } finally {
       setIsAdding(false);
     }
@@ -66,11 +66,11 @@ export default function NicknameManager({
     try {
       const updatedNicknames = nicknames.filter((n) => n !== nicknameToDelete);
       await onUpdate(updatedNicknames);
-      toast.success("删除成功");
+      showToast.success("删除成功");
       setConfirmOpen(false);
       setNicknameToDelete(null);
     } catch (error) {
-      toast.error(error.response?.data?.message || "删除失败");
+      showToast.error(error.response?.data?.message || "删除失败");
     }
   };
 
@@ -119,9 +119,7 @@ export default function NicknameManager({
             >
               <div className="flex items-center gap-2 flex-1">
                 <span className="text-purple-500">•</span>
-                <span className="text-sm text-purple-600 dark:text-purple-400">
-                  {nickname}
-                </span>
+                <span className="text-sm text-purple-600 dark:text-purple-400">{nickname}</span>
               </div>
               <Button
                 size="sm"

@@ -1,15 +1,6 @@
 import { useState } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  Chip,
-} from "@heroui/react";
-import toast from "react-hot-toast";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Chip } from "@heroui/react";
+import { showToast } from "../../utils/toast";
 import useAuthStore from "../../stores/authStore";
 import { updateOtherNicknames } from "../../api/user";
 
@@ -31,33 +22,33 @@ export default function ManageNicknamesModal({ isOpen, onClose }) {
     const trimmedNickname = newNickname.trim();
 
     if (!trimmedNickname) {
-      toast.error("昵称不能为空");
+      showToast.error("昵称不能为空");
       return;
     }
 
     if (trimmedNickname.length > 20) {
-      toast.error("昵称最长20个字符");
+      showToast.error("昵称最长20个字符");
       return;
     }
 
     if (nicknames.includes(trimmedNickname)) {
-      toast.error("昵称已存在");
+      showToast.error("昵称已存在");
       return;
     }
 
     if (nicknames.length >= 10) {
-      toast.error("最多只能添加10个昵称");
+      showToast.error("最多只能添加10个昵称");
       return;
     }
 
     setNicknames([...nicknames, trimmedNickname]);
     setNewNickname("");
-    toast.success("昵称已添加");
+    showToast.success("昵称已添加");
   };
 
   const handleRemoveNickname = (nickname) => {
     setNicknames(nicknames.filter((n) => n !== nickname));
-    toast.success("昵称已移除");
+    showToast.success("昵称已移除");
   };
 
   const handleSubmit = async () => {
@@ -65,10 +56,10 @@ export default function ManageNicknamesModal({ isOpen, onClose }) {
       setIsLoading(true);
       await updateOtherNicknames(nicknames);
       updateStoreNicknames(nicknames);
-      toast.success("昵称列表更新成功");
+      showToast.success("昵称列表更新成功");
       onClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || "昵称列表更新失败");
+      showToast.error(error.response?.data?.message || "昵称列表更新失败");
     } finally {
       setIsLoading(false);
     }
@@ -85,15 +76,11 @@ export default function ManageNicknamesModal({ isOpen, onClose }) {
       size="2xl"
     >
       <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
-          管理多个昵称
-        </ModalHeader>
+        <ModalHeader className="flex flex-col gap-1">管理多个昵称</ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             <div className="p-3 bg-pink-50 dark:bg-pink-950/30 rounded-lg">
-              <p className="text-sm text-default-600 mb-2">
-                💡 添加多个昵称可以方便其他人通过不同的名字搜索到你
-              </p>
+              <p className="text-sm text-default-600 mb-2">💡 添加多个昵称可以方便其他人通过不同的名字搜索到你</p>
               <p className="text-xs text-default-500">
                 • 最多可添加 10 个昵称
                 <br />• 每个昵称最长 20 个字符

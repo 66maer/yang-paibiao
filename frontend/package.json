@@ -21,7 +21,6 @@
     "pinyin-pro": "^3.27.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.11.0",
     "swr": "^2.3.8",
     "zustand": "^5.0.9"

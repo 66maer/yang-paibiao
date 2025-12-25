@@ -1,14 +1,6 @@
 import { useState } from "react";
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  DropdownSection,
-  Button,
-  Avatar,
-} from "@heroui/react";
-import toast from "react-hot-toast";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection, Button, Avatar } from "@heroui/react";
+import { showToast } from "../../utils/toast";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../../stores/authStore";
 import ProfileModal from "./ProfileModal";
@@ -25,7 +17,7 @@ export default function UserMenu() {
 
   const handleLogout = () => {
     clearAuth();
-    toast.success("已退出登录");
+    showToast.success("已退出登录");
     navigate("/login");
   };
 
@@ -33,20 +25,14 @@ export default function UserMenu() {
     <>
       <Dropdown placement="bottom-end">
         <DropdownTrigger>
-          <Button
-            variant="light"
-            className="gap-2 px-2"
-            size="sm"
-          >
+          <Button variant="light" className="gap-2 px-2" size="sm">
             <Avatar
               src={user?.avatar}
               name={user?.nickname?.charAt(0)}
               size="sm"
               className="bg-gradient-to-br from-pink-500 to-purple-500"
             />
-            <span className="hidden md:inline text-pink-600 dark:text-pink-400 font-medium">
-              {user?.nickname}
-            </span>
+            <span className="hidden md:inline text-pink-600 dark:text-pink-400 font-medium">{user?.nickname}</span>
           </Button>
         </DropdownTrigger>
 
@@ -54,8 +40,7 @@ export default function UserMenu() {
           <DropdownSection
             showDivider
             classNames={{
-              heading:
-                "text-pink-600 dark:text-pink-400 text-xs font-semibold",
+              heading: "text-pink-600 dark:text-pink-400 text-xs font-semibold",
             }}
           >
             <DropdownItem
@@ -81,10 +66,7 @@ export default function UserMenu() {
       </Dropdown>
 
       {/* 个人信息弹窗 */}
-      <ProfileModal
-        isOpen={profileModalOpen}
-        onClose={() => setProfileModalOpen(false)}
-      />
+      <ProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
 
       {/* 退出登录确认对话框 */}
       <ConfirmDialog

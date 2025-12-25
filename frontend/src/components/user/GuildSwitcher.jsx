@@ -1,15 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  DropdownSection,
-  Button,
-  Chip,
-} from "@heroui/react";
-import toast from "react-hot-toast";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection, Button, Chip } from "@heroui/react";
+import { showToast } from "../../utils/toast";
 import useAuthStore from "../../stores/authStore";
 import { switchGuild } from "../../api/user";
 import EditGuildNicknameModal from "./EditGuildNicknameModal";
@@ -27,9 +19,7 @@ export default function GuildSwitcher() {
   const [isLoading, setIsLoading] = useState(false);
 
   // 获取当前群组
-  const currentGuild = user?.guilds?.find(
-    (g) => g.id === user?.current_guild_id
-  );
+  const currentGuild = user?.guilds?.find((g) => g.id === user?.current_guild_id);
 
   // 获取角色标签颜色
   const getRoleColor = (role) => {
@@ -62,7 +52,7 @@ export default function GuildSwitcher() {
   // 切换群组（纯前端操作）
   const handleSwitchGuild = (guildId) => {
     if (guildId === user?.current_guild_id) {
-      toast.error("已经在当前群组了");
+      showToast.error("已经在当前群组了");
       return;
     }
 
@@ -73,12 +63,12 @@ export default function GuildSwitcher() {
       localStorage.setItem("selectedGuildId", String(guildId));
 
       const newGuild = user?.guilds?.find((g) => g.id === guildId);
-      toast.success(`已切换到 ${newGuild?.name}`);
+      showToast.success(`已切换到 ${newGuild?.name}`);
 
       // 刷新页面以更新权限相关的内容
       window.location.reload();
     } catch (error) {
-      toast.error("切换群组失败");
+      showToast.error("切换群组失败");
       setIsLoading(false);
     }
   };
@@ -114,12 +104,8 @@ export default function GuildSwitcher() {
             isLoading={isLoading}
           >
             <div className="flex flex-col items-start">
-              <span className="text-sm font-semibold text-pink-600 dark:text-pink-400">
-                {currentGuild.name}
-              </span>
-              <span className="text-xs text-default-500">
-                {currentGuild.guild_nickname}
-              </span>
+              <span className="text-sm font-semibold text-pink-600 dark:text-pink-400">{currentGuild.name}</span>
+              <span className="text-xs text-default-500">{currentGuild.guild_nickname}</span>
             </div>
             <span className="text-pink-400">▼</span>
           </Button>
@@ -131,35 +117,22 @@ export default function GuildSwitcher() {
             title="当前群组"
             showDivider
             classNames={{
-              heading:
-                "text-pink-600 dark:text-pink-400 text-xs font-semibold",
+              heading: "text-pink-600 dark:text-pink-400 text-xs font-semibold",
             }}
           >
-            <DropdownItem
-              key="current-guild-info"
-              onPress={handleViewGuildInfo}
-              className="cursor-pointer"
-            >
+            <DropdownItem key="current-guild-info" onPress={handleViewGuildInfo} className="cursor-pointer">
               <div className="flex flex-col gap-2 py-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-default-500">群组：</span>
-                  <span className="font-semibold text-pink-600 dark:text-pink-400">
-                    {currentGuild.name}
-                  </span>
+                  <span className="font-semibold text-pink-600 dark:text-pink-400">{currentGuild.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-default-500">群昵称：</span>
-                  <span className="text-purple-600 dark:text-purple-400">
-                    {currentGuild.guild_nickname}
-                  </span>
+                  <span className="text-purple-600 dark:text-purple-400">{currentGuild.guild_nickname}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-default-500">权限：</span>
-                  <Chip
-                    size="sm"
-                    color={getRoleColor(currentGuild.role)}
-                    variant="flat"
-                  >
+                  <Chip size="sm" color={getRoleColor(currentGuild.role)} variant="flat">
                     {getRoleLabel(currentGuild.role)}
                   </Chip>
                 </div>
@@ -179,7 +152,7 @@ export default function GuildSwitcher() {
             <DropdownItem
               key="open-guild-hub"
               className="text-pink-600 dark:text-pink-400"
-              onPress={() => navigate('/guilds')}
+              onPress={() => navigate("/guilds")}
             >
               🗂️ 切换群组
             </DropdownItem>
@@ -188,11 +161,7 @@ export default function GuildSwitcher() {
       </Dropdown>
 
       {/* 群组信息弹窗 */}
-      <GuildInfoModal
-        isOpen={guildInfoOpen}
-        onClose={() => setGuildInfoOpen(false)}
-        guild={selectedGuild}
-      />
+      <GuildInfoModal isOpen={guildInfoOpen} onClose={() => setGuildInfoOpen(false)} guild={selectedGuild} />
 
       {/* 修改群昵称弹窗 */}
       <EditGuildNicknameModal

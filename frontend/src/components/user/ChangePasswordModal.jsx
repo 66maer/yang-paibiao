@@ -1,14 +1,6 @@
 import { useState } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-} from "@heroui/react";
-import toast from "react-hot-toast";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input } from "@heroui/react";
+import { showToast } from "../../utils/toast";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../../stores/authStore";
 import { changePassword } from "../../api/user";
@@ -31,29 +23,29 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
 
     // 验证
     if (!oldPassword || !newPassword || !confirmPassword) {
-      toast.error("请填写完整信息");
+      showToast.error("请填写完整信息");
       return;
     }
 
     if (newPassword.length < 6) {
-      toast.error("新密码长度至少6位");
+      showToast.error("新密码长度至少6位");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error("两次密码输入不一致");
+      showToast.error("两次密码输入不一致");
       return;
     }
 
     if (oldPassword === newPassword) {
-      toast.error("新密码不能与旧密码相同");
+      showToast.error("新密码不能与旧密码相同");
       return;
     }
 
     try {
       setIsLoading(true);
       await changePassword(oldPassword, newPassword);
-      toast.success("密码修改成功，请重新登录");
+      showToast.success("密码修改成功，请重新登录");
 
       // 清除认证信息
       clearAuth();
@@ -63,7 +55,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
         navigate("/login");
       }, 1500);
     } catch (error) {
-      toast.error(error.response?.data?.message || "密码修改失败");
+      showToast.error(error.response?.data?.message || "密码修改失败");
       setIsLoading(false);
     }
   };
@@ -128,9 +120,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
               input: "text-pink-900 dark:text-pink-100",
             }}
           />
-          <p className="text-xs text-warning">
-            ⚠️ 修改密码后将自动退出登录，需要重新登录
-          </p>
+          <p className="text-xs text-warning">⚠️ 修改密码后将自动退出登录，需要重新登录</p>
         </ModalBody>
         <ModalFooter>
           <Button variant="light" onPress={onClose} isDisabled={isLoading}>

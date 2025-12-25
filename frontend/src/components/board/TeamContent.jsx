@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Card, CardBody, CardHeader, Button, Chip, Divider, Tooltip } from "@heroui/react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -23,10 +23,26 @@ import useAuthStore from "../../stores/authStore";
  */
 export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
   const [boardMode, setBoardMode] = useState("view");
+  const [pendingSlotView, setPendingSlotView] = useState(null); // 暂存未提交的视觉映射
   const { user } = useAuthStore();
+  const prevTeamIdRef = useRef(null);
 
   // Always call hooks in the same order - move conditional check below
   const teamTime = team?.team_time ? new Date(team.team_time) : null;
+
+  // 监听团队切换，提示未保存的更改
+  useEffect(() => {
+    const currentTeamId = team?.id;
+
+    // 如果团队ID发生变化且不是初始加载
+    if (prevTeamIdRef.current !== null && prevTeamIdRef.current !== currentTeamId && pendingSlotView) {
+      showToast.warning("您有未保存的连连看更改已丢失");
+      setPendingSlotView(null);
+      setBoardMode("view"); // 重置为浏览模式
+    }
+
+    prevTeamIdRef.current = currentTeamId;
+  }, [team?.id, pendingSlotView]);
 
   // 使用 SWR 加载报名数据
   const { data: signupsData, mutate: mutateSignups } = useSWR(
@@ -71,6 +87,17 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
     { key: "mark", label: "进组标记", icon: "✅", adminOnly: true },
     { key: "drag", label: "连连看", icon: "🧲", adminOnly: true },
   ];
+
+  // 处理模式切换
+  const handleModeChange = async (newMode) => {
+    // 如果有未保存的连连看更改，提示用户
+    if (pendingSlotView && boardMode === "drag") {
+      const confirmed = await showConfirm("您有未保存的连连看更改，确定要切换模式吗？未保存的更改将丢失。");
+      if (!confirmed) return;
+      setPendingSlotView(null); // 清空未保存的更改
+    }
+    setBoardMode(newMode);
+  };
 
   // 处理关闭开团
   const handleCloseTeam = async () => {
@@ -176,17 +203,52 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
     }
   };
 
-  // 连连看模式 - 保存视觉映射
+  // 连连看模式 - 暂存视觉映射(不直接提交)
   const handleReorder = async (newView) => {
+    setPendingSlotView(newView);
+  };
+
+  // 连连看模式 - 提交视觉映射
+  const handleSubmitReorder = async () => {
+    if (!pendingSlotView) return;
+
     try {
       await updateTeam(team.guild_id, team.id, {
-        slot_view: newView,
+        slot_view: pendingSlotView,
       });
       showToast.success("已保存视觉映射");
+      setPendingSlotView(null); // 清空暂存
       onRefresh?.(); // 刷新团队数据
     } catch (error) {
       console.error("保存视觉映射失败:", error);
       showToast.error(error?.response?.data?.message || "保存视觉映射失败");
+    }
+  };
+
+  // 连连看模式 - 取消编辑
+  const handleCancelReorder = () => {
+    setPendingSlotView(null);
+    showToast.info("已取消编辑");
+  };
+
+  // 连连看模式 - 恢复原始设置
+  const handleResetSlotView = async () => {
+    const confirmed = await showConfirm("确定要恢复到原始面板状态吗？这将重置所有连连看的排列。");
+
+    if (!confirmed) return;
+
+    try {
+      // 生成 0-24 的数组作为原始顺序
+      const originalView = Array.from({ length: 25 }, (_, i) => i);
+      await updateTeam(team.guild_id, team.id, {
+        slot_view: originalView,
+      });
+      showToast.success("已恢复到原始面板状态");
+      setPendingSlotView(null); // 清空暂存
+      onRefresh?.(); // 刷新团队数据
+    } catch (error) {
+      console.error("恢复原始设置失败:", error);
+      showToast.error(error?.response?.data?.message || "恢复原始设置失败");
     }
   };
 
@@ -296,36 +358,53 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
 
           {/* 团队面板 - 留空 */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
                 <h3 className="text-sm font-semibold text-default-600">👥 团队面板</h3>
-                <Chip size="sm" variant="flat" color="secondary">
-                  25 人
-                </Chip>
+                {isAdmin && (
+                  <div className="flex gap-2">
+                    {boardModes
+                      .filter((mode) => !mode.adminOnly || isAdmin)
+                      .map((mode) => (
+                        <Button
+                          key={mode.key}
+                          size="sm"
+                          variant={boardMode === mode.key ? "solid" : "flat"}
+                          color={boardMode === mode.key ? "primary" : "default"}
+                          onPress={() => handleModeChange(mode.key)}
+                        >
+                          <span className="mr-1">{mode.icon}</span>
+                          {mode.label}
+                        </Button>
+                      ))}
+                  </div>
+                )}
               </div>
-              {isAdmin && (
-                <div className="flex gap-2">
-                  {boardModes
-                    .filter((mode) => !mode.adminOnly || isAdmin)
-                    .map((mode) => (
-                      <Button
-                        key={mode.key}
-                        size="sm"
-                        variant={boardMode === mode.key ? "solid" : "flat"}
-                        color={boardMode === mode.key ? "primary" : "default"}
-                        onPress={() => setBoardMode(mode.key)}
-                      >
-                        <span className="mr-1">{mode.icon}</span>
-                        {mode.label}
+
+              {/* 连连看模式的操作按钮 */}
+              {isAdmin && boardMode === "drag" && (
+                <div className="flex items-center gap-2">
+                  {pendingSlotView && (
+                    <>
+                      <Button size="sm" variant="flat" color="default" onPress={handleCancelReorder}>
+                        取消
                       </Button>
-                    ))}
+                      <Button size="sm" variant="solid" color="success" onPress={handleSubmitReorder}>
+                        ✅ 完成编辑
+                      </Button>
+                    </>
+                  )}
+                  <Button size="sm" variant="flat" color="warning" onPress={handleResetSlotView}>
+                    🔄 恢复原始设置
+                  </Button>
                 </div>
               )}
             </div>
+
             <TeamBoard
               rules={rules}
               signupList={memoizedInputs.signupList}
-              view={memoizedInputs.slotView}
+              view={pendingSlotView || memoizedInputs.slotView}
               mode={boardMode}
               guildId={team.guild_id}
               isAdmin={isAdmin}

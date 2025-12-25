@@ -1,14 +1,6 @@
 import { useState } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-} from "@heroui/react";
-import toast from "react-hot-toast";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input } from "@heroui/react";
+import { showToast } from "../../utils/toast";
 import useAuthStore from "../../stores/authStore";
 import { updateGuildNickname } from "../../api/user";
 
@@ -17,25 +9,23 @@ import { updateGuildNickname } from "../../api/user";
  */
 export default function EditGuildNicknameModal({ isOpen, onClose, guild }) {
   const { updateGuildNickname: updateStoreGuildNickname } = useAuthStore();
-  const [guildNickname, setGuildNickname] = useState(
-    guild?.guild_nickname || ""
-  );
+  const [guildNickname, setGuildNickname] = useState(guild?.guild_nickname || "");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
     // 验证
     if (!guildNickname || guildNickname.trim() === "") {
-      toast.error("群昵称不能为空");
+      showToast.error("群昵称不能为空");
       return;
     }
 
     if (guildNickname.length > 20) {
-      toast.error("群昵称最长20个字符");
+      showToast.error("群昵称最长20个字符");
       return;
     }
 
     if (guildNickname === guild?.guild_nickname) {
-      toast.error("群昵称未修改");
+      showToast.error("群昵称未修改");
       return;
     }
 
@@ -43,10 +33,10 @@ export default function EditGuildNicknameModal({ isOpen, onClose, guild }) {
       setIsLoading(true);
       await updateGuildNickname(guild.id, guildNickname.trim());
       updateStoreGuildNickname(guild.id, guildNickname.trim());
-      toast.success("群昵称修改成功");
+      showToast.success("群昵称修改成功");
       onClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || "群昵称修改失败");
+      showToast.error(error.response?.data?.message || "群昵称修改失败");
     } finally {
       setIsLoading(false);
     }
@@ -71,9 +61,7 @@ export default function EditGuildNicknameModal({ isOpen, onClose, guild }) {
           <div className="mb-2">
             <p className="text-sm text-default-600">
               群组：
-              <span className="font-semibold text-pink-600 dark:text-pink-400">
-                {guild?.name}
-              </span>
+              <span className="font-semibold text-pink-600 dark:text-pink-400">{guild?.name}</span>
             </p>
           </div>
           <Input
@@ -88,9 +76,7 @@ export default function EditGuildNicknameModal({ isOpen, onClose, guild }) {
               input: "text-pink-900 dark:text-pink-100",
             }}
           />
-          <p className="text-xs text-default-500">
-            当前群昵称：{guild?.guild_nickname || "未设置"}
-          </p>
+          <p className="text-xs text-default-500">当前群昵称：{guild?.guild_nickname || "未设置"}</p>
         </ModalBody>
         <ModalFooter>
           <Button variant="light" onPress={onClose} isDisabled={isLoading}>
