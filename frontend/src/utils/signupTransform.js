@@ -104,9 +104,12 @@ export function transformSignup(signup) {
 /**
  * 转换报名数组
  * @param {Array} signups - API 返回的报名数组
- * @returns {Array} 转换后的报名数组
+ * @returns {Array} 转换后的报名数组（过滤掉已取消的报名）
  */
 export function transformSignups(signups) {
   if (!Array.isArray(signups)) return [];
-  return signups.map(transformSignup).filter(Boolean);
+  return signups
+    .filter((signup) => !signup.cancelled_at) // 过滤掉已取消的报名
+    .map(transformSignup)
+    .filter(Boolean);
 }

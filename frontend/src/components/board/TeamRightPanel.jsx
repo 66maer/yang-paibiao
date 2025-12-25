@@ -170,8 +170,8 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
           {/* 报名信息 */}
           <Tab key="signup-info" title="报名信息">
             <div className="p-4 space-y-4">
-              {!mySignup ? (
-                // 未报名状态
+              {!mySignup && myProxySignups.length === 0 ? (
+                // 情况1：未报名且无代报名
                 <div className="p-8 rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-2 border-dashed border-default-300">
                   <div className="text-center text-default-400">
                     <div className="text-4xl mb-2">📝</div>
@@ -179,19 +179,31 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
                   </div>
                 </div>
               ) : (
-                // 已报名状态
+                // 情况2和3：有本人报名或有代报名
                 <div className="space-y-4">
+                  {/* 未报名但有代报名时的提示 */}
+                  {!mySignup && myProxySignups.length > 0 && (
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-2 border-dashed border-default-300">
+                      <div className="text-center text-default-400">
+                        <div className="text-4xl mb-2">📝</div>
+                        <p className="text-sm">你还没有报名，点击上方按钮报名</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* 本人报名信息 */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-default-600 mb-2">我的报名</h4>
-                    <SignupItemCard
-                      signup={mySignup}
-                      type="signup"
-                      isAdmin={isAdmin}
-                      currentUser={user}
-                      onDelete={() => handleDeleteSignup(mySignup)}
-                    />
-                  </div>
+                  {mySignup && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-default-600 mb-2">我的报名</h4>
+                      <SignupItemCard
+                        signup={mySignup}
+                        type="signup"
+                        isAdmin={isAdmin}
+                        currentUser={user}
+                        onDelete={() => handleDeleteSignup(mySignup)}
+                      />
+                    </div>
+                  )}
 
                   {/* 代报名列表 */}
                   {myProxySignups.length > 0 && (
