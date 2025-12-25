@@ -105,11 +105,12 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
   };
 
   /**
-   * 报名成功后的回调：刷新本组件的报名数据 + 刷新父组件的团队数据
+   * 报名成功后的回调：刷新本组件的报名数据
+   * 注意：不需要刷新整个团队列表，避免页面闪烁影响用户体验
    */
   const handleSignupSuccess = async () => {
     await reloadSignups(); // 刷新报名数据
-    await onRefresh?.(); // 刷新团队数据（更新 signup_list）
+    // 不再调用 onRefresh，避免重新加载整个团队列表
   };
 
   if (!team) {
