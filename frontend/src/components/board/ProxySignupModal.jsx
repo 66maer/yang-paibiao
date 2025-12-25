@@ -1,27 +1,51 @@
-import { useEffect, useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Switch } from "@heroui/react";
-import XinfaSelector from "../XinfaSelector";
+import { useEffect, useState, useMemo } from "react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Switch } from "@heroui/react";
+import useSWR from "swr";
+import GroupMemberSelector from "../GroupMemberSelector";
 import { createSignup } from "../../api/signups";
+import { getGuildMembers } from "../../api/guilds";
 import { showToast } from "../../utils/toast";
+import { getMemberNickname } from "../../utils/memberUtils";
 
 /**
  * 代报名弹窗
  */
 export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, team, user, onSuccess }) {
-  const [signupUserId, setSignupUserId] = useState("");
-  const [signupCharacterId, setSignupCharacterId] = useState("");
-  const [playerName, setPlayerName] = useState("");
+  const [memberId, setMemberId] = useState("");
   const [characterName, setCharacterName] = useState("");
+  const [characterId, setCharacterId] = useState(null);
   const [xinfa, setXinfa] = useState("");
   const [isRich, setIsRich] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // 获取群组成员列表
+  const { data: membersData } = useSWR(
+    guildId ? `guild-members-${guildId}` : null,
+    () => getGuildMembers(guildId, { page: 1, page_size: 2000 }),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 300000, // 5分钟内去重
+    }
+  );
+
+  // 根据 memberId 获取成员信息，自动填充 player_name（优先级：群昵称 > 主要昵称 > 其他昵称 > QQ号）
+  const selectedMember = useMemo(() => {
+    if (!memberId || !membersData) return null;
+    const members = membersData?.data?.items || membersData?.data || [];
+    return members.find((m) => String(m.user_id) === String(memberId));
+  }, [memberId, membersData]);
+
+  const playerName = useMemo(() => {
+    if (!selectedMember) return "";
+    return getMemberNickname(selectedMember);
+  }, [selectedMember]);
+
   useEffect(() => {
     if (isOpen) {
-      setSignupUserId("");
-      setSignupCharacterId("");
-      setPlayerName("");
+      setMemberId("");
       setCharacterName("");
+      setCharacterId(null);
       setXinfa("");
       setIsRich(false);
       setSubmitting(false);
@@ -29,8 +53,9 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
   }, [isOpen]);
 
   const handleSubmit = async () => {
-    if (!playerName) {
-      showToast.error("请填写报名者名称");
+    // 验证：必须选择成员和心法
+    if (!memberId) {
+      showToast.error("请选择群组成员");
       return;
     }
     if (!xinfa) {
@@ -41,12 +66,12 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
     try {
       setSubmitting(true);
       await createSignup(guildId, teamId, {
-        signup_user_id: signupUserId ? Number(signupUserId) : null,
-        signup_character_id: signupCharacterId ? Number(signupCharacterId) : null,
+        signup_user_id: Number(memberId),
+        signup_character_id: characterId,
         signup_info: {
           submitter_name: user?.nickname || "我",
-          player_name: playerName,
-          character_name: characterName,
+          player_name: playerName, // 自动从成员获取
+          character_name: characterName || "",
           xinfa,
         },
         is_rich: isRich,
@@ -82,47 +107,30 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
           {team && <p className="text-sm text-default-500 font-normal">{team.title || "未命名开团"}</p>}
         </ModalHeader>
         <ModalBody>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="报名者名称"
-              placeholder="必填，显示在名单中"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              isRequired
-            />
-            <XinfaSelector label="心法" value={xinfa} onChange={setXinfa} isRequired variant="flat" />
-            <Input
-              label="角色名称"
-              placeholder="可选"
-              value={characterName}
-              onChange={(e) => setCharacterName(e.target.value)}
-            />
-            <div className="flex items-center gap-3 px-1">
-              <Switch isSelected={isRich} onValueChange={setIsRich} color="secondary">
-                老板位（卡位）
-              </Switch>
-            </div>
+          {/* 使用 GroupMemberSelector 替换所有输入字段 */}
+          <GroupMemberSelector
+            guildId={guildId}
+            memberId={memberId}
+            onMemberChange={setMemberId}
+            characterName={characterName}
+            onCharacterNameChange={setCharacterName}
+            onCharacterIdChange={setCharacterId}
+            characterXinfa={xinfa}
+            onXinfaChange={setXinfa}
+            memberLabel="被代报的群组成员"
+            characterLabel="角色名称"
+            xinfaLabel="心法"
+            isRequired
+          />
+
+          {/* 老板位开关 */}
+          <div className="flex items-center gap-3 px-1">
+            <Switch isSelected={isRich} onValueChange={setIsRich} color="secondary">
+              老板位（卡位）
+            </Switch>
           </div>
 
-          <div className="rounded-lg border border-default-200 dark:border-default-700 p-3 space-y-2 bg-default-50 dark:bg-default-50/5">
-            <p className="text-xs text-default-500">
-              如果被代报的人/角色在系统内，可填 ID 便于自动补全信息（可留空）。
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input
-                label="系统内用户ID"
-                placeholder="可选"
-                value={signupUserId}
-                onChange={(e) => setSignupUserId(e.target.value.replace(/[^0-9]/g, ""))}
-              />
-              <Input
-                label="系统内角色ID"
-                placeholder="可选"
-                value={signupCharacterId}
-                onChange={(e) => setSignupCharacterId(e.target.value.replace(/[^0-9]/g, ""))}
-              />
-            </div>
-          </div>
+          <p className="text-xs text-default-500">选择群组成员后，会自动填充报名者名称和角色信息。</p>
         </ModalBody>
         <ModalFooter>
           <Button variant="light" onPress={onClose} isDisabled={submitting}>

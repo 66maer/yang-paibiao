@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Autocomplete, AutocompleteItem } from "@heroui/react";
 import useSWR from "swr";
 import { pinyin } from "pinyin-pro";
@@ -19,6 +19,7 @@ import { Input } from "@heroui/react";
  * @param {Function} props.onMemberChange - 成员变化回调 (memberId) => void
  * @param {string} props.characterName - 角色名
  * @param {Function} props.onCharacterNameChange - 角色名变化回调 (name) => void
+ * @param {Function} props.onCharacterIdChange - 角色ID变化回调 (characterId) => void
  * @param {string} props.characterXinfa - 心法
  * @param {Function} props.onXinfaChange - 心法变化回调 (xinfa) => void
  * @param {string} props.memberLabel - 成员选择标签
@@ -33,6 +34,7 @@ export default function GroupMemberSelector({
   onMemberChange,
   characterName,
   onCharacterNameChange,
+  onCharacterIdChange,
   characterXinfa,
   onXinfaChange,
   memberLabel = "群组成员",
@@ -223,11 +225,15 @@ export default function GroupMemberSelector({
           onChange={(name) => {
             onCharacterNameChange?.(name);
           }}
-          onRoleSelect={(name, xinfa) => {
+          onRoleSelect={(name, xinfa, characterId) => {
             onCharacterNameChange?.(name);
             // 当选择角色卡片时，自动填入对应心法
             if (xinfa) {
               onXinfaChange?.(xinfa);
+            }
+            // 如果提供了 onCharacterIdChange 回调，传递角色ID
+            if (characterId) {
+              onCharacterIdChange?.(characterId);
             }
           }}
           label={characterLabel}

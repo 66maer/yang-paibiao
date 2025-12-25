@@ -13,7 +13,7 @@ import { sortCharacters } from "../utils/characterSort";
  * @param {number} props.memberId - 成员ID
  * @param {string} props.value - 当前选中的角色名
  * @param {Function} props.onChange - 角色名变化回调 (characterName) => void
- * @param {Function} props.onRoleSelect - 角色卡片选中回调 (characterName, xinfa) => void
+ * @param {Function} props.onRoleSelect - 角色卡片选中回调 (characterName, xinfa, characterId) => void
  * @param {string} props.label - 输入框标签
  * @param {string} props.placeholder - 输入框占位符
  * @param {boolean} props.isRequired - 是否必填
@@ -75,8 +75,8 @@ export default function MemberRoleSelector({
       xinfaKey = Object.keys(xinfaInfoTable).find((key) => xinfaInfoTable[key].name === character.xinfa);
     }
 
-    // 调用onRoleSelect回调
-    onRoleSelect?.(characterName, xinfaKey);
+    // 调用onRoleSelect回调，传递角色ID
+    onRoleSelect?.(characterName, xinfaKey, character.id);
   };
 
   // 是否有角色数据可以展示
@@ -86,9 +86,8 @@ export default function MemberRoleSelector({
     <div className="space-y-3">
       {/* 角色列表卡片（仅在有角色时显示） */}
       {hasCharacters && !isDisabled && (
-        <Card className="bg-gray-50 dark:bg-gray-900/50 border border-dashed">
+        <Card className="bg-gray-50/50 dark:bg-gray-900/50 border border-dashed">
           <CardBody className="gap-2">
-            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 px-2">成员的角色</p>
             {isLoading ? (
               <div className="flex justify-center py-4">
                 <Spinner size="sm" />
@@ -113,9 +112,8 @@ export default function MemberRoleSelector({
                   const xinfa = getXinfaInfo(character.xinfa);
                   const isSelected = inputValue === character.name;
 
-                  // 获取当前成员的角色关联信息（优先级和备注）
+                  // 获取当前成员的角色关联信息（备注）
                   const playerInfo = character.players?.find((p) => p.user_id === memberId);
-                  const priority = playerInfo?.priority ?? 0;
                   const notes = playerInfo?.notes || character.remark || "";
 
                   // 心法颜色样式
