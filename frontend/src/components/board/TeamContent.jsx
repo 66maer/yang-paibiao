@@ -17,6 +17,7 @@ import TeamBoard from "./TeamBoard";
 import { buildEmptyRules } from "../../utils/slotAllocation";
 import { transformSignups } from "../../utils/signupTransform";
 import useAuthStore from "../../stores/authStore";
+import GoldRecordModal from "./GoldRecordModal";
 
 /**
  * 中间内容 - 开团详情
@@ -24,6 +25,7 @@ import useAuthStore from "../../stores/authStore";
 export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
   const [boardMode, setBoardMode] = useState("view");
   const [pendingSlotView, setPendingSlotView] = useState(null); // 暂存未提交的视觉映射
+  const [goldRecordModalOpen, setGoldRecordModalOpen] = useState(false);
   const { user } = useAuthStore();
   const prevTeamIdRef = useRef(null);
 
@@ -101,18 +103,14 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
 
   // 处理关闭开团
   const handleCloseTeam = async () => {
-    const confirmed = await showConfirm("确定要关闭这个团吗？关闭后将无法继续报名。");
+    // 直接打开金团记录弹窗
+    setGoldRecordModalOpen(true);
+  };
 
-    if (!confirmed) return;
-
-    try {
-      await closeTeam(team.guild_id, team.id);
-      showToast.success("开团已关闭");
-      onRefresh?.();
-    } catch (error) {
-      console.error("关闭开团失败:", error);
-      showToast.error(error || "关闭开团失败");
-    }
+  // 处理金团记录保存成功
+  const handleGoldRecordSuccess = async () => {
+    setGoldRecordModalOpen(false);
+    onRefresh?.();
   };
 
   // 排表模式 - 分配坑位
@@ -269,8 +267,9 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
   };
 
   return (
-    <Card className="h-full">
-      <CardHeader className="flex-col items-start gap-3 pb-4">
+    <>
+      <Card className="h-full">
+        <CardHeader className="flex-col items-start gap-3 pb-4">
         {/* 标题行 */}
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
@@ -432,5 +431,15 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
         </div>
       </CardBody>
     </Card>
+
+    {/* 金团记录弹窗 */}
+    <GoldRecordModal
+      isOpen={goldRecordModalOpen}
+      onClose={() => setGoldRecordModalOpen(false)}
+      team={team}
+      guildId={team?.guild_id}
+      onSuccess={handleGoldRecordSuccess}
+    />
+  </>
   );
 }

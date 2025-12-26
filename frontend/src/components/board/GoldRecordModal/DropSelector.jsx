@@ -1,0 +1,161 @@
+import { useState } from "react";
+import { Chip } from "@heroui/react";
+import XinfaSelector from "../../XinfaSelector";
+import { goldDropConfig } from "../goldDropConfig";
+import { xinfaInfoTable } from "../../../config/xinfa";
+
+/**
+ * 掉落选择列表组件
+ * 支持4状态循环：未选中 → 普通 → 高价 → 烂了 → 未选中
+ *
+ * @param {Map} selectedDrops - 已选掉落Map<key, {name, status, xinfa?}>
+ * @param {function} onChange - 变化回调
+ */
+export default function DropSelector({ selectedDrops, onChange }) {
+  // 跟踪当前正在选择心法的物品 (用于展开心法选择器)
+  const [expandedXinfaDrop, setExpandedXinfaDrop] = useState(null);
+
+  // 根据状态返回Chip的样式和显示文本
+  const getChipStyle = (item, status, xinfaName) => {
+    const prefix = {
+      none: "",
+      normal: "",
+      expensive: "【高价】",
+      bad: "【烂了】",
+    }[status];
+
+    // 如果有心法，在名称后添加
+    const nameSuffix = xinfaName ? `(${xinfaName})` : "";
+
+    const style = {
+      none: { variant: "flat", className: "cursor-pointer" },
+      normal: { variant: "solid", className: "cursor-pointer" },
+      expensive: { variant: "solid", className: "cursor-pointer border-2 border-red-500" },
+      bad: { variant: "solid", className: "cursor-pointer border-2 border-gray-400" },
+    }[status];
+
+    return {
+      text: prefix + item.name + nameSuffix,
+      ...style,
+    };
+  };
+
+  // 处理掉落点击 - 切换状态
+  const handleDropClick = (rowIndex, groupIndex, itemIndex, item) => {
+    const key = `${rowIndex}_${groupIndex}_${itemIndex}`;
+    const currentData = selectedDrops.get(key);
+    const currentStatus = currentData?.status || "none";
+
+    // 状态循环：none → normal → expensive → bad → none
+    const statusFlow = {
+      none: "normal",
+      normal: "expensive",
+      expensive: "bad",
+      bad: "none",
+    };
+    const nextStatus = statusFlow[currentStatus];
+
+    // 更新状态
+    const newDrops = new Map(selectedDrops);
+    if (nextStatus === "none") {
+      newDrops.delete(key);
+      // 如果删除了，也要关闭心法选择器
+      if (expandedXinfaDrop === key) {
+        setExpandedXinfaDrop(null);
+      }
+    } else {
+      newDrops.set(key, {
+        name: item.name,
+        status: nextStatus,
+        xinfa: currentData?.xinfa,
+      });
+
+      // 如果这个物品需要心法，展开心法选择器
+      if (item.extraContent === "xinfa") {
+        setExpandedXinfaDrop(key);
+      }
+    }
+    onChange(newDrops);
+  };
+
+  // 处理心法选择变化
+  const handleXinfaChange = (key, xinfaKey) => {
+    const currentData = selectedDrops.get(key);
+    if (!currentData) return;
+
+    const newDrops = new Map(selectedDrops);
+    newDrops.set(key, {
+      ...currentData,
+      xinfa: xinfaKey,
+    });
+    onChange(newDrops);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="text-sm font-semibold">特殊掉落</div>
+      {goldDropConfig.map((row, rowIndex) => (
+        <div key={rowIndex} className="flex gap-8">
+          {row.map((group, groupIndex) => (
+            <div key={group.title} className="space-y-2">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400">{group.title}</div>
+              <div className="flex flex-wrap gap-2 items-start">
+                {group.items.map((item, itemIndex) => {
+                  const key = `${rowIndex}_${groupIndex}_${itemIndex}`;
+                  const dropData = selectedDrops.get(key);
+                  const status = dropData?.status || "none";
+
+                  // 获取心法名称（如果有）
+                  const xinfaName = dropData?.xinfa ? xinfaInfoTable[dropData.xinfa]?.name : null;
+                  const chipStyle = getChipStyle(item, status, xinfaName);
+
+                  const needsXinfa = item.extraContent === "xinfa" && status !== "none";
+                  const isExpanded = expandedXinfaDrop === key;
+
+                  // 如果需要显示心法选择器，使用相对定位布局
+                  if (needsXinfa && isExpanded) {
+                    return (
+                      <div key={key} className="relative inline-flex">
+                        <Chip
+                          color={item.color}
+                          variant={chipStyle.variant}
+                          className={chipStyle.className}
+                          onClick={() => handleDropClick(rowIndex, groupIndex, itemIndex, item)}
+                        >
+                          {chipStyle.text}
+                        </Chip>
+                        {/* 内联心法选择器 - 绝对定位，不影响布局高度 */}
+                        <div className="absolute left-full ml-2 top-0 w-48 z-10">
+                          <XinfaSelector
+                            label="心法"
+                            value={dropData?.xinfa || ""}
+                            onChange={(xinfaKey) => handleXinfaChange(key, xinfaKey)}
+                            variant="bordered"
+                            size="sm"
+                          />
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // 普通 Chip，直接渲染
+                  return (
+                    <Chip
+                      key={key}
+                      color={item.color}
+                      variant={chipStyle.variant}
+                      className={chipStyle.className}
+                      onClick={() => handleDropClick(rowIndex, groupIndex, itemIndex, item)}
+                    >
+                      {chipStyle.text}
+                    </Chip>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
