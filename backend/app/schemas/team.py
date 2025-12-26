@@ -45,6 +45,18 @@ class TeamUpdate(BaseModel):
     slot_view: Optional[List[int]] = Field(None, description="坑位视觉映射数组（用于连连看模式）")
 
 
+class TeamClose(BaseModel):
+    """关闭开团的请求模型"""
+    status: str = Field(..., description="关闭状态: completed(完成) 或 cancelled(取消)")
+
+    @model_validator(mode='after')
+    def validate_status(self):
+        """验证状态值必须是 completed 或 cancelled"""
+        if self.status not in ["completed", "cancelled"]:
+            raise ValueError("status 必须是 'completed' 或 'cancelled'")
+        return self
+
+
 class TeamOut(BaseModel):
     """开团的响应模型"""
     id: int

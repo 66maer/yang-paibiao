@@ -1,8 +1,9 @@
 """
 团队（开团）用户接口
 """
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -12,7 +13,7 @@ from app.models.guild import Guild
 from app.models.guild_member import GuildMember
 from app.models.team import Team
 from app.schemas.common import ResponseModel, success
-from app.schemas.team import TeamCreate, TeamUpdate, TeamOut
+from app.schemas.team import TeamCreate, TeamUpdate, TeamOut, TeamClose
 
 router = APIRouter(prefix="/guilds", tags=["团队/开团"]) 
 
@@ -75,6 +76,7 @@ async def create_team(
 @router.get("/{guild_id}/teams", response_model=ResponseModel[List[TeamOut]])
 async def list_teams(
     guild_id: int,
+    status_filter: Optional[str] = Query(None, alias="status", description="按状态过滤: open, completed, cancelled"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -90,12 +92,19 @@ async def list_teams(
     if gm_result.scalar_one_or_none() is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="非该群组成员")
 
-    # 获取所有非删除状态的团队
+    # 构建查询条件
+    conditions = [
+        Team.guild_id == guild_id,
+        Team.status != "deleted"
+    ]
+
+    # 如果提供了 status 参数，添加状态过滤
+    if status_filter:
+        conditions.append(Team.status == status_filter)
+
+    # 获取团队列表
     result = await db.execute(
-        select(Team).where(
-            Team.guild_id == guild_id,
-            Team.status != "deleted"
-        ).order_by(Team.team_time.desc())
+        select(Team).where(*conditions).order_by(Team.team_time.desc())
     )
     teams = result.scalars().all()
     return success([TeamOut.model_validate(t) for t in teams], message="获取成功")
@@ -192,6 +201,62 @@ async def update_team(
     await db.refresh(team)
 
     return success(TeamOut.model_validate(team), message="更新成功")
+
+
+@router.post("/{guild_id}/teams/{team_id}/close", response_model=ResponseModel[TeamOut])
+async def close_team(
+    guild_id: int,
+    team_id: int,
+    payload: TeamClose,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """关闭开团（完成或取消）"""
+    # 权限：群主或管理员或创建者
+    gm_result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id == current_user.id,
+            GuildMember.left_at.is_(None)
+        )
+    )
+    gm = gm_result.scalar_one_or_none()
+
+    # 获取团队
+    result = await db.execute(
+        select(Team).where(
+            Team.id == team_id,
+            Team.guild_id == guild_id,
+            Team.status != "deleted"
+        )
+    )
+    team = result.scalar_one_or_none()
+    if team is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="团队不存在")
+
+    # 验证权限：必须是群主、管理员或创建者
+    if gm is None or gm.left_at is not None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="非该群组成员")
+
+    is_owner_or_helper = gm.role in ["owner", "helper"]
+    is_creator = team.creator_id == current_user.id
+
+    if not (is_owner_or_helper or is_creator):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="权限不足，只有群主、管理员或创建者可以关闭开团")
+
+    # 检查团队是否已经关闭
+    if team.status in ["completed", "cancelled", "deleted"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"团队已经处于{team.status}状态，无法再次关闭")
+
+    # 更新团队状态
+    team.status = payload.status
+    team.closed_at = datetime.utcnow()
+    team.closed_by = current_user.id
+
+    await db.commit()
+    await db.refresh(team)
+
+    return success(TeamOut.model_validate(team), message="关闭成功")
 
 
 @router.delete("/{guild_id}/teams/{team_id}", response_model=ResponseModel)

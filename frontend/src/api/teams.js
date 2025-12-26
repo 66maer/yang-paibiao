@@ -49,10 +49,11 @@ export const updateTeam = (guildId, teamId, teamData) => {
  * 关闭开团
  * @param {number} guildId - 群组ID
  * @param {number} teamId - 开团ID
+ * @param {string} status - 关闭状态: 'completed' 或 'cancelled'
  * @returns {Promise}
  */
-export const closeTeam = (guildId, teamId) => {
-  return apiClient.post(`/guilds/${guildId}/teams/${teamId}/close`);
+export const closeTeam = (guildId, teamId, status = 'completed') => {
+  return apiClient.post(`/guilds/${guildId}/teams/${teamId}/close`, { status });
 };
 
 /**
