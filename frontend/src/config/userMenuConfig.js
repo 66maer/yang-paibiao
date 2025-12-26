@@ -6,6 +6,9 @@
  * - helper: 管理员
  * - member: 普通群员
  * - 如果 allowedRoles 为空或不设置，表示所有角色都可访问
+ *
+ * 菜单支持二级结构：
+ * - children: 子菜单数组（可选）
  */
 
 const userMenuConfig = [
@@ -17,13 +20,6 @@ const userMenuConfig = [
     // 所有角色都可访问
   },
   {
-    key: "members",
-    label: "成员管理",
-    path: "/members",
-    icon: "👥",
-    allowedRoles: ["owner"], // 仅群主
-  },
-  {
     key: "characters",
     label: "我的角色",
     path: "/characters",
@@ -31,17 +27,24 @@ const userMenuConfig = [
     // 所有角色都可访问
   },
   {
-    key: "templates",
-    label: "开团模板",
-    path: "/templates",
-    icon: "📝",
-    allowedRoles: ["owner", "helper"], // 群主和管理员
+    key: "my-records",
+    label: "我的记录",
+    path: "/my-records",
+    icon: "📊",
+    // 所有角色都可访问
   },
   {
-    key: "history",
-    label: "历史开团",
-    path: "/history",
-    icon: "📜",
+    key: "gold-records",
+    label: "金团记录",
+    path: "/gold-records",
+    icon: "💰",
+    // 所有角色都可访问
+  },
+  {
+    key: "ranking",
+    label: "红黑榜",
+    path: "/ranking",
+    icon: "🏆",
     // 所有角色都可访问
   },
   {
@@ -50,6 +53,32 @@ const userMenuConfig = [
     path: "/tools",
     icon: "🔧",
     // 所有角色都可访问
+  },
+  {
+    key: "admin",
+    label: "管理选项",
+    icon: "⚙️",
+    allowedRoles: ["owner", "helper"], // 仅管理员
+    children: [
+      {
+        key: "members",
+        label: "成员管理",
+        path: "/members",
+        icon: "👥",
+      },
+      {
+        key: "templates",
+        label: "开团模板",
+        path: "/templates",
+        icon: "📝",
+      },
+      {
+        key: "history",
+        label: "历史开团",
+        path: "/history",
+        icon: "📜",
+      },
+    ],
   },
 ];
 

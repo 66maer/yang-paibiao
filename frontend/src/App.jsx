@@ -21,6 +21,11 @@ import DebugTeamBoardPage from "./pages/DebugTeamBoardPage";
 import TemplatesPage from "./pages/user/TemplatesPage";
 import TemplateEditPage from "./pages/user/TemplateEditPage";
 import CharactersPage from "./pages/user/CharactersPage";
+import MyRecordsPage from "./pages/user/MyRecordsPage";
+import GoldRecordsPage from "./pages/user/GoldRecordsPage";
+import RankingPage from "./pages/user/RankingPage";
+import HistoryPage from "./pages/user/HistoryPage";
+import ToolsPage from "./pages/user/ToolsPage";
 
 function AppContent() {
   const navigate = useNavigate();
@@ -66,13 +71,16 @@ function AppContent() {
           <Route path="/board" element={<BoardPage />} />
           <Route path="/team/new" element={<TeamEditPage />} />
           <Route path="/team/:teamId/edit" element={<TeamEditPage />} />
-          <Route path="/members" element={<MembersPage />} />
           <Route path="/characters" element={<CharactersPage />} />
+          <Route path="/my-records" element={<MyRecordsPage />} />
+          <Route path="/gold-records" element={<GoldRecordsPage />} />
+          <Route path="/ranking" element={<RankingPage />} />
+          <Route path="/tools" element={<ToolsPage />} />
+          <Route path="/members" element={<MembersPage />} />
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/templates/new" element={<TemplateEditPage />} />
           <Route path="/templates/:templateId/edit" element={<TemplateEditPage />} />
-          <Route path="/history" element={<BoardPage />} />
-          <Route path="/tools" element={<BoardPage />} />
+          <Route path="/history" element={<HistoryPage />} />
         </Route>
 
         {/* 根据用户角色智能重定向 */}

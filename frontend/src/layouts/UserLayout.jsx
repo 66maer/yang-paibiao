@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Button } from "@heroui/react";
+import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
 import useAuthStore from "../stores/authStore";
 import ThemeSwitch from "../components/ThemeSwitch";
 import GuildSwitcher from "../components/user/GuildSwitcher";
@@ -24,6 +24,11 @@ export default function UserLayout() {
   // 判断菜单是否激活
   const isActive = (path) => location.pathname === path;
 
+  // 判断二级菜单是否有激活项
+  const hasActiveChild = (children) => {
+    return children?.some((child) => isActive(child.path));
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
       {/* 顶部导航栏 */}
@@ -43,23 +48,65 @@ export default function UserLayout() {
             {/* 功能菜单：仅在已选择当前群组时展示 */}
             {hasCurrentGuild && (
               <nav className="hidden md:flex items-center gap-1">
-                {menuItems.map((item) => (
-                  <Link key={item.key} to={item.path}>
-                    <Button
-                      size="lg"
-                      variant={isActive(item.path) ? "flat" : "light"}
-                      color={isActive(item.path) ? "primary" : "default"}
-                      className={`font-medium transition-all ${
-                        isActive(item.path)
-                          ? "bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 text-pink-600 dark:text-pink-400"
-                          : ""
-                      }`}
-                    >
-                      <span className="mr-1">{item.icon}</span>
-                      {item.label}
-                    </Button>
-                  </Link>
-                ))}
+                {menuItems.map((item) => {
+                  // 如果有子菜单，渲染下拉菜单
+                  if (item.children && item.children.length > 0) {
+                    const isChildActive = hasActiveChild(item.children);
+                    return (
+                      <Dropdown key={item.key}>
+                        <DropdownTrigger>
+                          <Button
+                            size="lg"
+                            variant={isChildActive ? "flat" : "light"}
+                            color={isChildActive ? "primary" : "default"}
+                            className={`font-medium transition-all ${
+                              isChildActive
+                                ? "bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 text-pink-600 dark:text-pink-400"
+                                : ""
+                            }`}
+                          >
+                            <span className="mr-1">{item.icon}</span>
+                            {item.label}
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu aria-label={item.label}>
+                          {item.children.map((child) => (
+                            <DropdownItem
+                              key={child.key}
+                              as={Link}
+                              to={child.path}
+                              className={isActive(child.path) ? "bg-primary-50 dark:bg-primary-900/20" : ""}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>{child.icon}</span>
+                                <span>{child.label}</span>
+                              </div>
+                            </DropdownItem>
+                          ))}
+                        </DropdownMenu>
+                      </Dropdown>
+                    );
+                  }
+
+                  // 普通菜单项
+                  return (
+                    <Link key={item.key} to={item.path}>
+                      <Button
+                        size="lg"
+                        variant={isActive(item.path) ? "flat" : "light"}
+                        color={isActive(item.path) ? "primary" : "default"}
+                        className={`font-medium transition-all ${
+                          isActive(item.path)
+                            ? "bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 text-pink-600 dark:text-pink-400"
+                            : ""
+                        }`}
+                      >
+                        <span className="mr-1">{item.icon}</span>
+                        {item.label}
+                      </Button>
+                    </Link>
+                  );
+                })}
               </nav>
             )}
 
