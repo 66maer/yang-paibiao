@@ -127,7 +127,7 @@ export default function GroupMemberSelector({
     return result;
   }, [members]);
 
-  // 根据搜索关键词过滤成员（参考XinfaSelector的实现）
+  // 根据搜索关键词过滤成员
   const filteredMembers = useMemo(() => {
     // 如果没有搜索关键词，显示前50个成员
     if (!searchKeyword.trim()) {
@@ -135,8 +135,19 @@ export default function GroupMemberSelector({
     }
 
     const searchKey = searchKeyword.toLowerCase().trim();
-    return enhancedMembers.filter((member) => member.searchText.includes(searchKey)).slice(0, 50);
-  }, [enhancedMembers, searchKeyword]);
+    const filtered = enhancedMembers.filter((member) => member.searchText.includes(searchKey));
+
+    // 确保当前选中的成员始终在列表中（即使搜索关键词不匹配）
+    if (memberId) {
+      const selectedMember = enhancedMembers.find((m) => String(m.user_id) === String(memberId));
+      if (selectedMember && !filtered.find((m) => String(m.user_id) === String(memberId))) {
+        // 将选中的成员添加到列表开头
+        filtered.unshift(selectedMember);
+      }
+    }
+
+    return filtered.slice(0, 50);
+  }, [enhancedMembers, searchKeyword, memberId]);
 
   // 处理成员显示文本（参考UserSelector格式）
   const getPrimaryNickname = (member) => {
@@ -173,26 +184,13 @@ export default function GroupMemberSelector({
         selectedKey={memberId ? String(memberId) : null}
         onSelectionChange={(key) => {
           onMemberChange?.(key);
-          // 选中后填充输入框为所选成员的主昵称
-          const selected = (members || []).find((m) => String(m.user_id) === String(key));
-          if (selected) {
-            const primaryName = getPrimaryNickname(selected);
-            setSearchKeyword(primaryName);
-          }
         }}
-        inputValue={searchKeyword}
         onInputChange={(value) => {
-          setSearchKeyword(value);
+          // 更新搜索关键词用于过滤列表
+          setSearchKeyword(value || "");
           // 如果允许自定义输入，将输入值传递给父组件作为 player_name
           if (allowCustomValue) {
             onPlayerNameChange?.(value);
-          }
-          // 如果用户清空或修改输入，清空选择以便重新搜索
-          if (memberId && value !== searchKeyword) {
-            const currentMember = members.find((m) => String(m.user_id) === String(memberId));
-            if (currentMember && value !== getPrimaryNickname(currentMember)) {
-              onMemberChange?.(null);
-            }
           }
         }}
         isRequired={isRequired}
