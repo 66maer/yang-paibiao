@@ -112,22 +112,47 @@ async def create_gold_record(
         if character:
             heibenren_info_dict['character_name'] = character.name
 
-    # 创建金团记录
-    gold_record = GoldRecord(
-        guild_id=guild_id,
-        team_id=payload.team_id,
-        creator_id=current_user.id,
-        dungeon=payload.dungeon,
-        run_date=payload.run_date,
-        total_gold=payload.total_gold,
-        worker_count=payload.worker_count,
-        special_drops=payload.special_drops,
-        heibenren_user_id=payload.heibenren_user_id,
-        heibenren_character_id=payload.heibenren_character_id,
-        heibenren_info=heibenren_info_dict,
-        notes=payload.notes
-    )
-    db.add(gold_record)
+    # 检查是否已存在该 team_id 的金团记录（upsert 逻辑）
+    gold_record = None
+    if payload.team_id:
+        existing_result = await db.execute(
+            select(GoldRecord).where(
+                GoldRecord.team_id == payload.team_id,
+                GoldRecord.guild_id == guild_id,
+                GoldRecord.deleted_at.is_(None)
+            )
+        )
+        gold_record = existing_result.scalar_one_or_none()
+
+    if gold_record:
+        # 存在则更新
+        gold_record.dungeon = payload.dungeon
+        gold_record.run_date = payload.run_date
+        gold_record.total_gold = payload.total_gold
+        gold_record.worker_count = payload.worker_count
+        gold_record.special_drops = payload.special_drops
+        gold_record.heibenren_user_id = payload.heibenren_user_id
+        gold_record.heibenren_character_id = payload.heibenren_character_id
+        gold_record.heibenren_info = heibenren_info_dict
+        gold_record.notes = payload.notes
+    else:
+        # 不存在则创建新记录
+        gold_record = GoldRecord(
+            guild_id=guild_id,
+            team_id=payload.team_id,
+            creator_id=current_user.id,
+            dungeon=payload.dungeon,
+            run_date=payload.run_date,
+            total_gold=payload.total_gold,
+            worker_count=payload.worker_count,
+            special_drops=payload.special_drops,
+            heibenren_user_id=payload.heibenren_user_id,
+            heibenren_character_id=payload.heibenren_character_id,
+            heibenren_info=heibenren_info_dict,
+            notes=payload.notes
+        )
+        db.add(gold_record)
+
     await db.commit()
     await db.refresh(gold_record)
 
