@@ -11,6 +11,7 @@ from app.models.subscription import Subscription
 from app.models.team import Team
 from app.models.template import TeamTemplate
 from app.models.signup import Signup
+from app.models.gold_record import GoldRecord
 
 __all__ = [
 	"SystemAdmin",
@@ -23,4 +24,5 @@ __all__ = [
 	"Team",
 	"TeamTemplate",
 	"Signup",
+	"GoldRecord",
 ]

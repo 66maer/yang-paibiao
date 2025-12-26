@@ -7,6 +7,7 @@ from app.api.v2.endpoints import guilds as guilds_user
 from app.api.v2.endpoints import teams
 from app.api.v2.endpoints import templates
 from app.api.v2.endpoints import signups
+from app.api.v2.endpoints import gold_records
 from app.api.v2 import admin
 from app.api.v2 import users
 from app.api.v2 import characters
@@ -61,4 +62,10 @@ api_router.include_router(
 api_router.include_router(
     characters.router,
     tags=["角色管理"]
+)
+
+# 金团记录接口
+api_router.include_router(
+    gold_records.router,
+    tags=["金团记录"]
 )

@@ -170,12 +170,12 @@
 
 | 接口                     | 方法   | 路径                                             | 状态 | 备注   |
 | ------------------------ | ------ | ------------------------------------------------ | ---- | ------ |
-| 创建金团记录             | POST   | `/guilds/{guild_id}/gold-records`                | ❌   | 未实现 |
-| 获取金团记录列表         | GET    | `/guilds/{guild_id}/gold-records`                | ❌   | 未实现 |
-| 获取金团记录详情         | GET    | `/guilds/{guild_id}/gold-records/{record_id}`    | ❌   | 未实现 |
-| 更新金团记录             | PUT    | `/guilds/{guild_id}/gold-records/{record_id}`    | ❌   | 未实现 |
-| 删除金团记录             | DELETE | `/guilds/{guild_id}/gold-records/{record_id}`    | ❌   | 未实现 |
-| 通过开团 ID 获取金团记录 | GET    | `/guilds/{guild_id}/teams/{team_id}/gold-record` | ❌   | 未实现 |
+| 创建金团记录             | POST   | `/guilds/{guild_id}/gold-records`                | ✅   | 已实现 |
+| 获取金团记录列表         | GET    | `/guilds/{guild_id}/gold-records`                | ✅   | 已实现 |
+| 获取金团记录详情         | GET    | `/guilds/{guild_id}/gold-records/{record_id}`    | ✅   | 已实现 |
+| 更新金团记录             | PUT    | `/guilds/{guild_id}/gold-records/{record_id}`    | ✅   | 已实现 |
+| 删除金团记录             | DELETE | `/guilds/{guild_id}/gold-records/{record_id}`    | ✅   | 已实现 |
+| 通过开团 ID 获取金团记录 | GET    | `/guilds/{guild_id}/teams/{team_id}/gold-record` | ✅   | 已实现 |
 
 ---
 

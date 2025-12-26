@@ -1535,11 +1535,11 @@ Authorization: Bearer <token>
 - `submitter_id`: 总是有值（当前登录用户）
 - `signup_user_id`: 可能为 null（代报系统外的人）
 - `signup_character_id`: 可能为 null（未录入系统的角色）
-- `signup_info`: 返回处理后的名称和QQ号（数据库存储原始值，响应时动态覆盖）
+- `signup_info`: 返回处理后的名称和 QQ 号（数据库存储原始值，响应时动态覆盖）
   - `submitter_name`: 根据 `submitter_id` 从数据库获取（优先级：群昵称 > 用户主昵称 > 用户其他昵称）
-  - `submitter_qq_number`: 提交者的QQ号（从 `submitter_id` 获取）
+  - `submitter_qq_number`: 提交者的 QQ 号（从 `submitter_id` 获取）
   - `player_name`: 如果 `signup_user_id` 存在，从数据库获取（优先级：群昵称 > 用户主昵称 > 用户其他昵称）；否则使用原始值
-  - `player_qq_number`: 报名者的QQ号（仅当 `signup_user_id` 存在时填充，否则为 null）
+  - `player_qq_number`: 报名者的 QQ 号（仅当 `signup_user_id` 存在时填充，否则为 null）
   - `character_name` 和 `xinfa`: 使用存储的原始值（在报名时已根据 `signup_character_id` 处理）
 - `is_proxy`: 自动判断，`submitter_id != signup_user_id` 或 `signup_user_id` 为 null 时为 true
 
@@ -1652,6 +1652,7 @@ Authorization: Bearer <token>
 ```
 
 **说明**：
+
 - 字段处理逻辑与提交报名接口完全相同
 - 仅检查 `signup_character_id`，如果有值则从数据库获取 `character_name` 和 `xinfa` 覆盖 `signup_info` 对应字段
 - 不检查 `signup_user_id`，保持前端提供的 `player_name`
@@ -1733,8 +1734,8 @@ Authorization: Bearer <token>
 
 **字段处理逻辑（与报名表相同）**：
 
-- 如果 `heibenren_user_id` 有效，后端从数据库取用户昵称覆盖 `user_name`
-- 如果 `heibenren_character_id` 有效，后端从数据库取角色名覆盖 `character_name`
+- 如果 `heibenren_user_id` 有效，后端从数据库取用户昵称覆盖 `user_name` 读取是时覆盖（优先级：群昵称 > 用户主昵称 > 用户其他昵称） 不修改数据库
+- 如果 `heibenren_character_id` 有效，后端从数据库取角色名覆盖 `character_name` 记录时覆盖
 - 否则使用 `heibenren_info` 中用户填写的值
 - 黑本人：第一个进副本的人，游戏中认为掉落和这个人有关
 
@@ -1992,9 +1993,9 @@ Authorization: Bearer <token>
 - **统一格式**：ID 有就填，没有就填 null 或 -1
 - **signup_info 字段**：
   - `submitter_name`: 提交者名称
-  - `submitter_qq_number`: 提交者QQ号
+  - `submitter_qq_number`: 提交者 QQ 号
   - `player_name`: 报名者名称
-  - `player_qq_number`: 报名者QQ号（可能为 null）
+  - `player_qq_number`: 报名者 QQ 号（可能为 null）
   - `character_name`: 角色名称
   - `xinfa`: 心法（必填）
 - **报名时处理逻辑**：
@@ -2002,8 +2003,8 @@ Authorization: Bearer <token>
   - 如果 `signup_character_id` 有效，后端从数据库获取角色名和心法覆盖 `character_name` 和 `xinfa`
   - 否则使用 `signup_info` 中用户填写的值
 - **获取报名时处理逻辑**（不修改数据库，仅覆盖返回数据）：
-  - 根据 `submitter_id` 从数据库获取提交者昵称和QQ号覆盖 `submitter_name` 和 `submitter_qq_number`
-  - 如果 `signup_user_id` 有效，从数据库获取报名者昵称和QQ号覆盖 `player_name` 和 `player_qq_number`
+  - 根据 `submitter_id` 从数据库获取提交者昵称和 QQ 号覆盖 `submitter_name` 和 `submitter_qq_number`
+  - 如果 `signup_user_id` 有效，从数据库获取报名者昵称和 QQ 号覆盖 `player_name` 和 `player_qq_number`
   - 昵称获取优先级：群昵称 > 用户主昵称 > 用户其他昵称
 - **报名灵活性**：
   - 可以只报心法，不指定角色（character_name 为空）
