@@ -1,4 +1,4 @@
-import { Switch, Input } from "@heroui/react";
+import { Switch } from "@heroui/react";
 import GroupMemberSelector from "../../GroupMemberSelector";
 
 /**
@@ -44,7 +44,7 @@ export default function HeibenrenSelector({
         </Switch>
       </div>
 
-      {!isWildHeibenren ? (
+      {!isWildHeibenren && (
         <GroupMemberSelector
           guildId={guildId}
           memberId={memberId}
@@ -56,13 +56,6 @@ export default function HeibenrenSelector({
           characterLabel="黑本角色"
           allowCustomValue={true}
           showXinfa={false}
-        />
-      ) : (
-        <Input
-          label="野人角色名"
-          placeholder="请输入野人角色名..."
-          value={characterName}
-          onValueChange={onCharacterNameChange}
         />
       )}
     </div>

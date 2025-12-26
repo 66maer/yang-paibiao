@@ -91,8 +91,7 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
       heibenren_character_id: isWildHeibenren ? null : heibenrenCharacterId,
       heibenren_info: isWildHeibenren
         ? {
-            user_name: "野人",
-            character_name: heibenrenCharacterName
+            user_name: "野人"
           }
         : null,
       notes: notes || null

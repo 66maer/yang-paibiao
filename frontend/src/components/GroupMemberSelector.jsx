@@ -29,6 +29,7 @@ import { Input } from "@heroui/react";
  * @param {boolean} props.isRequired - 是否必填
  * @param {boolean} props.isDisabled - 是否禁用
  * @param {boolean} props.allowCustomValue - 是否允许自定义输入（不仅从列表选择）
+ * @param {boolean} props.showXinfa - 是否显示心法选择器（默认true）
  */
 export default function GroupMemberSelector({
   guildId,
@@ -46,6 +47,7 @@ export default function GroupMemberSelector({
   isRequired = false,
   isDisabled = false,
   allowCustomValue = false,
+  showXinfa = true,
 }) {
   const [searchKeyword, setSearchKeyword] = useState("");
   const { currentGuildId } = useCurrentGuild();
@@ -260,14 +262,16 @@ export default function GroupMemberSelector({
       )}
 
       {/* 心法选择 */}
-      <XinfaSelector
-        label={xinfaLabel}
-        placeholder="选择心法"
-        value={characterXinfa}
-        onChange={onXinfaChange}
-        isRequired={isRequired}
-        isDisabled={isDisabled}
-      />
+      {showXinfa && (
+        <XinfaSelector
+          label={xinfaLabel}
+          placeholder="选择心法"
+          value={characterXinfa}
+          onChange={onXinfaChange}
+          isRequired={isRequired}
+          isDisabled={isDisabled}
+        />
+      )}
     </div>
   );
 }
