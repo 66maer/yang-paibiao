@@ -32,16 +32,15 @@ async def _get_heibenren_info(
     db: AsyncSession,
     guild_id: int,
     user_id: Optional[int],
-    character_id: Optional[int],
     original_info: dict
 ) -> dict:
     """
     获取黑本人显示信息
-    读取时动态覆盖用户名和角色名
+    读取时只动态覆盖用户名（不覆盖角色名，角色名在记录时已确定）
     """
     result_info = dict(original_info) if original_info else {}
 
-    # 如果有用户ID，从数据库获取用户昵称
+    # 如果有用户ID，从数据库获取用户昵称（动态覆盖）
     if user_id:
         user_result = await db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
@@ -60,12 +59,7 @@ async def _get_heibenren_info(
             else:
                 result_info['user_name'] = user.nickname
 
-    # 如果有角色ID，从数据库获取角色名
-    if character_id:
-        char_result = await db.execute(select(Character).where(Character.id == character_id))
-        character = char_result.scalar_one_or_none()
-        if character:
-            result_info['character_name'] = character.name
+    # 注意：character_name 在记录时已经覆盖并写入数据库，读取时直接使用数据库中的值
 
     return result_info
 
@@ -137,11 +131,10 @@ async def create_gold_record(
     await db.commit()
     await db.refresh(gold_record)
 
-    # 读取时覆盖黑本人信息
+    # 读取时覆盖黑本人信息（只覆盖 user_name）
     gold_record.heibenren_info = await _get_heibenren_info(
         db, guild_id,
         gold_record.heibenren_user_id,
-        gold_record.heibenren_character_id,
         gold_record.heibenren_info
     )
 
@@ -196,13 +189,12 @@ async def list_gold_records(
     )
     gold_records = result.scalars().all()
 
-    # 为每条记录覆盖黑本人信息
+    # 为每条记录覆盖黑本人信息（只覆盖 user_name）
     records_out = []
     for record in gold_records:
         record.heibenren_info = await _get_heibenren_info(
             db, guild_id,
             record.heibenren_user_id,
-            record.heibenren_character_id,
             record.heibenren_info
         )
         records_out.append(GoldRecordOut.model_validate(record))
@@ -241,11 +233,10 @@ async def get_gold_record(
     if gold_record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="金团记录不存在")
 
-    # 覆盖黑本人信息
+    # 覆盖黑本人信息（只覆盖 user_name）
     gold_record.heibenren_info = await _get_heibenren_info(
         db, guild_id,
         gold_record.heibenren_user_id,
-        gold_record.heibenren_character_id,
         gold_record.heibenren_info
     )
 
@@ -323,11 +314,10 @@ async def update_gold_record(
     await db.commit()
     await db.refresh(gold_record)
 
-    # 覆盖黑本人信息
+    # 覆盖黑本人信息（只覆盖 user_name）
     gold_record.heibenren_info = await _get_heibenren_info(
         db, guild_id,
         gold_record.heibenren_user_id,
-        gold_record.heibenren_character_id,
         gold_record.heibenren_info
     )
 
@@ -421,11 +411,10 @@ async def get_gold_record_by_team(
     if gold_record is None:
         return success(None, message="该开团尚未创建金团记录")
 
-    # 覆盖黑本人信息
+    # 覆盖黑本人信息（只覆盖 user_name）
     gold_record.heibenren_info = await _get_heibenren_info(
         db, guild_id,
         gold_record.heibenren_user_id,
-        gold_record.heibenren_character_id,
         gold_record.heibenren_info
     )
 

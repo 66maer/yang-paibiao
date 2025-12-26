@@ -9,6 +9,7 @@ import GroupMemberSelector from "../../GroupMemberSelector";
  * @param {function} onWildChange - 野人模式切换回调
  * @param {number} memberId - 成员ID
  * @param {function} onMemberChange - 成员变化回调
+ * @param {function} onPlayerNameChange - 玩家名称变化回调
  * @param {string} characterName - 角色名
  * @param {function} onCharacterNameChange - 角色名变化回调
  * @param {function} onCharacterIdChange - 角色ID变化回调
@@ -19,6 +20,7 @@ export default function HeibenrenSelector({
   onWildChange,
   memberId,
   onMemberChange,
+  onPlayerNameChange,
   characterName,
   onCharacterNameChange,
   onCharacterIdChange,
@@ -30,6 +32,7 @@ export default function HeibenrenSelector({
     // 切换时清空数据
     if (isWild) {
       onMemberChange(null);
+      onPlayerNameChange?.("");
       onCharacterIdChange(null);
       onCharacterNameChange("");
     }
@@ -49,6 +52,7 @@ export default function HeibenrenSelector({
           guildId={guildId}
           memberId={memberId}
           onMemberChange={onMemberChange}
+          onPlayerNameChange={onPlayerNameChange}
           characterName={characterName}
           onCharacterNameChange={onCharacterNameChange}
           onCharacterIdChange={onCharacterIdChange}

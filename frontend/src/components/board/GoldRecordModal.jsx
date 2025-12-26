@@ -24,6 +24,7 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
   const [selectedDrops, setSelectedDrops] = useState(new Map());
   const [isWildHeibenren, setIsWildHeibenren] = useState(false);
   const [heibenrenMemberId, setHeibenrenMemberId] = useState(null);
+  const [heibenrenPlayerName, setHeibenrenPlayerName] = useState(""); // 玩家昵称
   const [heibenrenCharacterName, setHeibenrenCharacterName] = useState("");
   const [heibenrenCharacterId, setHeibenrenCharacterId] = useState(null);
   const [notes, setNotes] = useState("");
@@ -58,6 +59,7 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
       setSelectedDrops(new Map());
       setIsWildHeibenren(false);
       setHeibenrenMemberId(null);
+      setHeibenrenPlayerName("");
       setHeibenrenCharacterName("");
       setHeibenrenCharacterId(null);
       setNotes("");
@@ -92,6 +94,11 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
       heibenren_info: isWildHeibenren
         ? {
             user_name: "野人"
+          }
+        : heibenrenPlayerName || heibenrenCharacterName
+        ? {
+            ...(heibenrenPlayerName && { user_name: heibenrenPlayerName }),
+            ...(heibenrenCharacterName && { character_name: heibenrenCharacterName })
           }
         : null,
       notes: notes || null
@@ -207,6 +214,7 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
                 onWildChange={setIsWildHeibenren}
                 memberId={heibenrenMemberId}
                 onMemberChange={setHeibenrenMemberId}
+                onPlayerNameChange={setHeibenrenPlayerName}
                 characterName={heibenrenCharacterName}
                 onCharacterNameChange={setHeibenrenCharacterName}
                 onCharacterIdChange={setHeibenrenCharacterId}

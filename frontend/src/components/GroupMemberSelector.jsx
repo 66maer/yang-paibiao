@@ -186,6 +186,16 @@ export default function GroupMemberSelector({
         selectedKey={memberId ? String(memberId) : null}
         onSelectionChange={(key) => {
           onMemberChange?.(key);
+          // 当从列表中选择成员时，获取该成员的昵称并传递给父组件
+          if (key) {
+            const selectedMember = enhancedMembers.find((m) => String(m.user_id) === String(key));
+            if (selectedMember) {
+              const playerName = getPrimaryNickname(selectedMember);
+              onPlayerNameChange?.(playerName);
+            }
+          } else {
+            onPlayerNameChange?.("");
+          }
         }}
         onInputChange={(value) => {
           // 更新搜索关键词用于过滤列表

@@ -18,9 +18,8 @@ from app.core.config import settings
 from app.models.base import Base
 
 # 导入所有模型以确保它们被注册到 Base.metadata
-from app.models import (
-    admin, user, character, guild, guild_member, subscription, team, signup, template
-)
+# 导入 app.models 会自动执行 __init__.py 中的所有导入，将所有模型注册到 Base.metadata
+import app.models  # noqa: F401 - 导入用于注册模型，不直接使用
 
 # Alembic Config对象
 config = context.config
