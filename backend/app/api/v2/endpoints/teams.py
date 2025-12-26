@@ -259,6 +259,52 @@ async def close_team(
     return success(TeamOut.model_validate(team), message="关闭成功")
 
 
+@router.post("/{guild_id}/teams/{team_id}/reopen", response_model=ResponseModel[TeamOut])
+async def reopen_team(
+    guild_id: int,
+    team_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """重新开启已关闭的开团"""
+    # 权限：群主或管理员
+    gm_result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id == current_user.id,
+            GuildMember.left_at.is_(None)
+        )
+    )
+    gm = gm_result.scalar_one_or_none()
+    _ensure_member_with_role(gm, roles=["owner", "helper"])
+
+    # 获取团队
+    result = await db.execute(
+        select(Team).where(
+            Team.id == team_id,
+            Team.guild_id == guild_id,
+            Team.status != "deleted"
+        )
+    )
+    team = result.scalar_one_or_none()
+    if team is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="团队不存在")
+
+    # 检查团队是否已关闭
+    if team.status not in ["completed", "cancelled"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="只能重新开启已关闭的团队")
+
+    # 更新团队状态为开启
+    team.status = "open"
+    team.closed_at = None
+    team.closed_by = None
+
+    await db.commit()
+    await db.refresh(team)
+
+    return success(TeamOut.model_validate(team), message="重新开启成功")
+
+
 @router.delete("/{guild_id}/teams/{team_id}", response_model=ResponseModel)
 async def delete_team(
     guild_id: int,
@@ -276,7 +322,7 @@ async def delete_team(
         )
     )
     gm = gm_result.scalar_one_or_none()
-    _ensure_member_with_role(gm, roles=["owner", "helper"]) 
+    _ensure_member_with_role(gm, roles=["owner", "helper"])
 
     result = await db.execute(
         select(Team).where(

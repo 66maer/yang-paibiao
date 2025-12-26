@@ -57,6 +57,16 @@ export const closeTeam = (guildId, teamId, status = 'completed') => {
 };
 
 /**
+ * 重新开启已关闭的开团
+ * @param {number} guildId - 群组ID
+ * @param {number} teamId - 开团ID
+ * @returns {Promise}
+ */
+export const reopenTeam = (guildId, teamId) => {
+  return apiClient.post(`/guilds/${guildId}/teams/${teamId}/reopen`);
+};
+
+/**
  * 删除开团
  * @param {number} guildId - 群组ID
  * @param {number} teamId - 开团ID
