@@ -82,7 +82,7 @@ export default function GoldTrendChart({ data = [] }) {
 
     return {
       title: {
-        text: "金团总额变化趋势",
+        text: "金团变化图",
         left: "center",
         textStyle: {
           fontSize: 16,
@@ -180,16 +180,16 @@ export default function GoldTrendChart({ data = [] }) {
           name: "小红手线",
           type: "line",
           data: Array(sortedData.length).fill(stats.high),
-          lineStyle: { color: "#22c55e", type: "dashed", width: 2 },
-          itemStyle: { color: "#22c55e" },
+          lineStyle: { color: "#ef4444", type: "dashed", width: 2 },
+          itemStyle: { color: "#ef4444" },
           symbol: "none",
         },
         {
           name: "黑鬼线",
           type: "line",
           data: Array(sortedData.length).fill(stats.low),
-          lineStyle: { color: "#ef4444", type: "dashed", width: 2 },
-          itemStyle: { color: "#ef4444" },
+          lineStyle: { color: "#22c55e", type: "dashed", width: 2 },
+          itemStyle: { color: "#22c55e" },
           symbol: "none",
         },
       ],
