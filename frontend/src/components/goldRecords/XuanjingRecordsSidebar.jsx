@@ -69,7 +69,11 @@ export default function XuanjingRecordsSidebar({ records = [] }) {
       <Divider />
       <CardBody className="max-h-[800px] overflow-y-auto space-y-2">
         {records.map((record) => (
-          <Card key={record.id} shadow="sm" className="border border-yellow-200 dark:border-yellow-900">
+          <Card
+            key={`${record.id}_${record.order || 1}`}
+            shadow="sm"
+            className="border border-yellow-200 dark:border-yellow-900"
+          >
             <CardBody className="p-3">
               {/* 日期 */}
               <div className="flex items-center justify-between mb-2">

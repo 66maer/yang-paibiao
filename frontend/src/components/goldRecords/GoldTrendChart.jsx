@@ -8,6 +8,7 @@ import { format } from "date-fns";
  */
 export default function GoldTrendChart({ data = [] }) {
   const chartRef = useRef(null);
+  const chartInstanceRef = useRef(null);
 
   /**
    * 计算统计数据（剔除异常值后）
@@ -42,7 +43,7 @@ export default function GoldTrendChart({ data = [] }) {
       mean: filteredMean,
       stdDev: filteredStdDev,
       high: filteredMean + 1.5 * filteredStdDev,
-      low: Math.max(0, filteredMean - 1.5 * filteredStdDev)
+      low: Math.max(0, filteredMean - 1.5 * filteredStdDev),
     };
   };
 
@@ -57,7 +58,7 @@ export default function GoldTrendChart({ data = [] }) {
    * 生成图表配置
    */
   const option = useMemo(() => {
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
       return null;
     }
 
@@ -73,8 +74,8 @@ export default function GoldTrendChart({ data = [] }) {
         left: "center",
         textStyle: {
           fontSize: 16,
-          fontWeight: "bold"
-        }
+          fontWeight: "bold",
+        },
       },
       tooltip: {
         trigger: "axis",
@@ -86,25 +87,25 @@ export default function GoldTrendChart({ data = [] }) {
             html += `${p.marker}${p.seriesName}: ${value}砖<br/>`;
           });
           return html;
-        }
+        },
       },
       legend: {
         data: ["实际收益", "平均线", "高收益线", "低收益线"],
-        top: 35
+        top: 35,
       },
       xAxis: {
         type: "category",
         data: sortedData.map((r) => format(new Date(r.run_date), "MM-dd")),
         axisLabel: {
-          rotate: 45
-        }
+          rotate: 45,
+        },
       },
       yAxis: {
         type: "value",
         name: "金额",
         axisLabel: {
-          formatter: (value) => `${formatGold(value)}砖`
-        }
+          formatter: (value) => `${formatGold(value)}砖`,
+        },
       },
       series: [
         {
@@ -113,7 +114,7 @@ export default function GoldTrendChart({ data = [] }) {
           data: sortedData.map((r) => r.total_gold),
           smooth: true,
           itemStyle: { color: "#3b82f6" },
-          lineStyle: { width: 2 }
+          lineStyle: { width: 2 },
         },
         {
           name: "平均线",
@@ -121,7 +122,7 @@ export default function GoldTrendChart({ data = [] }) {
           data: Array(sortedData.length).fill(stats.mean),
           lineStyle: { color: "#facc15", type: "dashed", width: 2 },
           itemStyle: { color: "#facc15" },
-          symbol: "none"
+          symbol: "none",
         },
         {
           name: "高收益线",
@@ -129,7 +130,7 @@ export default function GoldTrendChart({ data = [] }) {
           data: Array(sortedData.length).fill(stats.high),
           lineStyle: { color: "#22c55e", type: "dashed", width: 2 },
           itemStyle: { color: "#22c55e" },
-          symbol: "none"
+          symbol: "none",
         },
         {
           name: "低收益线",
@@ -137,42 +138,59 @@ export default function GoldTrendChart({ data = [] }) {
           data: Array(sortedData.length).fill(stats.low),
           lineStyle: { color: "#ef4444", type: "dashed", width: 2 },
           itemStyle: { color: "#ef4444" },
-          symbol: "none"
-        }
+          symbol: "none",
+        },
       ],
       grid: {
         left: "3%",
         right: "4%",
         bottom: "15%",
-        containLabel: true
-      }
+        containLabel: true,
+      },
     };
   }, [data]);
 
   /**
-   * 初始化和更新图表
+   * 初始化图表实例（仅一次）
    */
   useEffect(() => {
-    if (!chartRef.current || !option) return;
+    if (!chartRef.current) return;
 
-    const chartDom = chartRef.current;
-    const myChart = echarts.init(chartDom);
-
-    myChart.setOption(option);
+    // 初始化 ECharts 实例
+    if (!chartInstanceRef.current) {
+      chartInstanceRef.current = echarts.init(chartRef.current);
+    }
 
     // 响应式处理
-    const handleResize = () => myChart.resize();
+    const handleResize = () => {
+      chartInstanceRef.current?.resize();
+    };
     window.addEventListener("resize", handleResize);
 
-    // 清理
+    // 清理：仅在组件卸载时销毁
     return () => {
       window.removeEventListener("resize", handleResize);
-      myChart.dispose();
+      chartInstanceRef.current?.dispose();
+      chartInstanceRef.current = null;
     };
+  }, []);
+
+  /**
+   * 更新图表配置
+   */
+  useEffect(() => {
+    if (!chartInstanceRef.current) return;
+
+    if (option) {
+      chartInstanceRef.current.setOption(option, true);
+    } else {
+      // 清空图表
+      chartInstanceRef.current.clear();
+    }
   }, [option]);
 
   // 空状态
-  if (data.length === 0) {
+  if (!data || data.length === 0) {
     return (
       <div className="text-center py-20">
         <div className="text-6xl mb-4">📈</div>

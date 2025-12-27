@@ -20,9 +20,9 @@ export default function DungeonSelector({ value, onChange, isRequired = true }) 
     try {
       // 获取所有副本（不限制类型）
       const response = await getDungeonOptions();
-      // 后端返回格式：[{name, type, order}, ...]
+      // 后端返回格式：{options: [{name, type, order}, ...]}
       // 按 order 排序
-      const sortedDungeons = (response.data || []).sort((a, b) => a.order - b.order);
+      const sortedDungeons = (response.options || []).sort((a, b) => a.order - b.order);
       setDungeons(sortedDungeons);
     } catch (error) {
       console.error("加载副本列表失败:", error);
