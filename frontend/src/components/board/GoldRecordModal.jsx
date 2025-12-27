@@ -23,7 +23,16 @@ import { goldDropConfig } from "./goldDropConfig";
  * @param {function} onSuccess - 成功回调
  * @param {string} defaultDungeon - 默认副本（create模式）
  */
-export default function GoldRecordModal({ isOpen, onClose, team, record, mode = "team", guildId, onSuccess, defaultDungeon }) {
+export default function GoldRecordModal({
+  isOpen,
+  onClose,
+  team,
+  record,
+  mode = "team",
+  guildId,
+  onSuccess,
+  defaultDungeon,
+}) {
   // 模式判断
   const isTeamMode = mode === "team";
   const isEditMode = mode === "edit";
@@ -89,7 +98,7 @@ export default function GoldRecordModal({ isOpen, onClose, team, record, mode = 
 
       // 恢复掉落选择
       const dropsMap = new Map();
-      
+
       // 构建物品名称到位置的映射
       const nameToKeyMap = new Map();
       goldDropConfig.forEach((row, rowIndex) => {
@@ -131,7 +140,7 @@ export default function GoldRecordModal({ isOpen, onClose, team, record, mode = 
             dropsMap.set(itemInfo.key, {
               name: itemInfo.item.name,
               status: status,
-              xinfa: xinfa || undefined
+              xinfa: xinfa || undefined,
             });
           } else {
             console.warn(`未找到掉落物品: ${dropText}`);
@@ -146,7 +155,7 @@ export default function GoldRecordModal({ isOpen, onClose, team, record, mode = 
           dropsMap.set(xuanjingInfo.key, {
             name: "玄晶",
             status: "normal",
-            xuanjing: record.xuanjing_drops
+            xuanjing: record.xuanjing_drops,
           });
         }
       }
@@ -230,7 +239,9 @@ export default function GoldRecordModal({ isOpen, onClose, team, record, mode = 
       runDate = new Date(team.team_time).toISOString().split("T")[0];
     } else {
       dungeon = selectedDungeon;
-      runDate = runDateTime ? new Date(runDateTime).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
+      runDate = runDateTime
+        ? new Date(runDateTime).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0];
     }
 
     const payload = {
@@ -245,15 +256,15 @@ export default function GoldRecordModal({ isOpen, onClose, team, record, mode = 
       heibenren_character_id: isWildHeibenren ? null : heibenrenCharacterId,
       heibenren_info: isWildHeibenren
         ? {
-            user_name: "野人"
+            user_name: "野人",
           }
         : heibenrenPlayerName || heibenrenCharacterName
         ? {
             ...(heibenrenPlayerName && { user_name: heibenrenPlayerName }),
-            ...(heibenrenCharacterName && { character_name: heibenrenCharacterName })
+            ...(heibenrenCharacterName && { character_name: heibenrenCharacterName }),
           }
         : null,
-      notes: notes || null
+      notes: notes || null,
     };
 
     // 只在team模式且有team_id时才添加
@@ -356,7 +367,7 @@ export default function GoldRecordModal({ isOpen, onClose, team, record, mode = 
       classNames={{
         base: "bg-gradient-to-br from-pink-50 to-purple-50 dark:from-gray-900 dark:to-gray-800",
         header: "border-b border-pink-200 dark:border-pink-900",
-        footer: "border-t border-pink-200 dark:border-pink-900"
+        footer: "border-t border-pink-200 dark:border-pink-900",
       }}
     >
       <ModalContent>
@@ -411,10 +422,7 @@ export default function GoldRecordModal({ isOpen, onClose, team, record, mode = 
               <Button variant="light" onPress={onClose} isDisabled={isSubmitting}>
                 取消
               </Button>
-              <Button
-                className="bg-gradient-to-r from-pink-500 to-purple-500 text-white"
-                onPress={handleNextPage}
-              >
+              <Button className="bg-gradient-to-r from-pink-500 to-purple-500 text-white" onPress={handleNextPage}>
                 下一页
               </Button>
             </>
