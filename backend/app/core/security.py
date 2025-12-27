@@ -36,6 +36,10 @@ def get_password_hash(password: str) -> str:
     Returns:
         str: 哈希后的密码
     """
+    # bcrypt 限制密码不能超过 72 字节
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password = password_bytes[:72].decode('utf-8', errors='ignore')
     return pwd_context.hash(password)
 
 

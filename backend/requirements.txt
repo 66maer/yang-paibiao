@@ -12,7 +12,8 @@ psycopg2-binary==2.9.9  # PostgreSQL同步驱动
 
 # 认证和安全
 python-jose[cryptography]==3.3.0  # JWT
-passlib[bcrypt]==1.7.4  # 密码哈希
+passlib==1.7.4  # 密码哈希
+bcrypt==4.0.1  # bcrypt 哈希
 python-multipart==0.0.6  # 表单数据解析
 
 # 工具
