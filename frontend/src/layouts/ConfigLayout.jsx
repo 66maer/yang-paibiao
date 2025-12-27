@@ -9,6 +9,7 @@ export default function ConfigLayout() {
 
   const configMenuItems = [
     { path: "/admin/configs/dungeons", label: "副本配置", icon: "🏔️" },
+    { path: "/admin/configs/seasons", label: "赛季修正", icon: "📅" },
     // 未来可以在这里添加更多配置项
     // { path: "/admin/configs/system", label: "系统配置", icon: "⚙️" },
     // { path: "/admin/configs/notifications", label: "通知配置", icon: "🔔" },

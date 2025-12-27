@@ -160,6 +160,13 @@ async def create_gold_record(
     await db.commit()
     await db.refresh(gold_record)
 
+    # 触发排名计算和快照保存
+    if gold_record.heibenren_user_id:
+        from app.services.ranking_service import RankingService
+        ranking_service = RankingService(db)
+        rankings = await ranking_service.calculate_guild_rankings(guild_id)
+        await ranking_service.save_ranking_snapshot(guild_id, rankings)
+
     # 读取时覆盖黑本人信息（只覆盖 user_name）
     gold_record.heibenren_info = await _get_heibenren_info(
         db, guild_id,
@@ -346,6 +353,13 @@ async def update_gold_record(
 
     await db.commit()
     await db.refresh(gold_record)
+
+    # 触发排名计算和快照保存
+    if gold_record.heibenren_user_id:
+        from app.services.ranking_service import RankingService
+        ranking_service = RankingService(db)
+        rankings = await ranking_service.calculate_guild_rankings(guild_id)
+        await ranking_service.save_ranking_snapshot(guild_id, rankings)
 
     # 覆盖黑本人信息（只覆盖 user_name）
     gold_record.heibenren_info = await _get_heibenren_info(

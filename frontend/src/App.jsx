@@ -11,6 +11,7 @@ import UserManagementPage from "./pages/admin/UserManagementPage";
 import CharacterManagementPage from "./pages/admin/CharacterManagementPage";
 import ConfigLayout from "./layouts/ConfigLayout";
 import DungeonConfigPage from "./pages/admin/DungeonConfigPage";
+import SeasonCorrectionPage from "./pages/admin/SeasonCorrectionPage";
 import UserLayout from "./layouts/UserLayout";
 import BoardPage from "./pages/user/BoardPage";
 import GuildHubPage from "./pages/user/GuildHubPage";
@@ -61,6 +62,7 @@ function AppContent() {
           <Route path="characters" element={<CharacterManagementPage />} />
           <Route path="configs" element={<ConfigLayout />}>
             <Route path="dungeons" element={<DungeonConfigPage />} />
+            <Route path="seasons" element={<SeasonCorrectionPage />} />
           </Route>
         </Route>
 
