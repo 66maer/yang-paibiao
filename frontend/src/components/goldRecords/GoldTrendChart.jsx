@@ -18,32 +18,33 @@ export default function GoldTrendChart({ data = [] }) {
       return { mean: 0, stdDev: 0, high: 0, low: 0 };
     }
 
-    // 1. 计算初始均值和标准差
-    const values = records.map((r) => r.total_gold);
+    let values = records.map((r) => r.total_gold);
+
+    // 数据点>=10时，过滤前后10%的异常值
+    if (records.length >= 10) {
+      // 按金额排序
+      const sortedValues = [...values].sort((a, b) => a - b);
+
+      // 计算过滤数量（向下取整）
+      const filterCount = Math.floor(records.length * 0.1);
+
+      // 过滤掉前后各10%的数据
+      values = sortedValues.slice(filterCount, sortedValues.length - filterCount);
+    }
+
+    // 计算均值
     const mean = values.reduce((a, b) => a + b, 0) / values.length;
 
+    // 计算标准差
     const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
     const stdDev = Math.sqrt(variance);
 
-    // 2. 剔除3倍标准差以上的异常值
-    const filteredValues = values.filter((val) => Math.abs(val - mean) <= 3 * stdDev);
-
-    if (filteredValues.length === 0) {
-      return { mean, stdDev, high: mean, low: mean };
-    }
-
-    // 3. 重新计算均值和标准差
-    const filteredMean = filteredValues.reduce((a, b) => a + b, 0) / filteredValues.length;
-    const filteredVariance =
-      filteredValues.reduce((sum, val) => sum + Math.pow(val - filteredMean, 2), 0) / filteredValues.length;
-    const filteredStdDev = Math.sqrt(filteredVariance);
-
-    // 4. 计算高低收益线（均值 ± 1.5 标准差）
+    // 计算高低收益线（均值 ± 标准差）
     return {
-      mean: filteredMean,
-      stdDev: filteredStdDev,
-      high: filteredMean + 1.5 * filteredStdDev,
-      low: Math.max(0, filteredMean - 1.5 * filteredStdDev),
+      mean: mean,
+      stdDev: stdDev,
+      high: mean + stdDev,
+      low: Math.max(0, mean - stdDev),
     };
   };
 
@@ -81,16 +82,36 @@ export default function GoldTrendChart({ data = [] }) {
         trigger: "axis",
         formatter: (params) => {
           const date = params[0].name;
+          const dataIndex = params[0].dataIndex;
+          const record = sortedData[dataIndex];
+
           let html = `${date}<br/>`;
+
+          // 显示黑本人和角色
+          if (record.heibenren_info) {
+            const { user_name, character_name } = record.heibenren_info;
+            if (user_name) {
+              html += `黑本人: ${user_name}`;
+              if (character_name) {
+                html += ` (${character_name})`;
+              }
+              html += `<br/>`;
+            } else if (character_name) {
+              html += `角色: ${character_name}<br/>`;
+            }
+          }
+
+          // 显示各项数据
           params.forEach((p) => {
             const value = (p.value / 10000).toFixed(2);
             html += `${p.marker}${p.seriesName}: ${value}砖<br/>`;
           });
+
           return html;
         },
       },
       legend: {
-        data: ["实际收益", "平均线", "高收益线", "低收益线"],
+        data: ["金团", "平均线", "小红手线", "黑鬼线"],
         top: 35,
       },
       xAxis: {
@@ -109,12 +130,25 @@ export default function GoldTrendChart({ data = [] }) {
       },
       series: [
         {
-          name: "实际收益",
+          name: "金团",
           type: "line",
           data: sortedData.map((r) => r.total_gold),
           smooth: true,
           itemStyle: { color: "#3b82f6" },
           lineStyle: { width: 2 },
+          label: {
+            show: true,
+            position: "top",
+            fontSize: 10,
+            color: "#666",
+            formatter: (params) => {
+              const record = sortedData[params.dataIndex];
+              if (record.heibenren_info) {
+                return record.heibenren_info.user_name || record.heibenren_info.character_name || "";
+              }
+              return "";
+            },
+          },
         },
         {
           name: "平均线",
@@ -125,7 +159,7 @@ export default function GoldTrendChart({ data = [] }) {
           symbol: "none",
         },
         {
-          name: "高收益线",
+          name: "小红手线",
           type: "line",
           data: Array(sortedData.length).fill(stats.high),
           lineStyle: { color: "#22c55e", type: "dashed", width: 2 },
@@ -133,7 +167,7 @@ export default function GoldTrendChart({ data = [] }) {
           symbol: "none",
         },
         {
-          name: "低收益线",
+          name: "黑鬼线",
           type: "line",
           data: Array(sortedData.length).fill(stats.low),
           lineStyle: { color: "#ef4444", type: "dashed", width: 2 },
