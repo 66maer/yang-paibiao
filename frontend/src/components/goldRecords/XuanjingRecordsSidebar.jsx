@@ -80,17 +80,16 @@ export default function XuanjingRecordsSidebar({ records = [] }) {
                 <span className="text-xs text-gray-500">{format(new Date(record.run_date), "yyyy-MM-dd")}</span>
                 {record.isDouble && (
                   <Chip size="sm" color="warning" variant="flat">
-                    双闪 {record.order}
+                    双闪
                   </Chip>
                 )}
               </div>
+              <div className="flex items-center justify-between gap-2">
+                {/* 黑本人 */}
+                <div className="mb-2">{renderHeibenren(record.heibenren_info)}</div>
 
-              {/* 黑本人 */}
-              <div className="mb-2">{renderHeibenren(record.heibenren_info)}</div>
-
-              {/* 价格 */}
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-warning">{formatGold(record.xuanjing?.price)}</span>
+                {/* 玄晶序号与价格 */}
+                <span className="text-lg font-bold text-warning">{formatGold(record.xuanjing)}</span>
               </div>
             </CardBody>
           </Card>

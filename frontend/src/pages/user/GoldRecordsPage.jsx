@@ -48,7 +48,7 @@ export default function GoldRecordsPage() {
       const params = {
         page: currentPage,
         page_size: pageSize,
-        ...(selectedDungeon && { dungeon: selectedDungeon })
+        ...(selectedDungeon && { dungeon: selectedDungeon }),
       };
 
       const response = await getGoldRecords(currentGuild.id, params);
@@ -80,22 +80,23 @@ export default function GoldRecordsPage() {
       .filter((r) => r.has_xuanjing)
       .flatMap((r) => {
         const records = [];
+        // first 和 second 字段直接存储价格数值
         if (r.xuanjing_drops?.first) {
           records.push({
-            id: `${r.id}_first`,
+            id: r.id,
             ...r,
             xuanjing: r.xuanjing_drops.first,
             isDouble: !!r.xuanjing_drops.second,
-            order: 1
+            order: 1,
           });
         }
         if (r.xuanjing_drops?.second) {
           records.push({
-            id: `${r.id}_second`,
+            id: r.id,
             ...r,
             xuanjing: r.xuanjing_drops.second,
             isDouble: true,
-            order: 2
+            order: 2,
           });
         }
         return records;
@@ -149,7 +150,7 @@ export default function GoldRecordsPage() {
     <div className="container mx-auto py-8">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* 主内容区 - 9列 */}
-        <div className="lg:col-span-9 space-y-4">
+        <div className="lg:col-span-10 space-y-4">
           {/* 工具栏 */}
           <GoldRecordToolbar
             selectedDungeon={selectedDungeon}
@@ -182,12 +183,7 @@ export default function GoldRecordsPage() {
               {/* 分页 */}
               {totalPages > 1 && (
                 <div className="flex justify-center mt-4">
-                  <Pagination
-                    total={totalPages}
-                    page={currentPage}
-                    onChange={setCurrentPage}
-                    showControls
-                  />
+                  <Pagination total={totalPages} page={currentPage} onChange={setCurrentPage} showControls />
                 </div>
               )}
             </CardBody>
@@ -195,7 +191,7 @@ export default function GoldRecordsPage() {
         </div>
 
         {/* 侧边栏 - 3列 */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-2">
           <XuanjingRecordsSidebar records={xuanjingRecords} />
         </div>
       </div>

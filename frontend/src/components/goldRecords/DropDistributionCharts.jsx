@@ -70,10 +70,8 @@ export default function DropDistributionCharts({ records = [] }) {
             itemColor = "#888888"; // 灰色
           } else if (xinfa) {
             // 特效武器：按心法区分
-            // 尝试从心法表中查找心法信息
-            const xinfaInfo = Object.values(xinfaInfoTable).find(
-              (info) => info.name === xinfa || info.nickname.includes(xinfa)
-            );
+            // 直接通过 key 查找心法信息（与表格中的处理一致）
+            const xinfaInfo = xinfaInfoTable[xinfa];
 
             if (xinfaInfo) {
               itemName = `特效武器(${xinfaInfo.name})`;
@@ -85,7 +83,7 @@ export default function DropDistributionCharts({ records = [] }) {
             }
           } else {
             // 没有心法信息的特效武器
-            itemName = "特效武器(未知心法)";
+            itemName = "特效武器(未填写)";
             itemColor = "#666666";
           }
 

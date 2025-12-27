@@ -65,8 +65,6 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
       <div className="flex flex-wrap gap-1">
         {allDrops.map((drop, idx) => {
           // 解析状态
-          const isExpensive = drop.startsWith("【高价】");
-          const isBad = drop.startsWith("【烂了】");
           const cleanDrop = drop.replace(/^【高价】|^【烂了】/, "");
 
           // 解析特效武器的心法名称
@@ -79,13 +77,11 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
           }
 
           // 获取颜色
-          const baseColor = getDropColor(drop);
-          // 高价用红色边框，烂了用灰色
-          const color = isExpensive ? "danger" : isBad ? "default" : baseColor;
+          const color = getDropColor(drop);
 
           return (
             <Chip key={idx} size="sm" variant="flat" color={color}>
-              {displayText}
+              {drop}
             </Chip>
           );
         })}

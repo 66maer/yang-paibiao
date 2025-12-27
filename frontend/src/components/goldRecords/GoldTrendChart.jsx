@@ -179,7 +179,12 @@ export default function GoldTrendChart({ data = [] }) {
    * 更新图表配置
    */
   useEffect(() => {
-    if (!chartInstanceRef.current) return;
+    if (!chartRef.current) return;
+
+    // 如果实例不存在，先初始化
+    if (!chartInstanceRef.current) {
+      chartInstanceRef.current = echarts.init(chartRef.current);
+    }
 
     if (option) {
       chartInstanceRef.current.setOption(option, true);
