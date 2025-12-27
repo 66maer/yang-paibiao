@@ -1,0 +1,149 @@
+import { format } from "date-fns";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Spinner } from "@heroui/react";
+
+/**
+ * 金团记录列表
+ * @param {array} records - 金团记录列表
+ * @param {boolean} loading - 加载状态
+ * @param {function} onEdit - 编辑回调
+ * @param {boolean} isAdmin - 是否是管理员
+ * @param {number} currentUserId - 当前用户ID
+ */
+export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin, currentUserId }) {
+  /**
+   * 格式化金额为"X砖Y金"
+   */
+  const formatGold = (copper) => {
+    const gold = Math.floor(copper / 10000);
+    const remainder = copper % 10000;
+    if (remainder === 0) {
+      return `${gold}砖`;
+    }
+    return `${gold}砖${remainder}金`;
+  };
+
+  /**
+   * 渲染掉落标签（完全显示，不省略）
+   */
+  const renderDrops = (drops, has_xuanjing) => {
+    const allDrops = [...(drops || [])];
+
+    // 如果有玄晶，添加玄晶标签
+    if (has_xuanjing) {
+      allDrops.unshift("玄晶");
+    }
+
+    if (allDrops.length === 0) {
+      return <span className="text-gray-400 text-sm">无</span>;
+    }
+
+    return (
+      <div className="flex flex-wrap gap-1">
+        {allDrops.map((drop, idx) => {
+          // 解析状态
+          const isExpensive = drop.startsWith("【高价】");
+          const isBad = drop.startsWith("【烂了】");
+          const isXuanjing = drop === "玄晶";
+          const cleanDrop = drop.replace(/^【高价】|^【烂了】/, "");
+
+          return (
+            <Chip
+              key={idx}
+              size="sm"
+              variant="flat"
+              color={isXuanjing ? "warning" : isExpensive ? "danger" : isBad ? "default" : "primary"}
+            >
+              {cleanDrop}
+            </Chip>
+          );
+        })}
+      </div>
+    );
+  };
+
+  /**
+   * 渲染黑本人信息
+   */
+  const renderHeibenren = (heibenrenInfo) => {
+    if (!heibenrenInfo) return <span className="text-gray-400 text-sm">未知</span>;
+
+    const { user_name, character_name } = heibenrenInfo;
+
+    if (user_name && character_name) {
+      return (
+        <div className="flex flex-col">
+          <span className="text-sm font-medium">{user_name}</span>
+          <span className="text-xs text-gray-500">{character_name}</span>
+        </div>
+      );
+    }
+
+    return <span className="text-sm">{user_name || character_name || "未知"}</span>;
+  };
+
+  /**
+   * 渲染操作按钮（只允许编辑）
+   */
+  const renderActions = (record) => {
+    const canEdit = isAdmin || record.creator_id === currentUserId;
+
+    if (!canEdit) return null;
+
+    return (
+      <Button size="sm" variant="flat" color="primary" onPress={() => onEdit(record)}>
+        编辑
+      </Button>
+    );
+  };
+
+  // 空状态
+  if (!loading && records.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <div className="text-6xl mb-4">📝</div>
+        <p className="text-default-500">暂无金团记录</p>
+      </div>
+    );
+  }
+
+  return (
+    <Table
+      aria-label="金团记录列表"
+      classNames={{
+        base: "max-h-[600px] overflow-auto",
+        table: "min-h-[400px]"
+      }}
+    >
+      <TableHeader>
+        <TableColumn>日期</TableColumn>
+        <TableColumn>副本</TableColumn>
+        <TableColumn>总金额</TableColumn>
+        <TableColumn>黑本人</TableColumn>
+        <TableColumn>掉落详情</TableColumn>
+        <TableColumn>操作</TableColumn>
+      </TableHeader>
+      <TableBody
+        items={records}
+        loadingContent={<Spinner />}
+        loadingState={loading ? "loading" : "idle"}
+      >
+        {(record) => (
+          <TableRow key={record.id}>
+            <TableCell>
+              <span className="text-sm">{format(new Date(record.run_date), "yyyy-MM-dd")}</span>
+            </TableCell>
+            <TableCell>
+              <span className="text-sm font-medium">{record.dungeon}</span>
+            </TableCell>
+            <TableCell>
+              <span className="text-sm font-semibold text-primary">{formatGold(record.total_gold)}</span>
+            </TableCell>
+            <TableCell>{renderHeibenren(record.heibenren_info)}</TableCell>
+            <TableCell className="min-w-[200px]">{renderDrops(record.special_drops, record.has_xuanjing)}</TableCell>
+            <TableCell>{renderActions(record)}</TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
+}

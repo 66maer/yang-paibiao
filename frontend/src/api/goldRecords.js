@@ -39,3 +39,24 @@ export const getGoldRecord = (guildId, recordId) => {
 export const getGoldRecordByTeam = (guildId, teamId) => {
   return apiClient.get(`/guilds/${guildId}/teams/${teamId}/gold-record`);
 };
+
+/**
+ * 更新金团记录
+ * @param {number} guildId - 群组ID
+ * @param {number} recordId - 记录ID
+ * @param {object} recordData - 更新数据
+ * @returns {Promise}
+ */
+export const updateGoldRecord = (guildId, recordId, recordData) => {
+  return apiClient.put(`/guilds/${guildId}/gold-records/${recordId}`, recordData);
+};
+
+/**
+ * 删除金团记录
+ * @param {number} guildId - 群组ID
+ * @param {number} recordId - 记录ID
+ * @returns {Promise}
+ */
+export const deleteGoldRecord = (guildId, recordId) => {
+  return apiClient.delete(`/guilds/${guildId}/gold-records/${recordId}`);
+};

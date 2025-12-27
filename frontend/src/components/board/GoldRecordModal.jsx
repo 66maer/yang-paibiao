@@ -1,23 +1,34 @@
 import { useState, useEffect } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Textarea } from "@heroui/react";
 import { showToast } from "../../utils/toast";
-import { createGoldRecord } from "../../api/goldRecords";
+import { createGoldRecord, updateGoldRecord } from "../../api/goldRecords";
 import { closeTeam } from "../../api/teams";
 import GoldAmountInput from "./GoldRecordModal/GoldAmountInput";
 import DropSelector from "./GoldRecordModal/DropSelector";
 import WorkerSlider from "./GoldRecordModal/WorkerSlider";
 import HeibenrenSelector from "./GoldRecordModal/HeibenrenSelector";
+import DateTimeInput from "./GoldRecordModal/DateTimeInput";
+import DungeonSelector from "./GoldRecordModal/DungeonSelector";
 
 /**
  * 金团记录弹窗组件
  *
  * @param {boolean} isOpen - 是否打开
  * @param {function} onClose - 关闭回调
- * @param {object} team - 团队信息
+ * @param {object} team - 团队信息（team模式）
+ * @param {object} record - 金团记录（edit模式）
+ * @param {'team' | 'create' | 'edit'} mode - 模式
  * @param {number} guildId - 群组ID
  * @param {function} onSuccess - 成功回调
+ * @param {string} defaultDungeon - 默认副本（create模式）
  */
-export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSuccess }) {
+export default function GoldRecordModal({ isOpen, onClose, team, record, mode = "team", guildId, onSuccess, defaultDungeon }) {
+  // 模式判断
+  const isTeamMode = mode === "team";
+  const isEditMode = mode === "edit";
+  // const isCreateMode = mode === "create"; // 暂未使用，预留
+
+  // 状态
   const [currentPage, setCurrentPage] = useState(1);
   const [totalGold, setTotalGold] = useState(0);
   const [workerCount, setWorkerCount] = useState(25);
@@ -31,6 +42,10 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
   const [countdown, setCountdown] = useState(5);
   const [countdownStarted, setCountdownStarted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 新增字段（非team模式）
+  const [selectedDungeon, setSelectedDungeon] = useState("");
+  const [runDateTime, setRunDateTime] = useState("");
 
   // 倒计时逻辑 - 只在进入第二页后才开始
   useEffect(() => {
@@ -50,10 +65,82 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
     };
   }, [isOpen, countdownStarted]);
 
-  // 打开时重置表单
+  // 打开时初始化表单
   useEffect(() => {
-    if (isOpen) {
-      setCurrentPage(1);
+    if (!isOpen) return;
+
+    setCurrentPage(1);
+    setCountdown(5);
+    setCountdownStarted(false);
+
+    if (isEditMode && record) {
+      // 编辑模式：从record初始化
+      setTotalGold(record.total_gold || 0);
+      setWorkerCount(record.worker_count || 25);
+      setSelectedDungeon(record.dungeon || "");
+
+      // 格式化日期时间
+      if (record.run_date) {
+        const date = new Date(record.run_date);
+        const formattedDateTime = date.toISOString().slice(0, 16);
+        setRunDateTime(formattedDateTime);
+      }
+
+      // 恢复掉落选择
+      const dropsMap = new Map();
+      if (record.special_drops && Array.isArray(record.special_drops)) {
+        record.special_drops.forEach((drop) => {
+          // 解析掉落字符串
+          let status = "normal";
+          let name = drop;
+          let xinfa = null;
+
+          if (drop.startsWith("【高价】")) {
+            status = "expensive";
+            name = drop.replace("【高价】", "");
+          } else if (drop.startsWith("【烂了】")) {
+            status = "bad";
+            name = drop.replace("【烂了】", "");
+          }
+
+          const xinfaMatch = name.match(/\((.+?)\)$/);
+          if (xinfaMatch) {
+            xinfa = xinfaMatch[1];
+            name = name.replace(/\(.+?\)$/, "");
+          }
+
+          dropsMap.set(name, { name, status, xinfa });
+        });
+      }
+
+      // 恢复玄晶
+      if (record.has_xuanjing && record.xuanjing_drops) {
+        const xuanjing = {
+          name: "玄晶",
+          status: "normal",
+          xuanjing: record.xuanjing_drops
+        };
+        dropsMap.set("玄晶", xuanjing);
+      }
+
+      setSelectedDrops(dropsMap);
+
+      // 恢复黑本人信息
+      setIsWildHeibenren(record.heibenren_user_id === null && record.heibenren_info?.user_name === "野人");
+      setHeibenrenMemberId(record.heibenren_user_id);
+      setHeibenrenCharacterId(record.heibenren_character_id);
+      setHeibenrenPlayerName(record.heibenren_info?.user_name || "");
+      setHeibenrenCharacterName(record.heibenren_info?.character_name || "");
+      setNotes(record.notes || "");
+    } else if (isTeamMode && team) {
+      // Team模式：从team初始化
+      setSelectedDungeon(team.dungeon || "");
+      if (team.team_time) {
+        const date = new Date(team.team_time);
+        const formattedDateTime = date.toISOString().slice(0, 16);
+        setRunDateTime(formattedDateTime);
+      }
+      // 重置其他字段
       setTotalGold(0);
       setWorkerCount(25);
       setSelectedDrops(new Map());
@@ -63,10 +150,27 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
       setHeibenrenCharacterName("");
       setHeibenrenCharacterId(null);
       setNotes("");
-      setCountdown(5);
-      setCountdownStarted(false);
+    } else {
+      // Create模式：使用默认值
+      setTotalGold(0);
+      setWorkerCount(25);
+      setSelectedDrops(new Map());
+      setIsWildHeibenren(false);
+      setHeibenrenMemberId(null);
+      setHeibenrenPlayerName("");
+      setHeibenrenCharacterName("");
+      setHeibenrenCharacterId(null);
+      setNotes("");
+
+      // 设置默认副本
+      setSelectedDungeon(defaultDungeon || "");
+
+      // 设置当前时间为默认时间
+      const now = new Date();
+      const formattedDateTime = now.toISOString().slice(0, 16);
+      setRunDateTime(formattedDateTime);
     }
-  }, [isOpen]);
+  }, [isOpen, isEditMode, isTeamMode, record, team, defaultDungeon]);
 
   // 组装payload数据
   const buildPayload = () => {
@@ -91,9 +195,19 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
         return dropStr;
       });
 
+    // 确定副本和日期
+    let dungeon, runDate;
+    if (isTeamMode && team) {
+      dungeon = team.dungeon;
+      runDate = new Date(team.team_time).toISOString().split("T")[0];
+    } else {
+      dungeon = selectedDungeon;
+      runDate = runDateTime ? new Date(runDateTime).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
+    }
+
     const payload = {
-      dungeon: team.dungeon,
-      run_date: new Date(team.team_time).toISOString().split("T")[0],
+      dungeon,
+      run_date: runDate,
       total_gold: totalGold,
       worker_count: workerCount,
       special_drops: formattedDrops,
@@ -114,8 +228,8 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
       notes: notes || null
     };
 
-    // 只在有team_id时才添加
-    if (team?.id) {
+    // 只在team模式且有team_id时才添加
+    if (isTeamMode && team?.id) {
       payload.team_id = team.id;
     }
 
@@ -164,20 +278,39 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
       return;
     }
 
+    if (!isTeamMode && !selectedDungeon) {
+      showToast.error("请选择副本");
+      return;
+    }
+
+    if (!isTeamMode && !runDateTime) {
+      showToast.error("请选择日期时间");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
       // 组装数据
       const payload = buildPayload();
 
-      // 创建金团记录
-      await createGoldRecord(guildId, payload);
-
-      // 关闭开团
-      await closeTeam(guildId, team.id);
-
-      showToast.success("金团记录已保存，开团已关闭");
-      onSuccess?.();
+      if (isEditMode) {
+        // 编辑模式：更新记录
+        await updateGoldRecord(guildId, record.id, payload);
+        showToast.success("金团记录已更新");
+        onSuccess?.();
+      } else if (isTeamMode) {
+        // Team模式：创建记录并关闭开团
+        await createGoldRecord(guildId, payload);
+        await closeTeam(guildId, team.id);
+        showToast.success("金团记录已保存，开团已关闭");
+        onSuccess?.();
+      } else {
+        // Create模式：仅创建记录
+        await createGoldRecord(guildId, payload);
+        showToast.success("金团记录已创建");
+        onSuccess?.();
+      }
     } catch (error) {
       console.error("操作失败:", error);
       showToast.error(error?.response?.data?.message || "操作失败");
@@ -211,6 +344,14 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
         <ModalBody className="space-y-4 py-6">
           {currentPage === 1 ? (
             <>
+              {/* 非team模式需要选择副本和日期 - 放在第一行 */}
+              {!isTeamMode && (
+                <div className="grid grid-cols-2 gap-4">
+                  <DungeonSelector value={selectedDungeon} onChange={setSelectedDungeon} isRequired />
+                  <DateTimeInput value={runDateTime} onChange={setRunDateTime} isRequired />
+                </div>
+              )}
+
               <GoldAmountInput value={totalGold} onChange={setTotalGold} isRequired />
 
               <DropSelector selectedDrops={selectedDrops} onChange={setSelectedDrops} />
@@ -257,20 +398,23 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
               <Button variant="light" onPress={handlePrevPage} isDisabled={isSubmitting}>
                 上一页
               </Button>
-              <Button
-                color="warning"
-                onPress={handleDirectClose}
-                isDisabled={countdown > 0 || isSubmitting}
-                isLoading={isSubmitting && countdown === 0}
-              >
-                不保存直接关闭 {countdown > 0 && `(${countdown}s)`}
-              </Button>
+              {/* 只在team模式显示"不保存直接关闭"按钮 */}
+              {isTeamMode && (
+                <Button
+                  color="warning"
+                  onPress={handleDirectClose}
+                  isDisabled={countdown > 0 || isSubmitting}
+                  isLoading={isSubmitting && countdown === 0}
+                >
+                  不保存直接关闭 {countdown > 0 && `(${countdown}s)`}
+                </Button>
+              )}
               <Button
                 className="bg-gradient-to-r from-pink-500 to-purple-500 text-white"
                 onPress={handleSubmitAndClose}
                 isLoading={isSubmitting}
               >
-                记录并关闭
+                {isEditMode ? "更新记录" : isTeamMode ? "记录并关闭" : "创建记录"}
               </Button>
             </>
           )}
