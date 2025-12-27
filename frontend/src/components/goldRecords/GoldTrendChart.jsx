@@ -4,11 +4,22 @@ import { format } from "date-fns";
 
 /**
  * 金团总额变化趋势图
- * @param {array} data - 金团记录数据
+ * @param {array} data - 金团记录数据（已排序）
  */
 export default function GoldTrendChart({ data = [] }) {
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
+
+  /**
+   * 将数字转换为带圈数字符号
+   */
+  const getCircledNumber = (num) => {
+    const circledNumbers = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"];
+    if (num >= 1 && num <= 10) {
+      return circledNumbers[num - 1];
+    }
+    return `(${num})`;
+  };
 
   /**
    * 计算统计数据（剔除异常值后）
@@ -63,8 +74,8 @@ export default function GoldTrendChart({ data = [] }) {
       return null;
     }
 
-    // 按日期排序
-    const sortedData = [...data].sort((a, b) => new Date(a.run_date) - new Date(b.run_date));
+    // 数据已在父组件排序，直接使用
+    const sortedData = data;
 
     // 计算统计数据
     const stats = calculateStats(sortedData);
@@ -116,7 +127,14 @@ export default function GoldTrendChart({ data = [] }) {
       },
       xAxis: {
         type: "category",
-        data: sortedData.map((r) => format(new Date(r.run_date), "MM-dd")),
+        data: sortedData.map((r) => {
+          const dateStr = format(new Date(r.run_date), "MM-dd");
+          // 如果同一天有多条记录，添加序号
+          if (r.dailyTotal > 1) {
+            return `${dateStr}${getCircledNumber(r.dailySequence)}`;
+          }
+          return dateStr;
+        }),
         axisLabel: {
           rotate: 45,
         },
@@ -181,6 +199,27 @@ export default function GoldTrendChart({ data = [] }) {
         bottom: "15%",
         containLabel: true,
       },
+      dataZoom: [
+        {
+          type: "slider", // 滑动条型数据区域缩放
+          show: true,
+          xAxisIndex: 0,
+          start: 0, // 默认显示从0%开始
+          end: 100, // 默认显示到100%结束
+          bottom: "5%",
+          height: 20,
+          handleSize: "80%",
+          textStyle: {
+            fontSize: 10,
+          },
+        },
+        {
+          type: "inside", // 内置型数据区域缩放（鼠标滚轮）
+          xAxisIndex: 0,
+          start: 0,
+          end: 100,
+        },
+      ],
     };
   }, [data]);
 

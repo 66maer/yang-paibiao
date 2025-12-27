@@ -73,10 +73,48 @@ export default function GoldRecordsPage() {
   }, [currentGuild?.id, selectedDungeon, currentPage]);
 
   /**
+   * 对记录进行排序并添加序号
+   */
+  const sortedRecords = useMemo(() => {
+    // 按 run_date 升序，再按 id 升序
+    const sorted = [...goldRecords].sort((a, b) => {
+      const dateCompare = new Date(a.run_date) - new Date(b.run_date);
+      if (dateCompare !== 0) return dateCompare;
+      return a.id - b.id;
+    });
+
+    // 添加连续序号和同日序号
+    const recordsWithIndex = [];
+    const dateGroups = {}; // 记录同一天的记录数量
+
+    sorted.forEach((record, index) => {
+      const dateKey = record.run_date;
+
+      // 初始化或增加同日计数
+      if (!dateGroups[dateKey]) {
+        dateGroups[dateKey] = 0;
+      }
+      dateGroups[dateKey]++;
+
+      recordsWithIndex.push({
+        ...record,
+        sequenceNumber: index + 1, // 连续序号（从1开始）
+        dailySequence: dateGroups[dateKey], // 当日序号
+      });
+    });
+
+    // 为每条记录添加同日总数信息
+    return recordsWithIndex.map((record) => ({
+      ...record,
+      dailyTotal: dateGroups[record.run_date],
+    }));
+  }, [goldRecords]);
+
+  /**
    * 提取玄晶记录（双闪拆分）
    */
   const xuanjingRecords = useMemo(() => {
-    return goldRecords
+    return sortedRecords
       .filter((r) => r.has_xuanjing)
       .flatMap((r) => {
         const records = [];
@@ -102,7 +140,7 @@ export default function GoldRecordsPage() {
         return records;
       })
       .sort((a, b) => new Date(b.run_date) - new Date(a.run_date));
-  }, [goldRecords]);
+  }, [sortedRecords]);
 
   /**
    * 计算总页数
@@ -162,18 +200,18 @@ export default function GoldRecordsPage() {
           {/* 趋势图 */}
           <Card>
             <CardBody>
-              <GoldTrendChart data={goldRecords} />
+              <GoldTrendChart data={sortedRecords} />
             </CardBody>
           </Card>
 
           {/* 掉落分布图 */}
-          <DropDistributionCharts records={goldRecords} />
+          <DropDistributionCharts records={sortedRecords} />
 
           {/* 记录列表 */}
           <Card>
             <CardBody>
               <GoldRecordsList
-                records={goldRecords}
+                records={sortedRecords}
                 loading={loading}
                 onEdit={handleEdit}
                 isAdmin={isAdmin}

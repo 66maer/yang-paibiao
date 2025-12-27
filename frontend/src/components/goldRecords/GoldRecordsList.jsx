@@ -148,6 +148,7 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
       }}
     >
       <TableHeader>
+        <TableColumn>序号</TableColumn>
         <TableColumn>日期</TableColumn>
         <TableColumn>副本</TableColumn>
         <TableColumn>总金额</TableColumn>
@@ -158,6 +159,9 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
       <TableBody items={records} loadingContent={<Spinner />} loadingState={loading ? "loading" : "idle"}>
         {(record) => (
           <TableRow key={record.id}>
+            <TableCell>
+              <span className="text-sm font-medium text-default-600">{record.sequenceNumber || "-"}</span>
+            </TableCell>
             <TableCell>
               <span className="text-sm">{format(new Date(record.run_date), "yyyy-MM-dd")}</span>
             </TableCell>
