@@ -9,6 +9,7 @@ import WorkerSlider from "./GoldRecordModal/WorkerSlider";
 import HeibenrenSelector from "./GoldRecordModal/HeibenrenSelector";
 import DateTimeInput from "./GoldRecordModal/DateTimeInput";
 import DungeonSelector from "./GoldRecordModal/DungeonSelector";
+import { goldDropConfig } from "./goldDropConfig";
 
 /**
  * 金团记录弹窗组件
@@ -88,39 +89,66 @@ export default function GoldRecordModal({ isOpen, onClose, team, record, mode = 
 
       // 恢复掉落选择
       const dropsMap = new Map();
+      
+      // 构建物品名称到位置的映射
+      const nameToKeyMap = new Map();
+      goldDropConfig.forEach((row, rowIndex) => {
+        row.forEach((group, groupIndex) => {
+          group.items.forEach((item, itemIndex) => {
+            const key = `${rowIndex}_${groupIndex}_${itemIndex}`;
+            nameToKeyMap.set(item.name, { key, item });
+          });
+        });
+      });
+
+      // 解析special_drops
       if (record.special_drops && Array.isArray(record.special_drops)) {
         record.special_drops.forEach((drop) => {
           // 解析掉落字符串
           let status = "normal";
-          let name = drop;
+          let dropText = drop;
           let xinfa = null;
 
-          if (drop.startsWith("【高价】")) {
+          // 1. 提取状态前缀
+          if (dropText.startsWith("【高价】")) {
             status = "expensive";
-            name = drop.replace("【高价】", "");
-          } else if (drop.startsWith("【烂了】")) {
+            dropText = dropText.slice(4); // 去除"【高价】"
+          } else if (dropText.startsWith("【烂了】")) {
             status = "bad";
-            name = drop.replace("【烂了】", "");
+            dropText = dropText.slice(4); // 去除"【烂了】"
           }
 
-          const xinfaMatch = name.match(/\((.+?)\)$/);
+          // 2. 提取心法后缀
+          const xinfaMatch = dropText.match(/\((.+?)\)$/);
           if (xinfaMatch) {
             xinfa = xinfaMatch[1];
-            name = name.replace(/\(.+?\)$/, "");
+            dropText = dropText.replace(/\(.+?\)$/, "").trim();
           }
 
-          dropsMap.set(name, { name, status, xinfa });
+          // 3. 根据物品名称找到对应的key
+          const itemInfo = nameToKeyMap.get(dropText);
+          if (itemInfo) {
+            dropsMap.set(itemInfo.key, {
+              name: itemInfo.item.name,
+              status: status,
+              xinfa: xinfa || undefined
+            });
+          } else {
+            console.warn(`未找到掉落物品: ${dropText}`);
+          }
         });
       }
 
       // 恢复玄晶
       if (record.has_xuanjing && record.xuanjing_drops) {
-        const xuanjing = {
-          name: "玄晶",
-          status: "normal",
-          xuanjing: record.xuanjing_drops
-        };
-        dropsMap.set("玄晶", xuanjing);
+        const xuanjingInfo = nameToKeyMap.get("玄晶");
+        if (xuanjingInfo) {
+          dropsMap.set(xuanjingInfo.key, {
+            name: "玄晶",
+            status: "normal",
+            xuanjing: record.xuanjing_drops
+          });
+        }
       }
 
       setSelectedDrops(dropsMap);

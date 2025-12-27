@@ -61,14 +61,15 @@ export default function DropDistributionCharts({ records = [] }) {
         const xinfa = parseXinfa(drop);
 
         if (weaponKeywords.some((kw) => name.includes(kw))) {
+          // 跳过特效武器盒子，不参与统计
+          if (name === "特效武器盒子") {
+            return;
+          }
+
           let itemName;
           let itemColor;
 
-          if (name === "特效武器盒子") {
-            // 盒子不区分心法
-            itemName = "特效武器盒子";
-            itemColor = "#888888"; // 灰色
-          } else if (xinfa) {
+          if (xinfa) {
             // 特效武器：按心法区分
             // 直接通过 key 查找心法信息（与表格中的处理一致）
             const xinfaInfo = xinfaInfoTable[xinfa];

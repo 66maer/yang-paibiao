@@ -64,24 +64,29 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
     return (
       <div className="flex flex-wrap gap-1">
         {allDrops.map((drop, idx) => {
-          // 解析状态
+          // 提取状态前缀
+          const statusPrefix = drop.match(/^【高价】|^【烂了】/)?.[0] || "";
           const cleanDrop = drop.replace(/^【高价】|^【烂了】/, "");
 
           // 解析特效武器的心法名称
           let displayText = cleanDrop;
           if (cleanDrop.startsWith("特效武器(") && cleanDrop.endsWith(")")) {
             const xinfaKey = cleanDrop.match(/特效武器\((.+)\)/)?.[1];
+            console.log("解析特效武器心法:", cleanDrop, xinfaKey);
             if (xinfaKey && xinfaInfoTable[xinfaKey]) {
               displayText = `特效武器(${xinfaInfoTable[xinfaKey].name})`;
             }
           }
+
+          // 拼接状态前缀
+          displayText = statusPrefix + displayText;
 
           // 获取颜色
           const color = getDropColor(drop);
 
           return (
             <Chip key={idx} size="sm" variant="flat" color={color}>
-              {drop}
+              {displayText}
             </Chip>
           );
         })}
