@@ -5,15 +5,13 @@
  * 每个物品包含：name（名称）、color（颜色）、extraContent（额外内容类型）
  */
 export const goldDropConfig = [
-  // 第一行：闪了吗 + 精简
   [
     {
       title: "闪了吗",
-      items: [
-        { name: "玄晶", color: "warning" },
-        { name: "玄晶", color: "warning" },
-      ],
+      items: [{ name: "玄晶", color: "warning", extraContent: "xuanjing" }],
     },
+  ],
+  [
     {
       title: "精简",
       items: [
@@ -23,7 +21,6 @@ export const goldDropConfig = [
       ],
     },
   ],
-  // 特效武器单独一行
   [
     {
       title: "特效武器",
@@ -33,7 +30,6 @@ export const goldDropConfig = [
       ],
     },
   ],
-  // 特效腰坠单独一行
   [
     {
       title: "特效腰坠",
@@ -47,7 +43,6 @@ export const goldDropConfig = [
       ],
     },
   ],
-  // 其他单独一行
   [
     {
       title: "其他",

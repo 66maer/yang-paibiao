@@ -131,6 +131,8 @@ async def create_gold_record(
         gold_record.total_gold = payload.total_gold
         gold_record.worker_count = payload.worker_count
         gold_record.special_drops = payload.special_drops
+        gold_record.xuanjing_drops = payload.xuanjing_drops
+        gold_record.has_xuanjing = payload.has_xuanjing
         gold_record.heibenren_user_id = payload.heibenren_user_id
         gold_record.heibenren_character_id = payload.heibenren_character_id
         gold_record.heibenren_info = heibenren_info_dict
@@ -146,6 +148,8 @@ async def create_gold_record(
             total_gold=payload.total_gold,
             worker_count=payload.worker_count,
             special_drops=payload.special_drops,
+            xuanjing_drops=payload.xuanjing_drops,
+            has_xuanjing=payload.has_xuanjing,
             heibenren_user_id=payload.heibenren_user_id,
             heibenren_character_id=payload.heibenren_character_id,
             heibenren_info=heibenren_info_dict,
@@ -316,6 +320,10 @@ async def update_gold_record(
         gold_record.worker_count = payload.worker_count
     if payload.special_drops is not None:
         gold_record.special_drops = payload.special_drops
+    if payload.xuanjing_drops is not None:
+        gold_record.xuanjing_drops = payload.xuanjing_drops
+    if payload.has_xuanjing is not None:
+        gold_record.has_xuanjing = payload.has_xuanjing
     if payload.notes is not None:
         gold_record.notes = payload.notes
 

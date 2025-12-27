@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Date, Text, JSON
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Date, Text, JSON, Boolean
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
@@ -19,6 +19,8 @@ class GoldRecord(Base):
     total_gold = Column(Integer, nullable=False, comment="总金团")
     worker_count = Column(Integer, nullable=False, comment="打工人数")
     special_drops = Column(JSON, nullable=True, comment="特殊掉落（字符串数组）")
+    xuanjing_drops = Column(JSON, nullable=True, comment="玄晶掉落信息（包含价格）")
+    has_xuanjing = Column(Boolean, default=False, nullable=False, index=True, comment="是否出玄晶")
     heibenren_user_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="黑本人用户ID")
     heibenren_character_id = Column(Integer, ForeignKey("characters.id"), nullable=True, comment="黑本人角色ID")
     heibenren_info = Column(JSON, nullable=True, comment="黑本人显示信息")

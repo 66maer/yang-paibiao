@@ -70,9 +70,17 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
 
   // 组装payload数据
   const buildPayload = () => {
-    // 将Map转换为数组，并格式化special_drops
-    const formattedDrops = Array.from(selectedDrops.values())
-      .filter((d) => d.status !== "none")
+    // 将Map转换为数组，分离玄晶和其他掉落
+    const drops = Array.from(selectedDrops.values()).filter((d) => d.status !== "none");
+
+    // 提取玄晶数据
+    const xuanjingDrop = drops.find((d) => d.name === "玄晶");
+    const xuanjingDrops = xuanjingDrop?.xuanjing || null;
+    const hasXuanjing = !!xuanjingDrop;
+
+    // 格式化非玄晶的特殊掉落
+    const formattedDrops = drops
+      .filter((d) => d.name !== "玄晶")
       .map((d) => {
         let dropStr = d.name;
         // 添加状态前缀
@@ -89,6 +97,8 @@ export default function GoldRecordModal({ isOpen, onClose, team, guildId, onSucc
       total_gold: totalGold,
       worker_count: workerCount,
       special_drops: formattedDrops,
+      xuanjing_drops: xuanjingDrops,
+      has_xuanjing: hasXuanjing,
       heibenren_user_id: isWildHeibenren ? null : heibenrenMemberId,
       heibenren_character_id: isWildHeibenren ? null : heibenrenCharacterId,
       heibenren_info: isWildHeibenren

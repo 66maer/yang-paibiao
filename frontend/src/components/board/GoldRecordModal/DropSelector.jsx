@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Chip } from "@heroui/react";
+import { Chip, Checkbox } from "@heroui/react";
 import XinfaSelector from "../../XinfaSelector";
+import GoldAmountInput from "./GoldAmountInput";
 import { goldDropConfig } from "../goldDropConfig";
 import { xinfaInfoTable } from "../../../config/xinfa";
 
@@ -8,15 +9,17 @@ import { xinfaInfoTable } from "../../../config/xinfa";
  * 掉落选择列表组件
  * 支持4状态循环：未选中 → 普通 → 高价 → 烂了 → 未选中
  *
- * @param {Map} selectedDrops - 已选掉落Map<key, {name, status, xinfa?}>
+ * @param {Map} selectedDrops - 已选掉落Map<key, {name, status, xinfa?, xuanjing?}>
  * @param {function} onChange - 变化回调
  */
 export default function DropSelector({ selectedDrops, onChange }) {
   // 跟踪当前正在选择心法的物品 (用于展开心法选择器)
   const [expandedXinfaDrop, setExpandedXinfaDrop] = useState(null);
+  // 跟踪当前正在编辑的玄晶物品 (用于展开玄晶编辑器)
+  const [expandedXuanjingDrop, setExpandedXuanjingDrop] = useState(null);
 
   // 根据状态返回Chip的样式和显示文本
-  const getChipStyle = (item, status, xinfaName) => {
+  const getChipStyle = (item, status, xinfaName, xuanjingData) => {
     const prefix = {
       none: "",
       normal: "",
@@ -25,7 +28,25 @@ export default function DropSelector({ selectedDrops, onChange }) {
     }[status];
 
     // 如果有心法，在名称后添加
-    const nameSuffix = xinfaName ? `(${xinfaName})` : "";
+    let nameSuffix = xinfaName ? `(${xinfaName})` : "";
+
+    // 如果是玄晶，显示价格信息
+    if (item.extraContent === "xuanjing" && xuanjingData) {
+      const formatGold = (val) => {
+        if (!val || val === 0) return "";
+        const zhuans = Math.floor(val / 10000);
+        const golds = val % 10000;
+        if (zhuans === 0) return `${golds}金`;
+        if (golds === 0) return `${zhuans}砖`;
+        return `${zhuans}砖${golds}金`;
+      };
+
+      if (xuanjingData.second) {
+        nameSuffix = `(${formatGold(xuanjingData.first)}+${formatGold(xuanjingData.second)})`;
+      } else if (xuanjingData.first) {
+        nameSuffix = `(${formatGold(xuanjingData.first)})`;
+      }
+    }
 
     const style = {
       none: { variant: "flat", className: "cursor-pointer" },
@@ -59,20 +80,28 @@ export default function DropSelector({ selectedDrops, onChange }) {
     const newDrops = new Map(selectedDrops);
     if (nextStatus === "none") {
       newDrops.delete(key);
-      // 如果删除了，也要关闭心法选择器
+      // 如果删除了，也要关闭心法选择器和玄晶编辑器
       if (expandedXinfaDrop === key) {
         setExpandedXinfaDrop(null);
+      }
+      if (expandedXuanjingDrop === key) {
+        setExpandedXuanjingDrop(null);
       }
     } else {
       newDrops.set(key, {
         name: item.name,
         status: nextStatus,
         xinfa: currentData?.xinfa,
+        xuanjing: currentData?.xuanjing,
       });
 
       // 如果这个物品需要心法，展开心法选择器
       if (item.extraContent === "xinfa") {
         setExpandedXinfaDrop(key);
+      }
+      // 如果这个物品是玄晶，展开玄晶编辑器
+      if (item.extraContent === "xuanjing") {
+        setExpandedXuanjingDrop(key);
       }
     }
     onChange(newDrops);
@@ -88,6 +117,48 @@ export default function DropSelector({ selectedDrops, onChange }) {
       ...currentData,
       xinfa: xinfaKey,
     });
+    onChange(newDrops);
+  };
+
+  // 处理玄晶价格变化
+  const handleXuanjingPriceChange = (key, field, value) => {
+    const currentData = selectedDrops.get(key);
+    if (!currentData) return;
+
+    const newDrops = new Map(selectedDrops);
+    newDrops.set(key, {
+      ...currentData,
+      xuanjing: {
+        ...currentData.xuanjing,
+        [field]: value,
+      },
+    });
+    onChange(newDrops);
+  };
+
+  // 处理双闪复选框变化
+  const handleDoubleShanChange = (key, isChecked) => {
+    const currentData = selectedDrops.get(key);
+    if (!currentData) return;
+
+    const newDrops = new Map(selectedDrops);
+    if (!isChecked) {
+      // 取消双闪时，删除 second 字段
+      const { second, ...rest } = currentData.xuanjing || {};
+      newDrops.set(key, {
+        ...currentData,
+        xuanjing: rest,
+      });
+    } else {
+      // 勾选双闪时，初始化 second 字段
+      newDrops.set(key, {
+        ...currentData,
+        xuanjing: {
+          ...currentData.xuanjing,
+          second: 0,
+        },
+      });
+    }
     onChange(newDrops);
   };
 
@@ -107,13 +178,18 @@ export default function DropSelector({ selectedDrops, onChange }) {
 
                   // 获取心法名称（如果有）
                   const xinfaName = dropData?.xinfa ? xinfaInfoTable[dropData.xinfa]?.name : null;
-                  const chipStyle = getChipStyle(item, status, xinfaName);
+                  // 获取玄晶数据（如果有）
+                  const xuanjingData = dropData?.xuanjing;
+                  const chipStyle = getChipStyle(item, status, xinfaName, xuanjingData);
 
                   const needsXinfa = item.extraContent === "xinfa" && status !== "none";
-                  const isExpanded = expandedXinfaDrop === key;
+                  const isXinfaExpanded = expandedXinfaDrop === key;
+
+                  const needsXuanjing = item.extraContent === "xuanjing" && status !== "none";
+                  const isXuanjingExpanded = expandedXuanjingDrop === key;
 
                   // 如果需要显示心法选择器，使用相对定位布局
-                  if (needsXinfa && isExpanded) {
+                  if (needsXinfa && isXinfaExpanded) {
                     return (
                       <div key={key} className="relative inline-flex">
                         <Chip
@@ -134,6 +210,46 @@ export default function DropSelector({ selectedDrops, onChange }) {
                             size="sm"
                           />
                         </div>
+                      </div>
+                    );
+                  }
+
+                  // 如果需要显示玄晶编辑器，在同一行显示
+                  if (needsXuanjing && isXuanjingExpanded) {
+                    const hasSecond = xuanjingData?.second !== undefined;
+                    return (
+                      <div key={key} className="flex items-center gap-2 flex-wrap">
+                        <Chip
+                          color={item.color}
+                          variant={chipStyle.variant}
+                          className={chipStyle.className}
+                          onClick={() => handleDropClick(rowIndex, groupIndex, itemIndex, item)}
+                        >
+                          {chipStyle.text}
+                        </Chip>
+                        <div className="w-32">
+                          <GoldAmountInput
+                            label={hasSecond ? "第一块" : "价格"}
+                            value={xuanjingData?.first || 0}
+                            onChange={(value) => handleXuanjingPriceChange(key, "first", value)}
+                          />
+                        </div>
+                        <Checkbox
+                          size="sm"
+                          isSelected={hasSecond}
+                          onValueChange={(checked) => handleDoubleShanChange(key, checked)}
+                        >
+                          双闪
+                        </Checkbox>
+                        {hasSecond && (
+                          <div className="w-32">
+                            <GoldAmountInput
+                              label="第二块"
+                              value={xuanjingData?.second || 0}
+                              onChange={(value) => handleXuanjingPriceChange(key, "second", value)}
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   }
