@@ -5,7 +5,7 @@ from typing import List
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, or_
 
 from app.api import deps
 from app.models.user import User
@@ -50,12 +50,41 @@ async def get_guild_ranking(
     if not guild:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="群组不存在")
 
-    # 计算排名
+    # 计算排名（包含详细信息）
     ranking_service = RankingService(db)
-    current_rankings = await ranking_service.calculate_guild_rankings(guild_id)
+    current_rankings = await ranking_service.calculate_guild_rankings(guild_id, include_detail=True)
 
     # 获取排名变化
     changes = await ranking_service.get_ranking_changes(guild_id, current_rankings)
+
+    # 获取当前使用的修正系数
+    from app.models.season_correction_factor import SeasonCorrectionFactor
+    from app.schemas.ranking import SeasonFactorInfo
+    from datetime import datetime
+    today = date.today()
+    factors_result = await db.execute(
+        select(SeasonCorrectionFactor)
+        .where(
+            and_(
+                SeasonCorrectionFactor.start_date <= today,
+                or_(
+                    SeasonCorrectionFactor.end_date.is_(None),
+                    SeasonCorrectionFactor.end_date >= today
+                )
+            )
+        )
+        .order_by(SeasonCorrectionFactor.dungeon, SeasonCorrectionFactor.start_date.desc())
+    )
+    season_factors = [
+        SeasonFactorInfo(
+            dungeon=factor.dungeon,
+            start_date=factor.start_date,
+            end_date=factor.end_date,
+            correction_factor=factor.correction_factor,
+            description=factor.description
+        )
+        for factor in factors_result.scalars().all()
+    ]
 
     # 获取用户信息
     user_ids = [r["user_id"] for r in current_rankings]
@@ -105,7 +134,8 @@ async def get_guild_ranking(
             last_heibenren_car_number=ranking["last_heibenren_car_number"],
             last_heibenren_days_ago=days_ago,
             rank_change=change_info["change"],
-            rank_change_value=change_info["value"]
+            rank_change_value=change_info["value"],
+            calculation_detail=ranking.get("calculation_detail")
         ))
 
     from datetime import datetime
@@ -113,7 +143,8 @@ async def get_guild_ranking(
         guild_id=guild_id,
         guild_name=guild.name,
         snapshot_date=datetime.utcnow(),
-        rankings=ranking_items
+        rankings=ranking_items,
+        season_factors=season_factors
     )
 
     return success(response)

@@ -2,9 +2,31 @@
 排名相关的 Pydantic 模型
 """
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, List, Dict
 from pydantic import BaseModel, Field
 from decimal import Decimal
+
+
+class RecordDetail(BaseModel):
+    """单条金团记录详情"""
+    record_id: int = Field(..., description="记录ID")
+    dungeon: str = Field(..., description="副本名称")
+    run_date: date = Field(..., description="日期")
+    gold: int = Field(..., description="金团金额")
+    correction_factor: Decimal = Field(..., description="修正系数")
+    corrected_gold: Decimal = Field(..., description="修正后金额")
+
+
+class RankingCalculationDetail(BaseModel):
+    """排名计算详情"""
+    records: List[RecordDetail] = Field(..., description="所有黑本记录")
+    total_gold: int = Field(..., description="总金团金额")
+    corrected_total_gold: Decimal = Field(..., description="修正后总金额")
+    heibenren_count: int = Field(..., description="黑本次数")
+    average_gold: Decimal = Field(..., description="平均金额")
+    corrected_average_gold: Decimal = Field(..., description="修正后平均金额")
+    rank_modifier: Decimal = Field(..., description="Rank修正系数")
+    rank_score: Decimal = Field(..., description="最终Rank分")
 
 
 class RankingItemOut(BaseModel):
@@ -22,6 +44,16 @@ class RankingItemOut(BaseModel):
     last_heibenren_days_ago: Optional[int] = Field(None, description="距离最近一次黑本的天数")
     rank_change: str = Field(..., description="排名变化: up/down/same/new")
     rank_change_value: int = Field(0, description="排名变化值（正数表示上升）")
+    calculation_detail: Optional[RankingCalculationDetail] = Field(None, description="计算详情")
+
+
+class SeasonFactorInfo(BaseModel):
+    """赛季修正系数信息"""
+    dungeon: str = Field(..., description="副本名称")
+    start_date: date = Field(..., description="开始日期")
+    end_date: Optional[date] = Field(None, description="结束日期")
+    correction_factor: Decimal = Field(..., description="修正系数")
+    description: Optional[str] = Field(None, description="描述")
 
 
 class GuildRankingResponse(BaseModel):
@@ -30,3 +62,4 @@ class GuildRankingResponse(BaseModel):
     guild_name: str
     snapshot_date: datetime
     rankings: list[RankingItemOut]
+    season_factors: List[SeasonFactorInfo] = Field(default_factory=list, description="当前使用的修正系数")

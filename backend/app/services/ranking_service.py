@@ -72,7 +72,8 @@ class RankingService:
         self,
         guild_id: int,
         user_id: int,
-        car_number_map: Optional[Dict[int, int]] = None
+        car_number_map: Optional[Dict[int, int]] = None,
+        include_detail: bool = False
     ) -> Optional[Dict]:
         """
         计算单个用户的排名数据
@@ -81,6 +82,7 @@ class RankingService:
             guild_id: 群组ID
             user_id: 用户ID
             car_number_map: 车次映射（可选，如果未提供则内部计算）
+            include_detail: 是否包含详细计算过程
 
         Returns:
             包含排名数据的字典，如果用户没有黑本记录则返回None
@@ -109,11 +111,24 @@ class RankingService:
         # 计算修正后的总金额
         corrected_total = Decimal("0")
         total_gold = 0
+        record_details = []
 
         for record in records:
             factor = await self.get_correction_factor(record.dungeon, record.run_date)
-            corrected_total += Decimal(str(record.total_gold)) * factor
+            corrected_gold = Decimal(str(record.total_gold)) * factor
+            corrected_total += corrected_gold
             total_gold += record.total_gold
+
+            # 如果需要详细信息，收集每条记录的详情
+            if include_detail:
+                record_details.append({
+                    "record_id": record.id,
+                    "dungeon": record.dungeon,
+                    "run_date": record.run_date,
+                    "gold": record.total_gold,
+                    "correction_factor": factor,
+                    "corrected_gold": corrected_gold
+                })
 
         # 计算各项指标
         heibenren_count = len(records)
@@ -127,7 +142,7 @@ class RankingService:
         last_heibenren_date = last_record.run_date
         last_heibenren_car_number = car_number_map.get(last_record.id)
 
-        return {
+        result_data = {
             "user_id": user_id,
             "heibenren_count": heibenren_count,
             "total_gold": total_gold,
@@ -137,6 +152,21 @@ class RankingService:
             "last_heibenren_date": last_heibenren_date,
             "last_heibenren_car_number": last_heibenren_car_number,
         }
+
+        # 如果需要详细信息，添加计算详情
+        if include_detail:
+            result_data["calculation_detail"] = {
+                "records": record_details,
+                "total_gold": total_gold,
+                "corrected_total_gold": corrected_total,
+                "heibenren_count": heibenren_count,
+                "average_gold": average_gold,
+                "corrected_average_gold": corrected_average_gold,
+                "rank_modifier": rank_modifier,
+                "rank_score": rank_score
+            }
+
+        return result_data
 
     async def _get_car_number_map(self, guild_id: int) -> Dict[int, int]:
         """
@@ -161,12 +191,13 @@ class RankingService:
         all_records = all_records_result.all()
         return {record.id: idx + 1 for idx, record in enumerate(all_records)}
 
-    async def calculate_guild_rankings(self, guild_id: int) -> List[Dict]:
+    async def calculate_guild_rankings(self, guild_id: int, include_detail: bool = False) -> List[Dict]:
         """
         计算群组的完整排名
 
         Args:
             guild_id: 群组ID
+            include_detail: 是否包含详细计算过程
 
         Returns:
             排名列表（按rank_score降序）
@@ -191,7 +222,7 @@ class RankingService:
         # 计算每个用户的排名数据
         rankings = []
         for user_id in user_ids:
-            user_data = await self.calculate_user_ranking_data(guild_id, user_id, car_number_map)
+            user_data = await self.calculate_user_ranking_data(guild_id, user_id, car_number_map, include_detail)
             if user_data:
                 rankings.append(user_data)
 
