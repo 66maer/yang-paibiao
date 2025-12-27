@@ -1,5 +1,0 @@
-config.yaml
-*.log
-cache/
-__pycache__/
-base_docker/
