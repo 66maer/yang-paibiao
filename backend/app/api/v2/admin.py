@@ -2,7 +2,7 @@
 API v2 管理员路由模块
 """
 from fastapi import APIRouter
-from app.api.v2.endpoints import admin_auth, admin_guilds, admin_users, admin_characters
+from app.api.v2.endpoints import admin_auth, admin_guilds, admin_users, admin_characters, admin_configs
 
 api_router = APIRouter()
 
@@ -32,4 +32,11 @@ api_router.include_router(
     admin_characters.router,
     prefix="/characters",
     tags=["管理员-角色管理"]
+)
+
+# 注册系统配置管理路由
+api_router.include_router(
+    admin_configs.router,
+    prefix="/configs",
+    tags=["系统配置管理"]
 )

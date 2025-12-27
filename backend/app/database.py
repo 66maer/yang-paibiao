@@ -47,9 +47,7 @@ async def init_db():
     import os
 
     # 导入所有模型以确保它们被注册到元数据中
-    from app.models import (
-        admin, user, character, guild, guild_member, subscription, team, signup, template
-    )
+    import app.models  # noqa: F401 - 导入用于注册模型，不直接使用
 
     # 获取 alembic.ini 配置文件路径
     alembic_cfg_path = os.path.join(

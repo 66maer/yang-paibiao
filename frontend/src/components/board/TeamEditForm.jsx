@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import useSWR from "swr";
 import {
   Card,
   CardBody,
@@ -17,21 +18,10 @@ import { parseDateTime, now, getLocalTimeZone } from "@internationalized/date";
 import { createTeam, updateTeam } from "../../api/teams";
 import { showToast } from "../../utils/toast";
 import { getTemplateList, createTemplate } from "../../api/templates";
+import { getDungeonOptions } from "../../api/configs";
 import TeamBoard from "./TeamBoard/TeamBoard";
 import { buildEmptyRules } from "../../utils/slotAllocation";
 import useAuthStore from "../../stores/authStore";
-
-// 副本列表（暂时硬编码，未来从后端获取）
-const DUNGEONS = [
-  { value: "绝地天通", label: "绝地天通" },
-  { value: "英雄太极宫", label: "英雄太极宫" },
-  { value: "英雄天泣林", label: "英雄天泣林" },
-  { value: "英雄磨刀楼", label: "英雄磨刀楼" },
-  { value: "英雄寂灭殿", label: "英雄寂灭殿" },
-  { value: "25H 红", label: "25H 红" },
-  { value: "25H 橙", label: "25H 橙" },
-  { value: "10H 橙武", label: "10H 橙武" },
-];
 
 /**
  * 开团编辑表单
@@ -40,6 +30,19 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
   const isEdit = !!team;
   const [loading, setLoading] = useState(false);
   const { user } = useAuthStore();
+
+  // 获取副本选项（只获取 primary 类型）
+  const { data: dungeonData } = useSWR(
+    'dungeon-options-primary',
+    () => getDungeonOptions('primary'),
+    { revalidateOnFocus: false }
+  );
+
+  // 转换为 Select 组件需要的格式
+  const dungeons = dungeonData?.options?.map(opt => ({
+    value: opt.name,
+    label: opt.name,
+  })) || [];
 
   // 右侧帮助提示组件
   const HelpPanel = () => (
@@ -491,7 +494,7 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
                     label: "text-pink-600 dark:text-pink-400 font-semibold",
                   }}
                 >
-                  {DUNGEONS.map((dungeon) => (
+                  {dungeons.map((dungeon) => (
                     <SelectItem key={dungeon.value} value={dungeon.value}>
                       {dungeon.label}
                     </SelectItem>

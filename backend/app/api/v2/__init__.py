@@ -8,6 +8,7 @@ from app.api.v2.endpoints import teams
 from app.api.v2.endpoints import templates
 from app.api.v2.endpoints import signups
 from app.api.v2.endpoints import gold_records
+from app.api.v2.endpoints import configs
 from app.api.v2 import admin
 from app.api.v2 import users
 from app.api.v2 import characters
@@ -68,4 +69,11 @@ api_router.include_router(
 api_router.include_router(
     gold_records.router,
     tags=["金团记录"]
+)
+
+# 系统配置接口（公开）
+api_router.include_router(
+    configs.router,
+    prefix="/configs",
+    tags=["系统配置"]
 )

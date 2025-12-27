@@ -1,7 +1,7 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Button, Chip } from '@heroui/react';
-import useAuthStore from '../stores/authStore';
-import ThemeSwitch from '../components/ThemeSwitch';
+import { Outlet, Link, useLocation } from "react-router-dom";
+import { Button, Chip } from "@heroui/react";
+import useAuthStore from "../stores/authStore";
+import ThemeSwitch from "../components/ThemeSwitch";
 
 export default function AdminLayout() {
   const { user, clearAuth } = useAuthStore();
@@ -9,15 +9,16 @@ export default function AdminLayout() {
 
   const handleLogout = () => {
     clearAuth();
-    localStorage.removeItem('access_token');
-    window.location.href = '/admin/login';
+    localStorage.removeItem("access_token");
+    window.location.href = "/admin/login";
   };
 
   const navItems = [
-    { path: '/admin', label: '控制台', icon: '🏠' },
-    { path: '/admin/guilds', label: '群组管理', icon: '🏰' },
-    { path: '/admin/users', label: '用户管理', icon: '👥' },
-    { path: '/admin/characters', label: '角色管理', icon: '⚔️' },
+    { path: "/admin", label: "控制台", icon: "🏠" },
+    { path: "/admin/guilds", label: "群组管理", icon: "🏰" },
+    { path: "/admin/users", label: "用户管理", icon: "👥" },
+    { path: "/admin/characters", label: "角色管理", icon: "⚔️" },
+    { path: "/admin/configs", label: "全局配置", icon: "⚙️" },
   ];
 
   return (
@@ -34,45 +35,44 @@ export default function AdminLayout() {
                 管理后台
               </Chip>
             </div>
-            
+
             {/* 导航菜单 */}
             <nav className="hidden md:flex items-center gap-2">
-              {navItems.map((item) => (
-                <Link key={item.path} to={item.path}>
-                  <Button
-                    size="sm"
-                    variant={location.pathname === item.path ? 'flat' : 'light'}
-                    color={location.pathname === item.path ? 'primary' : 'default'}
-                    className="transition-all"
-                  >
-                    <span className="mr-1">{item.icon}</span>
-                    {item.label}
-                  </Button>
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const isActive = item.path === '/admin'
+                  ? location.pathname === '/admin'
+                  : location.pathname.startsWith(item.path);
+                return (
+                  <Link key={item.path} to={item.path}>
+                    <Button
+                      size="sm"
+                      variant={isActive ? "flat" : "light"}
+                      color={isActive ? "primary" : "default"}
+                      className="transition-all"
+                    >
+                      <span className="mr-1">{item.icon}</span>
+                      {item.label}
+                    </Button>
+                  </Link>
+                );
+              })}
             </nav>
 
             <div className="flex items-center gap-4">
               <ThemeSwitch />
-              
+
               {/* 用户信息 */}
               <div className="hidden sm:flex items-center gap-3 px-3 py-2 rounded-full bg-gradient-to-r from-primary/10 to-purple-500/10">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-sm font-bold">
-                  {user?.username?.[0]?.toUpperCase() || 'A'}
+                  {user?.username?.[0]?.toUpperCase() || "A"}
                 </div>
                 <div className="text-sm">
-                  <div className="font-medium">{user?.username || '管理员'}</div>
+                  <div className="font-medium">{user?.username || "管理员"}</div>
                   <div className="text-xs text-gray-500">管理员</div>
                 </div>
               </div>
-              
-              <Button
-                size="sm"
-                color="danger"
-                variant="flat"
-                onClick={handleLogout}
-                className="rounded-full"
-              >
+
+              <Button size="sm" color="danger" variant="flat" onClick={handleLogout} className="rounded-full">
                 退出
               </Button>
             </div>
