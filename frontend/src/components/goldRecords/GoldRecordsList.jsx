@@ -1,5 +1,7 @@
 import { format } from "date-fns";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Spinner } from "@heroui/react";
+import { goldDropConfig } from "../board/goldDropConfig";
+import { xinfaInfoTable } from "../../config/xinfa";
 
 /**
  * 金团记录列表
@@ -10,6 +12,28 @@ import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, 
  * @param {number} currentUserId - 当前用户ID
  */
 export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin, currentUserId }) {
+  /**
+   * 根据物品名称查找在配置中的颜色
+   */
+  const getDropColor = (itemName) => {
+    // 清理物品名称（去除状态前缀和特效武器的心法后缀）
+    const cleanName = itemName.replace(/^【高价】|^【烂了】/, "").replace(/\(.*\)$/, "");
+
+    // 特殊处理玄晶
+    if (cleanName === "玄晶") return "warning";
+
+    // 在配置中查找
+    for (const row of goldDropConfig) {
+      for (const group of row) {
+        const found = group.items.find((item) => item.name === cleanName);
+        if (found) return found.color;
+      }
+    }
+
+    // 默认颜色
+    return "primary";
+  };
+
   /**
    * 格式化金额为"X砖Y金"
    */
@@ -43,17 +67,25 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
           // 解析状态
           const isExpensive = drop.startsWith("【高价】");
           const isBad = drop.startsWith("【烂了】");
-          const isXuanjing = drop === "玄晶";
           const cleanDrop = drop.replace(/^【高价】|^【烂了】/, "");
 
+          // 解析特效武器的心法名称
+          let displayText = cleanDrop;
+          if (cleanDrop.startsWith("特效武器(") && cleanDrop.endsWith(")")) {
+            const xinfaKey = cleanDrop.match(/特效武器\((.+)\)/)?.[1];
+            if (xinfaKey && xinfaInfoTable[xinfaKey]) {
+              displayText = `特效武器(${xinfaInfoTable[xinfaKey].name})`;
+            }
+          }
+
+          // 获取颜色
+          const baseColor = getDropColor(drop);
+          // 高价用红色边框，烂了用灰色
+          const color = isExpensive ? "danger" : isBad ? "default" : baseColor;
+
           return (
-            <Chip
-              key={idx}
-              size="sm"
-              variant="flat"
-              color={isXuanjing ? "warning" : isExpensive ? "danger" : isBad ? "default" : "primary"}
-            >
-              {cleanDrop}
+            <Chip key={idx} size="sm" variant="flat" color={color}>
+              {displayText}
             </Chip>
           );
         })}
@@ -111,7 +143,7 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
       aria-label="金团记录列表"
       classNames={{
         base: "max-h-[600px] overflow-auto",
-        table: "min-h-[400px]"
+        table: "min-h-[400px]",
       }}
     >
       <TableHeader>
@@ -122,11 +154,7 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
         <TableColumn>掉落详情</TableColumn>
         <TableColumn>操作</TableColumn>
       </TableHeader>
-      <TableBody
-        items={records}
-        loadingContent={<Spinner />}
-        loadingState={loading ? "loading" : "idle"}
-      >
+      <TableBody items={records} loadingContent={<Spinner />} loadingState={loading ? "loading" : "idle"}>
         {(record) => (
           <TableRow key={record.id}>
             <TableCell>
