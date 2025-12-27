@@ -333,3 +333,170 @@ class RankingService:
                     changes[user_id] = {"change": "same", "value": 0}
 
         return changes
+
+    def calculate_frequency_modifier(self, heibenren_count: int) -> Decimal:
+        """
+        计算频次修正系数
+
+        Args:
+            heibenren_count: 黑本次数
+
+        Returns:
+            频次修正系数
+        """
+        if heibenren_count == 1:
+            return Decimal("1.5")
+        elif heibenren_count == 2:
+            return Decimal("1.25")
+        elif heibenren_count == 3:
+            return Decimal("1.1")
+        else:
+            return Decimal("1.0")
+
+    async def calculate_cars_since_last_heibenren(
+        self,
+        guild_id: int,
+        last_heibenren_record_id: int,
+        car_number_map: Dict[int, int]
+    ) -> int:
+        """
+        计算距离上次黑本的车次数
+
+        Args:
+            guild_id: 群组ID
+            last_heibenren_record_id: 最近一次黑本记录ID
+            car_number_map: 车次映射
+
+        Returns:
+            距离上次黑本的车次数
+        """
+        # 获取该记录的车次
+        last_car_number = car_number_map.get(last_heibenren_record_id)
+        if last_car_number is None:
+            return 0
+
+        # 获取总车次数
+        max_car_number = max(car_number_map.values()) if car_number_map else 0
+
+        # 返回差值
+        return max_car_number - last_car_number
+
+    def calculate_time_modifier(self, cars_since_last: int) -> Decimal:
+        """
+        计算时间修正系数
+        公式：1 + M/30，其中 M 为距离上次黑本的车次数
+
+        Args:
+            cars_since_last: 距离上次黑本的车次数
+
+        Returns:
+            时间修正系数
+        """
+        modifier = 1 + Decimal(str(cars_since_last)) / Decimal("30")
+        return Decimal(str(round(modifier, 4)))
+
+    async def calculate_heibenren_recommendations(
+        self,
+        guild_id: int,
+        member_user_ids: List[int]
+    ) -> List[Dict]:
+        """
+        计算黑本推荐列表
+
+        Args:
+            guild_id: 群组ID
+            member_user_ids: 团队成员用户ID列表
+
+        Returns:
+            推荐列表（按推荐分降序排序）
+        """
+        # 计算群组当前排名（不需要详细信息）
+        current_rankings = await self.calculate_guild_rankings(guild_id, include_detail=False)
+
+        # 构建排名映射
+        ranking_map = {r["user_id"]: r for r in current_rankings}
+
+        # 计算平均红黑分（仅针对有黑本记录的用户）
+        rank_scores = [r["rank_score"] for r in current_rankings]
+        average_rank_score = sum(rank_scores) / len(rank_scores) if rank_scores else Decimal("0")
+
+        # 获取车次映射
+        car_number_map = await self._get_car_number_map(guild_id)
+
+        # 计算每个成员的推荐分
+        recommendations = []
+        for user_id in member_user_ids:
+            ranking_data = ranking_map.get(user_id)
+
+            if ranking_data is None:
+                # 无黑本记录的用户
+                rank_score = average_rank_score
+                frequency_modifier = Decimal("1.5")
+                time_modifier = Decimal("1.0")
+                recommendation_score = rank_score * frequency_modifier
+
+                recommendations.append({
+                    "user_id": user_id,
+                    "rank_score": rank_score,
+                    "heibenren_count": 0,
+                    "frequency_modifier": frequency_modifier,
+                    "time_modifier": time_modifier,
+                    "recommendation_score": recommendation_score,
+                    "last_heibenren_date": None,
+                    "cars_since_last": None,
+                    "is_new": True
+                })
+            else:
+                # 有黑本记录的用户
+                rank_score = ranking_data["rank_score"]
+                heibenren_count = ranking_data["heibenren_count"]
+
+                # 计算频次修正系数
+                frequency_modifier = self.calculate_frequency_modifier(heibenren_count)
+
+                # 计算车次差
+                last_record_id = None
+                # 需要找到该用户最后一条黑本记录的ID
+                result = await self.db.execute(
+                    select(GoldRecord.id)
+                    .where(
+                        and_(
+                            GoldRecord.guild_id == guild_id,
+                            GoldRecord.heibenren_user_id == user_id,
+                            GoldRecord.deleted_at.is_(None)
+                        )
+                    )
+                    .order_by(GoldRecord.run_date.desc(), GoldRecord.id.desc())
+                    .limit(1)
+                )
+                last_record = result.scalar_one_or_none()
+
+                if last_record:
+                    cars_since_last = await self.calculate_cars_since_last_heibenren(
+                        guild_id, last_record, car_number_map
+                    )
+                else:
+                    cars_since_last = 0
+
+                # 计算时间修正系数
+                time_modifier = self.calculate_time_modifier(cars_since_last)
+
+                # 计算推荐分
+                recommendation_score = rank_score * frequency_modifier * time_modifier
+
+                recommendations.append({
+                    "user_id": user_id,
+                    "rank_score": rank_score,
+                    "heibenren_count": heibenren_count,
+                    "frequency_modifier": frequency_modifier,
+                    "time_modifier": time_modifier,
+                    "recommendation_score": recommendation_score,
+                    "last_heibenren_date": ranking_data.get("last_heibenren_date"),
+                    "cars_since_last": cars_since_last,
+                    "is_new": False
+                })
+
+        # 按推荐分降序排序
+        recommendations.sort(key=lambda x: x["recommendation_score"], reverse=True)
+
+        return recommendations, average_rank_score

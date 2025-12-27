@@ -1,9 +1,30 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { Card, CardBody, CardHeader, Button, Chip, Divider, Tooltip } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Button,
+  Chip,
+  Divider,
+  Tooltip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Avatar,
+  Spinner,
+} from "@heroui/react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import useSWR from "swr";
-import { closeTeam, updateTeam } from "../../api/teams";
+import { closeTeam, updateTeam, getHeibenRecommendations } from "../../api/teams";
 import {
   getSignups,
   lockSignup,
@@ -26,6 +47,9 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
   const [boardMode, setBoardMode] = useState("view");
   const [pendingSlotView, setPendingSlotView] = useState(null); // 暂存未提交的视觉映射
   const [goldRecordModalOpen, setGoldRecordModalOpen] = useState(false);
+  const [recommendationModalOpen, setRecommendationModalOpen] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const { user } = useAuthStore();
   const prevTeamIdRef = useRef(null);
 
@@ -111,6 +135,30 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
   const handleGoldRecordSuccess = async () => {
     setGoldRecordModalOpen(false);
     onRefresh?.();
+  };
+
+  // 处理黑本推荐
+  const handleHeibenRecommendation = async () => {
+    if (!signupList || signupList.length === 0) {
+      showToast.warning("当前团队没有报名用户");
+      return;
+    }
+
+    setRecommendationModalOpen(true);
+    setLoadingRecommendations(true);
+
+    try {
+      // 获取所有已报名的用户ID
+      const memberUserIds = signupList.map((signup) => signup.user_id);
+
+      const response = await getHeibenRecommendations(team.guild_id, team.id, memberUserIds);
+      setRecommendations(response.data.recommendations || []);
+    } catch (error) {
+      console.error("加载黑本推荐失败:", error);
+      showToast.error(error.response?.data?.detail || "加载黑本推荐失败");
+    } finally {
+      setLoadingRecommendations(false);
+    }
   };
 
   // 排表模式 - 分配坑位
@@ -291,6 +339,11 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
           {/* 操作按钮 */}
           {isAdmin && (
             <div className="flex items-center gap-2">
+              <Tooltip content="查看黑本推荐">
+                <Button size="md" variant="flat" color="secondary" onPress={handleHeibenRecommendation}>
+                  🎯 黑本推荐
+                </Button>
+              </Tooltip>
               <Tooltip content="编辑开团">
                 <Button size="md" variant="flat" color="primary" onPress={() => onEdit(team)}>
                   ✏️ 编辑
@@ -440,6 +493,114 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
       guildId={team?.guild_id}
       onSuccess={handleGoldRecordSuccess}
     />
+
+    {/* 黑本推荐弹窗 */}
+    <Modal
+      isOpen={recommendationModalOpen}
+      onClose={() => setRecommendationModalOpen(false)}
+      size="3xl"
+      scrollBehavior="inside"
+    >
+      <ModalContent>
+        <ModalHeader>
+          <div className="flex flex-col gap-1">
+            <h3 className="text-xl font-bold">黑本推荐</h3>
+            <p className="text-sm text-gray-500">基于红黑分、频次和时间的综合推荐</p>
+          </div>
+        </ModalHeader>
+        <ModalBody>
+          {loadingRecommendations ? (
+            <div className="flex justify-center items-center py-8">
+              <Spinner size="lg" />
+            </div>
+          ) : recommendations.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">暂无推荐数据</div>
+          ) : (
+            <Table aria-label="黑本推荐列表">
+              <TableHeader>
+                <TableColumn>排名</TableColumn>
+                <TableColumn>用户</TableColumn>
+                <TableColumn>红黑分</TableColumn>
+                <TableColumn>黑本次数</TableColumn>
+                <TableColumn>推荐分</TableColumn>
+                <TableColumn>状态</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {recommendations.map((rec, index) => (
+                  <TableRow key={rec.user_id}>
+                    <TableCell>
+                      <div className="font-bold text-lg">
+                        {index + 1 <= 3 ? (
+                          <span
+                            className={
+                              index + 1 === 1
+                                ? "text-yellow-500"
+                                : index + 1 === 2
+                                ? "text-gray-400"
+                                : "text-orange-600"
+                            }
+                          >
+                            #{index + 1}
+                          </span>
+                        ) : (
+                          <span className="text-gray-600">#{index + 1}</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {rec.user_avatar && <Avatar src={rec.user_avatar} size="sm" />}
+                        <span className="font-medium">{rec.user_name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-mono">{Number(rec.rank_score).toFixed(2)}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Chip size="sm" variant="flat">
+                        {rec.heibenren_count}次
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-bold text-lg text-primary">
+                        {Number(rec.recommendation_score).toFixed(2)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {rec.is_new ? (
+                        <Chip size="sm" color="primary" variant="flat">
+                          NEW
+                        </Chip>
+                      ) : rec.cars_since_last !== null && rec.cars_since_last > 0 ? (
+                        <Chip size="sm" color="warning" variant="flat">
+                          {rec.cars_since_last}车未黑
+                        </Chip>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+          <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+              <div className="font-semibold">计算说明：</div>
+              <div>• 推荐分 = 红黑分 × 频次修正系数 × 时间修正系数</div>
+              <div>• 频次修正系数：1次(1.5) → 2次(1.25) → 3次(1.1) → 4次以上(1.0)</div>
+              <div>• 时间修正系数：1 + 距离上次黑本的车次数 / 30</div>
+              <div>• NEW：无黑本记录的用户，使用平均红黑分 × 1.5</div>
+            </div>
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button color="primary" onPress={() => setRecommendationModalOpen(false)}>
+            关闭
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   </>
   );
 }

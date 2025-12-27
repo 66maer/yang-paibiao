@@ -63,3 +63,30 @@ class GuildRankingResponse(BaseModel):
     snapshot_date: datetime
     rankings: list[RankingItemOut]
     season_factors: List[SeasonFactorInfo] = Field(default_factory=list, description="当前使用的修正系数")
+
+
+class HeibenRecommendationItem(BaseModel):
+    """黑本推荐列表项"""
+    user_id: int = Field(..., description="用户ID")
+    user_name: str = Field(..., description="用户昵称")
+    user_avatar: Optional[str] = Field(None, description="用户头像")
+    rank_score: Decimal = Field(..., description="红黑分")
+    heibenren_count: int = Field(0, description="黑本次数")
+    frequency_modifier: Decimal = Field(..., description="频次修正系数")
+    time_modifier: Decimal = Field(..., description="时间修正系数")
+    recommendation_score: Decimal = Field(..., description="黑本推荐分")
+    last_heibenren_date: Optional[date] = Field(None, description="最近一次黑本日期")
+    cars_since_last: Optional[int] = Field(None, description="距离上次黑本的车次数")
+    is_new: bool = Field(False, description="是否无黑本记录")
+
+
+class HeibenRecommendationRequest(BaseModel):
+    """黑本推荐请求"""
+    member_user_ids: List[int] = Field(..., description="团队成员用户ID列表")
+
+
+class HeibenRecommendationResponse(BaseModel):
+    """黑本推荐响应"""
+    team_id: int
+    recommendations: List[HeibenRecommendationItem]
+    average_rank_score: Decimal = Field(..., description="团队成员平均红黑分")

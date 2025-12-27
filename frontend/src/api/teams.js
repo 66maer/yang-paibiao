@@ -75,3 +75,16 @@ export const reopenTeam = (guildId, teamId) => {
 export const deleteTeam = (guildId, teamId) => {
   return apiClient.delete(`/guilds/${guildId}/teams/${teamId}`);
 };
+
+/**
+ * 获取黑本推荐列表
+ * @param {number} guildId - 群组ID
+ * @param {number} teamId - 开团ID
+ * @param {number[]} memberUserIds - 团队成员用户ID列表
+ * @returns {Promise}
+ */
+export const getHeibenRecommendations = (guildId, teamId, memberUserIds) => {
+  return apiClient.post(`/guilds/${guildId}/teams/${teamId}/heibenren-recommendations`, {
+    member_user_ids: memberUserIds,
+  });
+};

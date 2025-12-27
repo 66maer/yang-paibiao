@@ -14,6 +14,8 @@ from app.models.guild_member import GuildMember
 from app.models.team import Team
 from app.schemas.common import ResponseModel, success
 from app.schemas.team import TeamCreate, TeamUpdate, TeamOut, TeamClose
+from app.schemas.ranking import HeibenRecommendationRequest, HeibenRecommendationResponse, HeibenRecommendationItem
+from app.services.ranking_service import RankingService
 
 router = APIRouter(prefix="/guilds", tags=["团队/开团"]) 
 
@@ -339,3 +341,90 @@ async def delete_team(
     team.status = "deleted"
     await db.commit()
     return success(message="删除成功")
+
+
+@router.post("/{guild_id}/teams/{team_id}/heibenren-recommendations", response_model=ResponseModel[HeibenRecommendationResponse])
+async def get_heibenren_recommendations(
+    guild_id: int,
+    team_id: int,
+    payload: HeibenRecommendationRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """获取团队黑本推荐列表"""
+    # 验证用户是该群组成员
+    gm_result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id == current_user.id,
+            GuildMember.left_at.is_(None)
+        )
+    )
+    if gm_result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="非该群组成员")
+
+    # 验证团队存在
+    result = await db.execute(
+        select(Team).where(
+            Team.id == team_id,
+            Team.guild_id == guild_id,
+            Team.status != "deleted"
+        )
+    )
+    team = result.scalar_one_or_none()
+    if team is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="团队不存在")
+
+    # 计算推荐列表
+    ranking_service = RankingService(db)
+    recommendations, average_rank_score = await ranking_service.calculate_heibenren_recommendations(
+        guild_id, payload.member_user_ids
+    )
+
+    # 获取用户信息
+    user_ids = [r["user_id"] for r in recommendations]
+    users_result = await db.execute(
+        select(User).where(User.id.in_(user_ids))
+    )
+    users_map = {user.id: user for user in users_result.scalars().all()}
+
+    # 获取群昵称
+    gm_result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id.in_(user_ids),
+            GuildMember.left_at.is_(None)
+        )
+    )
+    gm_map = {gm.user_id: gm for gm in gm_result.scalars().all()}
+
+    # 构建响应
+    recommendation_items = []
+    for rec in recommendations:
+        user_id = rec["user_id"]
+        user = users_map.get(user_id)
+        if not user:
+            continue
+
+        gm_member = gm_map.get(user_id)
+        recommendation_items.append(HeibenRecommendationItem(
+            user_id=user_id,
+            user_name=gm_member.group_nickname if (gm_member and gm_member.group_nickname) else user.nickname,
+            user_avatar=user.avatar,
+            rank_score=rec["rank_score"],
+            heibenren_count=rec["heibenren_count"],
+            frequency_modifier=rec["frequency_modifier"],
+            time_modifier=rec["time_modifier"],
+            recommendation_score=rec["recommendation_score"],
+            last_heibenren_date=rec.get("last_heibenren_date"),
+            cars_since_last=rec.get("cars_since_last"),
+            is_new=rec["is_new"]
+        ))
+
+    response = HeibenRecommendationResponse(
+        team_id=team_id,
+        recommendations=recommendation_items,
+        average_rank_score=average_rank_score
+    )
+
+    return success(response)
