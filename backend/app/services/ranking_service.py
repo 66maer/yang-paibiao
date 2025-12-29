@@ -134,8 +134,10 @@ class RankingService:
         heibenren_count = len(records)
         average_gold = Decimal(str(total_gold)) / Decimal(str(heibenren_count))
         corrected_average_gold = corrected_total / Decimal(str(heibenren_count))
+        # 除以基准值500000
+        normalized_average_gold = corrected_average_gold / Decimal("50000")
         rank_modifier = await self.calculate_rank_modifier(heibenren_count)
-        rank_score = corrected_average_gold * rank_modifier
+        rank_score = normalized_average_gold * rank_modifier
 
         # 最近一次黑本信息
         last_record = records[-1]
