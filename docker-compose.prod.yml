@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # 后端服务
+  backend:
+    image: ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_USERNAME:-66maer}/yangpaibiao-backend:${VERSION:-latest}
+    container_name: yangpaibiao-backend
+    restart: always
+    env_file:
+      - backend/.env.production
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://yangpaibiao_user:${DB_PASSWORD}@shared-postgres:5432/yangpaibiao
+      - SECRET_KEY=${SECRET_KEY}
+      - ENVIRONMENT=production
+      - DEBUG=False
+    networks:
+      - shared-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 前端服务
+  frontend:
+    image: ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_USERNAME:-66maer}/yangpaibiao-frontend:${VERSION:-latest}
+    container_name: yangpaibiao-frontend
+    restart: always
+    environment:
+      - VITE_API_BASE_URL=${API_BASE_URL:-/api/v2}
+    networks:
+      - shared-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  shared-network:
+    external: true
+    name: shared-network

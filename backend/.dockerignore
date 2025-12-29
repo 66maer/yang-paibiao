@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# 测试
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 环境变量（不包含在镜像中）
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# 文档和脚本
+README.md
+scripts/
+docs/
+
+# 日志
+*.log
+
+# Alembic
+alembic.ini
+
+# 其他
+.DS_Store
+*.pyc

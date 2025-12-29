@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # 后端服务（开发模式）
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: yangpaibiao-backend-dev
+    ports:
+      - "9500:8000"
+    env_file:
+      - backend/.env
+    volumes:
+      - ./backend:/app
+      - backend-venv:/app/venv
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - dev-network
+    depends_on:
+      - postgres
+
+  # 前端服务（开发模式）
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: builder
+    container_name: yangpaibiao-frontend-dev
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:9500/api/v2
+    volumes:
+      - ./frontend:/build
+      - frontend-modules:/build/node_modules
+    command: npm run dev -- --host
+    networks:
+      - dev-network
+
+  # 开发用数据库
+  postgres:
+    image: postgres:16-alpine
+    container_name: yangpaibiao-postgres-dev
+    environment:
+      POSTGRES_USER: yangpaibiao_user
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: yangpaibiao
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    networks:
+      - dev-network
+
+networks:
+  dev-network:
+    driver: bridge
+
+volumes:
+  postgres-dev-data:
+  backend-venv:
+  frontend-modules:
