@@ -32,14 +32,11 @@ def upgrade() -> None:
     op.execute("""
         INSERT INTO system_configs (key, value, description) VALUES
         ('dungeon_options', '[
-          {"name": "绝地天通", "type": "primary", "order": 1},
-          {"name": "英雄太极宫", "type": "primary", "order": 2},
-          {"name": "英雄天泣林", "type": "primary", "order": 3},
-          {"name": "英雄磨刀楼", "type": "primary", "order": 4},
-          {"name": "英雄寂灭殿", "type": "primary", "order": 5},
-          {"name": "25H 红", "type": "secondary", "order": 6},
-          {"name": "25H 橙", "type": "secondary", "order": 7},
-          {"name": "10H 橙武", "type": "secondary", "order": 8}
+          {"name": "英雄·弓月城", "type": "primary", "order": 1},
+          {"name": "挑战·缚罪之渊", "type": "primary", "order": 2},
+          {"name": "普通·弓月城", "type": "secondary", "order": 3},
+          {"name": "英雄·太极宫", "type": "secondary", "order": 4},
+          {"name": "普通·太极宫", "type": "secondary", "order": 5}
         ]'::jsonb, '副本选项配置')
     """)
 
