@@ -23,6 +23,7 @@ from app.schemas.signup import (
     SignupOut,
     SignupInfo
 )
+from app.services.team_log_service import TeamLogService
 
 router = APIRouter(prefix="/guilds", tags=["报名管理"])
 
@@ -248,6 +249,39 @@ async def create_signup(
     )
     
     db.add(signup)
+    await db.flush()  # 先flush以获取signup.id
+
+    # 记录报名日志
+    submitter_name = None
+    if is_proxy:
+        # 获取提交者名称用于代报名记录
+        submitter_result = await db.execute(
+            select(GuildMember).where(
+                GuildMember.guild_id == guild_id,
+                GuildMember.user_id == current_user.id,
+                GuildMember.left_at.is_(None)
+            )
+        )
+        submitter_gm = submitter_result.scalar_one_or_none()
+        submitter_user_result = await db.execute(select(User).where(User.id == current_user.id))
+        submitter_user = submitter_user_result.scalar_one_or_none()
+        if submitter_user:
+            submitter_name = (submitter_gm.group_nickname
+                            if (submitter_gm and submitter_gm.group_nickname)
+                            else submitter_user.nickname)
+
+    await TeamLogService.log_signup_created(
+        db, team_id, guild_id, current_user.id,
+        signup.id,
+        processed_info.get("player_name", ""),
+        processed_info.get("character_name", ""),
+        processed_info.get("xinfa", ""),
+        is_proxy,
+        payload.is_rich,
+        None,  # slot_position
+        submitter_name
+    )
+
     await db.commit()
     await db.refresh(signup)
 
@@ -375,6 +409,16 @@ async def lock_signup(
     # 锁定位置
     signup.slot_position = payload.slot_position
 
+    # 记录坑位分配日志
+    await TeamLogService.log_slot_assigned(
+        db, team_id, guild_id, current_user.id,
+        signup.id,
+        signup.signup_info.get("player_name", ""),
+        signup.signup_info.get("character_name", ""),
+        signup.signup_info.get("xinfa", ""),
+        payload.slot_position
+    )
+
     await db.commit()
     await db.refresh(signup)
 
@@ -419,6 +463,16 @@ async def cancel_signup(
     signup.cancelled_at = datetime.utcnow()
     signup.cancelled_by = current_user.id
 
+    # 记录取消报名日志
+    await TeamLogService.log_signup_cancelled(
+        db, team_id, guild_id, current_user.id,
+        signup.id,
+        signup.signup_info.get("player_name", ""),
+        signup.signup_info.get("character_name", ""),
+        signup.signup_info.get("xinfa", ""),
+        is_submitter
+    )
+
     await db.commit()
 
     return success(message="取消成功")
@@ -456,6 +510,16 @@ async def update_presence_status(
             detail=f"无效的状态值，必须是: {valid_statuses}"
         )
 
+    # 记录进组标记日志
+    previous_status = signup.presence_status
+    await TeamLogService.log_presence_marked(
+        db, team_id, guild_id, current_user.id,
+        signup.id,
+        signup.signup_info.get("player_name", ""),
+        payload.presence_status,
+        previous_status
+    )
+
     # 更新到场状态
     signup.presence_status = payload.presence_status
 
@@ -490,6 +554,16 @@ async def remove_slot_assignment(
     signup = result.scalar_one_or_none()
     if signup is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="报名不存在")
+
+    # 记录取消坑位分配日志
+    old_slot_position = signup.slot_position
+    if old_slot_position is not None:
+        await TeamLogService.log_slot_unassigned(
+            db, team_id, guild_id, current_user.id,
+            signup.id,
+            signup.signup_info.get("player_name", ""),
+            old_slot_position
+        )
 
     # 删除坑位分配
     signup.slot_position = None

@@ -14,6 +14,7 @@ from app.models.signup import Signup
 from app.models.gold_record import GoldRecord
 from app.models.season_correction_factor import SeasonCorrectionFactor
 from app.models.ranking_snapshot import RankingSnapshot
+from app.models.team_log import TeamLog
 
 __all__ = [
 	"SystemAdmin",
@@ -29,4 +30,5 @@ __all__ = [
 	"GoldRecord",
 	"SeasonCorrectionFactor",
 	"RankingSnapshot",
+	"TeamLog",
 ]

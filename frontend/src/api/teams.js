@@ -88,3 +88,19 @@ export const getHeibenRecommendations = (guildId, teamId, memberUserIds) => {
     member_user_ids: memberUserIds,
   });
 };
+
+/**
+ * 获取团队日志
+ * @param {number} guildId - 群组ID
+ * @param {number} teamId - 开团ID
+ * @param {number} limit - 返回记录数
+ * @param {number} offset - 偏移量
+ * @returns {Promise}
+ */
+export const getTeamLogs = async (guildId, teamId, limit = 50, offset = 0) => {
+  const response = await apiClient.get(
+    `/guilds/${guildId}/teams/${teamId}/logs`,
+    { params: { limit, offset } }
+  );
+  return response.data;
+};

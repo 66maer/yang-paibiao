@@ -14,8 +14,11 @@ from app.models.guild_member import GuildMember
 from app.models.team import Team
 from app.schemas.common import ResponseModel, success
 from app.schemas.team import TeamCreate, TeamUpdate, TeamOut, TeamClose
+from app.schemas.team_log import TeamLogOut
 from app.schemas.ranking import HeibenRecommendationRequest, HeibenRecommendationResponse, HeibenRecommendationItem
 from app.services.ranking_service import RankingService
+from app.services.team_log_service import TeamLogService
+from app.models.team_log import TeamLog
 
 router = APIRouter(prefix="/guilds", tags=["团队/开团"]) 
 
@@ -69,6 +72,14 @@ async def create_team(
         status="open"
     )
     db.add(team)
+    await db.flush()  # 先flush以获取team.id
+
+    # 记录开团日志
+    await TeamLogService.log_team_created(
+        db, team.id, guild_id, current_user.id,
+        payload.title, payload.dungeon, payload.team_time.isoformat()
+    )
+
     await db.commit()
     await db.refresh(team)
 
@@ -175,29 +186,54 @@ async def update_team(
     if team is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="团队不存在")
 
-    # 更新字段
-    if payload.title is not None:
+    # 收集变更信息
+    changes = {}
+
+    # 更新字段并记录变更
+    if payload.title is not None and payload.title != team.title:
+        changes["title"] = {"old": team.title, "new": payload.title}
         team.title = payload.title
-    if payload.team_time is not None:
+    if payload.team_time is not None and payload.team_time != team.team_time:
+        changes["team_time"] = {"old": team.team_time.isoformat(), "new": payload.team_time.isoformat()}
         team.team_time = payload.team_time
-    if payload.dungeon is not None:
+    if payload.dungeon is not None and payload.dungeon != team.dungeon:
+        changes["dungeon"] = {"old": team.dungeon, "new": payload.dungeon}
         team.dungeon = payload.dungeon
-    if payload.max_members is not None:
+    if payload.max_members is not None and payload.max_members != team.max_members:
+        changes["max_members"] = {"old": team.max_members, "new": payload.max_members}
         team.max_members = payload.max_members
-    if payload.is_xuanjing_booked is not None:
+    if payload.is_xuanjing_booked is not None and payload.is_xuanjing_booked != team.is_xuanjing_booked:
+        changes["is_xuanjing_booked"] = {"old": team.is_xuanjing_booked, "new": payload.is_xuanjing_booked}
         team.is_xuanjing_booked = payload.is_xuanjing_booked
-    if payload.is_yuntie_booked is not None:
+    if payload.is_yuntie_booked is not None and payload.is_yuntie_booked != team.is_yuntie_booked:
+        changes["is_yuntie_booked"] = {"old": team.is_yuntie_booked, "new": payload.is_yuntie_booked}
         team.is_yuntie_booked = payload.is_yuntie_booked
-    if payload.is_hidden is not None:
-        team.is_hidden = payload.is_hidden
-    if payload.is_locked is not None:
-        team.is_locked = payload.is_locked
-    if payload.notice is not None:
+    if payload.notice is not None and payload.notice != team.notice:
+        changes["notice"] = {"old": team.notice, "new": payload.notice}
         team.notice = payload.notice
     if payload.rules is not None:
         team.rule = [r.model_dump() for r in payload.rules]
     if payload.slot_view is not None:
         team.slot_view = payload.slot_view
+
+    # 单独处理 is_locked 和 is_hidden，记录为独立的操作日志
+    if payload.is_locked is not None and payload.is_locked != team.is_locked:
+        if payload.is_locked:
+            await TeamLogService.create_log(db, team_id, guild_id, "team_locked", current_user.id, {})
+        else:
+            await TeamLogService.create_log(db, team_id, guild_id, "team_unlocked", current_user.id, {})
+        team.is_locked = payload.is_locked
+
+    if payload.is_hidden is not None and payload.is_hidden != team.is_hidden:
+        if payload.is_hidden:
+            await TeamLogService.create_log(db, team_id, guild_id, "team_hidden", current_user.id, {})
+        else:
+            await TeamLogService.create_log(db, team_id, guild_id, "team_shown", current_user.id, {})
+        team.is_hidden = payload.is_hidden
+
+    # 记录其他字段的变更
+    if changes:
+        await TeamLogService.log_team_updated(db, team_id, guild_id, current_user.id, changes)
 
     await db.commit()
     await db.refresh(team)
@@ -255,6 +291,9 @@ async def close_team(
     team.closed_at = datetime.utcnow()
     team.closed_by = current_user.id
 
+    # 记录关闭日志
+    await TeamLogService.log_team_closed(db, team_id, guild_id, current_user.id, payload.status)
+
     await db.commit()
     await db.refresh(team)
 
@@ -296,6 +335,10 @@ async def reopen_team(
     if team.status not in ["completed", "cancelled"]:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="只能重新开启已关闭的团队")
 
+    # 记录重新开启日志
+    previous_status = team.status
+    await TeamLogService.log_team_reopened(db, team_id, guild_id, current_user.id, previous_status)
+
     # 更新团队状态为开启
     team.status = "open"
     team.closed_at = None
@@ -336,6 +379,9 @@ async def delete_team(
     team = result.scalar_one_or_none()
     if team is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="团队不存在")
+
+    # 记录删除日志
+    await TeamLogService.log_team_deleted(db, team_id, guild_id, current_user.id)
 
     # 软删除：更新状态
     team.status = "deleted"
@@ -428,3 +474,94 @@ async def get_heibenren_recommendations(
     )
 
     return success(response)
+
+
+@router.get("/{guild_id}/teams/{team_id}/logs", response_model=ResponseModel[List[TeamLogOut]])
+async def get_team_logs(
+    guild_id: int,
+    team_id: int,
+    limit: int = Query(50, ge=1, le=200, description="返回记录数"),
+    offset: int = Query(0, ge=0, description="偏移量"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """获取团队日志"""
+    # 验证权限：需为该群成员
+    gm_result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id == current_user.id,
+            GuildMember.left_at.is_(None)
+        )
+    )
+    if gm_result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="非该群组成员")
+
+    # 验证团队存在
+    result = await db.execute(
+        select(Team).where(
+            Team.id == team_id,
+            Team.guild_id == guild_id,
+            Team.status != "deleted"
+        )
+    )
+    team = result.scalar_one_or_none()
+    if team is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="团队不存在")
+
+    # 查询日志
+    logs_result = await db.execute(
+        select(TeamLog)
+        .where(TeamLog.team_id == team_id)
+        .order_by(TeamLog.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    logs = logs_result.scalars().all()
+
+    # 获取所有操作用户的信息
+    user_ids = [log.action_user_id for log in logs if log.action_user_id]
+    users_map = {}
+    gm_map = {}
+
+    if user_ids:
+        users_result = await db.execute(
+            select(User).where(User.id.in_(user_ids))
+        )
+        users_map = {user.id: user for user in users_result.scalars().all()}
+
+        # 获取群昵称
+        gm_result = await db.execute(
+            select(GuildMember).where(
+                GuildMember.guild_id == guild_id,
+                GuildMember.user_id.in_(user_ids),
+                GuildMember.left_at.is_(None)
+            )
+        )
+        gm_map = {gm.user_id: gm for gm in gm_result.scalars().all()}
+
+    # 构建响应
+    log_items = []
+    for log in logs:
+        user_name = None
+        if log.action_user_id:
+            user = users_map.get(log.action_user_id)
+            gm_member = gm_map.get(log.action_user_id)
+            if user:
+                user_name = (gm_member.group_nickname
+                           if (gm_member and gm_member.group_nickname)
+                           else user.nickname)
+
+        log_dict = {
+            "id": log.id,
+            "team_id": log.team_id,
+            "guild_id": log.guild_id,
+            "action_type": log.action_type,
+            "action_user_id": log.action_user_id,
+            "action_user_name": user_name,
+            "action_detail": log.action_detail,
+            "created_at": log.created_at
+        }
+        log_items.append(TeamLogOut(**log_dict))
+
+    return success(log_items, message="获取成功")

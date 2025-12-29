@@ -39,6 +39,7 @@ import { buildEmptyRules } from "../../utils/slotAllocation";
 import { transformSignups } from "../../utils/signupTransform";
 import useAuthStore from "../../stores/authStore";
 import GoldRecordModal from "./GoldRecordModal";
+import TeamLogs from "./TeamLogs";
 
 /**
  * 中间内容 - 开团详情
@@ -481,6 +482,9 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
                 : "未知时间"}
             </div>
           )}
+
+          {/* 团队日志 */}
+          <TeamLogs team={team} guildId={team.guild_id} />
         </div>
       </CardBody>
     </Card>
