@@ -100,10 +100,14 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
    * 处理取消候补
    */
   const handleRemoveWaitlist = async (waitlistItem) => {
-    // TODO: 调用取消候补 API
-    console.log("取消候补", waitlistItem);
-    // 取消成功后需要刷新数据
-    await reloadSignups();
+    try {
+      await cancelSignup(team.guild_id, team.id, waitlistItem.id);
+      // 删除成功后刷新数据
+      await reloadSignups();
+    } catch (error) {
+      console.error("取消候补失败:", error);
+      alert(error.response?.data?.message || "取消候补失败，请重试");
+    }
   };
 
   /**
