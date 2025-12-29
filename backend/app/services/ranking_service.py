@@ -398,18 +398,21 @@ class RankingService:
     async def calculate_heibenren_recommendations(
         self,
         guild_id: int,
-        member_user_ids: List[int]
-    ) -> List[Dict]:
+        member_user_ids: List[Optional[int]]
+    ) -> tuple[List[Dict], Decimal]:
         """
         计算黑本推荐列表
 
         Args:
             guild_id: 群组ID
-            member_user_ids: 团队成员用户ID列表
+            member_user_ids: 团队成员用户ID列表（可包含None值）
 
         Returns:
-            推荐列表（按推荐分降序排序）
+            (推荐列表（按推荐分降序排序）, 平均红黑分)
         """
+        # 过滤掉 None 值并去重
+        valid_user_ids = list(set([uid for uid in member_user_ids if uid is not None]))
+
         # 计算群组当前排名（不需要详细信息）
         current_rankings = await self.calculate_guild_rankings(guild_id, include_detail=False)
 
@@ -425,7 +428,7 @@ class RankingService:
 
         # 计算每个成员的推荐分
         recommendations = []
-        for user_id in member_user_ids:
+        for user_id in valid_user_ids:
             ranking_data = ranking_map.get(user_id)
 
             if ranking_data is None:

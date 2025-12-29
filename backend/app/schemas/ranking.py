@@ -82,7 +82,7 @@ class HeibenRecommendationItem(BaseModel):
 
 class HeibenRecommendationRequest(BaseModel):
     """黑本推荐请求"""
-    member_user_ids: List[int] = Field(..., description="团队成员用户ID列表")
+    member_user_ids: List[Optional[int]] = Field(..., description="团队成员用户ID列表（可包含null值，表示未录入系统的报名者）")
 
 
 class HeibenRecommendationResponse(BaseModel):
