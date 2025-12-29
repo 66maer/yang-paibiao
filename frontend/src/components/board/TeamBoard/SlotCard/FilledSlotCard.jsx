@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Chip, Avatar } from "@heroui/react";
 import { xinfaInfoTable } from "../../../../config/xinfa";
 import { LockIcon } from "../../../icons";
+import { useTheme } from "../../../../hooks/useTheme";
 
 /**
  * 已报名卡片组件
@@ -14,6 +15,7 @@ import { LockIcon } from "../../../icons";
  * - 支持鼠标跟随高亮效果
  */
 const FilledSlotCard = ({ signup, presenceStatus, mode = "view" }) => {
+  const { isDark } = useTheme();
   const xinfa = signup?.characterXinfa ? xinfaInfoTable[signup.characterXinfa] : null;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
@@ -24,6 +26,39 @@ const FilledSlotCard = ({ signup, presenceStatus, mode = "view" }) => {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     });
+  };
+
+  // 根据主题获取背景色
+  const getBackground = () => {
+    if (xinfa) {
+      if (isDark) {
+        return `linear-gradient(135deg, ${xinfa.color}, #1f1f1f)`;
+      } else {
+        // 亮主题：心法色 -> 白色渐变
+        return `linear-gradient(135deg, ${xinfa.color}, #ffffff)`;
+      }
+    }
+    return isDark ? "#1f1f1f" : "#f5f5f5";
+  };
+
+  // 根据主题获取鼠标跟随效果背景
+  const getHoverBackground = () => {
+    if (xinfa) {
+      const xinfaColorRgba = xinfa.color
+        .replace("rgb(", "rgba(")
+        .replace(")", ", 0.9)");
+
+      if (isDark) {
+        return `radial-gradient(circle 400px at ${mousePosition.x}px ${mousePosition.y}px, ${xinfaColorRgba}, #0a0a0a 70%)`;
+      } else {
+        // 亮主题：使用更柔和的径向渐变
+        const xinfaColorLight = xinfa.color
+          .replace("rgb(", "rgba(")
+          .replace(")", ", 0.6)");
+        return `radial-gradient(circle 400px at ${mousePosition.x}px ${mousePosition.y}px, ${xinfaColorLight}, #fafafa 70%)`;
+      }
+    }
+    return isDark ? "#0a0a0a" : "#fafafa";
   };
 
   // 根据标记状态添加边框阴影（不占用内部空间）
@@ -40,9 +75,11 @@ const FilledSlotCard = ({ signup, presenceStatus, mode = "view" }) => {
 
   return (
     <div
-      className="group relative h-full rounded-xl text-white shadow-md overflow-hidden transition-all duration-300"
+      className={`group relative h-full rounded-xl shadow-md overflow-hidden transition-all duration-300 ${
+        isDark ? "text-white" : "text-gray-900"
+      }`}
       style={{
-        background: xinfa ? `linear-gradient(135deg, ${xinfa.color}, #1f1f1f)` : "#1f1f1f",
+        background: getBackground(),
         boxShadow: getBorderShadow(),
       }}
       onMouseMove={handleMouseMove}
@@ -53,18 +90,16 @@ const FilledSlotCard = ({ signup, presenceStatus, mode = "view" }) => {
       <div
         className="absolute inset-0 transition-opacity duration-500"
         style={{
-          background: xinfa
-            ? `radial-gradient(circle 400px at ${mousePosition.x}px ${mousePosition.y}px, ${xinfa.color
-                .replace("rgb(", "rgba(")
-                .replace(")", ", 0.9)")}, #0a0a0a 70%)`
-            : "#0a0a0a",
+          background: getHoverBackground(),
           opacity: isHovered ? 1 : 0,
         }}
       />
 
       {/* 门派背景图案 */}
       <div
-        className="absolute inset-0 opacity-15 bg-cover bg-center transition-transform duration-300 group-hover:scale-120"
+        className={`absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-120 ${
+          isDark ? "opacity-15" : "opacity-10"
+        }`}
         style={{
           backgroundImage: xinfa ? `url(/menpai/${xinfa.menpai}.svg)` : undefined,
         }}
