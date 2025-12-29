@@ -48,16 +48,46 @@ export default function DropSelector({ selectedDrops, onChange }) {
       }
     }
 
-    const style = {
+    const baseStyle = {
       none: { variant: "flat", className: "cursor-pointer" },
       normal: { variant: "solid", className: "cursor-pointer" },
       expensive: { variant: "solid", className: "cursor-pointer border-2 border-red-500" },
       bad: { variant: "solid", className: "cursor-pointer border-2 border-gray-400" },
     }[status];
 
+    // 应用自定义样式
+    let className = baseStyle.className;
+    let baseClassName = "";
+    if (item.customStyle && status !== "none") {
+      const { className: customClassName, gradient, animation, useSuperEffect } = item.customStyle;
+
+      // 如果启用超级特效，直接应用组合类
+      if (useSuperEffect) {
+        baseClassName += " xuanjing-super-effect";
+      } else {
+        // 否则按单独配置应用
+        // 添加自定义类名
+        if (customClassName) {
+          baseClassName += ` ${customClassName}`;
+        }
+
+        // 添加渐变效果类
+        if (gradient) {
+          baseClassName += " xuanjing-gradient";
+        }
+
+        // 添加动画效果类
+        if (animation) {
+          baseClassName += ` xuanjing-animation-${animation}`;
+        }
+      }
+    }
+
     return {
       text: prefix + item.name + nameSuffix,
-      ...style,
+      variant: baseStyle.variant,
+      className,
+      classNames: baseClassName ? { base: baseClassName } : undefined,
     };
   };
 
@@ -196,6 +226,7 @@ export default function DropSelector({ selectedDrops, onChange }) {
                           color={item.color}
                           variant={chipStyle.variant}
                           className={chipStyle.className}
+                          classNames={chipStyle.classNames}
                           onClick={() => handleDropClick(rowIndex, groupIndex, itemIndex, item)}
                         >
                           {chipStyle.text}
@@ -223,6 +254,7 @@ export default function DropSelector({ selectedDrops, onChange }) {
                           color={item.color}
                           variant={chipStyle.variant}
                           className={chipStyle.className}
+                          classNames={chipStyle.classNames}
                           onClick={() => handleDropClick(rowIndex, groupIndex, itemIndex, item)}
                         >
                           {chipStyle.text}
@@ -261,6 +293,7 @@ export default function DropSelector({ selectedDrops, onChange }) {
                       color={item.color}
                       variant={chipStyle.variant}
                       className={chipStyle.className}
+                      classNames={chipStyle.classNames}
                       onClick={() => handleDropClick(rowIndex, groupIndex, itemIndex, item)}
                     >
                       {chipStyle.text}

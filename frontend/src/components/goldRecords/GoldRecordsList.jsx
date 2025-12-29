@@ -13,25 +13,34 @@ import { xinfaInfoTable } from "../../config/xinfa";
  */
 export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin, currentUserId }) {
   /**
-   * 根据物品名称查找在配置中的颜色
+   * 根据物品名称查找在配置中的颜色和自定义样式
    */
-  const getDropColor = (itemName) => {
+  const getDropConfig = (itemName) => {
     // 清理物品名称（去除状态前缀和特效武器的心法后缀）
     const cleanName = itemName.replace(/^【高价】|^【烂了】/, "").replace(/\(.*\)$/, "");
 
     // 特殊处理玄晶
-    if (cleanName === "玄晶") return "warning";
+    if (cleanName === "玄晶") {
+      // 从配置中查找玄晶的完整配置
+      for (const row of goldDropConfig) {
+        for (const group of row) {
+          const found = group.items.find((item) => item.name === cleanName);
+          if (found) return { color: found.color, customStyle: found.customStyle };
+        }
+      }
+      return { color: "warning", customStyle: null };
+    }
 
     // 在配置中查找
     for (const row of goldDropConfig) {
       for (const group of row) {
         const found = group.items.find((item) => item.name === cleanName);
-        if (found) return found.color;
+        if (found) return { color: found.color, customStyle: found.customStyle };
       }
     }
 
-    // 默认颜色
-    return "primary";
+    // 默认配置
+    return { color: "primary", customStyle: null };
   };
 
   /**
@@ -81,11 +90,19 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
           // 拼接状态前缀
           displayText = statusPrefix + displayText;
 
-          // 获取颜色
-          const color = getDropColor(drop);
+          // 获取配置（颜色和自定义样式）
+          const { color, customStyle } = getDropConfig(drop);
+
+          // 构建classNames和variant
+          let chipClassNames = undefined;
+          let chipVariant = "flat";
+          if (customStyle?.useSuperEffect) {
+            chipClassNames = { base: "xuanjing-super-effect" };
+            chipVariant = "solid"; // 特效需要solid变体才能正确显示背景
+          }
 
           return (
-            <Chip key={idx} size="sm" variant="flat" color={color}>
+            <Chip key={idx} size="sm" variant={chipVariant} color={color} classNames={chipClassNames}>
               {displayText}
             </Chip>
           );

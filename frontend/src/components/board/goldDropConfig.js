@@ -2,13 +2,29 @@
  * 金团掉落配置
  * 每行可以包含一个或多个分组
  * 每个分组包含标题和掉落物品列表
- * 每个物品包含：name（名称）、color（颜色）、extraContent（额外内容类型）
+ * 每个物品包含：
+ *   - name（名称）
+ *   - color（颜色）
+ *   - extraContent（额外内容类型）
+ *   - customStyle（可选，自定义样式配置）
+ *     - className: 自定义CSS类名
+ *     - gradient: 是否启用渐变效果
+ *     - animation: 动画类型 ('pulse' | 'glow' | 'shine')
  */
 export const goldDropConfig = [
   [
     {
       title: "闪了吗",
-      items: [{ name: "玄晶", color: "warning", extraContent: "xuanjing" }],
+      items: [
+        {
+          name: "玄晶",
+          color: "warning",
+          extraContent: "xuanjing",
+          customStyle: {
+            useSuperEffect: true, // 使用组合超级特效（渐变+发光+流光）
+          },
+        },
+      ],
     },
   ],
   [
@@ -16,7 +32,7 @@ export const goldDropConfig = [
       title: "精简",
       items: [
         { name: "毕业精简", color: "secondary" },
-        { name: "普通黄字精简", color: "primary" },
+        { name: "普通黄字精简", color: "warning" },
         { name: "普通精简", color: "success" },
       ],
     },
