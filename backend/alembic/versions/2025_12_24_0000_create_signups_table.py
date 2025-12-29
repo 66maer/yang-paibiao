@@ -31,7 +31,7 @@ def upgrade() -> None:
         sa.Column('priority', sa.Integer(), default=0, nullable=False, comment='优先级（用于排序）'),
         sa.Column('is_rich', sa.Boolean(), default=False, nullable=False, comment='是否老板'),
         sa.Column('is_proxy', sa.Boolean(), default=False, nullable=False, comment='是否代报（自动判断）'),
-        sa.Column('slot_position', sa.Integer(), nullable=True, comment='锁定位置（1-25或null）'),
+        sa.Column('slot_position', sa.Integer(), nullable=True, comment='锁定位置（0-24或null）'),
         sa.Column('is_absent', sa.Boolean(), default=False, nullable=False, comment='是否缺席'),
         sa.Column('cancelled_at', sa.DateTime(), nullable=True, comment='取消时间（软删除）'),
         sa.Column('cancelled_by', sa.Integer(), sa.ForeignKey('users.id', ondelete='SET NULL'), nullable=True, comment='取消者用户ID'),

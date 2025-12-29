@@ -39,7 +39,7 @@ class SignupUpdate(BaseModel):
 
 class SignupLockRequest(BaseModel):
     """锁定报名位置的请求模型"""
-    slot_position: int = Field(..., ge=1, le=25, description="锁定位置（1-25）")
+    slot_position: int = Field(..., ge=0, le=24, description="锁定位置（0-24）")
 
 
 class SignupPresenceRequest(BaseModel):
@@ -50,7 +50,7 @@ class SignupPresenceRequest(BaseModel):
 class SignupAssignRequest(BaseModel):
     """排表模式分配坑位的请求模型"""
     signup_id: int = Field(..., description="报名ID")
-    slot_position: int = Field(..., ge=1, le=25, description="坑位位置（1-25）")
+    slot_position: int = Field(..., ge=0, le=24, description="坑位位置（0-24）")
 
 
 class SignupOut(BaseModel):

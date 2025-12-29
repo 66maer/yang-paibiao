@@ -165,7 +165,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
   // 排表模式 - 分配坑位
   const handleAssign = async (slotIndex, payload) => {
     let signupId = payload.signupId;
-    const slotPosition = slotIndex + 1; // 转换为1-based索引
+    const slotPosition = slotIndex; // 使用0-based索引（0-24）
 
     try {
       // 如果没有 signupId，需要先创建报名
@@ -203,7 +203,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
         slot_position: slotPosition,
       });
 
-      showToast.success(`已将 ${payload.playerName || "报名"} 分配到 ${slotPosition} 号坑位`);
+      showToast.success(`已将 ${payload.playerName || "报名"} 分配到坑位`);
       await mutateSignups(); // 刷新报名列表
     } catch (error) {
       console.error("分配坑位失败:", error);
@@ -213,8 +213,8 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
 
   // 排表模式 - 删除坑位分配
   const handleAssignDelete = async (slotIndex) => {
-    // 从报名列表中找到该坑位对应的报名
-    const signup = signupList.find((s) => s.slot_position === slotIndex + 1);
+    // 从报名列表中找到该坑位对应的报名（使用0-based索引）
+    const signup = signupList.find((s) => s.slot_position === slotIndex);
     if (!signup) {
       showToast.error("未找到该坑位的报名");
       return;
@@ -222,7 +222,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
 
     try {
       await removeSlotAssignment(team.guild_id, team.id, signup.id);
-      showToast.success(`已删除 ${slotIndex + 1} 号坑位的分配`);
+      showToast.success(`已删除坑位的分配`);
       await mutateSignups(); // 刷新报名列表
     } catch (error) {
       console.error("删除坑位分配失败:", error);

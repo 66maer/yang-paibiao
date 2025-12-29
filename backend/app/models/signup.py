@@ -64,7 +64,7 @@ class Signup(Base):
     slot_position = Column(
         Integer,
         nullable=True,
-        comment="锁定位置（1-25或null）"
+        comment="锁定位置（0-24或null）"
     )
     presence_status = Column(
         String(20),
