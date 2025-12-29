@@ -3,7 +3,7 @@ name: Build and Deploy
 on:
   push:
     branches:
-      - main
+      - '**'  # 测试模式：任何分支推送都触发
   workflow_dispatch:
 
 env:
