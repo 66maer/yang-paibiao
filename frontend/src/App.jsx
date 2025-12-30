@@ -10,6 +10,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import GuildManagementPage from "./pages/admin/GuildManagementPage";
 import UserManagementPage from "./pages/admin/UserManagementPage";
 import CharacterManagementPage from "./pages/admin/CharacterManagementPage";
+import BotsPage from "./pages/admin/BotsPage";
 import ConfigLayout from "./layouts/ConfigLayout";
 import DungeonConfigPage from "./pages/admin/DungeonConfigPage";
 import SeasonCorrectionPage from "./pages/admin/SeasonCorrectionPage";
@@ -61,6 +62,7 @@ function AppContent() {
           <Route path="guilds" element={<GuildManagementPage />} />
           <Route path="users" element={<UserManagementPage />} />
           <Route path="characters" element={<CharacterManagementPage />} />
+          <Route path="bots" element={<BotsPage />} />
           <Route path="configs" element={<ConfigLayout />}>
             <Route path="dungeons" element={<DungeonConfigPage />} />
             <Route path="seasons" element={<SeasonCorrectionPage />} />

@@ -18,6 +18,7 @@ export default function AdminLayout() {
     { path: "/admin/guilds", label: "群组管理", icon: "🏰" },
     { path: "/admin/users", label: "用户管理", icon: "👥" },
     { path: "/admin/characters", label: "角色管理", icon: "⚔️" },
+    { path: "/admin/bots", label: "Bot管理", icon: "🤖" },
     { path: "/admin/configs", label: "全局配置", icon: "⚙️" },
   ];
 
