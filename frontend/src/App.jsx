@@ -41,7 +41,8 @@ function AppContent() {
       <Routes>
         {/* 用户登录和注册 */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        {/* 临时关闭注册功能 */}
+        {/* <Route path="/register" element={<RegisterPage />} /> */}
 
         {/* 组件调试页面（无需登录） */}
         <Route path="/debug/team-board" element={<DebugTeamBoardPage />} />

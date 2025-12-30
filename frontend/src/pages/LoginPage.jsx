@@ -150,9 +150,9 @@ export default function LoginPage() {
                 </div>
               )}
               
-              <Button 
-                type="submit" 
-                color="primary" 
+              <Button
+                type="submit"
+                color="primary"
                 isLoading={loading}
                 className="w-full mt-2"
                 size="lg"
@@ -161,12 +161,13 @@ export default function LoginPage() {
                 登录
               </Button>
 
-              <div className="text-center text-sm text-default-500">
+              {/* 临时关闭注册入口 */}
+              {/* <div className="text-center text-sm text-default-500">
                 还没有账号？{' '}
                 <Link to="/register" className="text-primary hover:underline font-medium">
                   立即注册
                 </Link>
-              </div>
+              </div> */}
             </form>
           </CardBody>
         </HoverEffectCard>

@@ -41,6 +41,12 @@ async def register_user(
     - **password**: 密码（至少6位）
     - **nickname**: 昵称
     """
+    # 临时关闭注册功能
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="注册功能暂时关闭"
+    )
+
     # 检查QQ号是否已存在
     result = await db.execute(
         select(User).where(
