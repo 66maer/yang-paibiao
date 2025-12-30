@@ -13,6 +13,7 @@ from app.api.v2.endpoints import ranking
 from app.api.v2 import admin
 from app.api.v2 import users
 from app.api.v2 import characters
+from app.api.v2 import bot
 
 api_router = APIRouter()
 
@@ -83,4 +84,11 @@ api_router.include_router(
     configs.router,
     prefix="/configs",
     tags=["系统配置"]
+)
+
+# Bot API接口
+api_router.include_router(
+    bot.router,
+    prefix="/bot",
+    tags=["机器人API"]
 )

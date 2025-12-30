@@ -2,16 +2,19 @@
 API依赖项
 包含认证、权限检查等通用依赖
 """
+from datetime import datetime
 from typing import Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.database import get_db
-from app.core.security import verify_token
+from app.core.security import verify_token, verify_password
 from app.models.user import User
 from app.models.admin import SystemAdmin
+from app.models.bot import Bot, BotGuild
+from app.models.guild import Guild
 
 # HTTP Bearer 认证
 security = HTTPBearer()
@@ -143,3 +146,121 @@ async def get_optional_current_user(
         return await get_current_user(credentials, db)
     except HTTPException:
         return None
+
+
+async def get_current_bot(
+    api_key: str = Header(None, alias="X-API-Key"),
+    db: AsyncSession = Depends(get_db)
+) -> Bot:
+    """
+    获取当前机器人
+
+    Args:
+        api_key: API Key（从X-API-Key请求头获取）
+        db: 数据库会话
+
+    Returns:
+        Bot: 当前Bot对象
+
+    Raises:
+        HTTPException: 认证失败
+    """
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="缺少API Key",
+            headers={"WWW-Authenticate": "X-API-Key"},
+        )
+
+    # 从API Key提取bot_name（格式：bot_<bot_name>_<random>）
+    try:
+        parts = api_key.split('_')
+        if len(parts) < 3 or parts[0] != 'bot':
+            raise ValueError("Invalid API Key format")
+        bot_name = parts[1]
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效的API Key格式"
+        )
+
+    # 查询Bot
+    result = await db.execute(
+        select(Bot).where(Bot.bot_name == bot_name)
+    )
+    bot = result.scalar_one_or_none()
+
+    if not bot:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Bot不存在"
+        )
+
+    # 验证API Key
+    if not verify_password(api_key, bot.api_key_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效的API Key"
+        )
+
+    # 检查是否激活
+    if not bot.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bot已被停用"
+        )
+
+    # 更新最后使用时间（异步执行）
+    bot.last_used_at = datetime.utcnow()
+    await db.commit()
+
+    return bot
+
+
+async def verify_bot_guild_access(
+    bot: Bot,
+    guild_id: int,
+    db: AsyncSession
+) -> Guild:
+    """
+    验证Bot对指定群组的访问权限
+
+    Args:
+        bot: Bot对象
+        guild_id: 群组ID
+        db: 数据库会话
+
+    Returns:
+        Guild: 群组对象
+
+    Raises:
+        HTTPException: 权限验证失败
+    """
+    # 检查Bot是否被授权访问该群组
+    result = await db.execute(
+        select(BotGuild).where(
+            BotGuild.bot_id == bot.id,
+            BotGuild.guild_id == guild_id
+        )
+    )
+    bot_guild = result.scalar_one_or_none()
+
+    if not bot_guild:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Bot未被授权访问群组 {guild_id}"
+        )
+
+    # 检查群组是否存在
+    guild_result = await db.execute(
+        select(Guild).where(Guild.id == guild_id, Guild.deleted_at.is_(None))
+    )
+    guild = guild_result.scalar_one_or_none()
+
+    if not guild:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="群组不存在"
+        )
+
+    return guild

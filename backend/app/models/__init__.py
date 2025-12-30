@@ -15,6 +15,7 @@ from app.models.gold_record import GoldRecord
 from app.models.season_correction_factor import SeasonCorrectionFactor
 from app.models.ranking_snapshot import RankingSnapshot
 from app.models.team_log import TeamLog
+from app.models.bot import Bot, BotGuild
 
 __all__ = [
 	"SystemAdmin",
@@ -31,4 +32,6 @@ __all__ = [
 	"SeasonCorrectionFactor",
 	"RankingSnapshot",
 	"TeamLog",
+	"Bot",
+	"BotGuild",
 ]

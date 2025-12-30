@@ -2,7 +2,7 @@
 API v2 管理员路由模块
 """
 from fastapi import APIRouter
-from app.api.v2.endpoints import admin_auth, admin_guilds, admin_users, admin_characters, admin_configs, admin_season_correction
+from app.api.v2.endpoints import admin_auth, admin_guilds, admin_users, admin_characters, admin_configs, admin_season_correction, admin_bots
 
 api_router = APIRouter()
 
@@ -46,4 +46,11 @@ api_router.include_router(
     admin_season_correction.router,
     prefix="/season-corrections",
     tags=["赛季修正系数管理"]
+)
+
+# 注册Bot管理路由
+api_router.include_router(
+    admin_bots.router,
+    prefix="/bots",
+    tags=["管理员-Bot管理"]
 )

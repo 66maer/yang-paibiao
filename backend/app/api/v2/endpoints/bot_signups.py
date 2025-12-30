@@ -1,0 +1,193 @@
+"""
+Bot API - 报名管理
+"""
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
+from app.database import get_db
+from app.api.deps import get_current_bot, verify_bot_guild_access
+from app.models.bot import Bot
+from app.models.user import User
+from app.models.team import Team
+from app.models.signup import Signup
+from app.models.character import Character, CharacterPlayer
+from app.schemas.bot import BotSignupRequest, BotCancelSignupRequest
+from app.schemas.signup import SignupOut
+from app.schemas.common import ResponseModel
+
+router = APIRouter()
+
+
+@router.post(
+    "/guilds/{guild_id}/teams/{team_id}/signups",
+    response_model=ResponseModel[SignupOut]
+)
+async def create_signup(
+    guild_id: int,
+    team_id: int,
+    payload: BotSignupRequest,
+    bot: Bot = Depends(get_current_bot),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    提交报名
+
+    - 如果提供character_id，优先使用角色信息
+    - 如果未提供character_id，必须提供character_name和xinfa
+    """
+    # 验证Bot权限
+    await verify_bot_guild_access(bot, guild_id, db)
+
+    # 验证团队存在
+    team_result = await db.execute(
+        select(Team).where(Team.id == team_id, Team.guild_id == guild_id)
+    )
+    team = team_result.scalar_one_or_none()
+
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="团队不存在"
+        )
+
+    # 查找用户
+    user_result = await db.execute(
+        select(User).where(
+            User.qq_number == payload.qq_number,
+            User.deleted_at.is_(None)
+        )
+    )
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"QQ号 {payload.qq_number} 未注册"
+        )
+
+    # 处理角色信息
+    signup_character_id = None
+    character_name = ""
+    xinfa = payload.xinfa
+
+    if payload.character_id:
+        # 优先使用character_id
+        char_result = await db.execute(
+            select(Character)
+            .join(CharacterPlayer)
+            .where(
+                Character.id == payload.character_id,
+                CharacterPlayer.user_id == user.id,
+                Character.deleted_at.is_(None)
+            )
+        )
+        character = char_result.scalar_one_or_none()
+
+        if not character:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"角色ID {payload.character_id} 不存在或不属于该用户"
+            )
+
+        signup_character_id = character.id
+        character_name = character.name
+        xinfa = character.xinfa
+    else:
+        # 使用请求中的角色名
+        if not payload.character_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="必须提供 character_id 或 character_name"
+            )
+        character_name = payload.character_name
+
+    # 构建signup_info
+    signup_info = {
+        "submitter_name": user.nickname,
+        "submitter_qq_number": user.qq_number,
+        "player_name": user.nickname,
+        "player_qq_number": user.qq_number,
+        "character_name": character_name,
+        "xinfa": xinfa
+    }
+
+    # 创建报名
+    signup = Signup(
+        team_id=team_id,
+        submitter_id=user.id,
+        signup_user_id=user.id,
+        signup_character_id=signup_character_id,
+        signup_info=signup_info,
+        is_rich=payload.is_rich,
+        is_proxy=False,  # Bot报名都是本人
+        priority=0
+    )
+
+    db.add(signup)
+    await db.commit()
+    await db.refresh(signup)
+
+    return ResponseModel(data=SignupOut.from_orm(signup))
+
+
+@router.delete(
+    "/guilds/{guild_id}/teams/{team_id}/signups",
+    response_model=ResponseModel
+)
+async def cancel_signup(
+    guild_id: int,
+    team_id: int,
+    payload: BotCancelSignupRequest,
+    bot: Bot = Depends(get_current_bot),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    取消报名
+
+    - 通过QQ号查找用户
+    - 软删除报名记录（设置cancelled_at）
+    """
+    # 验证Bot权限
+    await verify_bot_guild_access(bot, guild_id, db)
+
+    # 查找用户
+    user_result = await db.execute(
+        select(User).where(
+            User.qq_number == payload.qq_number,
+            User.deleted_at.is_(None)
+        )
+    )
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"QQ号 {payload.qq_number} 未注册"
+        )
+
+    # 查找该用户在该团队的有效报名
+    signup_result = await db.execute(
+        select(Signup).where(
+            Signup.team_id == team_id,
+            Signup.signup_user_id == user.id,
+            Signup.cancelled_at.is_(None)
+        )
+    )
+    signup = signup_result.scalar_one_or_none()
+
+    if not signup:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="未找到该用户的报名记录"
+        )
+
+    # 软删除：设置cancelled_at
+    signup.cancelled_at = datetime.utcnow()
+    # 注意：cancelled_by应该设置为操作者，但Bot没有用户ID，这里可以设置为None或者submitter_id
+    signup.cancelled_by = signup.submitter_id
+
+    await db.commit()
+
+    return ResponseModel(message="报名已取消")
