@@ -23,7 +23,8 @@ export default function CreateCharacterModal({ isOpen, onClose, onSuccess }) {
     server: "",
     xinfa: "",
     remark: "",
-    relationType: "owner" // 初始关系类型
+    relationType: "owner", // 初始关系类型
+    priority: 0 // 初始优先级
   });
 
   const handleChange = (field, value) => {
@@ -54,7 +55,8 @@ export default function CreateCharacterModal({ isOpen, onClose, onSuccess }) {
         server: formData.server,
         xinfa: formData.xinfa,
         remark: formData.remark.trim() || undefined,
-        relation_type: formData.relationType
+        relation_type: formData.relationType,
+        priority: formData.priority
       });
 
       showToast.success("角色创建成功");
@@ -65,7 +67,8 @@ export default function CreateCharacterModal({ isOpen, onClose, onSuccess }) {
         server: "",
         xinfa: "",
         remark: "",
-        relationType: "owner"
+        relationType: "owner",
+        priority: 0
       });
 
       // 关闭模态框并刷新列表
@@ -87,7 +90,8 @@ export default function CreateCharacterModal({ isOpen, onClose, onSuccess }) {
       server: "",
       xinfa: "",
       remark: "",
-      relationType: "owner"
+      relationType: "owner",
+      priority: 0
     });
     onClose();
   };
@@ -137,6 +141,18 @@ export default function CreateCharacterModal({ isOpen, onClose, onSuccess }) {
               variant="flat"
               minRows={2}
               maxRows={4}
+            />
+
+            {/* 优先级 */}
+            <Input
+              label="优先级"
+              type="number"
+              placeholder="数值越小优先级越高"
+              value={formData.priority.toString()}
+              onChange={(e) => handleChange("priority", parseInt(e.target.value) || 0)}
+              variant="flat"
+              min={0}
+              description="用于排序，0为默认优先级"
             />
 
             {/* 关系类型 */}

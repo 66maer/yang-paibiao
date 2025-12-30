@@ -2,29 +2,39 @@ import { useState, useEffect } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea } from "@heroui/react";
 import ServerSelector from "../ServerSelector";
 import XinfaSelector from "../XinfaSelector";
-import { updateCharacter } from "../../api/characters";
+import { updateCharacter, updateCharacterRelation } from "../../api/characters";
 import { showToast } from "../../utils/toast";
+import useAuthStore from "../../stores/authStore";
 
 export default function EditCharacterModal({ isOpen, onClose, character, onSuccess }) {
   const [loading, setLoading] = useState(false);
+  const user = useAuthStore((state) => state.user);
   const [formData, setFormData] = useState({
     name: "",
     server: "",
     xinfa: "",
     remark: "",
+    priority: 0,
   });
+  const [initialPriority, setInitialPriority] = useState(0);
 
   // 当角色数据变化时，更新表单
   useEffect(() => {
-    if (character) {
+    if (character && user) {
+      // 从 character.players 中找到当前用户的关联记录
+      const currentUserPlayer = character.players?.find(p => p.user_id === user.id);
+      const priority = currentUserPlayer?.priority ?? 0;
+
       setFormData({
         name: character.name || "",
         server: character.server || "",
         xinfa: character.xinfa || "",
         remark: character.remark || "",
+        priority: priority,
       });
+      setInitialPriority(priority);
     }
-  }, [character]);
+  }, [character, user]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -48,13 +58,20 @@ export default function EditCharacterModal({ isOpen, onClose, character, onSucce
     try {
       setLoading(true);
 
-      // 调用 API 更新角色
+      // 调用 API 更新角色基本信息
       await updateCharacter(character.id, {
         name: formData.name.trim(),
         server: formData.server,
         xinfa: formData.xinfa,
         remark: formData.remark.trim() || undefined,
       });
+
+      // 如果优先级有变化，更新优先级
+      if (formData.priority !== initialPriority) {
+        await updateCharacterRelation(character.id, {
+          priority: formData.priority,
+        });
+      }
 
       showToast.success("角色信息已更新");
 
@@ -138,6 +155,18 @@ export default function EditCharacterModal({ isOpen, onClose, character, onSucce
               variant="flat"
               minRows={2}
               maxRows={4}
+            />
+
+            {/* 优先级 */}
+            <Input
+              label="优先级"
+              type="number"
+              placeholder="数值越小优先级越高"
+              value={formData.priority.toString()}
+              onChange={(e) => handleChange("priority", parseInt(e.target.value) || 0)}
+              variant="flat"
+              min={0}
+              description="用于排序，0为默认优先级"
             />
           </div>
         </ModalBody>

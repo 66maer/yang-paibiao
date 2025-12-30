@@ -69,7 +69,7 @@ async def create_character(
                 character_id=existing_char.id,
                 user_id=current_user.id,
                 relation_type=character_data.relation_type,
-                priority=0
+                priority=character_data.priority
             )
             db.add(char_player)
             await db.commit()
@@ -90,7 +90,7 @@ async def create_character(
             character_id=new_character.id,
             user_id=current_user.id,
             relation_type=character_data.relation_type,
-            priority=0
+            priority=character_data.priority
         )
         db.add(char_player)
         

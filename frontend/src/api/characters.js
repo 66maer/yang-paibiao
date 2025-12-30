@@ -54,12 +54,10 @@ export const removeCharacterRelation = (characterId) => {
 };
 
 /**
- * 更新角色关系类型（owner/shared）
+ * 更新角色关系信息（relation_type, priority, notes）
  */
-export const updateCharacterRelation = (characterId, relationType) => {
-  return apiClient.patch(`/characters/${characterId}/relation`, {
-    relation_type: relationType,
-  });
+export const updateCharacterRelation = (characterId, data) => {
+  return apiClient.patch(`/characters/${characterId}/relation`, data);
 };
 
 /**

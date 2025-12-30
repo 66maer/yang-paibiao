@@ -14,6 +14,7 @@ import {
 import useAuthStore from "../../stores/authStore";
 import { getMyCharacters, removeCharacterRelation } from "../../api/characters";
 import { showToast } from "../../utils/toast";
+import { sortCharacters } from "../../utils/characterSort";
 import CharacterCard from "../../components/character/CharacterCard";
 import CreateCharacterModal from "../../components/character/CreateCharacterModal";
 import EditCharacterModal from "../../components/character/EditCharacterModal";
@@ -44,7 +45,7 @@ export default function CharactersPage() {
     loadCharacters();
   }, []);
 
-  // 根据关系类型分组
+  // 根据关系类型分组并排序
   const groupedCharacters = useMemo(() => {
     const owned = [];
     const shared = [];
@@ -60,7 +61,11 @@ export default function CharactersPage() {
       }
     });
 
-    return { owned, shared };
+    // 对每个分组按优先级排序
+    return {
+      owned: sortCharacters(owned, user?.id),
+      shared: sortCharacters(shared, user?.id),
+    };
   }, [characters, user?.id]);
 
   // 打开创建模态框

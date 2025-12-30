@@ -3,10 +3,16 @@ import { Button } from "@heroui/react";
 import { xinfaInfoTable } from "../../config/xinfa";
 import { updateCharacterRelation } from "../../api/characters";
 import { showToast } from "../../utils/toast";
+import useAuthStore from "../../stores/authStore";
 
 export default function CharacterCard({ character, relationType, onEdit, onDelete, onRelationChanged }) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
+  const user = useAuthStore((state) => state.user);
+
+  // 获取当前用户的优先级
+  const currentUserPlayer = character.players?.find(p => p.user_id === user?.id);
+  const priority = currentUserPlayer?.priority ?? 0;
 
   // 获取心法信息（兼容旧数据的中文名称和新数据的key）
   const getXinfaInfo = (xinfaValue) => {
@@ -28,7 +34,7 @@ export default function CharacterCard({ character, relationType, onEdit, onDelet
   const handleToggleRelation = async () => {
     try {
       const newRelationType = relationType === "owner" ? "shared" : "owner";
-      await updateCharacterRelation(character.id, newRelationType);
+      await updateCharacterRelation(character.id, { relation_type: newRelationType });
       showToast.success(`已移至${newRelationType === "owner" ? "我的角色" : "共享角色"}`);
       if (onRelationChanged) {
         onRelationChanged();
@@ -84,10 +90,15 @@ export default function CharacterCard({ character, relationType, onEdit, onDelet
         <div className="flex-1 flex flex-col">
           {/* 第一层：心法图标+服务器 | 角色名称 */}
           <div className="flex items-center gap-3 flex-1">
-            {/* 心法图标 + 服务器 */}
+            {/* 心法图标 + 服务器 + 优先级 */}
             <div className="flex flex-col items-center justify-center gap-1">
               {xinfa && <img src={`/xinfa/${xinfa.icon}`} alt={xinfa.name} className="w-12 h-12 rounded shadow-lg" />}
               <div className="text-xs opacity-80 text-center leading-tight whitespace-nowrap">{character.server}</div>
+              {priority > 0 && (
+                <div className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/30 text-yellow-200 border border-yellow-500/50" title={`优先级: ${priority}`}>
+                  P{priority}
+                </div>
+              )}
             </div>
 
             {/* 角色名称 */}

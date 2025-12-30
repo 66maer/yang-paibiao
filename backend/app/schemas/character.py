@@ -13,6 +13,7 @@ class CharacterCreate(BaseModel):
     xinfa: str = Field(..., min_length=1, max_length=20, description="心法")
     remark: Optional[str] = Field(None, description="备注")
     relation_type: str = Field(default="owner", description="关系类型: owner(特别关注), shared(一般关注)")
+    priority: int = Field(default=0, description="优先级，数值越小优先级越高")
 
     @field_validator('relation_type')
     @classmethod
