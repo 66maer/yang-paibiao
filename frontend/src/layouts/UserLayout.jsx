@@ -128,7 +128,9 @@ export default function UserLayout() {
       {/* 页脚 */}
       <footer className="border-t border-pink-200 dark:border-pink-900 py-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-sm text-default-500">小秧排表 © 2025 - 剑网三排标系统</p>
+          <p className="text-sm text-default-500">
+            小秧排表 ©{new Date().getFullYear()} 丐箩箩 | 蜀ICP备2024079726号-1
+          </p>
         </div>
       </footer>
     </div>
