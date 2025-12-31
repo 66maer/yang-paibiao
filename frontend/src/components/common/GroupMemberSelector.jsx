@@ -30,6 +30,7 @@ import { Input } from "@heroui/react";
  * @param {boolean} props.isDisabled - 是否禁用
  * @param {boolean} props.allowCustomValue - 是否允许自定义输入（不仅从列表选择）
  * @param {boolean} props.showXinfa - 是否显示心法选择器（默认true）
+ * @param {Array<number|string>} props.excludeUserIds - 需要排除的用户ID列表
  */
 export default function GroupMemberSelector({
   guildId,
@@ -48,6 +49,7 @@ export default function GroupMemberSelector({
   isDisabled = false,
   allowCustomValue = false,
   showXinfa = true,
+  excludeUserIds = [],
 }) {
   const [searchKeyword, setSearchKeyword] = useState("");
   const { currentGuildId } = useCurrentGuild();
@@ -73,11 +75,34 @@ export default function GroupMemberSelector({
     // 2) { code, message, data: { items: [ ... ], total, ... } }
     // 也兼容少数 { items: [ ... ] } 的情况
     const payload = membersData?.data;
-    if (Array.isArray(payload)) return payload;
-    if (payload && Array.isArray(payload.items)) return payload.items;
-    if (Array.isArray(membersData?.items)) return membersData.items;
-    return [];
-  }, [membersData]);
+    let memberList = [];
+    if (Array.isArray(payload)) memberList = payload;
+    else if (payload && Array.isArray(payload.items)) memberList = payload.items;
+    else if (Array.isArray(membersData?.items)) memberList = membersData.items;
+
+    console.log("GroupMemberSelector - excludeUserIds:", excludeUserIds);
+    console.log(
+      "GroupMemberSelector - memberList before filter:",
+      memberList.length,
+      memberList.map((m) => ({ id: m.user_id, name: m.user?.nickname }))
+    );
+
+    // 过滤掉被排除的用户
+    if (excludeUserIds && excludeUserIds.length > 0) {
+      const excludeSet = new Set(excludeUserIds.map((id) => String(id)));
+      console.log("GroupMemberSelector - excludeSet:", Array.from(excludeSet));
+      memberList = memberList.filter((member) => {
+        const shouldExclude = excludeSet.has(String(member.user_id));
+        if (shouldExclude) {
+          console.log("GroupMemberSelector - excluding member:", member.user_id, member.user?.nickname);
+        }
+        return !shouldExclude;
+      });
+    }
+
+    console.log("GroupMemberSelector - memberList after filter:", memberList.length);
+    return memberList;
+  }, [membersData, excludeUserIds]);
 
   // 预处理成员数据，生成拼音与首字母索引
   const enhancedMembers = useMemo(() => {
