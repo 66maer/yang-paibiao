@@ -24,8 +24,8 @@ import {
 } from '@heroui/react'
 import { getGuildList, createGuild, updateGuild, deleteGuild, transferGuildOwner } from '../../api/guilds'
 import { getGuildSubscriptions, createSubscription, deleteSubscription } from '../../api/subscriptions'
-import UserSelector from '../../components/UserSelector'
-import ServerSelector from '../../components/ServerSelector'
+import UserSelector from '@/components/common/UserSelector'
+import ServerSelector from '@/components/common/ServerSelector'
 import { showSuccess, showError, showConfirm } from '../../utils/toast.jsx'
 
 export default function GuildManagementPage() {

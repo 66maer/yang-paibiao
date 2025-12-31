@@ -1,4 +1,4 @@
-import { allXinfaList } from "../config/xinfa";
+import { allXinfaList } from "@/config/xinfa";
 
 // Default rule used when a slot is not configured
 const defaultRule = { allowRich: false, allowXinfaList: [] };

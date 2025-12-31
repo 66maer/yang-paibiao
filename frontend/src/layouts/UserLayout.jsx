@@ -1,10 +1,10 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
-import useAuthStore from "../stores/authStore";
-import ThemeSwitch from "../components/ThemeSwitch";
-import GuildSwitcher from "../components/user/GuildSwitcher";
-import UserMenu from "../components/user/UserMenu";
-import { getFilteredMenu } from "../config/userMenuConfig";
+import useAuthStore from "@/stores/authStore";
+import ThemeSwitch from "@/components/common/ThemeSwitch";
+import GuildSwitcher from "@/features/user/components/GuildSwitcher";
+import UserMenu from "@/features/user/components/UserMenu";
+import { getFilteredMenu } from "@/config/userMenuConfig";
 
 /**
  * 用户页面布局组件

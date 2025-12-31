@@ -1,4 +1,4 @@
-import { allXinfaList } from "../config/xinfa";
+import { allXinfaList } from "@/config/xinfa";
 
 /**
  * 角色排序工具函数

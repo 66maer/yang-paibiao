@@ -28,8 +28,8 @@ import {
   updateCharacter,
   deleteCharacter,
 } from '../../api/characters'
-import XinfaSelector from '../../components/XinfaSelector'
-import ServerSelector from '../../components/ServerSelector'
+import XinfaSelector from '@/components/common/XinfaSelector'
+import ServerSelector from '@/components/common/ServerSelector'
 
 export default function CharacterManagementPage() {
   const [page, setPage] = useState(1)

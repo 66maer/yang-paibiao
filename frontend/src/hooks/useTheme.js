@@ -1,4 +1,4 @@
-import { useThemeContext } from "../contexts/ThemeContext";
+import { useThemeContext } from "@/contexts/ThemeContext";
 
 /**
  * 主题 Hook - 使用全局 ThemeContext

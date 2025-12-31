@@ -1,5 +1,5 @@
 import axios from "axios";
-import useAuthStore from "../stores/authStore";
+import useAuthStore from "@/stores/authStore";
 
 // 创建 axios 实例
 const apiClient = axios.create({

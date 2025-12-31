@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button, Chip } from "@heroui/react";
-import useAuthStore from "../stores/authStore";
-import ThemeSwitch from "../components/ThemeSwitch";
+import useAuthStore from "@/stores/authStore";
+import ThemeSwitch from "@/components/common/ThemeSwitch";
 
 export default function AdminLayout() {
   const { user, clearAuth } = useAuthStore();

@@ -1,4 +1,4 @@
-import useAuthStore from "../stores/authStore";
+import useAuthStore from "@/stores/authStore";
 
 /**
  * 获取当前选中的群组信息

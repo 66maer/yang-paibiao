@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@heroui/react";
-import useAuthStore from "../stores/authStore";
+import useAuthStore from "@/stores/authStore";
 
 /**
  * 404 页面未找到

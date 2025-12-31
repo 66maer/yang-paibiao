@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Card, CardBody, CardHeader, Button, Chip, Divider, Tabs, Tab, Input, Select, SelectItem } from "@heroui/react";
-import TeamBoard from "../components/board/TeamBoard";
-import SignupItemCard from "../components/board/SignupItemCard";
-import { buildEmptyRules } from "../utils/slotAllocation";
-import { allXinfaList, xinfaInfoTable } from "../config/xinfa";
+import TeamBoard from "@/features/board/components/TeamBoard";
+import SignupItemCard from "@/features/board/components/SignupItemCard";
+import { buildEmptyRules } from "@/utils/slotAllocation";
+import { allXinfaList, xinfaInfoTable } from "@/config/xinfa";
 
 // 构造一组演示报名数据
 const mockSignups = [

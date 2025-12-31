@@ -18,10 +18,10 @@ import {
 } from '@heroui/react';
 import { getBots, deleteBot, regenerateApiKey } from '../../api/bots';
 import { showSuccess, showError, showConfirm } from '../../utils/toast.jsx';
-import CreateBotDialog from '../../components/bot/CreateBotDialog';
-import EditBotDialog from '../../components/bot/EditBotDialog';
-import BotDetailDialog from '../../components/bot/BotDetailDialog';
-import ApiKeyDialog from '../../components/bot/ApiKeyDialog';
+import CreateBotDialog from '@/features/bot/components/CreateBotDialog';
+import EditBotDialog from '@/features/bot/components/EditBotDialog';
+import BotDetailDialog from '@/features/bot/components/BotDetailDialog';
+import ApiKeyDialog from '@/features/bot/components/ApiKeyDialog';
 
 export default function BotsPage() {
   const [page, setPage] = useState(1);
