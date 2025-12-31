@@ -1,9 +1,9 @@
 """成员管理业务逻辑服务"""
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from nonebot.log import logger
 
 from ..api.client import APIClient
-from ..api.models import UserSearchResult
+from ..api.models import UserSearchResult, MemberInfo, MemberBatchRequest
 
 
 class MemberService:
@@ -58,3 +58,80 @@ class MemberService:
             raise ValueError(f"找到多个匹配的用户，请提供更精确的名称:\n{user_list}")
 
         return users[0]
+
+    async def sync_all_members(
+        self,
+        group_members: List[Dict[str, Any]]
+    ) -> Dict[str, int]:
+        """
+        同步所有群成员到后端
+
+        Args:
+            group_members: 群成员信息列表，每个成员包含 user_id, nickname, card 等字段
+
+        Returns:
+            Dict[str, int]: 同步结果统计，包含 total, added, existed 三个字段
+        """
+        logger.info(f"开始同步 {len(group_members)} 个群成员到后端")
+
+        # 统计信息
+        total = len(group_members)
+        added = 0
+        existed = 0
+
+        # 准备要添加的成员列表
+        members_to_add = []
+
+        for member in group_members:
+            qq_number = str(member.get("user_id"))
+            nickname = member.get("nickname", "")
+            group_nickname = member.get("card", "")
+
+            # 尝试搜索该用户是否已存在
+            try:
+                existing_users = await self.search_user_by_nickname(qq_number)
+
+                # 检查是否有完全匹配的 QQ 号
+                user_exists = any(u.qq_number == qq_number for u in existing_users)
+
+                if user_exists:
+                    logger.info(f"成员已存在: {qq_number} ({nickname})")
+                    existed += 1
+                else:
+                    # 不存在，加入待添加列表
+                    members_to_add.append(
+                        MemberInfo(
+                            qq_number=qq_number,
+                            nickname=nickname,
+                            group_nickname=group_nickname
+                        )
+                    )
+            except Exception as e:
+                # 搜索失败，假设不存在，加入待添加列表
+                logger.warning(f"搜索成员 {qq_number} 时出错: {e}，将尝试添加")
+                members_to_add.append(
+                    MemberInfo(
+                        qq_number=qq_number,
+                        nickname=nickname,
+                        group_nickname=group_nickname
+                    )
+                )
+
+        # 批量添加新成员
+        if members_to_add:
+            try:
+                request = MemberBatchRequest(members=members_to_add)
+                await self.api_client.members.add_members_batch(request)
+                added = len(members_to_add)
+                logger.success(f"成功添加 {added} 个新成员")
+            except Exception as e:
+                logger.error(f"批量添加成员失败: {e}")
+                raise
+
+        logger.success(f"成员同步完成: 总计 {total}，新增 {added}，已存在 {existed}")
+
+        return {
+            "total": total,
+            "added": added,
+            "existed": existed
+        }

@@ -1,9 +1,11 @@
 """NoneBot Matcher 定义和处理函数"""
 import re
 from nonebot import on_command, on_message
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, Message
 from nonebot.params import CommandArg, EventPlainText
 from nonebot.log import logger
+from nonebot.permission import SUPERUSER
+from nonebot.adapters.onebot.v11.permission import GROUP_OWNER
 
 from ..api.client import get_api_client, APIError
 from ..services.team_service import TeamService
@@ -563,3 +565,66 @@ async def _handle_cancel_signup_select(
         logger.exception(f"处理取消报名选择失败: {e}")
         msg = MessageBuilder.build_error_message(f"取消报名失败: {str(e)}")
         await matcher.finish(msg)
+
+
+# ==================== 初始化成员（超级管理员或群主专用）====================
+init_members = on_command(
+    "初始化成员",
+    permission=SUPERUSER | GROUP_OWNER,
+    priority=10,
+    block=True
+)
+
+
+@init_members.handle()
+async def handle_init_members(bot: Bot, event: GroupMessageEvent):
+    """
+    处理初始化成员命令 - 将当前群的所有成员同步到后端
+
+    仅超级管理员或群主有权限执行此命令
+
+    功能:
+    - 获取当前群的所有成员列表
+    - 检查每个成员是否已在后端注册
+    - 仅添加未注册的成员到后端
+    - 返回同步统计信息
+    """
+    try:
+        group_id = event.group_id
+
+        # 发送开始消息
+        await init_members.send("正在获取群成员列表，请稍候...")
+
+        # 获取群成员列表
+        logger.info(f"开始获取群 {group_id} 的成员列表")
+        group_members = await bot.get_group_member_list(group_id=group_id)
+
+        logger.info(f"获取到 {len(group_members)} 个群成员")
+
+        # 调用成员服务同步成员
+        api_client = get_api_client()
+        member_service = MemberService(api_client)
+
+        await init_members.send(f"获取到 {len(group_members)} 个群成员，开始同步到后端...")
+
+        # 同步成员
+        result = await member_service.sync_all_members(group_members)
+
+        # 构建成功消息
+        msg = MessageBuilder.build_success_message(
+            f"成员同步完成！\n"
+            f"总成员数: {result['total']}\n"
+            f"新增成员: {result['added']}\n"
+            f"已存在成员: {result['existed']}"
+        )
+        await init_members.finish(msg)
+
+    except APIError as e:
+        logger.error(f"API 错误: {e}")
+        msg = MessageBuilder.build_error_message(f"同步成员失败: {e}")
+        await init_members.finish(msg)
+
+    except Exception as e:
+        logger.exception(f"初始化成员失败: {e}")
+        msg = MessageBuilder.build_error_message(f"初始化成员失败: {str(e)}")
+        await init_members.finish(msg)
