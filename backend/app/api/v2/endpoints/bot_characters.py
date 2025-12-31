@@ -9,6 +9,7 @@ from app.database import get_db
 from app.api.deps import get_current_bot, verify_bot_guild_access
 from app.models.bot import Bot
 from app.models.user import User
+from app.models.guild import Guild
 from app.models.character import Character, CharacterPlayer
 from app.schemas.bot import (
     BotCreateCharacterRequest,
@@ -37,9 +38,25 @@ async def create_character(
     - 如果角色已存在且用户已关联，返回现有角色
     - 如果角色已存在但用户未关联，创建CharacterPlayer关联
     - 如果角色不存在，创建Character + CharacterPlayer
+    - 如果未提供server参数，自动使用群组的服务器
     """
     # 验证Bot权限
     await verify_bot_guild_access(bot, guild_id, db)
+
+    # 获取群组信息（用于获取默认服务器）
+    guild_result = await db.execute(
+        select(Guild).where(Guild.id == guild_id)
+    )
+    guild = guild_result.scalar_one_or_none()
+
+    if not guild:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="群组不存在"
+        )
+
+    # 确定服务器（优先使用请求中的server，否则使用guild的server）
+    server = payload.server if payload.server else guild.server
 
     # 查找用户
     user_result = await db.execute(
@@ -60,7 +77,7 @@ async def create_character(
     char_result = await db.execute(
         select(Character).where(
             Character.name == payload.name,
-            Character.server == payload.server,
+            Character.server == server,
             Character.deleted_at.is_(None)
         )
     )
@@ -102,7 +119,7 @@ async def create_character(
         # 创建新角色
         character = Character(
             name=payload.name,
-            server=payload.server,
+            server=server,
             xinfa=payload.xinfa,
             remark=None
         )

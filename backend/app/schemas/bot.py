@@ -59,6 +59,23 @@ class BotUpdateNicknameRequest(BaseModel):
     group_nickname: str = Field(..., max_length=50, description="群内昵称")
 
 
+class BotMemberInfo(BaseModel):
+    """成员信息"""
+    user_id: int = Field(..., description="用户ID")
+    qq_number: str = Field(..., description="QQ号")
+    nickname: str = Field(..., description="昵称")
+    group_nickname: Optional[str] = Field(None, description="群内昵称")
+    other_nickname: Optional[str] = Field(None, description="其他昵称")
+
+    class Config:
+        from_attributes = True
+
+
+class BotMemberSearchResponse(BaseModel):
+    """成员搜索响应"""
+    members: List[BotMemberInfo] = Field(..., description="匹配的成员列表")
+
+
 # ============ 团队查询 ============
 
 class BotTeamSimple(BaseModel):
@@ -91,13 +108,30 @@ class BotCancelSignupRequest(BaseModel):
     qq_number: str = Field(..., pattern=r'^\d{5,15}$', description="QQ号")
 
 
+class BotSignupInfo(BaseModel):
+    """用户报名信息"""
+    id: int = Field(..., description="报名ID")
+    signup_character_id: Optional[int] = Field(None, description="报名角色ID")
+    signup_info: dict = Field(..., description="报名信息")
+    is_rich: bool = Field(..., description="是否老板")
+    created_at: datetime = Field(..., description="报名时间")
+
+    class Config:
+        from_attributes = True
+
+
+class BotUserSignupsResponse(BaseModel):
+    """用户报名列表响应"""
+    signups: List[BotSignupInfo] = Field(..., description="报名列表")
+
+
 # ============ 角色管理 ============
 
 class BotCreateCharacterRequest(BaseModel):
     """创建角色请求"""
     qq_number: str = Field(..., pattern=r'^\d{5,15}$', description="QQ号")
     name: str = Field(..., min_length=1, max_length=50, description="角色名")
-    server: str = Field(..., min_length=1, max_length=30, description="服务器")
+    server: Optional[str] = Field(None, min_length=1, max_length=30, description="服务器（若不提供则使用群组服务器）")
     xinfa: str = Field(..., min_length=1, max_length=20, description="心法")
     relation_type: str = Field(default="owner", pattern=r'^(owner|shared)$', description="关系类型")
 

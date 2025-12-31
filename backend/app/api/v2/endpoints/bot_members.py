@@ -20,6 +20,8 @@ from app.schemas.bot import (
     BotRemoveMembersResponse,
     BotRemoveResult,
     BotUpdateNicknameRequest,
+    BotMemberInfo,
+    BotMemberSearchResponse,
 )
 from app.schemas.common import ResponseModel
 from app.core.security import get_password_hash
@@ -291,3 +293,54 @@ async def update_member_nickname(
     await db.commit()
 
     return ResponseModel(message="群昵称更新成功")
+
+
+@router.get(
+    "/guilds/{guild_id}/members/search",
+    response_model=ResponseModel[BotMemberSearchResponse]
+)
+async def search_members(
+    guild_id: int,
+    nickname: str,
+    bot: Bot = Depends(get_current_bot),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    通过昵称搜索群成员
+
+    - 支持模糊匹配
+    - 同时搜索 nickname（用户昵称）、group_nickname（群昵称）、other_nickname（其他昵称）
+    """
+    # 验证Bot权限
+    await verify_bot_guild_access(bot, guild_id, db)
+
+    # 查询匹配的成员
+    # 使用LIKE进行模糊匹配
+    search_pattern = f"%{nickname}%"
+    
+    result = await db.execute(
+        select(User, GuildMember)
+        .join(GuildMember, GuildMember.user_id == User.id)
+        .where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.left_at.is_(None),
+            User.deleted_at.is_(None),
+            (
+                User.nickname.like(search_pattern) |
+                GuildMember.group_nickname.like(search_pattern) |
+                User.other_nickname.like(search_pattern)
+            )
+        )
+    )
+    
+    members = []
+    for user, guild_member in result.all():
+        members.append(BotMemberInfo(
+            user_id=user.id,
+            qq_number=user.qq_number,
+            nickname=user.nickname,
+            group_nickname=guild_member.group_nickname,
+            other_nickname=user.other_nickname
+        ))
+
+    return ResponseModel(data=BotMemberSearchResponse(members=members))

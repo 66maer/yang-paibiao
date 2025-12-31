@@ -13,7 +13,7 @@ from app.models.user import User
 from app.models.team import Team
 from app.models.signup import Signup
 from app.models.character import Character, CharacterPlayer
-from app.schemas.bot import BotSignupRequest, BotCancelSignupRequest
+from app.schemas.bot import BotSignupRequest, BotCancelSignupRequest, BotSignupInfo, BotUserSignupsResponse
 from app.schemas.signup import SignupOut
 from app.schemas.common import ResponseModel
 
@@ -191,3 +191,75 @@ async def cancel_signup(
     await db.commit()
 
     return ResponseModel(message="报名已取消")
+
+
+@router.get(
+    "/guilds/{guild_id}/teams/{team_id}/signups/{qq_number}",
+    response_model=ResponseModel[BotUserSignupsResponse]
+)
+async def get_user_signups(
+    guild_id: int,
+    team_id: int,
+    qq_number: str,
+    bot: Bot = Depends(get_current_bot),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    查询用户在某个团队的所有报名记录
+
+    - 返回该用户在指定团队的所有有效（未取消）报名
+    - 用于取消报名时的多报名场景处理
+    """
+    # 验证Bot权限
+    await verify_bot_guild_access(bot, guild_id, db)
+
+    # 验证团队存在
+    team_result = await db.execute(
+        select(Team).where(Team.id == team_id, Team.guild_id == guild_id)
+    )
+    team = team_result.scalar_one_or_none()
+
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="团队不存在"
+        )
+
+    # 查找用户
+    user_result = await db.execute(
+        select(User).where(
+            User.qq_number == qq_number,
+            User.deleted_at.is_(None)
+        )
+    )
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"QQ号 {qq_number} 未注册"
+        )
+
+    # 查找该用户在该团队的所有有效报名
+    signups_result = await db.execute(
+        select(Signup).where(
+            Signup.team_id == team_id,
+            Signup.signup_user_id == user.id,
+            Signup.cancelled_at.is_(None)
+        ).order_by(Signup.created_at.desc())
+    )
+    signups = signups_result.scalars().all()
+
+    # 转换为响应格式
+    signup_list = [
+        BotSignupInfo(
+            id=signup.id,
+            signup_character_id=signup.signup_character_id,
+            signup_info=signup.signup_info,
+            is_rich=signup.is_rich,
+            created_at=signup.created_at
+        )
+        for signup in signups
+    ]
+
+    return ResponseModel(data=BotUserSignupsResponse(signups=signup_list))
