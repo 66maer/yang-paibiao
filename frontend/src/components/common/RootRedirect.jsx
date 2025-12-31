@@ -1,5 +1,5 @@
-import { Navigate } from 'react-router-dom';
-import useAuthStore from '@/stores/authStore';
+import { Navigate } from "react-router-dom";
+import useAuthStore from "@/stores/authStore";
 
 /**
  * 根路径智能重定向组件
@@ -16,15 +16,15 @@ export default function RootRedirect() {
   }
 
   // 已登录，根据角色跳转到不同主页
-  if (user?.role === 'admin') {
+  if (user?.role === "admin") {
     return <Navigate to="/admin" replace />;
   }
 
   // 普通用户：根据是否有有效选择的群组进行跳转
   const guilds = Array.isArray(user?.guilds) ? user.guilds : [];
-  const localSelectedRaw = localStorage.getItem('selectedGuildId');
+  const localSelectedRaw = localStorage.getItem("selectedGuildId");
   const localSelectedId = localSelectedRaw ? parseInt(localSelectedRaw, 10) : null;
-  const hasLocalValid = !!(localSelectedId && guilds.some(g => g.id === localSelectedId));
+  const hasLocalValid = !!(localSelectedId && guilds.some((g) => g.id === localSelectedId));
 
   if (hasLocalValid || guilds.length === 1) {
     return <Navigate to="/board" replace />;

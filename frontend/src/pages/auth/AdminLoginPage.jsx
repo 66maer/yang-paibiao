@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CardBody, CardHeader, Input, Button } from '@heroui/react';
-import { adminLogin, getAdminInfo } from '@/api/auth';
-import useAuthStore from '@/stores/authStore';
-import HoverEffectCard from '@/components/common/HoverEffectCard';
-import ThemeSwitch from '@/components/common/ThemeSwitch';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { CardBody, CardHeader, Input, Button } from "@heroui/react";
+import { adminLogin, getAdminInfo } from "@/api/auth";
+import useAuthStore from "@/stores/authStore";
+import HoverEffectCard from "@/components/common/HoverEffectCard";
+import ThemeSwitch from "@/components/common/ThemeSwitch";
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
@@ -15,58 +15,58 @@ export default function AdminLoginPage() {
     try {
       clearAuth();
       // 兼容历史代码中用到的本地存储键
-      localStorage.removeItem('access_token');
+      localStorage.removeItem("access_token");
       // 若需要彻底重置持久化存储，可开启下面这行（通常不必）：
       // localStorage.removeItem('auth-storage');
     } catch (e) {
       // ignore
     }
   }, []);
-  
+
   const [formData, setFormData] = useState({
-    username: '',
-    password: '',
+    username: "",
+    password: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       const response = await adminLogin(formData.username, formData.password);
-      
+
       // 检查响应数据结构
       const tokenData = response.data || response;
       const accessToken = tokenData.access_token;
       const refreshToken = tokenData.refresh_token;
-      
+
       if (!accessToken) {
-        throw new Error('登录失败：未获取到访问令牌');
+        throw new Error("登录失败：未获取到访问令牌");
       }
-      
+
       // 先保存token并即时设置角色为 admin，避免路由守卫误跳用户页
-      setAuth(accessToken, refreshToken, { role: 'admin' }, null);
-      
+      setAuth(accessToken, refreshToken, { role: "admin" }, null);
+
       // 获取管理员信息
       const adminInfo = await getAdminInfo();
 
       // 手动添加 role 字段（后端返回的管理员信息中没有 role）
       const adminUserData = {
         ...adminInfo.data,
-        role: 'admin'
+        role: "admin",
       };
 
       // 更新用户信息到全局状态
       setAuth(accessToken, refreshToken, adminUserData);
 
       // 跳转到后台首页
-      navigate('/admin', { replace: true });
+      navigate("/admin", { replace: true });
     } catch (err) {
-      console.error('登录错误:', err);
-      setError(typeof err === 'string' ? err : err.message || '登录失败，请检查用户名和密码');
+      console.error("登录错误:", err);
+      setError(typeof err === "string" ? err : err.message || "登录失败，请检查用户名和密码");
     } finally {
       setLoading(false);
     }
@@ -99,16 +99,16 @@ export default function AdminLoginPage() {
                 autoFocus
                 classNames={{
                   inputWrapper: [
-                    'shadow-xl',
-                    'bg-default-100/70',
-                    'dark:bg-default/60',
-                    'backdrop-blur-xl',
-                    'backdrop-saturate-200',
-                    'hover:bg-default-200/70',
-                    'dark:hover:bg-default/70',
-                    'group-data-[focus=true]:bg-default-100/50',
-                    'dark:group-data-[focus=true]:bg-default/60',
-                    '!cursor-text',
+                    "shadow-xl",
+                    "bg-default-100/70",
+                    "dark:bg-default/60",
+                    "backdrop-blur-xl",
+                    "backdrop-saturate-200",
+                    "hover:bg-default-200/70",
+                    "dark:hover:bg-default/70",
+                    "group-data-[focus=true]:bg-default-100/50",
+                    "dark:group-data-[focus=true]:bg-default/60",
+                    "!cursor-text",
                   ],
                 }}
               />
@@ -121,29 +121,27 @@ export default function AdminLoginPage() {
                 isRequired
                 classNames={{
                   inputWrapper: [
-                    'shadow-xl',
-                    'bg-default-100/70',
-                    'dark:bg-default/60',
-                    'backdrop-blur-xl',
-                    'backdrop-saturate-200',
-                    'hover:bg-default-200/70',
-                    'dark:hover:bg-default/70',
-                    'group-data-[focus=true]:bg-default-100/50',
-                    'dark:group-data-[focus=true]:bg-default/60',
-                    '!cursor-text',
+                    "shadow-xl",
+                    "bg-default-100/70",
+                    "dark:bg-default/60",
+                    "backdrop-blur-xl",
+                    "backdrop-saturate-200",
+                    "hover:bg-default-200/70",
+                    "dark:hover:bg-default/70",
+                    "group-data-[focus=true]:bg-default-100/50",
+                    "dark:group-data-[focus=true]:bg-default/60",
+                    "!cursor-text",
                   ],
                 }}
               />
-              
+
               {error && (
-                <div className="text-sm text-danger bg-danger-50 dark:bg-danger-900/20 p-3 rounded-lg">
-                  {error}
-                </div>
+                <div className="text-sm text-danger bg-danger-50 dark:bg-danger-900/20 p-3 rounded-lg">{error}</div>
               )}
-              
-              <Button 
-                type="submit" 
-                color="primary" 
+
+              <Button
+                type="submit"
+                color="primary"
                 isLoading={loading}
                 className="w-full mt-2"
                 size="lg"
