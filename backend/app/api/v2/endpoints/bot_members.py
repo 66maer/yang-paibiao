@@ -65,10 +65,10 @@ async def batch_add_members(
             user = user_result.scalar_one_or_none()
 
             if not user:
-                # 创建新用户（密码设为QQ号的哈希）
+                # 创建新用户（密码设为123456）
                 user = User(
                     qq_number=member_data.qq_number,
-                    password_hash=get_password_hash(member_data.qq_number),
+                    password_hash=get_password_hash("123456"),
                     nickname=member_data.nickname
                 )
                 db.add(user)
