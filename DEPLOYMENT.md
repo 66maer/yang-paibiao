@@ -15,8 +15,13 @@
 - ✅ `frontend/nginx.conf` - Nginx 容器内配置
 - ✅ `frontend/docker-entrypoint.sh` - 容器启动脚本
 
+### Bot 配置（3个文件）
+- ✅ `yang_bot/Dockerfile` - Bot 多阶段构建配置
+- ✅ `yang_bot/.dockerignore` - Docker 构建排除文件
+- ✅ `yang_bot/.env.prod` - Bot 生产环境变量模板
+
 ### Docker Compose配置（3个文件）
-- ✅ `docker-compose.prod.yml` - 生产环境编排
+- ✅ `docker-compose.prod.yml` - 生产环境编排（包含 backend、frontend、bot）
 - ✅ `docker-compose.dev.yml` - 开发环境编排（可选）
 - ✅ `.env.docker` - Docker 环境变量模板
 
@@ -47,6 +52,18 @@ vim .env.docker
 # 需要设置的关键变量：
 # - DB_PASSWORD: 数据库密码（建议使用 openssl rand -base64 32 生成）
 # - SECRET_KEY: JWT 密钥（至少 32 字符，使用 openssl rand -base64 48）
+# - BOT_EXTERNAL_PORT: Bot 对外端口（默认 8080）
+```
+
+同时编辑 `yang_bot/.env.prod` 配置 Bot 相关参数：
+
+```bash
+vim yang_bot/.env.prod
+
+# 需要配置的关键变量：
+# - SUPERUSERS: 超级管理员 QQ 号
+# - XIAOYANG__GUILD_ID: QQ 群号
+# - OneBot 连接配置（见文件注释）
 ```
 
 ### 2. 初始化数据库
@@ -112,15 +129,18 @@ crontab -e
 
 在 GitHub 仓库的 `Settings > Secrets and variables > Actions` 中添加以下 secrets：
 
-| Secret 名称 | 说明 | 示例值 |
-|------------|------|--------|
-| SERVER_HOST | 服务器 IP 或域名 | `192.168.1.100` 或 `server.example.com` |
-| SERVER_USER | SSH 用户名 | `maer` |
-| SERVER_SSH_KEY | SSH 私钥内容 | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
-| SERVER_PORT | SSH 端口（可选） | `22`（默认） |
-| VITE_API_BASE_URL | 前端 API 地址 | `/api/v2` |
-| DB_PASSWORD | 数据库密码 | 从步骤 2 获取的密码 |
-| SECRET_KEY | JWT 密钥 | `openssl rand -base64 48` 生成的值 |
+| Secret 名称 | 说明 | 示例值 | 必需 |
+|------------|------|--------|------|
+| SERVER_HOST | 服务器 IP 或域名 | `192.168.1.100` | ✅ 必需 |
+| SERVER_USER | SSH 用户名 | `maer` | ✅ 必需 |
+| SERVER_SSH_KEY | SSH 私钥内容 | `-----BEGIN OPENSSH PRIVATE KEY-----...` | ✅ 必需 |
+| SERVER_PORT | SSH 端口 | `22`（默认） | ⚪ 可选 |
+| VITE_API_BASE_URL | 前端 API 地址 | `/api/v2` | ⚪ 可选 |
+
+**注意：** `GITHUB_TOKEN` 由 GitHub Actions 自动提供，不需要手动添加。
+
+**重要说明：** `DB_PASSWORD` 和 `SECRET_KEY` **不需要**添加到 GitHub Secrets！
+这些敏感信息只需要配置在服务器的 `.env.docker` 文件中。
 
 **获取 SSH 私钥**：
 
@@ -221,15 +241,43 @@ docker exec yangpaibiao-backend alembic upgrade head
 # 创建默认管理员
 docker exec -it yangpaibiao-backend python scripts/create_admin.py
 
+# 检查所有服务状态
+docker-compose -f docker-compose.prod.yml ps
+
 # 运行健康检查
 bash scripts/health-check.sh
 ```
 
-### 步骤 5: 验证部署
+### 步骤 5: 配置 Bot OneBot 连接
+
+Bot 需要与 OneBot 客户端（如 go-cqhttp、LLOneBot 等）建立连接才能正常工作。
+
+**方式 1：反向 WebSocket（推荐）**
+
+在 OneBot 客户端配置文件中添加反向 WebSocket 连接：
+
+```yaml
+# go-cqhttp config.yml 示例
+servers:
+  - ws-reverse:
+      universal: ws://your-server-ip:8080/onebot/v11/ws
+      reconnect-interval: 3000
+```
+
+**方式 2：正向 WebSocket**
+
+需要在 `yang_bot/.env.prod` 中配置 OneBot 连接地址。
+
+详细配置请参考 [NoneBot2 文档](https://nonebot.dev/) 和 [OneBot 文档](https://onebot.adapters.nonebot.dev/)。
+```
+
+### 步骤 6: 验证部署
 
 1. 访问 `https://zyhm.fun` 查看前端
 2. 访问 `https://zyhm.fun/api/docs` 查看 API 文档
 3. 尝试登录管理后台
+4. 检查 Bot 日志：`docker logs yangpaibiao-bot -f`
+5. 在 QQ 群中测试 Bot 命令
 
 ---
 
@@ -267,6 +315,9 @@ docker logs yangpaibiao-backend -f
 
 # 查看前端日志
 docker logs yangpaibiao-frontend -f
+
+# 查看 Bot 日志
+docker logs yangpaibiao-bot -f
 ```
 
 ### 重启服务
@@ -280,6 +331,9 @@ docker restart yangpaibiao-backend
 
 # 重启前端
 docker restart yangpaibiao-frontend
+
+# 重启 Bot
+docker restart yangpaibiao-bot
 ```
 
 ### 查看容器状态
@@ -289,7 +343,7 @@ docker restart yangpaibiao-frontend
 docker-compose -f docker-compose.prod.yml ps
 
 # 查看资源使用
-docker stats yangpaibiao-backend yangpaibiao-frontend
+docker stats yangpaibiao-backend yangpaibiao-frontend yangpaibiao-bot
 ```
 
 ### 进入容器调试
@@ -300,6 +354,9 @@ docker exec -it yangpaibiao-backend bash
 
 # 进入前端容器
 docker exec -it yangpaibiao-frontend sh
+
+# 进入 Bot 容器
+docker exec -it yangpaibiao-bot bash
 
 # 查看数据库
 docker exec -i shared-postgres psql -U yangpaibiao_user -d yangpaibiao
@@ -316,6 +373,7 @@ git pull origin main
 # 拉取最新镜像
 docker pull ghcr.io/66maer/yangpaibiao-backend:latest
 docker pull ghcr.io/66maer/yangpaibiao-frontend:latest
+docker pull ghcr.io/66maer/yangpaibiao-bot:latest
 
 # 运行部署脚本
 bash deploy.sh
@@ -383,6 +441,44 @@ docker run --rm -v /etc/letsencrypt:/etc/letsencrypt certbot/certbot renew
 docker exec shared-nginx nginx -s reload
 ```
 
+### Bot 连接问题
+
+```bash
+# 检查 Bot 是否运行
+docker ps | grep yangpaibiao-bot
+
+# 查看 Bot 日志
+docker logs yangpaibiao-bot --tail=100
+
+# 检查 Bot 端口
+netstat -tulpn | grep 8080
+
+# 检查 Bot 健康状态
+curl http://localhost:8080/health
+
+# 测试 Bot 与后端连接
+docker exec yangpaibiao-bot curl http://backend:8000/health
+
+# 重启 Bot
+docker restart yangpaibiao-bot
+```
+
+### OneBot 连接失败
+
+```bash
+# 检查 OneBot 配置
+cat yang_bot/.env.prod | grep ONEBOT
+
+# 查看 Bot WebSocket 连接日志
+docker logs yangpaibiao-bot | grep -i websocket
+
+# 确认 OneBot 客户端配置的反向 WebSocket 地址正确
+# 应该是: ws://your-server-ip:8080/onebot/v11/ws
+
+# 检查防火墙是否开放 8080 端口
+sudo ufw status | grep 8080
+```
+
 ---
 
 ## 📊 监控和备份建议
@@ -425,13 +521,28 @@ chmod +x /home/maer/work/yang-paibiao/scripts/backup-db.sh
 
 在推送到 main 分支之前，确保：
 
-- [ ] `.env.docker` 文件已配置（数据库密码、JWT 密钥）
-- [ ] 数据库已创建（用户和数据库）
-- [ ] SSL 证书已申请并配置
-- [ ] GitHub Secrets 已全部设置（7个 secrets）
-- [ ] Nginx 配置已更新并重载
+### 基础设施
 - [ ] shared-network 网络已创建（`docker network ls`）
+- [ ] shared-postgres 数据库容器运行中
+- [ ] shared-nginx 容器运行中
+- [ ] SSL 证书已申请并配置
+
+### 配置文件
+- [ ] `.env.docker` 文件已配置（数据库密码、JWT 密钥、Bot 端口）
+- [ ] `yang_bot/.env.prod` 已配置（超级管理员、群号、OneBot 连接）
+- [ ] 数据库已创建（用户和数据库）
+- [ ] Nginx 配置已更新并重载
+
+### GitHub 配置
+- [ ] GitHub Secrets 已全部设置（7个 secrets）
 - [ ] SSH 密钥已添加到服务器
+- [ ] GitHub Actions 有读写 packages 权限
+
+### Bot 特殊配置
+- [ ] OneBot 客户端已安装并配置
+- [ ] OneBot 反向 WebSocket 地址已配置
+- [ ] Bot 端口（8080）已在防火墙开放
+- [ ] QQ 群号已正确配置
 
 ---
 

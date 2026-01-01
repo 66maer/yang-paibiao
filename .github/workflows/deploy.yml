@@ -71,6 +71,22 @@ jobs:
             org.opencontainers.image.created=${{ steps.meta.outputs.date }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+      - name: Build and push bot image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./yang_bot
+          file: ./yang_bot/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-bot:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-bot:${{ steps.meta.outputs.version }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-bot:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-bot:buildcache,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -99,6 +115,7 @@ jobs:
             # 拉取最新镜像
             docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:latest
             docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:latest
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-bot:latest
 
             # 运行部署脚本
             bash deploy.sh
