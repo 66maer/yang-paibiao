@@ -37,10 +37,8 @@ export default function UserLayout() {
           <div className="flex justify-between items-center h-16">
             {/* Logo + 品牌名 */}
             <Link to="/board" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
-                小
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent hidden sm:inline">
+              <img src="/logo.png" alt="小秧排表" className="w-12 h-12 rounded-lg" />
+              <span className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-pink-400 bg-clip-text text-transparent hidden sm:inline">
                 小秧排表
               </span>
             </Link>
