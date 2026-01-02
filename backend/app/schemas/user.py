@@ -4,13 +4,14 @@
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
+from app.utils.nickname_validator import validate_nickname_raise
 
 
 class UserRegister(BaseModel):
     """用户注册请求"""
     qq_number: str = Field(..., min_length=5, max_length=20, description="QQ号")
     password: str = Field(..., min_length=6, max_length=50, description="密码")
-    nickname: str = Field(..., min_length=1, max_length=50, description="昵称")
+    nickname: str = Field(..., min_length=1, max_length=6, description="昵称（最多6个字符）")
     
     @field_validator('qq_number')
     @classmethod
@@ -18,6 +19,11 @@ class UserRegister(BaseModel):
         if not v.isdigit():
             raise ValueError('QQ号必须是纯数字')
         return v
+    
+    @field_validator('nickname')
+    @classmethod
+    def validate_nickname(cls, v: str) -> str:
+        return validate_nickname_raise(v)
 
 
 class UserLogin(BaseModel):
@@ -28,9 +34,23 @@ class UserLogin(BaseModel):
 
 class UserUpdate(BaseModel):
     """用户更新请求"""
-    nickname: Optional[str] = Field(None, min_length=1, max_length=50, description="昵称")
+    nickname: Optional[str] = Field(None, min_length=1, max_length=6, description="昵称（最多6个字符）")
     other_nicknames: Optional[List[str]] = Field(None, description="其他昵称")
     avatar: Optional[str] = Field(None, max_length=255, description="头像URL")
+    
+    @field_validator('nickname')
+    @classmethod
+    def validate_nickname(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return validate_nickname_raise(v)
+        return v
+    
+    @field_validator('other_nicknames')
+    @classmethod
+    def validate_other_nicknames(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is not None:
+            return [validate_nickname_raise(nickname) for nickname in v]
+        return v
 
 
 class UserChangePassword(BaseModel):

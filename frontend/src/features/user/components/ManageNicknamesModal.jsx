@@ -3,6 +3,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input
 import { showToast } from "@/utils/toast";
 import useAuthStore from "@/stores/authStore";
 import { updateOtherNicknames } from "@/api/user";
+import { validateNickname } from "@/utils/nicknameValidator";
 
 /**
  * 管理多个昵称弹窗
@@ -21,13 +22,10 @@ export default function ManageNicknamesModal({ isOpen, onClose }) {
   const handleAddNickname = () => {
     const trimmedNickname = newNickname.trim();
 
-    if (!trimmedNickname) {
-      showToast.error("昵称不能为空");
-      return;
-    }
-
-    if (trimmedNickname.length > 20) {
-      showToast.error("昵称最长20个字符");
+    // 使用验证器
+    const { isValid, errorMessage } = validateNickname(trimmedNickname);
+    if (!isValid) {
+      showToast.error(errorMessage);
       return;
     }
 
@@ -83,13 +81,14 @@ export default function ManageNicknamesModal({ isOpen, onClose }) {
               <p className="text-sm text-default-600 mb-2">💡 添加多个昵称可以方便其他人通过不同的名字搜索到你</p>
               <p className="text-xs text-default-500">
                 • 最多可添加 10 个昵称
-                <br />• 每个昵称最长 20 个字符
+                <br />• 每个昵称最多 6 个字符
+                <br />• 只允许中文、英文字母和数字
               </p>
             </div>
 
             <div className="flex gap-2">
               <Input
-                placeholder="输入新昵称"
+                placeholder="输入新昵称（最多6个字符）"
                 value={newNickname}
                 onValueChange={setNewNickname}
                 onKeyPress={(e) => {
@@ -97,7 +96,7 @@ export default function ManageNicknamesModal({ isOpen, onClose }) {
                     handleAddNickname();
                   }
                 }}
-                maxLength={20}
+                maxLength={6}
                 classNames={{
                   input: "text-pink-900 dark:text-pink-100",
                 }}

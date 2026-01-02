@@ -3,7 +3,8 @@
 """
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from app.utils.nickname_validator import validate_nickname_raise
 
 
 class Token(BaseModel):
@@ -30,7 +31,12 @@ class RegisterRequest(BaseModel):
     """用户注册请求模型"""
     qq_number: str = Field(min_length=5, max_length=20, description="QQ号")
     password: str = Field(min_length=6, max_length=50, description="密码")
-    nickname: str = Field(min_length=1, max_length=50, description="昵称")
+    nickname: str = Field(min_length=1, max_length=6, description="昵称（最多6个字符）")
+    
+    @field_validator('nickname')
+    @classmethod
+    def validate_nickname(cls, v: str) -> str:
+        return validate_nickname_raise(v)
 
 
 class RefreshTokenRequest(BaseModel):

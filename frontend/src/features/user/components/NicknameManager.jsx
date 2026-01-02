@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Input, Button, Chip } from "@heroui/react";
 import { showToast } from "@/utils/toast";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import { validateNickname } from "@/utils/nicknameValidator";
 
 /**
  * 昵称管理组件
@@ -12,7 +13,7 @@ export default function NicknameManager({
   nicknames = [],
   onUpdate,
   maxNicknames = 5,
-  placeholder = "输入新昵称后回车或点击添加",
+  placeholder = "输入新昵称后回车或点击添加（最多6个字符）",
 }) {
   const [newNickname, setNewNickname] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -21,18 +22,16 @@ export default function NicknameManager({
 
   // 添加昵称
   const handleAdd = async () => {
-    // 验证
-    if (!newNickname || newNickname.trim() === "") {
-      showToast.error("昵称不能为空");
+    const trimmedNickname = newNickname.trim();
+
+    // 使用验证器
+    const { isValid, errorMessage } = validateNickname(trimmedNickname);
+    if (!isValid) {
+      showToast.error(errorMessage);
       return;
     }
 
-    if (newNickname.length > 20) {
-      showToast.error("昵称最长20个字符");
-      return;
-    }
-
-    if (nicknames.includes(newNickname.trim())) {
+    if (nicknames.includes(trimmedNickname)) {
       showToast.error("该昵称已存在");
       return;
     }
@@ -44,7 +43,7 @@ export default function NicknameManager({
 
     try {
       setIsAdding(true);
-      const updatedNicknames = [...nicknames, newNickname.trim()];
+      const updatedNicknames = [...nicknames, trimmedNickname];
       await onUpdate(updatedNicknames);
       setNewNickname("");
       showToast.success("添加成功");
@@ -91,7 +90,7 @@ export default function NicknameManager({
           value={newNickname}
           onValueChange={setNewNickname}
           onKeyPress={handleKeyPress}
-          maxLength={20}
+          maxLength={6}
           classNames={{
             input: "text-sm",
           }}

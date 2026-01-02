@@ -4,6 +4,7 @@ import { CardBody, CardHeader, Input, Button } from "@heroui/react";
 import { userRegister } from "@/api/auth";
 import HoverEffectCard from "@/components/common/HoverEffectCard";
 import ThemeSwitch from "@/components/common/ThemeSwitch";
+import { validateNickname } from "@/utils/nicknameValidator";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -20,6 +21,13 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    // 验证昵称
+    const { isValid, errorMessage } = validateNickname(formData.nickname);
+    if (!isValid) {
+      setError(errorMessage);
+      return;
+    }
 
     // 验证密码
     if (formData.password !== formData.confirmPassword) {
@@ -85,9 +93,10 @@ export default function RegisterPage() {
               />
               <Input
                 label="昵称"
-                placeholder="请输入昵称"
+                placeholder="请输入昵称（最多6个字符）"
                 value={formData.nickname}
                 onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                maxLength={6}
                 isRequired
                 classNames={{
                   inputWrapper: [

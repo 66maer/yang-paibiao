@@ -3,7 +3,8 @@ Bot API的Schema定义
 """
 from typing import List, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from app.utils.nickname_validator import validate_nickname_raise
 
 
 # ============ 成员管理 ============
@@ -11,8 +12,15 @@ from pydantic import BaseModel, Field
 class BotMemberAdd(BaseModel):
     """批量添加成员 - 单个成员信息"""
     qq_number: str = Field(..., pattern=r'^\d{5,15}$', description="QQ号")
-    nickname: str = Field(..., min_length=1, max_length=50, description="昵称")
-    group_nickname: Optional[str] = Field(None, max_length=50, description="群内昵称")
+    nickname: str = Field(..., min_length=1, max_length=6, description="昵称（最多6个字符）")
+    group_nickname: Optional[str] = Field(None, max_length=6, description="群内昵称（最多6个字符）")
+    
+    @field_validator('nickname', 'group_nickname')
+    @classmethod
+    def validate_nicknames(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return validate_nickname_raise(v)
+        return v
 
 
 class BotAddMembersRequest(BaseModel):
@@ -56,7 +64,12 @@ class BotRemoveMembersResponse(BaseModel):
 
 class BotUpdateNicknameRequest(BaseModel):
     """修改群昵称请求"""
-    group_nickname: str = Field(..., max_length=50, description="群内昵称")
+    group_nickname: str = Field(..., max_length=6, description="群内昵称（最多6个字符）")
+    
+    @field_validator('group_nickname')
+    @classmethod
+    def validate_group_nickname(cls, v: str) -> str:
+        return validate_nickname_raise(v)
 
 
 class BotMemberInfo(BaseModel):

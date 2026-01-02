@@ -3,6 +3,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input
 import { showToast } from "@/utils/toast";
 import useAuthStore from "@/stores/authStore";
 import { updateGuildNickname } from "@/api/user";
+import { validateNickname } from "@/utils/nicknameValidator";
 
 /**
  * 修改群昵称弹窗
@@ -13,26 +14,24 @@ export default function EditGuildNicknameModal({ isOpen, onClose, guild }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
-    // 验证
-    if (!guildNickname || guildNickname.trim() === "") {
-      showToast.error("群昵称不能为空");
+    const trimmedNickname = guildNickname.trim();
+
+    // 使用验证器
+    const { isValid, errorMessage } = validateNickname(trimmedNickname);
+    if (!isValid) {
+      showToast.error(errorMessage);
       return;
     }
 
-    if (guildNickname.length > 20) {
-      showToast.error("群昵称最长20个字符");
-      return;
-    }
-
-    if (guildNickname === guild?.guild_nickname) {
+    if (trimmedNickname === guild?.guild_nickname) {
       showToast.error("群昵称未修改");
       return;
     }
 
     try {
       setIsLoading(true);
-      await updateGuildNickname(guild.id, guildNickname.trim());
-      updateStoreGuildNickname(guild.id, guildNickname.trim());
+      await updateGuildNickname(guild.id, trimmedNickname);
+      updateStoreGuildNickname(guild.id, trimmedNickname);
       showToast.success("群昵称修改成功");
       onClose();
     } catch (error) {
@@ -66,11 +65,11 @@ export default function EditGuildNicknameModal({ isOpen, onClose, guild }) {
           </div>
           <Input
             label="群昵称"
-            placeholder="请输入新的群昵称"
+            placeholder="请输入新的群昵称（最多6个字符）"
             value={guildNickname}
             onValueChange={setGuildNickname}
-            maxLength={20}
-            description="此昵称仅在当前群组内显示"
+            maxLength={6}
+            description="此昵称仅在当前群组内显示，只允许中文、英文和数字"
             classNames={{
               label: "text-pink-600 dark:text-pink-400",
               input: "text-pink-900 dark:text-pink-100",

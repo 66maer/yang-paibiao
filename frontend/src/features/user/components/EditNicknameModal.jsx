@@ -3,6 +3,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input
 import { showToast } from "@/utils/toast";
 import useAuthStore from "@/stores/authStore";
 import { updateUserInfo } from "@/api/user";
+import { validateNickname } from "@/utils/nicknameValidator";
 
 /**
  * 修改用户昵称弹窗
@@ -13,26 +14,24 @@ export default function EditNicknameModal({ isOpen, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
-    // 验证
-    if (!nickname || nickname.trim() === "") {
-      showToast.error("昵称不能为空");
+    const trimmedNickname = nickname.trim();
+
+    // 使用验证器
+    const { isValid, errorMessage } = validateNickname(trimmedNickname);
+    if (!isValid) {
+      showToast.error(errorMessage);
       return;
     }
 
-    if (nickname.length > 20) {
-      showToast.error("昵称最长20个字符");
-      return;
-    }
-
-    if (nickname === user?.nickname) {
+    if (trimmedNickname === user?.nickname) {
       showToast.error("昵称未修改");
       return;
     }
 
     try {
       setIsLoading(true);
-      await updateUserInfo({ nickname: nickname.trim() });
-      updateStoreNickname(nickname.trim());
+      await updateUserInfo({ nickname: trimmedNickname });
+      updateStoreNickname(trimmedNickname);
       showToast.success("昵称修改成功");
       onClose();
     } catch (error) {
@@ -60,11 +59,11 @@ export default function EditNicknameModal({ isOpen, onClose }) {
         <ModalBody>
           <Input
             label="昵称"
-            placeholder="请输入新昵称"
+            placeholder="请输入新昵称（最多6个字符）"
             value={nickname}
             onValueChange={setNickname}
-            maxLength={20}
-            description="昵称将在所有群组通用"
+            maxLength={6}
+            description="昵称将在所有群组通用，只允许中文、英文和数字"
             classNames={{
               label: "text-pink-600 dark:text-pink-400",
               input: "text-pink-900 dark:text-pink-100",

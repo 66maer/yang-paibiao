@@ -3,7 +3,8 @@
 """
 from datetime import datetime, date
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from app.utils.nickname_validator import validate_nickname_raise
 
 
 # ============ 订阅相关 Schemas ============
