@@ -14,16 +14,15 @@ RUN apt-get update && \
 # 复制依赖文件
 COPY requirements.txt .
 
-# 安装 Python 依赖到用户目录
-RUN pip install --no-cache-dir --user -r requirements.txt
+# 安装 Python 依赖到全局位置
+RUN pip install --no-cache-dir -r requirements.txt
 
 # ===== Stage 2: Runtime =====
 FROM python:3.11-slim
 
 # 设置环境变量
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PATH=/root/.local/bin:$PATH
+    PYTHONDONTWRITEBYTECODE=1
 
 # 安装运行时依赖
 RUN apt-get update && \
@@ -35,8 +34,9 @@ RUN apt-get update && \
 # 创建应用目录
 WORKDIR /app
 
-# 从 builder 复制已安装的依赖
-COPY --from=builder /root/.local /root/.local
+# 从 builder 复制已安装的依赖（全局位置）
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 # 复制应用代码
 COPY . .
