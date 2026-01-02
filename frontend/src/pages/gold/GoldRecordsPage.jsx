@@ -24,7 +24,7 @@ export default function GoldRecordsPage() {
 
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(20);
+  const [pageSize] = useState(2000);
   const [totalRecords, setTotalRecords] = useState(0);
 
   // 模态框状态

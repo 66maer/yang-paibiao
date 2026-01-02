@@ -181,7 +181,7 @@ async def create_gold_record(
 async def list_gold_records(
     guild_id: int,
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(20, ge=1, le=2000, description="每页数量"),
     start_date: Optional[date] = Query(None, description="开始日期"),
     end_date: Optional[date] = Query(None, description="结束日期"),
     dungeon: Optional[str] = Query(None, description="副本名称"),
