@@ -33,6 +33,8 @@ htmlcov/
 # 文档和脚本
 README.md
 scripts/
+!scripts/entrypoint.sh
+!scripts/init_admin.py
 docs/
 
 # 日志
