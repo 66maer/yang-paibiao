@@ -49,7 +49,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_bot_guilds_guild_id'), 'bot_guilds', ['guild_id'], unique=False)
     op.create_index(op.f('ix_bot_guilds_id'), 'bot_guilds', ['id'], unique=False)
     op.create_index('uq_bot_guild', 'bot_guilds', ['bot_id', 'guild_id'], unique=True)
-    op.drop_table('system_configs')
+    # op.drop_table('system_configs')  # 注释掉误删的system_configs表
     op.alter_column('gold_records', 'xuanjing_drops',
                existing_type=postgresql.JSON(astext_type=sa.Text()),
                comment='玄晶掉落信息（包含价格）',
