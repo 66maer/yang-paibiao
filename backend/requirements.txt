@@ -1,0 +1,31 @@
+# FastAPI 核心
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# 数据库
+sqlalchemy==2.0.25
+alembic==1.13.1
+asyncpg==0.29.0  # PostgreSQL异步驱动
+psycopg2-binary==2.9.9  # PostgreSQL同步驱动
+
+# 认证和安全
+python-jose[cryptography]==3.3.0  # JWT
+passlib==1.7.4  # 密码哈希
+bcrypt==4.0.1  # bcrypt 哈希
+python-multipart==0.0.6  # 表单数据解析
+
+# 工具
+python-dotenv==1.0.0  # 环境变量管理
+email-validator==2.1.0  # 邮箱验证
+
+# 测试
+pytest==7.4.4
+pytest-asyncio==0.23.3
+httpx==0.26.0  # 异步HTTP客户端，用于测试
+
+# 开发工具
+black==23.12.1  # 代码格式化
+flake8==7.0.0  # 代码检查
+mypy==1.8.0  # 类型检查

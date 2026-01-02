@@ -1,0 +1,12 @@
+/**
+ * 字体配置文件
+ * 引入可爱的 Aa 字体
+ */
+
+@font-face {
+  font-family: 'Aa偷吃可爱长大的';
+  src: url('/fonts/AaCute.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}

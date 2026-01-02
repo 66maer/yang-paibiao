@@ -1,0 +1,320 @@
+@import 'tailwindcss';
+@source '../node_modules/@heroui/theme/dist';
+@plugin './hero.ts';
+
+/* Tailwind v4 Dark Mode - Class Strategy */
+@variant dark (&:where(.dark, .dark *));
+
+/* 字体定义 */
+@font-face {
+  font-family: 'Aa偷吃可爱长大的';
+  src: url('/fonts/AaCute.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 全局字体配置 */
+body {
+  font-family:
+    'Aa偷吃可爱长大的',
+    'PingFang SC',
+    'Helvetica Neue',
+    'Microsoft YaHei',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 暗色模式背景 */
+html.dark body {
+  background-color: #18181b;
+  color: #e4e4e7;
+}
+
+/* 自定义滚动条样式 - 粉色系 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: rgba(243, 18, 96, 0.05);
+  border-radius: 2em;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(243, 18, 96, 0.4), rgba(168, 85, 247, 0.4));
+  border-radius: 2em;
+  transition: all 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(243, 18, 96, 0.6), rgba(168, 85, 247, 0.6));
+}
+
+/* 隐藏滚动条工具类 */
+@layer components {
+  .hide-scrollbar::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar-thumb {
+    background-color: transparent !important;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar-track {
+    background-color: transparent !important;
+  }
+}
+
+/* 玄晶特效样式 - 不放在@layer中以提高优先级 */
+.xuanjing-gradient {
+  background: linear-gradient(135deg,
+    #ffd700 0%,
+    #ffed4e 15%,
+    #fff5a0 30%,
+    #ffa500 50%,
+    #fff5a0 70%,
+    #ffed4e 85%,
+    #ffd700 100%) !important;
+  background-size: 300% 300% !important;
+  animation: xuanjing-gradient-shift 2.5s ease-in-out infinite !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* 渐变移动动画 - 更快更流畅 */
+@keyframes xuanjing-gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* 呼吸光晕动画 - 更强烈的发光效果 */
+.xuanjing-animation-glow {
+  animation: xuanjing-glow 1.8s ease-in-out infinite !important;
+}
+
+@keyframes xuanjing-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.9),
+                0 0 20px rgba(255, 215, 0, 0.7),
+                0 0 30px rgba(255, 215, 0, 0.5),
+                0 0 40px rgba(255, 215, 0, 0.3),
+                0 0 50px rgba(255, 165, 0, 0.2),
+                inset 0 0 15px rgba(255, 255, 255, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.3) !important;
+    transform: scale(1);
+    filter: brightness(1.2) saturate(1.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 1),
+                0 0 40px rgba(255, 215, 0, 0.9),
+                0 0 60px rgba(255, 215, 0, 0.7),
+                0 0 80px rgba(255, 215, 0, 0.5),
+                0 0 100px rgba(255, 165, 0, 0.3),
+                0 0 120px rgba(255, 140, 0, 0.2),
+                inset 0 0 25px rgba(255, 255, 255, 0.6),
+                inset 0 2px 0 rgba(255, 255, 255, 0.8),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.4) !important;
+    transform: scale(1.1);
+    filter: brightness(1.5) saturate(1.5);
+  }
+}
+
+/* 脉冲动画 */
+.xuanjing-animation-pulse {
+  animation: xuanjing-pulse 1.5s ease-in-out infinite !important;
+}
+
+@keyframes xuanjing-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.03);
+  }
+}
+
+/* 流光动画 - 更明显的闪光扫过效果 */
+.xuanjing-animation-shine::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 25%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.1) 75%,
+    transparent 100%
+  );
+  animation: xuanjing-shine 2.5s ease-in-out infinite;
+  pointer-events: none;
+  transform: skewX(-20deg);
+}
+
+@keyframes xuanjing-shine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
+/* 额外的金光点缀 - 增强文字发光 */
+.xuanjing-special {
+  font-weight: 700 !important;
+  text-shadow: 0 0 3px rgba(255, 215, 0, 1),
+               0 0 6px rgba(255, 215, 0, 0.8),
+               0 0 9px rgba(255, 215, 0, 0.6),
+               0 0 12px rgba(255, 215, 0, 0.4) !important;
+}
+
+/* 组合特效 - 金属光泽超级特效 */
+.xuanjing-super-effect,
+.xuanjing-super-effect[data-hover],
+.xuanjing-super-effect:hover {
+  /* 金属质感的复杂渐变 - 模拟金属反光 */
+  background:
+    linear-gradient(135deg,
+      #b8860b 0%,      /* 暗金 */
+      #daa520 10%,     /* 金棒 */
+      #ffd700 20%,     /* 金色 */
+      #ffed4e 30%,     /* 亮金 */
+      #fffacd 40%,     /* 高光 */
+      #ffed4e 50%,     /* 亮金 */
+      #ffa500 60%,     /* 橙金 */
+      #ff8c00 70%,     /* 深橙金 */
+      #ffa500 80%,     /* 橙金 */
+      #daa520 90%,     /* 金棒 */
+      #b8860b 100%     /* 暗金 */
+    ) !important;
+  background-size: 400% 400% !important;
+  animation: xuanjing-metal-flow 3s ease-in-out infinite,
+             xuanjing-glow 1.8s ease-in-out infinite !important;
+  position: relative !important;
+  overflow: visible !important;
+  font-weight: 700 !important;
+  /* 增强的文字阴影 - 金色发光 */
+  text-shadow:
+    0 0 2px rgba(255, 255, 255, 0.8),
+    0 0 4px rgba(255, 215, 0, 1),
+    0 0 6px rgba(255, 215, 0, 0.9),
+    0 0 8px rgba(255, 165, 0, 0.8),
+    0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  color: #2d1f00 !important; /* 深棕色文字 */
+  border: 1px solid rgba(255, 215, 0, 0.6) !important;
+  /* 添加内阴影营造立体感 */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 金属流动动画 - 更复杂的移动模式 */
+@keyframes xuanjing-metal-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 50% 25%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  75% {
+    background-position: 50% 75%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* 流光层 - 更强烈的高光扫过 */
+.xuanjing-super-effect::before,
+.xuanjing-super-effect[data-hover]::before,
+.xuanjing-super-effect:hover::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -150%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0) 20%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0) 80%,
+    transparent 100%
+  );
+  animation: xuanjing-shine 2s linear infinite;
+  pointer-events: none;
+  transform: skewX(-25deg);
+  z-index: 1;
+}
+
+/* 高光层 - 顶部高光效果 */
+.xuanjing-super-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 确保文字在所有特效层之上 */
+.xuanjing-super-effect > *,
+.xuanjing-super-effect span {
+  position: relative;
+  z-index: 3;
+}
+
+/* 针对HeroUI Chip组件的特殊处理 - 确保特效能覆盖所有状态 */
+[data-slot="base"].xuanjing-super-effect,
+.xuanjing-super-effect[data-slot="base"] {
+  background:
+    linear-gradient(135deg,
+      #b8860b 0%,
+      #daa520 10%,
+      #ffd700 20%,
+      #ffed4e 30%,
+      #fffacd 40%,
+      #ffed4e 50%,
+      #ffa500 60%,
+      #ff8c00 70%,
+      #ffa500 80%,
+      #daa520 90%,
+      #b8860b 100%
+    ) !important;
+  background-size: 400% 400% !important;
+  animation: xuanjing-metal-flow 3s ease-in-out infinite,
+             xuanjing-glow 1.8s ease-in-out infinite !important;
+}

@@ -1,0 +1,47 @@
+# 依赖
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# 构建产物
+dist/
+build/
+
+# 测试
+coverage/
+.nyc_output/
+
+# 环境变量
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# 文档
+README.md
+TESTING.md
+docs/
+
+# 其他
+.DS_Store
+Thumbs.db
+*.log
