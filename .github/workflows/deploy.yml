@@ -11,7 +11,55 @@ env:
   IMAGE_PREFIX: ${{ github.repository_owner }}/yangpaibiao
 
 jobs:
-  build-and-push:
+  # 检测代码变化
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      bot: ${{ steps.changes.outputs.bot }}
+      common: ${{ steps.filter.outputs.common }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            bot:
+              - 'yang_bot/**'
+            common:
+              - '.github/workflows/**'
+              - 'docker-compose*.yml'
+              - 'deploy.sh'
+              - '.env.docker.example'
+              - 'scripts/**'
+
+      - name: Determine services to build
+        id: changes
+        run: |
+          # 如果公共文件变化，则全部重新构建
+          if [ "${{ steps.filter.outputs.common }}" == "true" ]; then
+            echo "⚠️ Common files changed, rebuilding all services"
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "bot=true" >> $GITHUB_OUTPUT
+          else
+            echo "backend=${{ steps.filter.outputs.backend }}" >> $GITHUB_OUTPUT
+            echo "frontend=${{ steps.filter.outputs.frontend }}" >> $GITHUB_OUTPUT
+            echo "bot=${{ steps.filter.outputs.bot }}" >> $GITHUB_OUTPUT
+          fi
+
+  # 构建后端镜像
+  build-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -53,6 +101,35 @@ jobs:
             org.opencontainers.image.created=${{ steps.meta.outputs.date }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+  # 构建前端镜像
+  build-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          echo "version=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
       - name: Build and push frontend image
         uses: docker/build-push-action@v5
         with:
@@ -71,6 +148,35 @@ jobs:
             org.opencontainers.image.created=${{ steps.meta.outputs.date }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+  # 构建 Bot 镜像
+  build-bot:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.bot == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          echo "version=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
       - name: Build and push bot image
         uses: docker/build-push-action@v5
         with:
@@ -87,8 +193,17 @@ jobs:
             org.opencontainers.image.created=${{ steps.meta.outputs.date }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+  # 部署到服务器
   deploy:
-    needs: build-and-push
+    needs: [detect-changes, build-backend, build-frontend, build-bot]
+    if: |
+      always() &&
+      (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') &&
+      (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped') &&
+      (needs.build-bot.result == 'success' || needs.build-bot.result == 'skipped') &&
+      (needs.detect-changes.outputs.backend == 'true' ||
+       needs.detect-changes.outputs.frontend == 'true' ||
+       needs.detect-changes.outputs.bot == 'true')
     runs-on: ubuntu-latest
 
     steps:
@@ -106,19 +221,30 @@ jobs:
             # 进入项目目录
             cd /home/ubuntu/xiaoyang
 
-            # 拉取最新代码
-            git pull origin main
+            # 根据变化情况拉取对应的镜像（使用南京大学镜像加速）
+            SERVICES_TO_UPDATE=""
 
-            # 登录到 GitHub Container Registry
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            if [ "${{ needs.detect-changes.outputs.backend }}" == "true" ]; then
+              echo "📦 Pulling backend image..."
+              docker pull ghcr.nju.edu.cn/${{ github.repository_owner }}/yangpaibiao-backend:latest
+              SERVICES_TO_UPDATE="$SERVICES_TO_UPDATE backend"
+            fi
 
-            # 拉取最新镜像
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:latest
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:latest
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-bot:latest
+            if [ "${{ needs.detect-changes.outputs.frontend }}" == "true" ]; then
+              echo "📦 Pulling frontend image..."
+              docker pull ghcr.nju.edu.cn/${{ github.repository_owner }}/yangpaibiao-frontend:latest
+              SERVICES_TO_UPDATE="$SERVICES_TO_UPDATE frontend"
+            fi
 
-            # 运行部署脚本
-            bash deploy.sh
+            if [ "${{ needs.detect-changes.outputs.bot }}" == "true" ]; then
+              echo "📦 Pulling bot image..."
+              docker pull ghcr.nju.edu.cn/${{ github.repository_owner }}/yangpaibiao-bot:latest
+              SERVICES_TO_UPDATE="$SERVICES_TO_UPDATE bot"
+            fi
+
+            # 运行部署脚本（传入需要更新的服务列表）
+            echo "🚀 Deploying services:$SERVICES_TO_UPDATE"
+            bash deploy.sh $SERVICES_TO_UPDATE
 
       - name: Health check
         uses: appleboy/ssh-action@v1.0.0
@@ -134,8 +260,16 @@ jobs:
       - name: Deployment notification
         if: always()
         run: |
+          echo "📊 Deployment Summary:"
+          echo "  Backend:  ${{ needs.detect-changes.outputs.backend == 'true' && '✅ Updated' || '⏭️ Skipped' }}"
+          echo "  Frontend: ${{ needs.detect-changes.outputs.frontend == 'true' && '✅ Updated' || '⏭️ Skipped' }}"
+          echo "  Bot:      ${{ needs.detect-changes.outputs.bot == 'true' && '✅ Updated' || '⏭️ Skipped' }}"
+
           if [ "${{ job.status }}" == "success" ]; then
+            echo ""
             echo "✅ Deployment successful!"
           else
+            echo ""
             echo "❌ Deployment failed!"
+            exit 1
           fi
