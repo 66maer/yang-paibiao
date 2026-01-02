@@ -7,7 +7,7 @@ from .api.client import init_api_client
 
 __plugin_meta__ = PluginMetadata(
     name="xiaoyang",
-    description="小杨排表机器人 - 剑网3团队管理助手",
+    description="小秧排表机器人",
     usage=(
         "查看团队/查团/有团吗 - 查看开放的团队列表\n"
         "查看团队 [序号] - 查看团队详情\n"
@@ -22,9 +22,9 @@ config = get_plugin_config(Config)
 # 初始化 API 客户端
 try:
     init_api_client(config)
-    logger.success("小杨机器人 API 客户端初始化成功")
+    logger.success("小秧机器人 API 客户端初始化成功")
 except Exception as e:
-    logger.error(f"小杨机器人 API 客户端初始化失败: {e}")
+    logger.error(f"小秧机器人 API 客户端初始化失败: {e}")
 
 # 导入 matchers（自动注册）
 from .adapters import matchers as _
