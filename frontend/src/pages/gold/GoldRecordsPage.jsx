@@ -225,7 +225,7 @@ export default function GoldRecordsPage() {
                   />
 
                   {/* 分页 */}
-                  {totalPages > 1 && (
+                  {totalPages > 0 && (
                     <div className="flex justify-center mt-4">
                       <Pagination total={totalPages} page={currentPage} onChange={setCurrentPage} showControls />
                     </div>

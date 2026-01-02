@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { useMemo } from "react";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Spinner } from "@heroui/react";
 import { goldDropConfig } from "@/features/board/config/goldDropConfig";
 import { xinfaInfoTable } from "@/config/xinfa";
@@ -12,6 +13,61 @@ import { xinfaInfoTable } from "@/config/xinfa";
  * @param {number} currentUserId - 当前用户ID
  */
 export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin, currentUserId }) {
+  /**
+   * 计算统计数据（剔除异常值后）
+   */
+  const calculateStats = (records) => {
+    if (records.length === 0) {
+      return { mean: 0, stdDev: 0, high: 0, low: 0 };
+    }
+
+    let values = records.map((r) => r.total_gold);
+
+    // 数据点>=10时，过滤前后10%的异常值
+    if (records.length >= 10) {
+      // 按金额排序
+      const sortedValues = [...values].sort((a, b) => a - b);
+
+      // 计算过滤数量（向下取整）
+      const filterCount = Math.floor(records.length * 0.1);
+
+      // 过滤掉前后各10%的数据
+      values = sortedValues.slice(filterCount, sortedValues.length - filterCount);
+    }
+
+    // 计算均值
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+
+    // 计算标准差
+    const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+    const stdDev = Math.sqrt(variance);
+
+    // 计算高低收益线（均值 ± 标准差）
+    return {
+      mean: mean,
+      stdDev: stdDev,
+      high: mean + stdDev,
+      low: Math.max(0, mean - stdDev),
+    };
+  };
+
+  /**
+   * 计算统计数据和极值
+   */
+  const { stats, maxValue, minValue } = useMemo(() => {
+    const stats = calculateStats(records);
+    const values = records.map((r) => r.total_gold);
+    const maxValue = values.length > 0 ? Math.max(...values) : 0;
+    const minValue = values.length > 0 ? Math.min(...values) : 0;
+    return { stats, maxValue, minValue };
+  }, [records]);
+
+  /**
+   * 倒序排列记录（仅在列表中显示，不影响统计数据）
+   */
+  const reversedRecords = useMemo(() => {
+    return [...records].reverse();
+  }, [records]);
   /**
    * 根据物品名称查找在配置中的颜色和自定义样式
    */
@@ -112,23 +168,61 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
   };
 
   /**
+   * 获取记录标签（史高/史低/小红手/黑鬼）
+   */
+  const getRecordTag = (totalGold) => {
+    // 史高优先级最高
+    if (totalGold === maxValue && maxValue > 0) {
+      return { text: "史高", color: "danger", variant: "solid" };
+    }
+    // 史低优先级次高
+    if (totalGold === minValue && records.length > 1) {
+      return { text: "史低", color: "success", variant: "solid" };
+    }
+    // 小红手（高于高收益线）
+    if (totalGold >= stats.high) {
+      return { text: "小红手", color: "danger", variant: "flat" };
+    }
+    // 黑鬼（低于低收益线）
+    if (totalGold <= stats.low) {
+      return { text: "黑鬼", color: "success", variant: "flat" };
+    }
+    return null;
+  };
+
+  /**
    * 渲染黑本人信息
    */
-  const renderHeibenren = (heibenrenInfo) => {
-    if (!heibenrenInfo) return <span className="text-gray-400 text-sm">未知</span>;
+  const renderHeibenren = (heibenrenInfo, totalGold) => {
+    const tag = getRecordTag(totalGold);
+    const displayName = heibenrenInfo?.user_name || heibenrenInfo?.character_name || "野人";
 
-    const { user_name, character_name } = heibenrenInfo;
-
-    if (user_name && character_name) {
+    if (heibenrenInfo?.user_name && heibenrenInfo?.character_name) {
       return (
-        <div className="flex flex-col">
-          <span className="text-sm font-medium">{user_name}</span>
-          <span className="text-xs text-gray-500">{character_name}</span>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-1">
+            <span className="text-sm font-medium">{heibenrenInfo.user_name}</span>
+            {tag && (
+              <Chip size="sm" variant={tag.variant} color={tag.color}>
+                {tag.text}
+              </Chip>
+            )}
+          </div>
+          <span className="text-xs text-gray-500">{heibenrenInfo.character_name}</span>
         </div>
       );
     }
 
-    return <span className="text-sm">{user_name || character_name || "未知"}</span>;
+    return (
+      <div className="flex items-center gap-1">
+        <span className="text-sm">{displayName}</span>
+        {tag && (
+          <Chip size="sm" variant={tag.variant} color={tag.color}>
+            {tag.text}
+          </Chip>
+        )}
+      </div>
+    );
   };
 
   /**
@@ -173,7 +267,7 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
         <TableColumn>掉落详情</TableColumn>
         <TableColumn>操作</TableColumn>
       </TableHeader>
-      <TableBody items={records} loadingContent={<Spinner />} loadingState={loading ? "loading" : "idle"}>
+      <TableBody items={reversedRecords} loadingContent={<Spinner />} loadingState={loading ? "loading" : "idle"}>
         {(record) => (
           <TableRow key={record.id}>
             <TableCell>
@@ -188,7 +282,7 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
             <TableCell>
               <span className="text-sm font-semibold text-primary">{formatGold(record.total_gold)}</span>
             </TableCell>
-            <TableCell>{renderHeibenren(record.heibenren_info)}</TableCell>
+            <TableCell>{renderHeibenren(record.heibenren_info, record.total_gold)}</TableCell>
             <TableCell className="min-w-[200px]">{renderDrops(record.special_drops, record.has_xuanjing)}</TableCell>
             <TableCell>{renderActions(record)}</TableCell>
           </TableRow>

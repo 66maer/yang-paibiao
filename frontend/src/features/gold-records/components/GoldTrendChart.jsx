@@ -152,8 +152,51 @@ export default function GoldTrendChart({ data = [] }) {
           type: "line",
           data: sortedData.map((r) => r.total_gold),
           smooth: true,
-          itemStyle: { color: "#3b82f6" },
-          lineStyle: { width: 2 },
+          itemStyle: {
+            color: (params) => {
+              const value = params.data;
+              // 小红手线之上的点标记为红色
+              if (value >= stats.high) {
+                return "#ef4444";
+              }
+              // 黑鬼线之下的点标记为绿色
+              if (value <= stats.low) {
+                return "#22c55e";
+              }
+              // 其他点保持默认蓝色
+              return "#3b82f6";
+            },
+          },
+          lineStyle: { width: 2, color: "#3b82f6" },
+          symbol: (value, params) => {
+            const dataIndex = params.dataIndex;
+            // 找出最高值和最低值的索引
+            const values = sortedData.map((r) => r.total_gold);
+            const maxValue = Math.max(...values);
+            const minValue = Math.min(...values);
+            const maxIndex = values.indexOf(maxValue);
+            const minIndex = values.indexOf(minValue);
+
+            // 最高值和最低值显示为五角星
+            if (dataIndex === maxIndex || dataIndex === minIndex) {
+              return "path://M512 0L629.866667 350.933333H1024L705.066667 569.6L823.466667 920.533333L512 701.866667L200.533333 920.533333L318.933333 569.6L0 350.933333H394.133333z";
+            }
+            return "circle";
+          },
+          symbolSize: (value, params) => {
+            const dataIndex = params.dataIndex;
+            const values = sortedData.map((r) => r.total_gold);
+            const maxValue = Math.max(...values);
+            const minValue = Math.min(...values);
+            const maxIndex = values.indexOf(maxValue);
+            const minIndex = values.indexOf(minValue);
+
+            // 五角星稍微大一点
+            if (dataIndex === maxIndex || dataIndex === minIndex) {
+              return 16;
+            }
+            return 8;
+          },
           label: {
             show: true,
             position: "top",
@@ -162,9 +205,9 @@ export default function GoldTrendChart({ data = [] }) {
             formatter: (params) => {
               const record = sortedData[params.dataIndex];
               if (record.heibenren_info) {
-                return record.heibenren_info.user_name || record.heibenren_info.character_name || "";
+                return record.heibenren_info.user_name || record.heibenren_info.character_name || "野人";
               }
-              return "";
+              return "野人";
             },
           },
         },
