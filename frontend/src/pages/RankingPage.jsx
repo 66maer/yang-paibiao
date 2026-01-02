@@ -125,7 +125,7 @@ export default function RankingPage() {
         </div>
 
         <div className="border-t pt-2 font-semibold text-primary">
-          Rank分 = ({Number(detail.corrected_average_gold).toFixed(2)} ÷ 50000) ×{" "}
+          Rank分 = ({Number(detail.corrected_average_gold).toFixed(2)} ÷ 5000) ×{" "}
           {Number(detail.rank_modifier).toFixed(4)} = {Number(detail.rank_score).toFixed(2)}
         </div>
       </div>
@@ -251,7 +251,7 @@ export default function RankingPage() {
                 <h4 className="font-semibold text-lg mb-3">计算公式</h4>
                 <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg space-y-2">
                   <div className="font-mono text-sm">
-                    <strong>Rank分</strong> = (修正后的平均金团金额 ÷ 500000) × Rank修正系数
+                    <strong>Rank分</strong> = (修正后的平均金团金额 ÷ 5000) × Rank修正系数
                   </div>
                   <div className="font-mono text-sm">
                     <strong>修正后的平均金团金额</strong> = Σ(每车金团金额 × 副本与赛季修正系数) / 黑本次数
@@ -261,7 +261,7 @@ export default function RankingPage() {
                     <span className="text-gray-500 ml-2">其中 N 为黑本次数</span>
                   </div>
                   <div className="font-mono text-sm text-gray-500">
-                    注：最后除以 50000 是为了让 Rank分 保持在一个合理的数值范围内，便于比较。
+                    注：最后除以 5000 是为了让 Rank分 保持在一个较小的数值范围内，便于比较。
                   </div>
                 </div>
               </div>
