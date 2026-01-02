@@ -41,14 +41,14 @@ export default function GoldRecordsPage() {
    * 加载金团记录
    */
   const loadGoldRecords = async () => {
-    if (!currentGuild?.id) return;
+    if (!currentGuild?.id || !selectedDungeon) return;
 
     setLoading(true);
     try {
       const params = {
         page: currentPage,
         page_size: pageSize,
-        ...(selectedDungeon && { dungeon: selectedDungeon }),
+        dungeon: selectedDungeon,
       };
 
       const response = await getGoldRecords(currentGuild.id, params);
@@ -152,8 +152,8 @@ export default function GoldRecordsPage() {
    */
   const handleDungeonsLoaded = (dungeons) => {
     setDungeonList(dungeons);
-    // 默认选中第一个副本
-    if (dungeons.length > 0 && !selectedDungeon) {
+    // 默认选中第一个副本（只在初始化时设置一次）
+    if (dungeons.length > 0 && selectedDungeon === null) {
       setSelectedDungeon(dungeons[0].value);
     }
   };
@@ -197,41 +197,55 @@ export default function GoldRecordsPage() {
             onDungeonsLoaded={handleDungeonsLoaded}
           />
 
-          {/* 趋势图 */}
-          <Card>
-            <CardBody>
-              <GoldTrendChart data={sortedRecords} />
-            </CardBody>
-          </Card>
+          {/* 只有选中副本时才显示内容 */}
+          {selectedDungeon ? (
+            <>
+              {/* 趋势图 */}
+              <Card>
+                <CardBody>
+                  <GoldTrendChart key={`trend-${selectedDungeon}-${sortedRecords.length}`} data={sortedRecords} />
+                </CardBody>
+              </Card>
 
-          {/* 掉落分布图 */}
-          <DropDistributionCharts records={sortedRecords} />
-
-          {/* 记录列表 */}
-          <Card>
-            <CardBody>
-              <GoldRecordsList
+              {/* 掉落分布图 */}
+              <DropDistributionCharts
+                key={`distribution-${selectedDungeon}-${sortedRecords.length}`}
                 records={sortedRecords}
-                loading={loading}
-                onEdit={handleEdit}
-                isAdmin={isAdmin}
-                currentUserId={user?.id}
               />
 
-              {/* 分页 */}
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-4">
-                  <Pagination total={totalPages} page={currentPage} onChange={setCurrentPage} showControls />
+              {/* 记录列表 */}
+              <Card>
+                <CardBody>
+                  <GoldRecordsList
+                    records={sortedRecords}
+                    loading={loading}
+                    onEdit={handleEdit}
+                    isAdmin={isAdmin}
+                    currentUserId={user?.id}
+                  />
+
+                  {/* 分页 */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-center mt-4">
+                      <Pagination total={totalPages} page={currentPage} onChange={setCurrentPage} showControls />
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+            </>
+          ) : (
+            <Card>
+              <CardBody>
+                <div className="text-center py-8 text-gray-500">
+                  {dungeonList.length === 0 ? "暂无副本数据" : "请选择副本"}
                 </div>
-              )}
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          )}
         </div>
 
         {/* 侧边栏 - 3列 */}
-        <div className="lg:col-span-2">
-          <XuanjingRecordsSidebar records={xuanjingRecords} />
-        </div>
+        <div className="lg:col-span-2">{selectedDungeon && <XuanjingRecordsSidebar records={xuanjingRecords} />}</div>
       </div>
 
       {/* 编辑/创建模态框 */}

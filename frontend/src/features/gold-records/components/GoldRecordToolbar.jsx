@@ -27,7 +27,7 @@ export default function GoldRecordToolbar({ selectedDungeon, onDungeonChange, on
         .sort((a, b) => a.order - b.order)
         .map((d) => ({
           value: d.name,
-          label: d.name
+          label: d.name,
         }));
 
       setDungeons(dungeonList);
@@ -55,11 +55,15 @@ export default function GoldRecordToolbar({ selectedDungeon, onDungeonChange, on
               selectedKeys={selectedDungeon ? [selectedDungeon] : []}
               onSelectionChange={(keys) => {
                 const selected = Array.from(keys)[0];
-                onDungeonChange(selected || null);
+                if (selected) {
+                  onDungeonChange(selected);
+                }
               }}
               isLoading={loading}
+              isRequired
+              isDisabled={dungeons.length === 0}
               classNames={{
-                base: "max-w-xs"
+                base: "max-w-xs",
               }}
             >
               {dungeons.map((dungeon) => (
@@ -71,11 +75,7 @@ export default function GoldRecordToolbar({ selectedDungeon, onDungeonChange, on
           </div>
 
           {/* 新增按钮 */}
-          <Button
-            color="primary"
-            className="bg-gradient-to-r from-pink-500 to-purple-500"
-            onPress={onCreateClick}
-          >
+          <Button color="primary" className="bg-gradient-to-r from-pink-500 to-purple-500" onPress={onCreateClick}>
             新增金团记录
           </Button>
         </div>
