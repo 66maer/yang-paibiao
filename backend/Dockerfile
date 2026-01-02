@@ -41,6 +41,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # 复制应用代码
 COPY . .
 
+# 设置启动脚本权限
+RUN chmod +x /app/scripts/entrypoint.sh
+
 # 创建非 root 用户（安全最佳实践）
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
@@ -54,5 +57,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # 暴露端口
 EXPOSE 8000
 
-# 启动命令
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 使用 entrypoint 脚本启动
+CMD ["/app/scripts/entrypoint.sh"]

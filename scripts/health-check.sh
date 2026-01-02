@@ -58,11 +58,12 @@ echo "🔍 检查数据库连接..."
 DB_CHECK=$(docker exec yangpaibiao-backend python -c "
 import asyncio
 from app.database import engine
+from sqlalchemy import text
 
 async def check():
     try:
         async with engine.begin() as conn:
-            await conn.execute('SELECT 1')
+            await conn.execute(text('SELECT 1'))
         return True
     except Exception as e:
         print(f'Error: {e}')
