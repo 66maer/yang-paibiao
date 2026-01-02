@@ -38,6 +38,13 @@ export const resetUserPassword = (userId) => {
 };
 
 /**
+ * 创建用户（管理员）
+ */
+export const createUser = (data) => {
+  return apiClient.post("/admin/users", data);
+};
+
+/**
  * 用户注册
  */
 export const registerUser = (data) => {

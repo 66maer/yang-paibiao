@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import useSWR from 'swr'
+import { useState } from "react";
+import useSWR from "swr";
 import {
   Card,
   CardHeader,
@@ -23,85 +23,111 @@ import {
   useDisclosure,
   Spinner,
   Avatar,
-} from '@heroui/react'
-import { getUserList, deleteUser, updateUser, resetUserPassword } from '../../api/users'
-import { showSuccess, showError, showConfirm } from '../../utils/toast.jsx'
+} from "@heroui/react";
+import { getUserList, deleteUser, updateUser, resetUserPassword, createUser } from "../../api/users";
+import { showSuccess, showError, showConfirm } from "../../utils/toast.jsx";
 
 export default function UserManagementPage() {
-  const [page, setPage] = useState(1)
-  const [keyword, setKeyword] = useState('')
-  const [searchInput, setSearchInput] = useState('')
-  const pageSize = 20
+  const [page, setPage] = useState(1);
+  const [keyword, setKeyword] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const pageSize = 20;
 
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const [selectedUser, setSelectedUser] = useState(null)
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
+  const [selectedUser, setSelectedUser] = useState(null);
   const [editForm, setEditForm] = useState({
-    nickname: '',
+    nickname: "",
     other_nicknames: [],
-    avatar: '',
-  })
+    avatar: "",
+  });
+  const [createForm, setCreateForm] = useState({
+    qq_number: "",
+    password: "",
+    nickname: "",
+    other_nicknames: [],
+    avatar: "",
+  });
 
   // 获取用户列表
   const { data, error, mutate } = useSWR(
-    ['users', page, keyword],
+    ["users", page, keyword],
     () => getUserList({ page, page_size: pageSize, keyword }),
     { revalidateOnFocus: false }
-  )
+  );
 
-  const users = data?.data?.items || []
-  const total = data?.data?.total || 0
-  const pages = data?.data?.pages || 0
+  const users = data?.data?.items || [];
+  const total = data?.data?.total || 0;
+  const pages = data?.data?.pages || 0;
 
   const handleSearch = () => {
-    setKeyword(searchInput)
-    setPage(1)
-  }
+    setKeyword(searchInput);
+    setPage(1);
+  };
 
   const handleDelete = async (userId, nickname) => {
-    const confirmed = await showConfirm(`确定要删除用户 ${nickname} 吗？`)
-    if (!confirmed) return
+    const confirmed = await showConfirm(`确定要删除用户 ${nickname} 吗？`);
+    if (!confirmed) return;
 
     try {
-      await deleteUser(userId)
-      mutate()
-      showSuccess('删除成功')
+      await deleteUser(userId);
+      mutate();
+      showSuccess("删除成功");
     } catch (error) {
-      showError(error.response?.data?.message || '删除失败')
+      showError(error.response?.data?.message || "删除失败");
     }
-  }
+  };
 
   const handleResetPassword = async (userId, nickname) => {
-    const confirmed = await showConfirm(`确定要重置用户 ${nickname} 的密码为 123456 吗？`)
-    if (!confirmed) return
+    const confirmed = await showConfirm(`确定要重置用户 ${nickname} 的密码为 123456 吗？`);
+    if (!confirmed) return;
 
     try {
-      await resetUserPassword(userId)
-      showSuccess(`用户 ${nickname} 的密码已重置为 123456`)
+      await resetUserPassword(userId);
+      showSuccess(`用户 ${nickname} 的密码已重置为 123456`);
     } catch (error) {
-      showError(error.response?.data?.message || '重置密码失败')
+      showError(error.response?.data?.message || "重置密码失败");
     }
-  }
+  };
 
   const handleEdit = (user) => {
-    setSelectedUser(user)
+    setSelectedUser(user);
     setEditForm({
-      nickname: user.nickname || '',
+      nickname: user.nickname || "",
       other_nicknames: user.other_nicknames || [],
-      avatar: user.avatar || '',
-    })
-    onOpen()
-  }
+      avatar: user.avatar || "",
+    });
+    onOpen();
+  };
 
   const handleUpdate = async () => {
     try {
-      await updateUser(selectedUser.id, editForm)
-      mutate()
-      onClose()
-      showSuccess('更新成功')
+      await updateUser(selectedUser.id, editForm);
+      mutate();
+      onClose();
+      showSuccess("更新成功");
     } catch (error) {
-      showError(error.response?.data?.message || '更新失败')
+      showError(error.response?.data?.message || "更新失败");
     }
-  }
+  };
+
+  const handleCreate = async () => {
+    try {
+      await createUser(createForm);
+      mutate();
+      onCreateClose();
+      setCreateForm({
+        qq_number: "",
+        password: "",
+        nickname: "",
+        other_nicknames: [],
+        avatar: "",
+      });
+      showSuccess("用户创建成功");
+    } catch (error) {
+      showError(error.response?.data?.message || "创建失败");
+    }
+  };
 
   if (error) {
     return (
@@ -112,7 +138,7 @@ export default function UserManagementPage() {
           </CardBody>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -122,9 +148,7 @@ export default function UserManagementPage() {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
           用户管理 👥
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          管理所有注册用户
-        </p>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">管理所有注册用户</p>
       </div>
 
       {/* 搜索栏 */}
@@ -135,15 +159,11 @@ export default function UserManagementPage() {
               placeholder="搜索 QQ 号或昵称..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
               className="flex-1"
               variant="bordered"
             />
-            <Button
-              color="primary"
-              onClick={handleSearch}
-              className="px-8"
-            >
+            <Button color="primary" onClick={handleSearch} className="px-8">
               搜索
             </Button>
             {keyword && (
@@ -151,9 +171,9 @@ export default function UserManagementPage() {
                 color="default"
                 variant="flat"
                 onClick={() => {
-                  setKeyword('')
-                  setSearchInput('')
-                  setPage(1)
+                  setKeyword("");
+                  setSearchInput("");
+                  setPage(1);
                 }}
               >
                 清除
@@ -170,6 +190,9 @@ export default function UserManagementPage() {
             <h2 className="text-xl font-bold">用户列表</h2>
             <p className="text-sm text-gray-500">共 {total} 个用户</p>
           </div>
+          <Button color="primary" onClick={onCreateOpen} className="font-semibold">
+            ➕ 新增用户
+          </Button>
         </CardHeader>
         <CardBody>
           {!data ? (
@@ -190,71 +213,65 @@ export default function UserManagementPage() {
                 items={users}
                 emptyContent={
                   <div className="text-center py-8 text-gray-500">
-                    {keyword ? '没有找到匹配的用户' : '暂无用户数据'}
+                    {keyword ? "没有找到匹配的用户" : "暂无用户数据"}
                   </div>
                 }
               >
                 {(user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.id}</TableCell>
-                  <TableCell>
-                    <Chip color="primary" variant="flat" size="sm">
-                      {user.qq_number}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-[200px]">
-                      <div className="font-medium">{user.nickname}</div>
-                      {user.other_nicknames && user.other_nicknames.length > 0 && (
-                        <div className="text-xs text-gray-500 truncate" title={`别名: ${user.other_nicknames.join(', ')}`}>
-                          别名: {user.other_nicknames.join(', ')}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {user.last_login_at
-                      ? new Date(user.last_login_at).toLocaleString('zh-CN')
-                      : '-'}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(user.created_at).toLocaleDateString('zh-CN')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Tooltip content="编辑">
-                        <Button
-                          size="sm"
-                          color="primary"
-                          variant="flat"
-                          onClick={() => handleEdit(user)}
-                        >
-                          编辑
-                        </Button>
-                      </Tooltip>
-                      <Tooltip content="重置密码" color="warning">
-                        <Button
-                          size="sm"
-                          color="warning"
-                          variant="flat"
-                          onClick={() => handleResetPassword(user.id, user.nickname)}
-                        >
-                          重置密码
-                        </Button>
-                      </Tooltip>
-                      <Tooltip content="删除" color="danger">
-                        <Button
-                          size="sm"
-                          color="danger"
-                          variant="flat"
-                          onClick={() => handleDelete(user.id, user.nickname)}
-                        >
-                          删除
-                        </Button>
-                      </Tooltip>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                  <TableRow key={user.id}>
+                    <TableCell>{user.id}</TableCell>
+                    <TableCell>
+                      <Chip color="primary" variant="flat" size="sm">
+                        {user.qq_number}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[200px]">
+                        <div className="font-medium">{user.nickname}</div>
+                        {user.other_nicknames && user.other_nicknames.length > 0 && (
+                          <div
+                            className="text-xs text-gray-500 truncate"
+                            title={`别名: ${user.other_nicknames.join(", ")}`}
+                          >
+                            别名: {user.other_nicknames.join(", ")}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {user.last_login_at ? new Date(user.last_login_at).toLocaleString("zh-CN") : "-"}
+                    </TableCell>
+                    <TableCell>{new Date(user.created_at).toLocaleDateString("zh-CN")}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Tooltip content="编辑">
+                          <Button size="sm" color="primary" variant="flat" onClick={() => handleEdit(user)}>
+                            编辑
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content="重置密码" color="warning">
+                          <Button
+                            size="sm"
+                            color="warning"
+                            variant="flat"
+                            onClick={() => handleResetPassword(user.id, user.nickname)}
+                          >
+                            重置密码
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content="删除" color="danger">
+                          <Button
+                            size="sm"
+                            color="danger"
+                            variant="flat"
+                            onClick={() => handleDelete(user.id, user.nickname)}
+                          >
+                            删除
+                          </Button>
+                        </Tooltip>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
@@ -263,13 +280,7 @@ export default function UserManagementPage() {
           {/* 分页 */}
           {pages > 1 && (
             <div className="flex justify-center mt-4">
-              <Pagination
-                total={pages}
-                page={page}
-                onChange={setPage}
-                color="primary"
-                showControls
-              />
+              <Pagination total={pages} page={page} onChange={setPage} color="primary" showControls />
             </div>
           )}
         </CardBody>
@@ -297,9 +308,7 @@ export default function UserManagementPage() {
                     label="头像URL"
                     placeholder="请输入头像URL"
                     value={editForm.avatar}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, avatar: e.target.value })
-                    }
+                    onChange={(e) => setEditForm({ ...editForm, avatar: e.target.value })}
                     description="输入新的URL将实时更新头像预览"
                   />
                 </div>
@@ -310,27 +319,21 @@ export default function UserManagementPage() {
                 label="主昵称"
                 placeholder="请输入主昵称"
                 value={editForm.nickname}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, nickname: e.target.value })
-                }
+                onChange={(e) => setEditForm({ ...editForm, nickname: e.target.value })}
                 isRequired
               />
 
               {/* 其他昵称列表 */}
               <div>
-                <label className="text-sm font-medium mb-2 block">
-                  其他昵称
-                </label>
+                <label className="text-sm font-medium mb-2 block">其他昵称</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {editForm.other_nicknames && editForm.other_nicknames.length > 0 ? (
                     editForm.other_nicknames.map((nick, index) => (
                       <Chip
                         key={index}
                         onClose={() => {
-                          const newNicknames = editForm.other_nicknames.filter(
-                            (_, i) => i !== index
-                          )
-                          setEditForm({ ...editForm, other_nicknames: newNicknames })
+                          const newNicknames = editForm.other_nicknames.filter((_, i) => i !== index);
+                          setEditForm({ ...editForm, other_nicknames: newNicknames });
                         }}
                         variant="flat"
                         color="primary"
@@ -347,22 +350,20 @@ export default function UserManagementPage() {
                     placeholder="输入新昵称后按回车添加"
                     size="sm"
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter' && e.target.value.trim()) {
-                        const newNickname = e.target.value.trim()
+                      if (e.key === "Enter" && e.target.value.trim()) {
+                        const newNickname = e.target.value.trim();
                         if (!editForm.other_nicknames.includes(newNickname)) {
                           setEditForm({
                             ...editForm,
                             other_nicknames: [...editForm.other_nicknames, newNickname],
-                          })
+                          });
                         }
-                        e.target.value = ''
+                        e.target.value = "";
                       }
                     }}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  按回车键添加昵称，点击昵称上的 X 可以删除
-                </p>
+                <p className="text-xs text-gray-500 mt-1">按回车键添加昵称，点击昵称上的 X 可以删除</p>
               </div>
             </div>
           </ModalBody>
@@ -376,6 +377,121 @@ export default function UserManagementPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* 创建用户模态框 */}
+      <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="2xl">
+        <ModalContent>
+          <ModalHeader>
+            <h3 className="text-xl font-bold">新增用户</h3>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              {/* QQ号 */}
+              <Input
+                label="QQ号"
+                placeholder="请输入QQ号（5-20位数字）"
+                value={createForm.qq_number}
+                onChange={(e) => setCreateForm({ ...createForm, qq_number: e.target.value })}
+                isRequired
+                type="text"
+                description="必须为5-20位纯数字"
+              />
+
+              {/* 密码 */}
+              <Input
+                label="密码"
+                placeholder="请输入密码（6-50位字符）"
+                value={createForm.password}
+                onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                isRequired
+                type="password"
+                description="密码长度为6-50位"
+              />
+
+              {/* 主昵称 */}
+              <Input
+                label="主昵称"
+                placeholder="请输入主昵称（最多6个字符）"
+                value={createForm.nickname}
+                onChange={(e) => setCreateForm({ ...createForm, nickname: e.target.value })}
+                isRequired
+                description="昵称最多6个字符"
+              />
+
+              {/* 头像展示 */}
+              <div className="flex items-center gap-4">
+                <Avatar
+                  src={createForm.avatar || undefined}
+                  showFallback
+                  name={createForm.nickname}
+                  size="lg"
+                  className="w-20 h-20"
+                />
+                <div className="flex-1">
+                  <Input
+                    label="头像URL"
+                    placeholder="请输入头像URL（可选）"
+                    value={createForm.avatar}
+                    onChange={(e) => setCreateForm({ ...createForm, avatar: e.target.value })}
+                    description="输入URL将实时更新头像预览"
+                  />
+                </div>
+              </div>
+
+              {/* 其他昵称列表 */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">其他昵称（可选）</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {createForm.other_nicknames && createForm.other_nicknames.length > 0 ? (
+                    createForm.other_nicknames.map((nick, index) => (
+                      <Chip
+                        key={index}
+                        onClose={() => {
+                          const newNicknames = createForm.other_nicknames.filter((_, i) => i !== index);
+                          setCreateForm({ ...createForm, other_nicknames: newNicknames });
+                        }}
+                        variant="flat"
+                        color="primary"
+                      >
+                        {nick}
+                      </Chip>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">暂无其他昵称</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="输入新昵称后按回车添加"
+                    size="sm"
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter" && e.target.value.trim()) {
+                        const newNickname = e.target.value.trim();
+                        if (!createForm.other_nicknames.includes(newNickname)) {
+                          setCreateForm({
+                            ...createForm,
+                            other_nicknames: [...createForm.other_nicknames, newNickname],
+                          });
+                        }
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">按回车键添加昵称，点击昵称上的 X 可以删除</p>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onClick={onCreateClose}>
+              取消
+            </Button>
+            <Button color="primary" onClick={handleCreate}>
+              创建
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
-  )
+  );
 }

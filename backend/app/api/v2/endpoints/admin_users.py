@@ -13,12 +13,56 @@ from app.schemas.user import (
     UserUpdate,
     UserResponse,
     UserListResponse,
+    AdminUserCreate,
 )
 from app.schemas.common import ResponseModel
 from app.core.security import get_password_hash
 from datetime import datetime
 
 router = APIRouter()
+
+
+@router.post("", response_model=ResponseModel[UserResponse], status_code=status.HTTP_201_CREATED)
+async def create_user(
+    user_data: AdminUserCreate,
+    current_admin: SystemAdmin = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    创建新用户（管理员）
+    
+    - **qq_number**: QQ号（5-20位数字）
+    - **password**: 密码（6-50位字符）
+    - **nickname**: 昵称（1-6位字符）
+    - **other_nicknames**: 其他昵称（可选）
+    - **avatar**: 头像URL（可选）
+    """
+    # 检查QQ号是否已存在
+    result = await db.execute(
+        select(User).where(User.qq_number == user_data.qq_number, User.deleted_at.is_(None))
+    )
+    existing_user = result.scalar_one_or_none()
+    
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="该QQ号已被注册"
+        )
+    
+    # 创建新用户
+    new_user = User(
+        qq_number=user_data.qq_number,
+        password_hash=get_password_hash(user_data.password),
+        nickname=user_data.nickname,
+        other_nicknames=user_data.other_nicknames or [],
+        avatar=user_data.avatar,
+    )
+    
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+    
+    return ResponseModel(data=UserResponse.model_validate(new_user))
 
 
 @router.get("", response_model=ResponseModel[UserListResponse])
