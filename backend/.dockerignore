@@ -38,9 +38,6 @@ docs/
 # 日志
 *.log
 
-# Alembic
-alembic.ini
-
 # 其他
 .DS_Store
 *.pyc
