@@ -1,8 +1,15 @@
-from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 
-class Config(BaseModel):
+class Config(BaseSettings):
     """小杨机器人配置"""
+
+    model_config = SettingsConfigDict(
+        env_prefix="xiaoyang__",  # 对应环境变量前缀 XIAOYANG__
+        env_file=(".env", ".env.prod"),
+        extra="ignore",
+    )
 
     # 后端API配置
     backend_api_url: str = Field(

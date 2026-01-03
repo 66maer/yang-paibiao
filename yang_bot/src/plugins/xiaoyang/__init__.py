@@ -1,4 +1,4 @@
-from nonebot import get_plugin_config, get_driver
+from nonebot import get_plugin_config
 from nonebot.plugin import PluginMetadata
 from nonebot.log import logger
 
@@ -16,17 +16,11 @@ __plugin_meta__ = PluginMetadata(
     config=Config,
 )
 
-# 获取配置
-# 注意：get_plugin_config 可能有问题，我们直接从 driver 的配置中读取
-driver_config = get_driver().config
-xiaoyang_config_dict = driver_config.dict().get('xiaoyang', {})
-
-logger.debug(f"从 NoneBot 配置中读取到的 xiaoyang 配置: {xiaoyang_config_dict}")
-
-# 使用配置字典创建 Config 对象
-config = Config(**xiaoyang_config_dict)
+# 使用官方推荐的方式获取插件配置
+config = get_plugin_config(Config)
 
 # 打印配置信息用于调试
+logger.debug(f"加载到的 xiaoyang 配置: {config.model_dump()}")
 logger.info(f"配置加载完成:")
 logger.info(f"  - Backend API URL: {config.backend_api_url}")
 logger.info(f"  - Guild ID: {config.guild_id}")
