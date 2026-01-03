@@ -1,6 +1,6 @@
 """NoneBot Matcher 定义和处理函数"""
 import re
-from nonebot import on_command, on_message
+from nonebot import on_command, on_message, on_keyword
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, Message
 from nonebot.params import CommandArg, EventPlainText
 from nonebot.log import logger
@@ -17,16 +17,15 @@ from .message_builder import MessageBuilder
 
 
 # ==================== 查看团队 ====================
-view_teams = on_command(
-    "查看团队",
-    aliases={"查团", "有团吗", "有车吗"},
+view_teams = on_keyword(
+    {"查看团队", "查团", "有团吗", "有车吗"},
     priority=10,
     block=True
 )
 
 
 @view_teams.handle()
-async def handle_view_teams(event: GroupMessageEvent, args: Message = CommandArg()):
+async def handle_view_teams(event: GroupMessageEvent, plain_text: str = EventPlainText()):
     """
     处理查看团队命令
 
@@ -41,8 +40,13 @@ async def handle_view_teams(event: GroupMessageEvent, args: Message = CommandArg
         # 获取团队列表
         teams = await team_service.get_teams()
 
-        # 检查是否有参数（可能是要查看详情）
-        args_text = args.extract_plain_text().strip()
+        # 提取参数（去除关键词部分）
+        for keyword in ["查看团队", "查团", "有团吗", "有车吗"]:
+            if plain_text.startswith(keyword):
+                args_text = plain_text[len(keyword):].strip()
+                break
+        else:
+            args_text = ""
 
         if not args_text:
             # 没有参数，返回团队列表
@@ -71,23 +75,23 @@ async def handle_view_teams(event: GroupMessageEvent, args: Message = CommandArg
 
 
 # ==================== 修改昵称 ====================
-update_nickname = on_command(
-    "修改昵称",
+update_nickname = on_keyword(
+    {"修改昵称"},
     priority=10,
     block=True
 )
 
 
 @update_nickname.handle()
-async def handle_update_nickname(event: GroupMessageEvent, args: Message = CommandArg()):
+async def handle_update_nickname(event: GroupMessageEvent, plain_text: str = EventPlainText()):
     """
     处理修改昵称命令
 
     格式: 修改昵称 <新昵称>
     """
     try:
-        # 解析新昵称
-        new_nickname = args.extract_plain_text().strip()
+        # 提取新昵称（去除关键词"修改昵称"）
+        new_nickname = plain_text.replace("修改昵称", "", 1).strip()
 
         if not new_nickname:
             msg = MessageBuilder.build_error_message("请提供新昵称，格式：修改昵称 <新昵称>")
@@ -568,8 +572,8 @@ async def _handle_cancel_signup_select(
 
 
 # ==================== 初始化成员（超级管理员或群主专用）====================
-init_members = on_command(
-    "初始化成员",
+init_members = on_keyword(
+    {"初始化成员"},
     permission=SUPERUSER | GROUP_OWNER,
     priority=10,
     block=True

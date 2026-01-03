@@ -1,4 +1,4 @@
-from nonebot import get_plugin_config
+from nonebot import get_plugin_config, get_driver
 from nonebot.plugin import PluginMetadata
 from nonebot.log import logger
 
@@ -17,7 +17,26 @@ __plugin_meta__ = PluginMetadata(
 )
 
 # 获取配置
-config = get_plugin_config(Config)
+# 注意：get_plugin_config 可能有问题，我们直接从 driver 的配置中读取
+driver_config = get_driver().config
+xiaoyang_config_dict = driver_config.dict().get('xiaoyang', {})
+
+logger.debug(f"从 NoneBot 配置中读取到的 xiaoyang 配置: {xiaoyang_config_dict}")
+
+# 使用配置字典创建 Config 对象
+config = Config(**xiaoyang_config_dict)
+
+# 打印配置信息用于调试
+logger.info(f"配置加载完成:")
+logger.info(f"  - Backend API URL: {config.backend_api_url}")
+logger.info(f"  - Guild ID: {config.guild_id}")
+logger.info(f"  - API Key 已配置: {'是' if config.backend_api_key else '否'}")
+if config.backend_api_key:
+    # 只显示前20个字符，避免泄露完整 API Key
+    api_key_preview = config.backend_api_key[:20] + "..." if len(config.backend_api_key) > 20 else config.backend_api_key
+    logger.info(f"  - API Key 预览: {api_key_preview}")
+else:
+    logger.warning(f"  ⚠️  API Key 未配置或为空！")
 
 # 初始化 API 客户端
 try:

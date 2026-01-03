@@ -52,6 +52,15 @@ class APIClient:
         """
         url = f"{self.base_url}{path}"
         headers = kwargs.pop("headers", {})
+
+        # 添加调试日志
+        from nonebot.log import logger
+        if not self.api_key:
+            logger.warning(f"⚠️  API Key 为空！无法发送请求到 {method} {path}")
+        else:
+            api_key_preview = self.api_key[:20] + "..." if len(self.api_key) > 20 else self.api_key
+            logger.debug(f"发送请求: {method} {path}, API Key: {api_key_preview}")
+
         headers["X-API-Key"] = self.api_key
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
