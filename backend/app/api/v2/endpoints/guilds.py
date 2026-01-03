@@ -12,7 +12,7 @@ from app.models.user import User
 from app.models.guild_member import GuildMember
 from app.models.guild import Guild
 from app.schemas.common import ResponseModel
-from app.schemas.guild import GuildMemberInfo, UpdateMemberRole
+from app.schemas.guild import GuildMemberInfo, UpdateMemberRole, UpdateMemberNickname
 
 router = APIRouter(prefix="/guilds", tags=["群组用户接口"])
 
@@ -168,3 +168,56 @@ async def update_member_role(
     await db.commit()
 
     return ResponseModel(message="成员角色更新成功")
+
+
+@router.put("/{guild_id}/members/{user_id}/nickname", response_model=ResponseModel)
+async def update_member_nickname(
+    guild_id: int,
+    user_id: int,
+    payload: UpdateMemberNickname,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    更新群组成员的群昵称
+    只有群主和管理员(helper)可以修改成员的群昵称
+    """
+    # 验证群组存在
+    guild_result = await db.execute(select(Guild).where(Guild.id == guild_id, Guild.deleted_at.is_(None)))
+    guild = guild_result.scalar_one_or_none()
+    if guild is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="群组不存在")
+
+    # 获取当前用户在该群组的角色
+    current_member_result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id == current_user.id,
+            GuildMember.left_at.is_(None)
+        )
+    )
+    current_member = current_member_result.scalar_one_or_none()
+    if current_member is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="非该群组成员")
+
+    # 验证权限：只有群主和管理员可以修改成员群昵称
+    if current_member.role not in ['owner', 'helper']:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="权限不足，只有群主和管理员可以修改成员群昵称")
+
+    # 获取目标成员
+    target_member_result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id == user_id,
+            GuildMember.left_at.is_(None)
+        )
+    )
+    target_member = target_member_result.scalar_one_or_none()
+    if target_member is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="目标成员不存在")
+
+    # 更新群昵称
+    target_member.group_nickname = payload.group_nickname
+    await db.commit()
+
+    return ResponseModel(message="成员群昵称更新成功")

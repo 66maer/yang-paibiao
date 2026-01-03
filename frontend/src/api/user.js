@@ -93,3 +93,15 @@ export const updateMemberRole = async (guildId, userId, role) => {
     role,
   });
 };
+
+/**
+ * 更新群组成员的群昵称（管理员功能）
+ * @param {number} guildId - 群组ID
+ * @param {number} userId - 用户ID
+ * @param {string} nickname - 新的群内昵称
+ */
+export const updateMemberNickname = async (guildId, userId, nickname) => {
+  return await apiClient.put(`/guilds/${guildId}/members/${userId}/nickname`, {
+    group_nickname: nickname,
+  });
+};

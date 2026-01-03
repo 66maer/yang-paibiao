@@ -169,3 +169,8 @@ class UpdateMemberRole(BaseModel):
             if value['role'] not in ['owner', 'helper', 'member']:
                 raise ValueError('role必须是owner、helper或member之一')
         return super().model_validate(value)
+
+
+class UpdateMemberNickname(BaseModel):
+    """更新成员群昵称"""
+    group_nickname: Optional[str] = Field(None, description="群内昵称")

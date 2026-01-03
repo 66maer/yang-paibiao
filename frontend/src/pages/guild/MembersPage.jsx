@@ -19,11 +19,12 @@ import {
   ModalFooter,
   Select,
   SelectItem,
+  Input,
   Spinner,
   Avatar,
   User,
 } from "@heroui/react";
-import { getGuildMembers, updateMemberRole } from "@/api/user";
+import { getGuildMembers, updateMemberRole, updateMemberNickname } from "@/api/user";
 import { showSuccess, showError, showConfirm } from "@/utils/toast.jsx";
 import useAuthStore from "@/stores/authStore";
 
@@ -35,8 +36,10 @@ export default function MembersPage() {
   const currentGuildId = user?.current_guild_id;
 
   const [isEditRoleModalOpen, setIsEditRoleModalOpen] = useState(false);
+  const [isEditNicknameModalOpen, setIsEditNicknameModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [newRole, setNewRole] = useState("");
+  const [newNickname, setNewNickname] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // 获取成员列表
@@ -120,6 +123,40 @@ export default function MembersPage() {
       mutate();
     } catch (err) {
       showError("角色修改失败：" + (err.response?.data?.detail || err.message));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 打开修改群昵称弹窗
+  const openEditNicknameModal = (member) => {
+    if (!canManageRoles) {
+      showError("权限不足，只有群主和管理员可以修改成员群昵称");
+      return;
+    }
+
+    setSelectedMember(member);
+    setNewNickname(member.group_nickname || "");
+    setIsEditNicknameModalOpen(true);
+  };
+
+  // 处理群昵称修改
+  const handleUpdateNickname = async () => {
+    if (!selectedMember) return;
+
+    const confirmed = await showConfirm(
+      `确定要将 ${selectedMember.user.nickname} 的群昵称修改为 "${newNickname || "（清空）"}" 吗？`
+    );
+    if (!confirmed) return;
+
+    setIsLoading(true);
+    try {
+      await updateMemberNickname(currentGuildId, selectedMember.user_id, newNickname);
+      showSuccess("群昵称修改成功");
+      setIsEditNicknameModalOpen(false);
+      mutate();
+    } catch (err) {
+      showError("群昵称修改失败：" + (err.response?.data?.detail || err.message));
     } finally {
       setIsLoading(false);
     }
@@ -234,21 +271,31 @@ export default function MembersPage() {
                     <TableCell>{formatJoinedAt(member.joined_at)}</TableCell>
                     {canManageRoles && (
                       <TableCell>
-                        {member.role !== "owner" && (
+                        <div className="flex gap-2">
+                          {member.role !== "owner" && (
+                            <Button
+                              size="sm"
+                              color="primary"
+                              variant="flat"
+                              onClick={() => openEditRoleModal(member)}
+                              isDisabled={
+                                currentUserRole === "helper" &&
+                                member.role === "helper" &&
+                                member.user_id !== user?.id
+                              }
+                            >
+                              修改角色
+                            </Button>
+                          )}
                           <Button
                             size="sm"
-                            color="primary"
+                            color="secondary"
                             variant="flat"
-                            onClick={() => openEditRoleModal(member)}
-                            isDisabled={
-                              currentUserRole === "helper" &&
-                              member.role === "helper" &&
-                              member.user_id !== user?.id
-                            }
+                            onClick={() => openEditNicknameModal(member)}
                           >
-                            修改角色
+                            修改群昵称
                           </Button>
-                        )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
@@ -316,6 +363,64 @@ export default function MembersPage() {
                   onPress={handleUpdateRole}
                   isLoading={isLoading}
                   isDisabled={!newRole || newRole === selectedMember?.role}
+                >
+                  确认修改
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* 修改群昵称弹窗 */}
+      <Modal
+        isOpen={isEditNicknameModalOpen}
+        onClose={() => setIsEditNicknameModalOpen(false)}
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                修改成员群昵称
+              </ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-default-500">成员信息</p>
+                    <User
+                      name={selectedMember?.user.nickname}
+                      description={`QQ: ${selectedMember?.user.qq_number}`}
+                      avatarProps={{
+                        src: selectedMember?.user.avatar,
+                        name: selectedMember?.user.nickname,
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-sm text-default-500 mb-2">当前群昵称</p>
+                    <p className="text-sm">
+                      {selectedMember?.group_nickname || (
+                        <span className="text-default-400">未设置</span>
+                      )}
+                    </p>
+                  </div>
+                  <Input
+                    label="新群昵称"
+                    placeholder="输入新的群昵称（留空则清空群昵称）"
+                    value={newNickname}
+                    onValueChange={setNewNickname}
+                  />
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button color="default" variant="light" onPress={onClose}>
+                  取消
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={handleUpdateNickname}
+                  isLoading={isLoading}
+                  isDisabled={newNickname === (selectedMember?.group_nickname || "")}
                 >
                   确认修改
                 </Button>
