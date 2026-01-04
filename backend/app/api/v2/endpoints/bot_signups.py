@@ -94,14 +94,13 @@ async def create_signup(
         signup_character_id = character.id
         character_name = character.name
         xinfa = character.xinfa
-    else:
+    elif payload.character_name:
         # 使用请求中的角色名
-        if not payload.character_name:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="必须提供 character_id 或 character_name"
-            )
         character_name = payload.character_name
+    else:
+        # 模糊报名：只提供心法，不提供角色信息
+        # character_name 留空，xinfa 使用请求中的值
+        pass
 
     # 构建signup_info
     signup_info = {

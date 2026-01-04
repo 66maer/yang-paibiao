@@ -2,6 +2,7 @@
 from typing import List, Optional
 from ..api.client import APIClient
 from ..api.models import CharacterInfo, CharacterCreateRequest
+from ..data.xinfa import xinfa_matches
 
 
 class CharacterService:
@@ -65,15 +66,15 @@ class CharacterService:
 
         Args:
             qq_number: QQ 号
-            xinfa: 心法名（标准名称）
+            xinfa: 心法名（可以是英文key、中文名或昵称）
 
         Returns:
             List[CharacterInfo]: 符合条件的角色列表（按优先级排序）
         """
         characters = await self.get_user_characters(qq_number)
 
-        # 筛选出指定心法的角色
-        xinfa_chars = [char for char in characters if char.xinfa == xinfa]
+        # 筛选出指定心法的角色（使用xinfa_matches进行匹配）
+        xinfa_chars = [char for char in characters if xinfa_matches(char.xinfa, xinfa)]
 
         return xinfa_chars
 
@@ -87,7 +88,7 @@ class CharacterService:
 
         Args:
             qq_number: QQ 号
-            xinfa: 心法名（标准名称）
+            xinfa: 心法名（可以是英文key、中文名或昵称）
 
         Returns:
             Optional[CharacterInfo]: 最优先的角色，如果没有返回 None

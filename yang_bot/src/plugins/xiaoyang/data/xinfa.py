@@ -323,3 +323,41 @@ def get_tank_xinfa_names() -> List[str]:
         List[str]: T心法标准名称列表
     """
     return [info["name"] for info in XINFA_INFO.values() if "T" in info["type"]]
+
+
+def xinfa_matches(xinfa1: str, xinfa2: str) -> bool:
+    """
+    判断两个心法名是否指向同一个心法
+    支持英文key、中文标准名、昵称的任意组合匹配
+
+    Args:
+        xinfa1: 心法名称1（可以是英文key、中文名或昵称）
+        xinfa2: 心法名称2（可以是英文key、中文名或昵称）
+
+    Returns:
+        bool: 是否是同一个心法
+
+    Example:
+        >>> xinfa_matches("xiaochen", "笑尘诀")
+        True
+        >>> xinfa_matches("丐帮", "笑尘诀")
+        True
+        >>> xinfa_matches("xiaochen", "花间游")
+        False
+    """
+    # 尝试从英文key获取标准名称
+    def get_standard_name(text: str) -> Optional[str]:
+        # 首先检查是否是英文key
+        if text in XINFA_INFO:
+            return XINFA_INFO[text]["name"]
+        # 否则尝试通过昵称映射获取
+        return _NICKNAME_TO_XINFA.get(text.lower())
+
+    name1 = get_standard_name(xinfa1)
+    name2 = get_standard_name(xinfa2)
+
+    # 如果任一个无法识别，返回False
+    if name1 is None or name2 is None:
+        return False
+
+    return name1 == name2
