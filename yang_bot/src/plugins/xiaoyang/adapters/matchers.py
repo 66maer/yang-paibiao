@@ -60,7 +60,8 @@ async def handle_view_teams(event: GroupMessageEvent, plain_text: str = EventPla
             try:
                 index = int(args_text)
                 team = await team_service.get_team_by_index(teams, index)
-                msg = await MessageBuilder.build_team_detail(team, index)
+                # 传递 QQ 群号用于截图服务
+                msg = await MessageBuilder.build_team_detail(team, index, str(guild_id))
                 await view_teams.finish(msg)
             except ValueError as e:
                 msg = MessageBuilder.build_error_message(str(e))

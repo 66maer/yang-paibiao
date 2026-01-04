@@ -40,13 +40,14 @@ class MessageBuilder:
         return Message("".join(msg_parts))
 
     @staticmethod
-    async def build_team_detail(team: TeamInfo, index: int) -> Message:
+    async def build_team_detail(team: TeamInfo, index: int, guild_qq_number: str) -> Message:
         """
         构建团队详情消息（图片形式）
 
         Args:
             team: 团队信息
             index: 团队序号
+            guild_qq_number: QQ群号
 
         Returns:
             Message: 图片消息
@@ -55,9 +56,9 @@ class MessageBuilder:
             # 使用截图服务获取团队图片
             logger.info(f"正在生成团队 {team.id} 的截图...")
 
-            # 调用截图服务
+            # 调用截图服务（使用 QQ 群号，而不是内部 guild_id）
             image_bytes = await screenshot_service.capture_team_image(
-                guild_id=team.guild_id,
+                guild_id=guild_qq_number,
                 team_id=team.id,
                 updated_at=team.created_at.isoformat(),  # 使用创建时间作为缓存键
             )

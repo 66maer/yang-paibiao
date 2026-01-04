@@ -57,12 +57,12 @@ class ScreenshotService:
             self._browser = None
             logger.info("Playwright 浏览器已关闭")
 
-    def _get_cache_key(self, guild_id: int, team_id: int, updated_at: str) -> str:
+    def _get_cache_key(self, guild_id: str, team_id: int, updated_at: str) -> str:
         """
         生成缓存键
 
         Args:
-            guild_id: 群组ID
+            guild_id: QQ群号
             team_id: 团队ID
             updated_at: 更新时间（ISO格式字符串）
 
@@ -78,13 +78,13 @@ class ScreenshotService:
         return self.cache_dir / cache_key
 
     async def capture_team_image(
-        self, guild_id: int, team_id: int, updated_at: Optional[str] = None
+        self, guild_id: str, team_id: int, updated_at: Optional[str] = None
     ) -> bytes:
         """
         截取团队图片
 
         Args:
-            guild_id: 群组ID
+            guild_id: QQ群号
             team_id: 团队ID
             updated_at: 团队更新时间（可选，用于缓存）
 
