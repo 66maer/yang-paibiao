@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.database import get_db
-from app.api.deps import get_current_bot, verify_bot_guild_access
+from app.api.deps import get_current_bot, verify_bot_guild_access_by_qq
 from app.models.bot import Bot
 from app.models.guild import Guild
 from app.models.user import User
@@ -30,24 +30,24 @@ router = APIRouter()
 
 
 @router.post(
-    "/guilds/{guild_id}/members/batch",
+    "/guilds/{guild_qq_number}/members/batch",
     response_model=ResponseModel[BotAddMembersResponse]
 )
 async def batch_add_members(
-    guild_id: int,
+    guild_qq_number: str,
     payload: BotAddMembersRequest,
     bot: Bot = Depends(get_current_bot),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    批量添加群组成员
+    批量添加群组成员（通过QQ群号）
 
     - 如果QQ号不存在，自动创建用户
     - 如果用户已存在但不在群组，添加到群组
     - 如果用户曾经离开群组，重新激活
     """
     # 验证Bot权限
-    await verify_bot_guild_access(bot, guild_id, db)
+    guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
     results = []
     success_count = 0
@@ -80,7 +80,7 @@ async def batch_add_members(
             # 检查群成员关系
             gm_result = await db.execute(
                 select(GuildMember).where(
-                    GuildMember.guild_id == guild_id,
+                    GuildMember.guild_id == guild.id,
                     GuildMember.user_id == user.id
                 )
             )
@@ -105,7 +105,7 @@ async def batch_add_members(
             else:
                 # 新成员
                 gm = GuildMember(
-                    guild_id=guild_id,
+                    guild_id=guild.id,
                     user_id=user.id,
                     role="member",
                     group_nickname=member_data.group_nickname
@@ -140,24 +140,24 @@ async def batch_add_members(
 
 
 @router.post(
-    "/guilds/{guild_id}/members/batch-remove",
+    "/guilds/{guild_qq_number}/members/batch-remove",
     response_model=ResponseModel[BotRemoveMembersResponse]
 )
 async def batch_remove_members(
-    guild_id: int,
+    guild_qq_number: str,
     payload: BotRemoveMembersRequest,
     bot: Bot = Depends(get_current_bot),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    批量移除群组成员
+    批量移除群组成员（通过QQ群号）
 
     - 设置left_at为当前时间（软删除）
     - 不删除历史报名数据
     - 不能移除群主（owner）
     """
     # 验证Bot权限
-    await verify_bot_guild_access(bot, guild_id, db)
+    guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
     results = []
     success_count = 0
@@ -186,7 +186,7 @@ async def batch_remove_members(
             # 查找群成员关系
             gm_result = await db.execute(
                 select(GuildMember).where(
-                    GuildMember.guild_id == guild_id,
+                    GuildMember.guild_id == guild.id,
                     GuildMember.user_id == user.id,
                     GuildMember.left_at.is_(None)
                 )
@@ -241,21 +241,21 @@ async def batch_remove_members(
 
 
 @router.put(
-    "/guilds/{guild_id}/members/{qq_number}/nickname",
+    "/guilds/{guild_qq_number}/members/{qq_number}/nickname",
     response_model=ResponseModel
 )
 async def update_member_nickname(
-    guild_id: int,
+    guild_qq_number: str,
     qq_number: str,
     payload: BotUpdateNicknameRequest,
     bot: Bot = Depends(get_current_bot),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    修改群成员的群昵称
+    修改群成员的群昵称（通过QQ群号）
     """
     # 验证Bot权限
-    await verify_bot_guild_access(bot, guild_id, db)
+    guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
     # 查找用户
     user_result = await db.execute(
@@ -275,7 +275,7 @@ async def update_member_nickname(
     # 查找群成员关系
     gm_result = await db.execute(
         select(GuildMember).where(
-            GuildMember.guild_id == guild_id,
+            GuildMember.guild_id == guild.id,
             GuildMember.user_id == user.id,
             GuildMember.left_at.is_(None)
         )
@@ -296,33 +296,33 @@ async def update_member_nickname(
 
 
 @router.get(
-    "/guilds/{guild_id}/members/search",
+    "/guilds/{guild_qq_number}/members/search",
     response_model=ResponseModel[BotMemberSearchResponse]
 )
 async def search_members(
-    guild_id: int,
+    guild_qq_number: str,
     nickname: str,
     bot: Bot = Depends(get_current_bot),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    通过昵称搜索群成员
+    通过昵称搜索群成员（通过QQ群号）
 
     - 支持模糊匹配
     - 同时搜索 nickname（用户昵称）、group_nickname（群昵称）、other_nickname（其他昵称）
     """
     # 验证Bot权限
-    await verify_bot_guild_access(bot, guild_id, db)
+    guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
     # 查询匹配的成员
     # 使用LIKE进行模糊匹配
     search_pattern = f"%{nickname}%"
-    
+
     result = await db.execute(
         select(User, GuildMember)
         .join(GuildMember, GuildMember.user_id == User.id)
         .where(
-            GuildMember.guild_id == guild_id,
+            GuildMember.guild_id == guild.id,
             GuildMember.left_at.is_(None),
             User.deleted_at.is_(None),
             (
@@ -332,7 +332,7 @@ async def search_members(
             )
         )
     )
-    
+
     members = []
     for user, guild_member in result.all():
         members.append(BotMemberInfo(

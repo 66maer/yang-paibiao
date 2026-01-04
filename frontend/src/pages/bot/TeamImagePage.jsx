@@ -16,7 +16,7 @@ import { transformSignups } from "@/utils/signupTransform";
  * - 样式与 TeamContent 保持一致
  */
 export default function TeamImagePage() {
-  const { guild_id, team_id } = useParams();
+  const { guild_qq_number, team_id } = useParams();
   const [searchParams] = useSearchParams();
   const apiKey = searchParams.get("apiKey");
 
@@ -36,7 +36,7 @@ export default function TeamImagePage() {
         // 使用 axios 直接请求，不使用带认证拦截器的 apiClient
         const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:9500/api/v2";
         const response = await axios.get(
-          `${baseURL}/bot/guilds/${guild_id}/teams/${team_id}/view`,
+          `${baseURL}/bot/guilds/${guild_qq_number}/teams/${team_id}/view`,
           {
             headers: {
               "X-API-Key": apiKey,

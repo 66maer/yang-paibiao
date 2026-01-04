@@ -38,7 +38,8 @@ async def handle_member_join(bot: Bot, event: GroupIncreaseNoticeEvent):
         logger.info(f"群成员加入: qq={qq_number}, nickname={nickname}, card={group_nickname}")
 
         # 同步到后端
-        api_client = get_api_client()
+        guild_id = event.group_id
+        api_client = get_api_client(guild_id=guild_id)
 
         member = MemberInfo(
             qq_number=qq_number,
@@ -77,7 +78,8 @@ async def handle_member_leave(bot: Bot, event: GroupDecreaseNoticeEvent):
         logger.info(f"群成员离开: qq={qq_number}")
 
         # 同步到后端
-        api_client = get_api_client()
+        guild_id = event.group_id
+        api_client = get_api_client(guild_id=guild_id)
         await api_client.members.remove_members_batch([qq_number])
 
         logger.success(f"成功从后端移除成员: {qq_number}")

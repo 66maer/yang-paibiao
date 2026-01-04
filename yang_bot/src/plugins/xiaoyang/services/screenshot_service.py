@@ -110,7 +110,7 @@ class ScreenshotService:
             # 创建新页面
             page = await self._context.new_page()
 
-            # 构建URL
+            # 构建URL（guild_id 这里是 QQ 群号）
             url = f"{self.frontend_url}/bot/guilds/{guild_id}/teams/{team_id}?apiKey={self.api_key}"
             logger.info(f"正在访问页面: {url}")
 

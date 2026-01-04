@@ -49,7 +49,7 @@ function AppContent() {
         <Route path="/debug/team-board" element={<DebugTeamBoardPage />} />
 
         {/* Bot专用页面（无需登录） */}
-        <Route path="/bot/guilds/:guild_id/teams/:team_id" element={<TeamImagePage />} />
+        <Route path="/bot/guilds/:guild_qq_number/teams/:team_id" element={<TeamImagePage />} />
 
         {/* 管理员登录页面 */}
         <Route path="/admin/login" element={<AdminLoginPage />} />

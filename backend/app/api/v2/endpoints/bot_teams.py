@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.api.deps import get_current_bot, verify_bot_guild_access
+from app.api.deps import get_current_bot, verify_bot_guild_access_by_qq
 from app.models.bot import Bot
 from app.models.team import Team
 from app.models.signup import Signup
@@ -21,28 +21,28 @@ router = APIRouter()
 
 
 @router.get(
-    "/guilds/{guild_id}/teams",
+    "/guilds/{guild_qq_number}/teams",
     response_model=ResponseModel[List[BotTeamSimple]]
 )
 async def get_open_teams(
-    guild_id: int,
+    guild_qq_number: str,
     bot: Bot = Depends(get_current_bot),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    查看当前开放的团队列表
+    查看当前开放的团队列表（通过QQ群号）
 
     - 只返回status=open且is_hidden=false的团队
     - 按team_time排序
     """
-    # 验证Bot权限
-    await verify_bot_guild_access(bot, guild_id, db)
+    # 验证Bot权限（通过QQ群号）
+    guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
     # 查询开放团队
     result = await db.execute(
         select(Team)
         .where(
-            Team.guild_id == guild_id,
+            Team.guild_id == guild.id,
             Team.status == "open",
             Team.is_hidden == False
         )
@@ -68,30 +68,30 @@ async def get_open_teams(
 
 
 @router.get(
-    "/guilds/{guild_id}/teams/{team_id}/view",
+    "/guilds/{guild_qq_number}/teams/{team_id}/view",
     response_model=ResponseModel[BotTeamDetail]
 )
 async def get_team_for_screenshot(
-    guild_id: int,
+    guild_qq_number: str,
     team_id: int,
     bot: Bot = Depends(get_current_bot),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    获取团队详细信息（用于截图）
+    获取团队详细信息（用于截图，通过QQ群号）
 
-    - 验证Bot对该群组的访问权限
+    - 验证Bot对该QQ群的访问权限
     - 返回团队完整信息，包括报名列表
     - 用于机器人生成团队截图
     """
-    # 验证Bot权限
-    await verify_bot_guild_access(bot, guild_id, db)
+    # 验证Bot权限（通过QQ群号）
+    guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
     # 查询团队
     result = await db.execute(
         select(Team).where(
             Team.id == team_id,
-            Team.guild_id == guild_id,
+            Team.guild_id == guild.id,
             Team.status != "deleted"
         )
     )
@@ -108,7 +108,7 @@ async def get_team_for_screenshot(
         select(User, GuildMember)
         .outerjoin(GuildMember,
                   (GuildMember.user_id == User.id) &
-                  (GuildMember.guild_id == guild_id) &
+                  (GuildMember.guild_id == guild.id) &
                   (GuildMember.left_at.is_(None)))
         .where(User.id == team.creator_id)
     )
@@ -126,7 +126,7 @@ async def get_team_for_screenshot(
         .outerjoin(User, User.id == Signup.submitter_id)
         .outerjoin(GuildMember,
                   (GuildMember.user_id == Signup.submitter_id) &
-                  (GuildMember.guild_id == guild_id) &
+                  (GuildMember.guild_id == guild.id) &
                   (GuildMember.left_at.is_(None)))
         .where(
             Signup.team_id == team_id,
@@ -161,7 +161,7 @@ async def get_team_for_screenshot(
     # 构建团队详情响应
     team_detail = BotTeamDetail(
         id=team.id,
-        guild_id=team.guild_id,
+        guild_id=guild.id,
         creator_id=team.creator_id,
         creator_name=creator_name,
         title=team.title,

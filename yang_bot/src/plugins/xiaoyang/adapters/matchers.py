@@ -35,7 +35,9 @@ async def handle_view_teams(event: GroupMessageEvent, plain_text: str = EventPla
     - 查看团队 1 / 查团 1 - 查看指定序号的团队详情
     """
     try:
-        api_client = get_api_client()
+        # 从事件中获取群组 ID
+        guild_id = event.group_id
+        api_client = get_api_client(guild_id=guild_id)
         team_service = TeamService(api_client)
 
         # 获取团队列表
@@ -106,7 +108,8 @@ async def handle_update_nickname(event: GroupMessageEvent, plain_text: str = Eve
         qq_number = str(event.user_id)
 
         # 调用 API 修改昵称
-        api_client = get_api_client()
+        guild_id = event.group_id
+        api_client = get_api_client(guild_id=guild_id)
         await api_client.members.update_nickname(qq_number, new_nickname)
 
         msg = MessageBuilder.build_success_message(f"昵称已修改为: {new_nickname}")
@@ -161,7 +164,8 @@ async def handle_signup_message(event: GroupMessageEvent, plain_text: str = Even
             await signup_matcher.finish(msg)
 
         # 获取 API 客户端
-        api_client = get_api_client()
+        guild_id = event.group_id
+        api_client = get_api_client(guild_id=guild_id)
         team_service = TeamService(api_client)
         signup_service = SignupService(api_client)
 
@@ -566,7 +570,8 @@ async def _handle_cancel_signup_select(
         selected_signup = signups[index - 1]
 
         # 调用 API 取消报名
-        api_client = get_api_client()
+        guild_id = event.group_id
+        api_client = get_api_client(guild_id=guild_id)
         qq_number = str(event.user_id)
         await api_client.signups.cancel_signup(team_id, qq_number)
 
@@ -627,7 +632,8 @@ async def handle_init_members(bot: Bot, event: GroupMessageEvent):
         logger.info(f"获取到 {len(group_members)} 个群成员")
 
         # 调用成员服务同步成员
-        api_client = get_api_client()
+        guild_id = event.group_id
+        api_client = get_api_client(guild_id=guild_id)
         member_service = MemberService(api_client)
 
         await init_members.send(f"获取到 {len(group_members)} 个群成员，开始同步到后端...")

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.database import get_db
-from app.api.deps import get_current_bot, verify_bot_guild_access
+from app.api.deps import get_current_bot, verify_bot_guild_access_by_qq
 from app.models.bot import Bot
 from app.models.user import User
 from app.models.guild import Guild
@@ -23,17 +23,17 @@ router = APIRouter()
 
 
 @router.post(
-    "/guilds/{guild_id}/characters",
+    "/guilds/{guild_qq_number}/characters",
     response_model=ResponseModel[CharacterResponse]
 )
 async def create_character(
-    guild_id: int,
+    guild_qq_number: str,
     payload: BotCreateCharacterRequest,
     bot: Bot = Depends(get_current_bot),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    创建角色
+    创建角色（通过QQ群号）
 
     - 如果角色已存在且用户已关联，返回现有角色
     - 如果角色已存在但用户未关联，创建CharacterPlayer关联
@@ -41,19 +41,7 @@ async def create_character(
     - 如果未提供server参数，自动使用群组的服务器
     """
     # 验证Bot权限
-    await verify_bot_guild_access(bot, guild_id, db)
-
-    # 获取群组信息（用于获取默认服务器）
-    guild_result = await db.execute(
-        select(Guild).where(Guild.id == guild_id)
-    )
-    guild = guild_result.scalar_one_or_none()
-
-    if not guild:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="群组不存在"
-        )
+    guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
     # 确定服务器（优先使用请求中的server，否则使用guild的server）
     server = payload.server if payload.server else guild.server
@@ -144,20 +132,20 @@ async def create_character(
 
 
 @router.get(
-    "/guilds/{guild_id}/characters/{qq_number}",
+    "/guilds/{guild_qq_number}/characters/{qq_number}",
     response_model=ResponseModel[BotCharacterListResponse]
 )
 async def get_user_characters(
-    guild_id: int,
+    guild_qq_number: str,
     qq_number: str,
     bot: Bot = Depends(get_current_bot),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    查看指定用户的角色列表
+    查看指定用户的角色列表（通过QQ群号）
     """
     # 验证Bot权限
-    await verify_bot_guild_access(bot, guild_id, db)
+    guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
     # 查找用户
     user_result = await db.execute(

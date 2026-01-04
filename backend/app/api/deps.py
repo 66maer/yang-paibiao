@@ -217,17 +217,17 @@ async def get_current_bot(
     return bot
 
 
-async def verify_bot_guild_access(
+async def verify_bot_guild_access_by_qq(
     bot: Bot,
-    guild_id: int,
+    guild_qq_number: str,
     db: AsyncSession
 ) -> Guild:
     """
-    验证Bot对指定群组的访问权限
+    验证Bot对指定QQ群的访问权限（通过QQ群号）
 
     Args:
         bot: Bot对象
-        guild_id: 群组ID
+        guild_qq_number: QQ群号
         db: 数据库会话
 
     Returns:
@@ -236,11 +236,26 @@ async def verify_bot_guild_access(
     Raises:
         HTTPException: 权限验证失败
     """
+    # 先根据 QQ 群号查询 guild
+    guild_result = await db.execute(
+        select(Guild).where(
+            Guild.guild_qq_number == guild_qq_number,
+            Guild.deleted_at.is_(None)
+        )
+    )
+    guild = guild_result.scalar_one_or_none()
+
+    if not guild:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"QQ群 {guild_qq_number} 未注册"
+        )
+
     # 检查Bot是否被授权访问该群组
     result = await db.execute(
         select(BotGuild).where(
             BotGuild.bot_id == bot.id,
-            BotGuild.guild_id == guild_id
+            BotGuild.guild_id == guild.id
         )
     )
     bot_guild = result.scalar_one_or_none()
@@ -248,19 +263,7 @@ async def verify_bot_guild_access(
     if not bot_guild:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Bot未被授权访问群组 {guild_id}"
-        )
-
-    # 检查群组是否存在
-    guild_result = await db.execute(
-        select(Guild).where(Guild.id == guild_id, Guild.deleted_at.is_(None))
-    )
-    guild = guild_result.scalar_one_or_none()
-
-    if not guild:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="群组不存在"
+            detail=f"Bot未被授权访问QQ群 {guild_qq_number}"
         )
 
     return guild

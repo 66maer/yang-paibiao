@@ -12,10 +12,10 @@ class APIError(Exception):
 class APIClient:
     """后端 API 客户端"""
 
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, guild_id: Optional[int] = None):
         self.base_url = config.backend_api_url
         self.api_key = config.backend_api_key
-        self.guild_id = config.guild_id
+        self.guild_id = guild_id or config.guild_id
         self.timeout = config.api_timeout
 
         # 延迟导入避免循环依赖
@@ -99,31 +99,36 @@ class APIClient:
                 raise APIError(f"未知错误: {str(e)}")
 
 
-# 单例模式
-_client: Optional[APIClient] = None
+# 全局配置
+_config: Optional[Config] = None
 
 
 def init_api_client(config: Config):
     """
-    初始化 API 客户端
+    初始化 API 客户端配置
 
     Args:
         config: 配置对象
     """
-    global _client
-    _client = APIClient(config)
+    global _config
+    _config = config
 
 
-def get_api_client() -> APIClient:
+def get_api_client(guild_id: Optional[int] = None) -> APIClient:
     """
     获取 API 客户端实例
+
+    Args:
+        guild_id: 群组 ID（从事件中获取）
 
     Returns:
         APIClient: API 客户端实例
 
     Raises:
-        RuntimeError: 如果客户端未初始化
+        RuntimeError: 如果配置未初始化
     """
-    if _client is None:
+    if _config is None:
         raise RuntimeError("API 客户端未初始化，请先调用 init_api_client()")
-    return _client
+
+    # 每次创建新的客户端实例，使用传入的 guild_id
+    return APIClient(_config, guild_id=guild_id)

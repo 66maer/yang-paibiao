@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.database import get_db
-from app.api.deps import get_current_bot, verify_bot_guild_access
+from app.api.deps import get_current_bot, verify_bot_guild_access_by_qq
 from app.models.bot import Bot
 from app.models.user import User
 from app.models.team import Team
@@ -21,28 +21,28 @@ router = APIRouter()
 
 
 @router.post(
-    "/guilds/{guild_id}/teams/{team_id}/signups",
+    "/guilds/{guild_qq_number}/teams/{team_id}/signups",
     response_model=ResponseModel[SignupOut]
 )
 async def create_signup(
-    guild_id: int,
+    guild_qq_number: str,
     team_id: int,
     payload: BotSignupRequest,
     bot: Bot = Depends(get_current_bot),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    提交报名
+    提交报名（通过QQ群号）
 
     - 如果提供character_id，优先使用角色信息
     - 如果未提供character_id，必须提供character_name和xinfa
     """
     # 验证Bot权限
-    await verify_bot_guild_access(bot, guild_id, db)
+    guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
     # 验证团队存在
     team_result = await db.execute(
-        select(Team).where(Team.id == team_id, Team.guild_id == guild_id)
+        select(Team).where(Team.id == team_id, Team.guild_id == guild.id)
     )
     team = team_result.scalar_one_or_none()
 
@@ -133,24 +133,24 @@ async def create_signup(
 
 
 @router.delete(
-    "/guilds/{guild_id}/teams/{team_id}/signups",
+    "/guilds/{guild_qq_number}/teams/{team_id}/signups",
     response_model=ResponseModel
 )
 async def cancel_signup(
-    guild_id: int,
+    guild_qq_number: str,
     team_id: int,
     payload: BotCancelSignupRequest,
     bot: Bot = Depends(get_current_bot),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    取消报名
+    取消报名（通过QQ群号）
 
     - 通过QQ号查找用户
     - 软删除报名记录（设置cancelled_at）
     """
     # 验证Bot权限
-    await verify_bot_guild_access(bot, guild_id, db)
+    guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
     # 查找用户
     user_result = await db.execute(
@@ -194,28 +194,28 @@ async def cancel_signup(
 
 
 @router.get(
-    "/guilds/{guild_id}/teams/{team_id}/signups/{qq_number}",
+    "/guilds/{guild_qq_number}/teams/{team_id}/signups/{qq_number}",
     response_model=ResponseModel[BotUserSignupsResponse]
 )
 async def get_user_signups(
-    guild_id: int,
+    guild_qq_number: str,
     team_id: int,
     qq_number: str,
     bot: Bot = Depends(get_current_bot),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    查询用户在某个团队的所有报名记录
+    查询用户在某个团队的所有报名记录（通过QQ群号）
 
     - 返回该用户在指定团队的所有有效（未取消）报名
     - 用于取消报名时的多报名场景处理
     """
     # 验证Bot权限
-    await verify_bot_guild_access(bot, guild_id, db)
+    guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
     # 验证团队存在
     team_result = await db.execute(
-        select(Team).where(Team.id == team_id, Team.guild_id == guild_id)
+        select(Team).where(Team.id == team_id, Team.guild_id == guild.id)
     )
     team = team_result.scalar_one_or_none()
 
