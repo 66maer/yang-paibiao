@@ -58,7 +58,7 @@ async def handle_view_teams(event: GroupMessageEvent, plain_text: str = EventPla
             try:
                 index = int(args_text)
                 team = await team_service.get_team_by_index(teams, index)
-                msg = MessageBuilder.build_team_detail(team, index)
+                msg = await MessageBuilder.build_team_detail(team, index)
                 await view_teams.finish(msg)
             except ValueError as e:
                 msg = MessageBuilder.build_error_message(str(e))

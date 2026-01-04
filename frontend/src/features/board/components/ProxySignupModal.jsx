@@ -11,9 +11,6 @@ import { getMemberNickname } from "@/utils/memberUtils";
  * 代报名弹窗
  */
 export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, team, user, onSuccess }) {
-  console.log("ProxySignupModal - user:", user);
-  console.log("ProxySignupModal - user.id:", user?.id);
-
   const [memberId, setMemberId] = useState("");
   const [playerName, setPlayerName] = useState(""); // 改为状态，支持手动输入
   const [characterName, setCharacterName] = useState("");

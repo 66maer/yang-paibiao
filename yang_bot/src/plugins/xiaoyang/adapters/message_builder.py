@@ -1,7 +1,13 @@
 """消息构建器 - 负责格式化各种响应消息"""
 from typing import List
-from nonebot.adapters.onebot.v11 import Message
+import base64
+from nonebot.adapters.onebot.v11 import Message, MessageSegment
+from nonebot import logger
 from ..api.models import TeamInfo
+from ..services.screenshot_service import screenshot_service
+from ..config import Config
+
+config = Config()
 
 
 class MessageBuilder:
@@ -37,28 +43,47 @@ class MessageBuilder:
         return Message("".join(msg_parts))
 
     @staticmethod
-    def build_team_detail(team: TeamInfo, index: int) -> Message:
+    async def build_team_detail(team: TeamInfo, index: int) -> Message:
         """
-        构建团队详情消息（暂时返回文本，后续改为图片）
+        构建团队详情消息（图片形式）
 
         Args:
             team: 团队信息
             index: 团队序号
 
         Returns:
-            Message: 格式化的消息
+            Message: 图片消息
         """
-        time_str = team.team_time.strftime("%Y-%m-%d %H:%M")
+        try:
+            # 使用截图服务获取团队图片
+            logger.info(f"正在生成团队 {team.id} 的截图...")
 
-        return Message(
-            f"【团队{index}】详细信息:\n"
-            f"标题: {team.title}\n"
-            f"副本: {team.dungeon}\n"
-            f"时间: {time_str}\n"
-            f"人数: {team.max_members}人\n"
-            f"状态: {team.status}\n"
-            f"\n(图片展示功能开发中...)"
-        )
+            # 调用截图服务
+            image_bytes = await screenshot_service.capture_team_image(
+                guild_id=config.guild_id,
+                team_id=team.id,
+                updated_at=team.created_at.isoformat(),  # 使用创建时间作为缓存键
+            )
+
+            # 将图片转换为 base64
+            image_base64 = base64.b64encode(image_bytes).decode()
+
+            # 构建图片消息
+            return Message(MessageSegment.image(f"base64://{image_base64}"))
+
+        except Exception as e:
+            logger.error(f"生成团队截图失败: {e}")
+            # 降级到文本消息
+            time_str = team.team_time.strftime("%Y-%m-%d %H:%M")
+            return Message(
+                f"【团队{index}】详细信息:\n"
+                f"标题: {team.title}\n"
+                f"副本: {team.dungeon}\n"
+                f"时间: {time_str}\n"
+                f"人数: {team.max_members}人\n"
+                f"状态: {team.status}\n"
+                f"\n(图片生成失败，请稍后重试)"
+            )
 
     @staticmethod
     def build_error_message(error_msg: str) -> Message:

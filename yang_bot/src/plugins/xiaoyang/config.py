@@ -21,6 +21,12 @@ class Config(BaseSettings):
         description="Bot API Key"
     )
 
+    # 前端配置
+    frontend_url: str = Field(
+        default="http://localhost:5173",
+        description="前端页面地址"
+    )
+
     # 群组配置
     guild_id: int = Field(
         default=0,

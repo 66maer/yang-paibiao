@@ -31,6 +31,7 @@ import GoldRecordsPage from "@/pages/gold/GoldRecordsPage";
 import RankingPage from "@/pages/RankingPage";
 import HistoryPage from "@/pages/board/HistoryPage";
 import ToolsPage from "@/pages/ToolsPage";
+import TeamImagePage from "@/pages/bot/TeamImagePage";
 
 function AppContent() {
   const navigate = useNavigate();
@@ -46,6 +47,9 @@ function AppContent() {
 
         {/* 组件调试页面（无需登录） */}
         <Route path="/debug/team-board" element={<DebugTeamBoardPage />} />
+
+        {/* Bot专用页面（无需登录） */}
+        <Route path="/bot/guilds/:guild_id/teams/:team_id" element={<TeamImagePage />} />
 
         {/* 管理员登录页面 */}
         <Route path="/admin/login" element={<AdminLoginPage />} />

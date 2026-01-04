@@ -105,6 +105,44 @@ class BotTeamSimple(BaseModel):
         from_attributes = True
 
 
+class BotSignupDetail(BaseModel):
+    """报名详情"""
+    id: int = Field(..., description="报名ID")
+    submitter_id: int = Field(..., description="提交者ID")
+    submitter_name: str = Field(..., description="提交者显示名称")
+    signup_user_id: Optional[int] = Field(None, description="报名用户ID")
+    signup_info: dict = Field(..., description="报名信息")
+    priority: int = Field(..., description="优先级")
+    is_rich: bool = Field(..., description="是否老板")
+    is_proxy: bool = Field(..., description="是否代报")
+    slot_position: Optional[int] = Field(None, description="坑位位置")
+    presence_status: Optional[str] = Field(None, description="到场状态")
+    created_at: datetime = Field(..., description="报名时间")
+
+
+class BotTeamDetail(BaseModel):
+    """团队详细信息（用于截图）"""
+    id: int = Field(..., description="团队ID")
+    guild_id: int = Field(..., description="群组ID")
+    creator_id: int = Field(..., description="创建者ID")
+    creator_name: str = Field(..., description="创建者显示名称")
+    title: str = Field(..., description="团队标题")
+    team_time: datetime = Field(..., description="开团时间")
+    dungeon: str = Field(..., description="副本名称")
+    max_members: int = Field(..., description="最大成员数")
+    is_xuanjing_booked: bool = Field(..., description="是否预定玄晶")
+    is_yuntie_booked: bool = Field(..., description="是否预定陨铁")
+    is_hidden: bool = Field(..., description="是否隐藏")
+    is_locked: bool = Field(..., description="是否锁定")
+    status: str = Field(..., description="状态")
+    notice: Optional[str] = Field(None, description="团队告示")
+    rules: List[dict] = Field(..., description="团队规则")
+    slot_view: Optional[List[int]] = Field(None, description="坑位视图")
+    signups: List[BotSignupDetail] = Field(default=[], description="报名列表")
+    created_at: datetime = Field(..., description="创建时间")
+    updated_at: datetime = Field(..., description="更新时间")
+
+
 # ============ 报名管理 ============
 
 class BotSignupRequest(BaseModel):
