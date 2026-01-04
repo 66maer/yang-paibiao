@@ -5,7 +5,6 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.api.deps import get_current_bot, verify_bot_guild_access_by_qq
@@ -65,12 +64,19 @@ async def get_open_teams(
         cancelled_count = sum(1 for s in all_signups if s.cancelled_at is not None)
         active_count = total_count - cancelled_count
         
-        # 计算最新变更时间（团队更新时间 vs 最新报名创建时间）
+        # 计算最新变更时间（团队更新时间 vs 最新报名创建时间 vs 最新取消时间）
         latest_change = team.updated_at
         if all_signups:
             latest_signup_time = max(s.created_at for s in all_signups)
             if latest_signup_time > latest_change:
                 latest_change = latest_signup_time
+
+            # 考虑取消报名的时间
+            cancelled_signups = [s for s in all_signups if s.cancelled_at is not None]
+            if cancelled_signups:
+                latest_cancel_time = max(s.cancelled_at for s in cancelled_signups)
+                if latest_cancel_time > latest_change:
+                    latest_change = latest_cancel_time
         
         team_list.append(
             BotTeamSimple(
@@ -216,12 +222,19 @@ async def get_team_for_screenshot(
     cancelled_count = sum(1 for s in all_signups if s.cancelled_at is not None)
     active_count = total_count - cancelled_count
     
-    # 计算最新变更时间（团队更新时间 vs 最新报名创建时间）
+    # 计算最新变更时间（团队更新时间 vs 最新报名创建时间 vs 最新取消时间）
     latest_change = team.updated_at
     if all_signups:
         latest_signup_time = max(s.created_at for s in all_signups)
         if latest_signup_time > latest_change:
             latest_change = latest_signup_time
+
+        # 考虑取消报名的时间
+        cancelled_signups = [s for s in all_signups if s.cancelled_at is not None]
+        if cancelled_signups:
+            latest_cancel_time = max(s.cancelled_at for s in cancelled_signups)
+            if latest_cancel_time > latest_change:
+                latest_change = latest_cancel_time
     
     # 构建团队详情响应
     team_detail = BotTeamDetail(

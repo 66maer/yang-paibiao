@@ -58,7 +58,14 @@ class ScreenshotService:
             self._browser = None
             logger.info("Playwright 浏览器已关闭")
 
-    def _get_cache_key(self, guild_id: str, team_id: int, cache_timestamp: str) -> str:
+    def _get_cache_key(
+        self,
+        guild_id: str,
+        team_id: int,
+        cache_timestamp: str,
+        signup_count: Optional[int] = None,
+        total_signup_count: Optional[int] = None
+    ) -> str:
         """
         生成缓存键
 
@@ -66,11 +73,18 @@ class ScreenshotService:
             guild_id: QQ群号
             team_id: 团队ID
             cache_timestamp: 缓存时间戳（ISO格式字符串）
+            signup_count: 有效报名人数（可选，用于增强缓存key）
+            total_signup_count: 总报名人数（可选，用于增强缓存key）
 
         Returns:
             缓存键（文件名）
         """
+        # 构建缓存key字符串，包含报名统计数据以提高缓存准确性
         key_str = f"{guild_id}_{team_id}_{cache_timestamp}"
+        if signup_count is not None:
+            key_str += f"_s{signup_count}"
+        if total_signup_count is not None:
+            key_str += f"_t{total_signup_count}"
         hash_value = hashlib.md5(key_str.encode()).hexdigest()
         return f"team_{team_id}_{hash_value}.png"
 
@@ -79,7 +93,12 @@ class ScreenshotService:
         return self.cache_dir / cache_key
 
     async def capture_team_image(
-        self, guild_id: str, team_id: int, cache_timestamp: Optional[str] = None
+        self,
+        guild_id: str,
+        team_id: int,
+        cache_timestamp: Optional[str] = None,
+        signup_count: Optional[int] = None,
+        total_signup_count: Optional[int] = None
     ) -> bytes:
         """
         截取团队图片
@@ -88,6 +107,8 @@ class ScreenshotService:
             guild_id: QQ群号
             team_id: 团队ID
             cache_timestamp: 缓存时间戳（可选，用于缓存）
+            signup_count: 有效报名人数（可选，用于增强缓存key）
+            total_signup_count: 总报名人数（可选，用于增强缓存key）
 
         Returns:
             PNG图片的字节数据
@@ -97,7 +118,9 @@ class ScreenshotService:
         """
         # 检查缓存
         if cache_timestamp:
-            cache_key = self._get_cache_key(guild_id, team_id, cache_timestamp)
+            cache_key = self._get_cache_key(
+                guild_id, team_id, cache_timestamp, signup_count, total_signup_count
+            )
             cache_path = self._get_cache_path(cache_key)
 
             if cache_path.exists():
@@ -134,6 +157,11 @@ class ScreenshotService:
 
             # 保存缓存
             if cache_timestamp:
+                # 重新生成缓存key和路径（确保与检查缓存时使用相同的参数）
+                cache_key = self._get_cache_key(
+                    guild_id, team_id, cache_timestamp, signup_count, total_signup_count
+                )
+                cache_path = self._get_cache_path(cache_key)
                 cache_path.write_bytes(screenshot)
                 logger.info(f"已保存缓存: {cache_path}")
 

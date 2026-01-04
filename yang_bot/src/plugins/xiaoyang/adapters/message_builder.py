@@ -64,10 +64,13 @@ class MessageBuilder:
 
             # 调用截图服务（使用 QQ 群号，而不是内部 guild_id）
             # 使用后端提供的 latest_change_at 作为缓存时间戳
+            # 同时传递报名统计数据，增强缓存key的准确性
             image_bytes = await screenshot_service.capture_team_image(
                 guild_id=guild_qq_number,
                 team_id=team.id,
                 cache_timestamp=team.latest_change_at.isoformat(),
+                signup_count=team.signup_count,
+                total_signup_count=team.total_signup_count,
             )
 
             # 将图片转换为 base64
