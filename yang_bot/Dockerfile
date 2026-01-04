@@ -30,10 +30,30 @@ ENV TZ=Asia/Shanghai \
     MAX_WORKERS=1 \
     ENVIRONMENT=production
 
-# 安装运行时依赖
+# 安装运行时依赖（包括 Playwright 所需的系统库）
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+    curl \
+    # Playwright Chromium 依赖
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    libatspi2.0-0 \
+    libxshmfence1 \
+    fonts-liberation \
+    libappindicator3-1 \
+    xdg-utils \
+    && rm -rf /var/lib/apt/lists/*
 
 # 复制启动脚本和配置
 COPY ./docker/gunicorn_conf.py ./docker/start.sh /
@@ -50,6 +70,9 @@ COPY ./pyproject.toml /app/
 # 安装 Python 依赖
 RUN pip install --no-cache-dir gunicorn uvicorn[standard] nonebot2 && \
     pip install --no-cache-dir -e .
+
+# 安装 Playwright 浏览器
+RUN playwright install chromium --with-deps
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
