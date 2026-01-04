@@ -50,20 +50,44 @@ async def get_open_teams(
     )
     teams = result.scalars().all()
 
-    # 转换为BotTeamSimple
-    team_list = [
-        BotTeamSimple(
-            id=team.id,
-            guild_id=guild.id,
-            title=team.title,
-            team_time=team.team_time,
-            dungeon=team.dungeon,
-            max_members=team.max_members,
-            status=team.status,
-            created_at=team.created_at
+    # 为每个团队查询报名统计
+    team_list = []
+    for team in teams:
+        # 查询该团队的所有报名（包括已取消的）
+        signup_result = await db.execute(
+            select(Signup)
+            .where(Signup.team_id == team.id)
         )
-        for team in teams
-    ]
+        all_signups = signup_result.scalars().all()
+        
+        # 统计报名情况
+        total_count = len(all_signups)
+        cancelled_count = sum(1 for s in all_signups if s.cancelled_at is not None)
+        active_count = total_count - cancelled_count
+        
+        # 计算最新变更时间（团队更新时间 vs 最新报名创建时间）
+        latest_change = team.updated_at
+        if all_signups:
+            latest_signup_time = max(s.created_at for s in all_signups)
+            if latest_signup_time > latest_change:
+                latest_change = latest_signup_time
+        
+        team_list.append(
+            BotTeamSimple(
+                id=team.id,
+                guild_id=guild.id,
+                title=team.title,
+                team_time=team.team_time,
+                dungeon=team.dungeon,
+                max_members=team.max_members,
+                status=team.status,
+                created_at=team.created_at,
+                signup_count=active_count,
+                cancelled_count=cancelled_count,
+                total_signup_count=total_count,
+                latest_change_at=latest_change
+            )
+        )
 
     return ResponseModel(data=team_list)
 
@@ -159,6 +183,25 @@ async def get_team_for_screenshot(
             created_at=signup.created_at
         ))
 
+    # 查询该团队的所有报名（用于统计）
+    all_signups_result = await db.execute(
+        select(Signup)
+        .where(Signup.team_id == team_id)
+    )
+    all_signups = all_signups_result.scalars().all()
+    
+    # 统计报名情况
+    total_count = len(all_signups)
+    cancelled_count = sum(1 for s in all_signups if s.cancelled_at is not None)
+    active_count = total_count - cancelled_count
+    
+    # 计算最新变更时间（团队更新时间 vs 最新报名创建时间）
+    latest_change = team.updated_at
+    if all_signups:
+        latest_signup_time = max(s.created_at for s in all_signups)
+        if latest_signup_time > latest_change:
+            latest_change = latest_signup_time
+    
     # 构建团队详情响应
     team_detail = BotTeamDetail(
         id=team.id,
@@ -179,7 +222,11 @@ async def get_team_for_screenshot(
         slot_view=team.slot_view,
         signups=signup_list,
         created_at=team.created_at,
-        updated_at=team.updated_at
+        updated_at=team.updated_at,
+        signup_count=active_count,
+        cancelled_count=cancelled_count,
+        total_signup_count=total_count,
+        latest_change_at=latest_change
     )
 
     return ResponseModel(data=team_detail)

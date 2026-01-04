@@ -58,19 +58,19 @@ class ScreenshotService:
             self._browser = None
             logger.info("Playwright 浏览器已关闭")
 
-    def _get_cache_key(self, guild_id: str, team_id: int, updated_at: str) -> str:
+    def _get_cache_key(self, guild_id: str, team_id: int, cache_timestamp: str) -> str:
         """
         生成缓存键
 
         Args:
             guild_id: QQ群号
             team_id: 团队ID
-            updated_at: 更新时间（ISO格式字符串）
+            cache_timestamp: 缓存时间戳（ISO格式字符串）
 
         Returns:
             缓存键（文件名）
         """
-        key_str = f"{guild_id}_{team_id}_{updated_at}"
+        key_str = f"{guild_id}_{team_id}_{cache_timestamp}"
         hash_value = hashlib.md5(key_str.encode()).hexdigest()
         return f"team_{team_id}_{hash_value}.png"
 
@@ -79,7 +79,7 @@ class ScreenshotService:
         return self.cache_dir / cache_key
 
     async def capture_team_image(
-        self, guild_id: str, team_id: int, updated_at: Optional[str] = None
+        self, guild_id: str, team_id: int, cache_timestamp: Optional[str] = None
     ) -> bytes:
         """
         截取团队图片
@@ -87,7 +87,7 @@ class ScreenshotService:
         Args:
             guild_id: QQ群号
             team_id: 团队ID
-            updated_at: 团队更新时间（可选，用于缓存）
+            cache_timestamp: 缓存时间戳（可选，用于缓存）
 
         Returns:
             PNG图片的字节数据
@@ -96,8 +96,8 @@ class ScreenshotService:
             Exception: 截图失败时抛出异常
         """
         # 检查缓存
-        if updated_at:
-            cache_key = self._get_cache_key(guild_id, team_id, updated_at)
+        if cache_timestamp:
+            cache_key = self._get_cache_key(guild_id, team_id, cache_timestamp)
             cache_path = self._get_cache_path(cache_key)
 
             if cache_path.exists():
@@ -133,7 +133,7 @@ class ScreenshotService:
             logger.info(f"截图成功，大小: {len(screenshot)} bytes")
 
             # 保存缓存
-            if updated_at:
+            if cache_timestamp:
                 cache_path.write_bytes(screenshot)
                 logger.info(f"已保存缓存: {cache_path}")
 

@@ -101,6 +101,12 @@ class BotTeamSimple(BaseModel):
     max_members: int = Field(..., description="最大成员数")
     status: str = Field(..., description="状态")
     created_at: datetime = Field(..., description="创建时间")
+    # 报名统计
+    signup_count: int = Field(0, description="当前报名人数")
+    cancelled_count: int = Field(0, description="已取消报名人数")
+    total_signup_count: int = Field(0, description="总报名数（包含已取消）")
+    # 缓存用时间戳（团队更新时间和最新报名时间的最大值）
+    latest_change_at: datetime = Field(..., description="最新变更时间")
 
     class Config:
         from_attributes = True
@@ -142,6 +148,12 @@ class BotTeamDetail(BaseModel):
     signups: List[BotSignupDetail] = Field(default=[], description="报名列表")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
+    # 报名统计
+    signup_count: int = Field(0, description="当前报名人数")
+    cancelled_count: int = Field(0, description="已取消报名人数")
+    total_signup_count: int = Field(0, description="总报名数（包含已取消）")
+    # 缓存用时间戳（团队更新时间和最新报名时间的最大值）
+    latest_change_at: datetime = Field(..., description="最新变更时间")
 
 
 # ============ 报名管理 ============

@@ -14,6 +14,12 @@ class TeamInfo(BaseModel):
     max_members: int
     status: str
     created_at: datetime
+    # 报名统计
+    signup_count: int = 0
+    cancelled_count: int = 0
+    total_signup_count: int = 0
+    # 最新变更时间（用于缓存）
+    latest_change_at: datetime
 
 
 class SignupRequest(BaseModel):

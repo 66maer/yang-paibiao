@@ -29,11 +29,17 @@ class MessageBuilder:
             # 格式化时间
             time_str = team.team_time.strftime("%m-%d %H:%M")
 
+            # 构建报名信息
+            signup_info = f"{team.signup_count}"
+            if team.cancelled_count > 0:
+                signup_info += f"(-{team.cancelled_count})"
+            signup_info += f"/{team.max_members}"
+
             msg_parts.append(
                 f"\n【{idx}】{team.title}\n"
                 f"   副本: {team.dungeon}\n"
                 f"   时间: {time_str}\n"
-                f"   人数: {team.max_members}人"
+                f"   人数: {signup_info}人"
             )
 
         msg_parts.append("\n\n回复 '查看团队 序号' 查看详情")
@@ -57,10 +63,11 @@ class MessageBuilder:
             logger.info(f"正在生成团队 {team.id} 的截图...")
 
             # 调用截图服务（使用 QQ 群号，而不是内部 guild_id）
+            # 使用后端提供的 latest_change_at 作为缓存时间戳
             image_bytes = await screenshot_service.capture_team_image(
                 guild_id=guild_qq_number,
                 team_id=team.id,
-                updated_at=team.created_at.isoformat(),  # 使用创建时间作为缓存键
+                cache_timestamp=team.latest_change_at.isoformat(),
             )
 
             # 将图片转换为 base64
