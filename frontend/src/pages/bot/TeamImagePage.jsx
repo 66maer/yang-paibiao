@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import axios from "axios";
 import TeamBoard from "@/features/board/components/TeamBoard";
-import { buildEmptyRules } from "@/utils/slotAllocation";
+import { buildEmptyRules, allocateSlots } from "@/utils/slotAllocation";
 import { transformSignups } from "@/utils/signupTransform";
 
 /**
@@ -63,8 +63,9 @@ export default function TeamImagePage() {
     const signupList = transformSignups(teamData.signups || []);
     const rules = teamData.rules && teamData.rules.length > 0 ? teamData.rules : buildEmptyRules();
 
-    // 候补列表：未分配坑位的报名
-    const waitList = signupList.filter(s => s.slot_position === null || s.slot_position === undefined);
+    // 候补列表：通过 allocateSlots 计算
+    const allocation = allocateSlots(rules, signupList);
+    const waitList = allocation.waitlist || [];
 
     return { teamTime, signupList, rules, waitList };
   }, [teamData]);
