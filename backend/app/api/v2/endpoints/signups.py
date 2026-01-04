@@ -299,8 +299,8 @@ async def list_signups(
     db: AsyncSession = Depends(get_db)
 ):
     """获取报名列表（含历史）"""
-    # 验证团队访问权限，需要管理员权限
-    await _verify_team_access(db, guild_id, team_id, current_user, require_admin=True)
+    # 验证团队访问权限，普通成员也可以查看报名列表
+    await _verify_team_access(db, guild_id, team_id, current_user, require_admin=False)
     
     # 获取所有报名（包括已取消的）
     result = await db.execute(
