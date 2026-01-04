@@ -75,4 +75,7 @@ class SignupsEndpoint:
             "GET",
             f"/api/v2/bot/guilds/{self.client.guild_id}/teams/{team_id}/signups/{qq_number}"
         )
-        return [SignupInfo(**signup) for signup in data]
+        # 后端返回格式: {"data": {"signups": [...]}}
+        # 客户端 request 方法已经提取了 data 字段，但需要进一步提取 signups
+        signups_data = data.get("signups", []) if isinstance(data, dict) else []
+        return [SignupInfo(**signup) for signup in signups_data]
