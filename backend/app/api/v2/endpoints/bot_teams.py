@@ -169,12 +169,33 @@ async def get_team_for_screenshot(
                             if submitter_member and submitter_member.group_nickname
                             else submitter_user.nickname)
 
+        # 处理 signup_info 中的玩家昵称替换（优先级：群昵称 > 昵称）
+        enriched_info = dict(signup.signup_info)
+
+        # 如果有 signup_user_id，获取玩家的实时昵称并替换 player_name
+        if signup.signup_user_id:
+            player_result = await db.execute(
+                select(User, GuildMember)
+                .outerjoin(GuildMember,
+                          (GuildMember.user_id == User.id) &
+                          (GuildMember.guild_id == guild.id) &
+                          (GuildMember.left_at.is_(None)))
+                .where(User.id == signup.signup_user_id, User.deleted_at.is_(None))
+            )
+            player_row = player_result.first()
+            if player_row:
+                player_user, player_member = player_row
+                player_name = (player_member.group_nickname
+                              if player_member and player_member.group_nickname
+                              else player_user.nickname)
+                enriched_info["player_name"] = player_name
+
         signup_list.append(BotSignupDetail(
             id=signup.id,
             submitter_id=signup.submitter_id,
             submitter_name=submitter_name,
             signup_user_id=signup.signup_user_id,
-            signup_info=signup.signup_info,
+            signup_info=enriched_info,  # 使用替换后的 info
             priority=signup.priority,
             is_rich=signup.is_rich,
             is_proxy=signup.is_proxy,
