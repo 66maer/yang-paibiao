@@ -94,6 +94,7 @@ class BotMemberSearchResponse(BaseModel):
 class BotTeamSimple(BaseModel):
     """团队简要信息"""
     id: int = Field(..., description="团队ID")
+    guild_id: int = Field(..., description="群组ID")
     title: str = Field(..., description="团队标题")
     team_time: datetime = Field(..., description="开团时间")
     dungeon: str = Field(..., description="副本名称")

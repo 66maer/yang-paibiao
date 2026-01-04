@@ -54,6 +54,7 @@ async def get_open_teams(
     team_list = [
         BotTeamSimple(
             id=team.id,
+            guild_id=guild.id,
             title=team.title,
             team_time=team.team_time,
             dungeon=team.dungeon,
