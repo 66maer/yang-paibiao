@@ -178,10 +178,13 @@ async def get_user_characters(
     characters = [
         BotCharacterSimple(
             id=character.id,
+            user_id=character_player.user_id,
             name=character.name,
             server=character.server,
             xinfa=character.xinfa,
-            relation_type=character_player.relation_type
+            relation_type=character_player.relation_type,
+            priority=character_player.priority,
+            created_at=character.created_at
         )
         for character, character_player in rows
     ]

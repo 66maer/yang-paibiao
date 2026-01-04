@@ -191,10 +191,13 @@ class BotCreateCharacterRequest(BaseModel):
 class BotCharacterSimple(BaseModel):
     """角色简要信息"""
     id: int = Field(..., description="角色ID")
+    user_id: int = Field(..., description="用户ID")
     name: str = Field(..., description="角色名")
     server: str = Field(..., description="服务器")
     xinfa: str = Field(..., description="心法")
     relation_type: str = Field(..., description="关系类型")
+    priority: Optional[int] = Field(None, description="优先级")
+    created_at: Optional[datetime] = Field(None, description="创建时间")
 
     class Config:
         from_attributes = True
