@@ -62,7 +62,7 @@ class MembersEndpoint:
         await self.client.request(
             "PUT",
             f"/api/v2/bot/guilds/{self.client.guild_id}/members/{qq_number}/nickname",
-            json={"new_nickname": new_nickname}
+            json={"group_nickname": new_nickname}
         )
 
     async def search_user_by_nickname(
