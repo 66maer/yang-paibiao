@@ -52,9 +52,16 @@ async def handle_view_teams(event: GroupMessageEvent, plain_text: str = EventPla
             args_text = ""
 
         if not args_text:
-            # 没有参数，返回团队列表
-            msg = MessageBuilder.build_teams_list(teams)
-            await view_teams.finish(msg)
+            # 没有参数
+            if len(teams) == 1:
+                # 只有一个团队，直接返回团队详情
+                team = teams[0]
+                msg = await MessageBuilder.build_team_detail(team, 1, str(guild_id))
+                await view_teams.finish(msg)
+            else:
+                # 多个团队，返回团队列表
+                msg = MessageBuilder.build_teams_list(teams)
+                await view_teams.finish(msg)
         else:
             # 有参数，尝试解析为序号
             try:
