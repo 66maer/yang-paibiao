@@ -27,7 +27,9 @@ class CharactersEndpoint:
             "GET",
             f"/api/v2/bot/guilds/{self.client.guild_id}/characters/{qq_number}"
         )
-        return [CharacterInfo(**char) for char in data]
+        # data 是 BotCharacterListResponse，包含 characters 字段
+        characters = data.get("characters", [])
+        return [CharacterInfo(**char) for char in characters]
 
     async def create_character(
         self,
