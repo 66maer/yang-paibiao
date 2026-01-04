@@ -43,7 +43,8 @@ class ScreenshotService:
                 args=["--no-sandbox", "--disable-dev-shm-usage"]
             )
             self._context = await self._browser.new_context(
-                viewport={"width": 1160, "height": 2000}
+                viewport={"width": 1280, "height": 0},
+                device_scale_factor=1
             )
             logger.info("Playwright 浏览器启动成功")
 
