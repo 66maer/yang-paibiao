@@ -179,7 +179,7 @@ DRIVER=~fastapi
 SUPERUSERS=["$SUPERUSER_QQ"]
 
 # ============================================
-# 小杨机器人配置
+# 小秧机器人配置
 # ============================================
 # 后端 API 地址（Docker 内部网络）
 XIAOYANG__BACKEND_API_URL=http://backend:8000

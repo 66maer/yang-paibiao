@@ -3,7 +3,7 @@ from pydantic import Field
 
 
 class Config(BaseSettings):
-    """小杨机器人配置"""
+    """小秧机器人配置"""
 
     model_config = SettingsConfigDict(
         env_prefix="xiaoyang__",  # 对应环境变量前缀 XIAOYANG__
