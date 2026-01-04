@@ -98,10 +98,12 @@ async def create_character(
         await db.refresh(new_character)
         character_to_return = new_character
     
-    # 加载关联数据
+    # 加载关联数据（预加载players和user，避免N+1查询）
     result = await db.execute(
         select(Character)
-        .options(selectinload(Character.players))
+        .options(
+            selectinload(Character.players).selectinload(CharacterPlayer.user)
+        )
         .where(Character.id == character_to_return.id)
     )
     character_with_players = result.scalar_one()
@@ -148,8 +150,10 @@ async def get_my_characters(
     total_result = await db.execute(count_query)
     total = total_result.scalar()
     
-    # 分页查询并加载关联数据
-    query = query.options(selectinload(Character.players))
+    # 分页查询并加载关联数据（预加载players和user，避免N+1查询）
+    query = query.options(
+        selectinload(Character.players).selectinload(CharacterPlayer.user)
+    )
     query = query.order_by(Character.created_at.desc())
     query = query.offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(query)
@@ -208,8 +212,10 @@ async def get_user_characters(
     total_result = await db.execute(count_query)
     total = total_result.scalar()
     
-    # 分页查询并加载关联数据
-    query = query.options(selectinload(Character.players))
+    # 分页查询并加载关联数据（预加载players和user，避免N+1查询）
+    query = query.options(
+        selectinload(Character.players).selectinload(CharacterPlayer.user)
+    )
     query = query.order_by(Character.created_at.desc())
     query = query.offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(query)
@@ -234,10 +240,12 @@ async def get_character(
     db: AsyncSession = Depends(get_db)
 ):
     """获取角色详情（用户）"""
-    # 查询角色并验证权限
+    # 查询角色并验证权限（预加载players和user，避免N+1查询）
     result = await db.execute(
         select(Character)
-        .options(selectinload(Character.players))
+        .options(
+            selectinload(Character.players).selectinload(CharacterPlayer.user)
+        )
         .join(CharacterPlayer)
         .where(
             Character.id == character_id,
@@ -317,10 +325,12 @@ async def update_character(
     character.updated_at = datetime.utcnow()
     await db.commit()
     
-    # 重新加载关联数据
+    # 重新加载关联数据（预加载players和user，避免N+1查询）
     result = await db.execute(
         select(Character)
-        .options(selectinload(Character.players))
+        .options(
+            selectinload(Character.players).selectinload(CharacterPlayer.user)
+        )
         .where(Character.id == character_id)
     )
     character = result.scalar_one()
@@ -455,8 +465,10 @@ async def list_all_characters(
     total_result = await db.execute(count_query)
     total = total_result.scalar()
     
-    # 分页查询
-    query = query.options(selectinload(Character.players))
+    # 分页查询（预加载players和user，避免N+1查询）
+    query = query.options(
+        selectinload(Character.players).selectinload(CharacterPlayer.user)
+    )
     query = query.order_by(Character.created_at.desc())
     query = query.offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(query)

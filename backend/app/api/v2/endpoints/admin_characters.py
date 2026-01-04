@@ -67,8 +67,10 @@ async def list_all_characters(
     total_result = await db.execute(count_query)
     total = total_result.scalar()
     
-    # 分页查询
-    query = query.options(selectinload(Character.players))
+    # 分页查询（预加载players和user，避免N+1查询）
+    query = query.options(
+        selectinload(Character.players).selectinload(CharacterPlayer.user)
+    )
     query = query.order_by(Character.created_at.desc())
     query = query.offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(query)
