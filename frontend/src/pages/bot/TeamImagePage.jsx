@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { Card, CardBody, CardHeader, Chip, Divider, Spinner } from "@heroui/react";
+import { Card, CardBody, CardHeader, Chip, Divider, Spinner, Tooltip } from "@heroui/react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import axios from "axios";
@@ -11,8 +11,9 @@ import { transformSignups } from "@/utils/signupTransform";
 /**
  * Bot专用团队截图页面
  * - 无需用户登录
- * - 使用API Key验证
+ * - 使用 API Key 验证
  * - 精简展示，专为截图优化
+ * - 样式与 TeamContent 保持一致
  */
 export default function TeamImagePage() {
   const { guild_id, team_id } = useParams();
@@ -54,10 +55,24 @@ export default function TeamImagePage() {
     fetchData();
   }, [guild_id, team_id, apiKey]);
 
+  // 解析团队数据
+  const { teamTime, signupList, rules, waitList } = useMemo(() => {
+    if (!teamData) return { teamTime: null, signupList: [], rules: [], waitList: [] };
+
+    const teamTime = teamData.team_time ? new Date(teamData.team_time) : null;
+    const signupList = transformSignups(teamData.signups || []);
+    const rules = teamData.rules && teamData.rules.length > 0 ? teamData.rules : buildEmptyRules();
+
+    // 候补列表：未分配坑位的报名
+    const waitList = signupList.filter(s => s.slot_position === null || s.slot_position === undefined);
+
+    return { teamTime, signupList, rules, waitList };
+  }, [teamData]);
+
   // 加载状态
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-default-50">
         <Spinner size="lg" label="加载中..." />
       </div>
     );
@@ -66,7 +81,7 @@ export default function TeamImagePage() {
   // 错误状态
   if (error || !teamData) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-default-50">
         <Card className="w-96">
           <CardBody>
             <p className="text-red-500 text-center">{error || "数据加载失败"}</p>
@@ -76,97 +91,117 @@ export default function TeamImagePage() {
     );
   }
 
-  // 解析团队数据
-  const {
-    title,
-    team_time,
-    dungeon,
-    creator_name,
-    notice,
-    is_xuanjing_booked,
-    is_yuntie_booked,
-    is_locked,
-    rules: rawRules,
-    slot_view,
-    signups: rawSignups,
-  } = teamData;
-
-  const teamTime = new Date(team_time);
-  const signupList = transformSignups(rawSignups || []);
-  const rules = rawRules && rawRules.length > 0 ? rawRules : buildEmptyRules();
-
-  // 候补列表（未分配坑位的报名）
-  const waitList = signupList.filter(s => s.slot_position === null || s.slot_position === undefined);
-
   return (
-    <div className="min-h-screen bg-gray-50 p-6" data-screenshot-ready="true">
-      <div className="max-w-[800px] mx-auto space-y-4">
-        {/* 团队信息卡片 */}
-        <Card>
-          <CardHeader className="flex flex-col items-start gap-2 pb-2">
-            <div className="flex items-center justify-between w-full">
-              <h1 className="text-2xl font-bold">{title}</h1>
-              {is_locked && (
-                <Chip color="warning" size="sm" variant="flat">
-                  🔒 已锁定
+    <div className="bg-default-50 p-6" data-screenshot-ready="true">
+      {/* 使用固定宽度容器，避免滑动条 */}
+      <div className="w-full max-w-[1160px] mx-auto">
+        <Card className="w-full">
+          <CardHeader className="flex-col items-start gap-3 pb-4">
+            {/* 标题行 */}
+            <div className="flex items-center gap-3 w-full">
+              {teamData.is_locked && (
+                <Tooltip content="报名已锁定">
+                  <Chip size="lg" variant="flat" color="warning">
+                    🔒
+                  </Chip>
+                </Tooltip>
+              )}
+              <h2 className="text-4xl font-bold text-pink-600 dark:text-pink-400">
+                {teamData.title || "未命名开团"}
+              </h2>
+              {teamData.is_hidden && (
+                <Chip size="lg" variant="flat" color="default">
+                  仅管理员可见
                 </Chip>
               )}
             </div>
-            <div className="flex flex-wrap gap-2 text-sm text-gray-600">
-              <Chip size="sm" variant="flat" color="primary">
-                {format(teamTime, "MM月dd日 HH:mm", { locale: zhCN })}
+
+            {/* 基础信息标签 */}
+            <div className="flex flex-wrap gap-2">
+              {/* 副本 */}
+              <Chip size="lg" variant="flat" color="primary" startContent={<span>🏛️</span>}>
+                {teamData.dungeon || "未指定副本"}
               </Chip>
-              <Chip size="sm" variant="flat">
-                {dungeon}
+
+              {/* 时间 */}
+              {teamTime && (
+                <Chip size="lg" variant="flat" color="secondary" startContent={<span>🕐</span>}>
+                  {format(teamTime, "yyyy-MM-dd HH:mm", { locale: zhCN })}
+                </Chip>
+              )}
+
+              {/* 大铁 */}
+              <Chip
+                size="lg"
+                variant="flat"
+                color={teamData.is_xuanjing_booked ? "danger" : "success"}
+                startContent={<img src="/玄晶.png" alt="玄晶" className="w-5 h-5" />}
+              >
+                {teamData.is_xuanjing_booked ? "大铁已包" : "大铁可拍"}
               </Chip>
-              <Chip size="sm" variant="flat">
-                团长：{creator_name}
+
+              {/* 小铁 */}
+              <Chip
+                size="lg"
+                variant="flat"
+                color={teamData.is_yuntie_booked ? "danger" : "success"}
+                startContent={<img src="/陨铁.png" alt="陨铁" className="w-5 h-5" />}
+              >
+                {teamData.is_yuntie_booked ? "小铁已包" : "小铁可拍"}
               </Chip>
             </div>
           </CardHeader>
 
           <Divider />
 
-          <CardBody className="space-y-4">
-            {/* 预定信息 */}
-            <div className="flex gap-2">
-              {is_xuanjing_booked && (
-                <Chip size="sm" color="secondary" variant="flat">
-                  ✨ 已定玄晶
-                </Chip>
+          <CardBody>
+            <div className="space-y-6">
+              {/* 团队告示 */}
+              {teamData.notice && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-default-600">📢 团队告示</h3>
+                  <div className="p-4 rounded-lg bg-default-100 dark:bg-default-50">
+                    <p className="text-sm text-default-700 dark:text-default-300 whitespace-pre-wrap">
+                      {teamData.notice}
+                    </p>
+                  </div>
+                </div>
               )}
-              {is_yuntie_booked && (
-                <Chip size="sm" color="secondary" variant="flat">
-                  ⚔️ 已定陨铁
-                </Chip>
-              )}
-            </div>
 
-            {/* 团队告示 */}
-            {notice && (
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{notice}</p>
+              {/* 团队面板 */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sm font-semibold text-default-600">👥 团队面板</h3>
+                </div>
+
+                <TeamBoard
+                  rules={rules}
+                  signupList={signupList}
+                  view={teamData.slot_view || []}
+                  mode="view"
+                />
               </div>
-            )}
 
-            {/* 团队面板 */}
-            <div className="bg-white rounded-lg">
-              <TeamBoard
-                rules={rules}
-                signupList={signupList}
-                slotView={slot_view}
-                mode="view"
-                readOnly={true}
-              />
+              {/* 创建信息 */}
+              <div className="text-xs text-default-400 text-right">
+                由 {teamData.creator_name || "未知"} 创建于{" "}
+                {teamData.created_at
+                  ? format(new Date(teamData.created_at), "yyyy-MM-dd HH:mm", {
+                      locale: zhCN,
+                    })
+                  : "未知时间"}
+              </div>
             </div>
           </CardBody>
         </Card>
 
         {/* 候补列表 */}
         {waitList.length > 0 && (
-          <Card>
+          <Card className="w-full mt-4">
             <CardHeader>
-              <h2 className="text-lg font-semibold">候补列表 ({waitList.length})</h2>
+              <h3 className="text-sm font-semibold text-default-600">
+                📋 候补列表 ({waitList.length})
+              </h3>
             </CardHeader>
             <Divider />
             <CardBody>
@@ -174,25 +209,29 @@ export default function TeamImagePage() {
                 {waitList.map((signup, index) => (
                   <div
                     key={signup.id}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                    className="flex items-center justify-between p-3 bg-default-100 rounded-lg"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500">#{index + 1}</span>
-                      <span className="font-medium">{signup.playerName}</span>
-                      <Chip size="sm" variant="flat">
-                        {signup.characterName}
-                      </Chip>
-                      <Chip size="sm" variant="flat" color="primary">
-                        {signup.xinfa}
-                      </Chip>
-                      {signup.isRich && (
-                        <Chip size="sm" color="warning" variant="flat">
-                          老板
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-semibold text-default-500 min-w-[2rem]">
+                        #{index + 1}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{signup.playerName}</span>
+                        <Chip size="sm" variant="flat" color="default">
+                          {signup.characterName || "待定"}
                         </Chip>
-                      )}
+                        <Chip size="sm" variant="flat" color="primary">
+                          {signup.xinfa}
+                        </Chip>
+                        {signup.isRich && (
+                          <Chip size="sm" color="warning" variant="flat">
+                            💰 老板
+                          </Chip>
+                        )}
+                      </div>
                     </div>
                     {signup.isProxy && (
-                      <Chip size="sm" variant="flat" color="default">
+                      <Chip size="sm" variant="flat" color="secondary">
                         {signup.submitterName} 代报
                       </Chip>
                     )}

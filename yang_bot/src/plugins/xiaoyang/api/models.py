@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class TeamInfo(BaseModel):
     """团队信息"""
     id: int
+    guild_id: int
     title: str
     team_time: datetime
     dungeon: str

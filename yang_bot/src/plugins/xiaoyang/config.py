@@ -1,5 +1,6 @@
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, field_validator
 
 
 class Config(BaseSettings):
@@ -28,10 +29,18 @@ class Config(BaseSettings):
     )
 
     # 群组配置
-    guild_id: int = Field(
-        default=0,
+    guild_id: Optional[int] = Field(
+        default=None,
         description="QQ群号(对应后端的guild_id)"
     )
+
+    @field_validator('guild_id', mode='before')
+    @classmethod
+    def validate_guild_id(cls, v):
+        """验证 guild_id，空字符串转为 None"""
+        if v == "" or v is None:
+            return None
+        return int(v)
 
     # 功能开关
     enable_auto_sync_members: bool = Field(

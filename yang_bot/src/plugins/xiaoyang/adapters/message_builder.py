@@ -5,9 +5,6 @@ from nonebot.adapters.onebot.v11 import Message, MessageSegment
 from nonebot import logger
 from ..api.models import TeamInfo
 from ..services.screenshot_service import screenshot_service
-from ..config import Config
-
-config = Config()
 
 
 class MessageBuilder:
@@ -60,7 +57,7 @@ class MessageBuilder:
 
             # 调用截图服务
             image_bytes = await screenshot_service.capture_team_image(
-                guild_id=config.guild_id,
+                guild_id=team.guild_id,
                 team_id=team.id,
                 updated_at=team.created_at.isoformat(),  # 使用创建时间作为缓存键
             )
