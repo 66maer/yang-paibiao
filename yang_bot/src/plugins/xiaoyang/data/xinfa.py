@@ -325,6 +325,41 @@ def get_tank_xinfa_names() -> List[str]:
     return [info["name"] for info in XINFA_INFO.values() if "T" in info["type"]]
 
 
+def get_xinfa_key(text: str) -> Optional[str]:
+    """
+    将心法名称（中文名或昵称）转换为英文key
+
+    Args:
+        text: 心法名称或昵称
+
+    Returns:
+        Optional[str]: 英文key，如果不是心法名则返回 None
+
+    Example:
+        >>> get_xinfa_key("花间游")
+        'huajian'
+        >>> get_xinfa_key("藏剑")
+        'wenshui'
+        >>> get_xinfa_key("KFC")
+        'wenshui'
+        >>> get_xinfa_key("不存在的心法")
+        None
+    """
+    # 首先检查是否本身就是英文key
+    if text in XINFA_INFO:
+        return text
+
+    # 获取标准中文名称
+    standard_name = normalize_xinfa_name(text)
+
+    # 查找对应的英文key
+    for key, info in XINFA_INFO.items():
+        if info["name"] == standard_name:
+            return key
+
+    return None
+
+
 def xinfa_matches(xinfa1: str, xinfa2: str) -> bool:
     """
     判断两个心法名是否指向同一个心法

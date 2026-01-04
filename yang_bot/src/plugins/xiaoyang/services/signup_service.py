@@ -5,6 +5,7 @@ from nonebot.log import logger
 from ..api.client import APIClient, APIError
 from ..api.models import SignupRequest, SignupInfo, CharacterInfo
 from .character_service import CharacterService
+from ..data.xinfa import get_xinfa_key
 
 
 class MultipleCharactersError(Exception):
@@ -158,6 +159,11 @@ class SignupService:
         """
         logger.info(f"通过心法报名: {xinfa}")
 
+        # 转换心法名称为英文key
+        xinfa_key = get_xinfa_key(xinfa)
+        if not xinfa_key:
+            raise ValueError(f"无效的心法名称: {xinfa}")
+
         # 查找该心法的最优先角色
         character = await self.character_service.get_best_character_by_xinfa(
             qq_number, xinfa
@@ -168,7 +174,7 @@ class SignupService:
             request = SignupRequest(
                 qq_number=qq_number,
                 character_id=character.id,
-                xinfa=xinfa,
+                xinfa=xinfa_key,
                 is_rich=is_rich
             )
             logger.info(f"使用已有角色报名: character_id={character.id}, name={character.name}")
@@ -178,7 +184,7 @@ class SignupService:
                 qq_number=qq_number,
                 character_id=None,
                 character_name=None,  # 模糊报名不提供角色名
-                xinfa=xinfa,
+                xinfa=xinfa_key,
                 is_rich=is_rich
             )
             logger.info(f"模糊报名: 无角色ID")
@@ -208,6 +214,11 @@ class SignupService:
         """
         logger.info(f"使用心法+角色名报名: xinfa={xinfa}, character={character_name}")
 
+        # 转换心法名称为英文key
+        xinfa_key = get_xinfa_key(xinfa)
+        if not xinfa_key:
+            raise ValueError(f"无效的心法名称: {xinfa}")
+
         # 查找角色
         character = await self.character_service.find_character_by_name(
             qq_number, character_name
@@ -231,7 +242,7 @@ class SignupService:
                 new_character = await self.character_service.create_character(
                     qq_number=qq_number,
                     name=character_name,
-                    xinfa=xinfa,
+                    xinfa=xinfa_key,
                     server=None  # 后端会自动使用群组服务器
                 )
                 logger.info(f"角色创建成功: character_id={new_character.id}")
@@ -240,7 +251,7 @@ class SignupService:
                 request = SignupRequest(
                     qq_number=qq_number,
                     character_id=new_character.id,
-                    xinfa=xinfa,
+                    xinfa=xinfa_key,
                     is_rich=is_rich
                 )
 
@@ -251,7 +262,7 @@ class SignupService:
                     qq_number=qq_number,
                     character_id=None,
                     character_name=character_name,
-                    xinfa=xinfa,
+                    xinfa=xinfa_key,
                     is_rich=is_rich
                 )
 

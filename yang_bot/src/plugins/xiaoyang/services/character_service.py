@@ -2,7 +2,7 @@
 from typing import List, Optional
 from ..api.client import APIClient
 from ..api.models import CharacterInfo, CharacterCreateRequest
-from ..data.xinfa import xinfa_matches
+from ..data.xinfa import xinfa_matches, get_xinfa_key
 
 
 class CharacterService:
@@ -121,10 +121,15 @@ class CharacterService:
         Returns:
             CharacterInfo: 创建的角色信息
         """
+        # 转换心法名称为英文key
+        xinfa_key = get_xinfa_key(xinfa)
+        if not xinfa_key:
+            raise ValueError(f"无效的心法名称: {xinfa}")
+
         request = CharacterCreateRequest(
             qq_number=qq_number,
             name=name,
-            xinfa=xinfa,
+            xinfa=xinfa_key,
             server=server,
             relation_type=relation_type
         )
