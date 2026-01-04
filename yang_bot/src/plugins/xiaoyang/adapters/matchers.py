@@ -6,6 +6,7 @@ from nonebot.params import CommandArg, EventPlainText
 from nonebot.log import logger
 from nonebot.permission import SUPERUSER
 from nonebot.adapters.onebot.v11.permission import GROUP_OWNER
+from nonebot.exception import FinishedException, PausedException, RejectedException
 
 from ..api.client import get_api_client, APIError
 from ..services.team_service import TeamService
@@ -63,6 +64,10 @@ async def handle_view_teams(event: GroupMessageEvent, plain_text: str = EventPla
                 msg = MessageBuilder.build_error_message(str(e))
                 await view_teams.finish(msg)
 
+    except (FinishedException, PausedException, RejectedException):
+        # 让 NoneBot 的控制流异常正常传播
+        raise
+
     except APIError as e:
         logger.error(f"API 错误: {e}")
         msg = MessageBuilder.build_error_message(f"获取团队列表失败: {e}")
@@ -106,6 +111,10 @@ async def handle_update_nickname(event: GroupMessageEvent, plain_text: str = Eve
 
         msg = MessageBuilder.build_success_message(f"昵称已修改为: {new_nickname}")
         await update_nickname.finish(msg)
+
+    except (FinishedException, PausedException, RejectedException):
+        # 让 NoneBot 的控制流异常正常传播
+        raise
 
     except APIError as e:
         logger.error(f"API 错误: {e}")
@@ -211,6 +220,10 @@ async def handle_signup_message(event: GroupMessageEvent, plain_text: str = Even
                 team.id,
                 intent.params
             )
+
+    except (FinishedException, PausedException, RejectedException):
+        # 让 NoneBot 的控制流异常正常传播
+        raise
 
     except APIError as e:
         logger.error(f"API 错误: {e}")
@@ -484,6 +497,10 @@ async def _handle_cancel_signup(
             msg = Message("".join(msg_parts))
             await matcher.finish(msg)
 
+    except (FinishedException, PausedException, RejectedException):
+        # 让 NoneBot 的控制流异常正常传播
+        raise
+
     except Exception as e:
         logger.exception(f"取消报名失败: {e}")
         msg = MessageBuilder.build_error_message(f"取消报名失败: {str(e)}")
@@ -565,6 +582,10 @@ async def _handle_cancel_signup_select(
         )
         await matcher.finish(msg)
 
+    except (FinishedException, PausedException, RejectedException):
+        # 让 NoneBot 的控制流异常正常传播
+        raise
+
     except Exception as e:
         logger.exception(f"处理取消报名选择失败: {e}")
         msg = MessageBuilder.build_error_message(f"取消报名失败: {str(e)}")
@@ -622,6 +643,10 @@ async def handle_init_members(bot: Bot, event: GroupMessageEvent):
             f"已存在成员: {result['existed']}"
         )
         await init_members.finish(msg)
+
+    except (FinishedException, PausedException, RejectedException):
+        # 让 NoneBot 的控制流异常正常传播
+        raise
 
     except APIError as e:
         logger.error(f"API 错误: {e}")
