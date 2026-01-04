@@ -232,10 +232,25 @@ async def create_signup(
     
     # 判断是否代报
     is_proxy = (
-        payload.signup_user_id is None or 
+        payload.signup_user_id is None or
         payload.signup_user_id != current_user.id
     )
-    
+
+    # 非代报时，检查是否重复报名（同一个 signup_user_id 不能重复）
+    if not is_proxy and payload.signup_user_id is not None:
+        existing_signup = await db.execute(
+            select(Signup).where(
+                Signup.team_id == team_id,
+                Signup.signup_user_id == payload.signup_user_id,
+                Signup.cancelled_at.is_(None)  # 只检查未取消的报名
+            )
+        )
+        if existing_signup.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="您已报名此团队，不能重复报名"
+            )
+
     # 创建报名
     signup = Signup(
         team_id=team_id,
