@@ -175,6 +175,9 @@ class BotCancelSignupRequest(BaseModel):
 class BotSignupInfo(BaseModel):
     """用户报名信息"""
     id: int = Field(..., description="报名ID")
+    team_id: int = Field(..., description="团队ID")
+    submitter_id: int = Field(..., description="提交者ID")
+    signup_user_id: int = Field(..., description="报名用户ID")
     signup_character_id: Optional[int] = Field(None, description="报名角色ID")
     signup_info: dict = Field(..., description="报名信息")
     is_rich: bool = Field(..., description="是否老板")

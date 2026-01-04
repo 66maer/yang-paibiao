@@ -253,6 +253,9 @@ async def get_user_signups(
     signup_list = [
         BotSignupInfo(
             id=signup.id,
+            team_id=signup.team_id,
+            submitter_id=signup.submitter_id,
+            signup_user_id=signup.signup_user_id,
             signup_character_id=signup.signup_character_id,
             signup_info=signup.signup_info,
             is_rich=signup.is_rich,
