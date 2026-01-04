@@ -53,7 +53,7 @@ export default function TeamImagePage() {
     };
 
     fetchData();
-  }, [guild_id, team_id, apiKey]);
+  }, [guild_qq_number, team_id, apiKey]);
 
   // 解析团队数据
   const { teamTime, signupList, rules, waitList } = useMemo(() => {
