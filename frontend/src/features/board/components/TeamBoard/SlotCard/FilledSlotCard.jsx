@@ -44,17 +44,13 @@ const FilledSlotCard = ({ signup, presenceStatus, mode = "view" }) => {
   // 根据主题获取鼠标跟随效果背景
   const getHoverBackground = () => {
     if (xinfa) {
-      const xinfaColorRgba = xinfa.color
-        .replace("rgb(", "rgba(")
-        .replace(")", ", 0.9)");
+      const xinfaColorRgba = xinfa.color.replace("rgb(", "rgba(").replace(")", ", 0.9)");
 
       if (isDark) {
         return `radial-gradient(circle 400px at ${mousePosition.x}px ${mousePosition.y}px, ${xinfaColorRgba}, #0a0a0a 70%)`;
       } else {
         // 亮主题：使用更柔和的径向渐变
-        const xinfaColorLight = xinfa.color
-          .replace("rgb(", "rgba(")
-          .replace(")", ", 0.6)");
+        const xinfaColorLight = xinfa.color.replace("rgb(", "rgba(").replace(")", ", 0.6)");
         return `radial-gradient(circle 400px at ${mousePosition.x}px ${mousePosition.y}px, ${xinfaColorLight}, #fafafa 70%)`;
       }
     }
@@ -108,7 +104,7 @@ const FilledSlotCard = ({ signup, presenceStatus, mode = "view" }) => {
       {/* 内容区域 - 三层布局 */}
       <div className="relative flex flex-col h-full p-2">
         {/* 第一层：心法图标 + 标签 (25%高度) */}
-        <div className="flex items-start justify-between" style={{ height: "25%" }}>
+        <div className="flex items-start justify-between" style={{ height: "30%" }}>
           {/* 左侧：心法图标（占用中间层空间，超出显示） */}
           <div className="relative z-10">
             {xinfa && <img src={`/xinfa/${xinfa.icon}`} alt={xinfa.name} className="w-10 h-10 rounded shadow-lg" />}
@@ -126,9 +122,9 @@ const FilledSlotCard = ({ signup, presenceStatus, mode = "view" }) => {
         </div>
 
         {/* 第二层：用户昵称 + 角色昵称 (55%高度) */}
-        <div className="flex flex-col justify-center items-center text-center" style={{ height: "55%" }}>
+        <div className="flex flex-col justify-center items-center text-center" style={{ height: "60%" }}>
           {/* 用户昵称 - 主要，加粗，字号大 */}
-          <div className="text-2xl font-bold leading-tight mb-1">
+          <div className="text-3xl font-bold leading-tight mb-1">
             {signup.signupName || signup.characterName || "未知"}
           </div>
           {/* 角色昵称 - 次要，字号小 */}
@@ -136,9 +132,9 @@ const FilledSlotCard = ({ signup, presenceStatus, mode = "view" }) => {
         </div>
 
         {/* 第三层：代报名用户昵称 (20%高度) */}
-        <div className="flex items-end justify-end" style={{ height: "20%" }}>
-          {signup.isProxy && signup.proxyUserName && (
-            <div className="text-xs opacity-70">{signup.proxyUserName}（代报）</div>
+        <div className="flex items-end justify-end" style={{ height: "15%" }}>
+          {signup.isProxy && signup.submitterName && (
+            <div className="text-xs opacity-70">{signup.submitterName}（代报）</div>
           )}
         </div>
       </div>
