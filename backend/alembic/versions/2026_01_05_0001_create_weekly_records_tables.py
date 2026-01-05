@@ -1,7 +1,7 @@
 """create weekly records tables
 
-Revision ID: a1b2c3d4e5f6
-Revises: 2026_01_02_0001_restore_system_configs_table
+Revision ID: 2380be5e95a3
+Revises: 2026_01_02_0001
 Create Date: 2026-01-05 10:00:00.000000
 
 """
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a1b2c3d4e5f6'
-down_revision: Union[str, None] = '2026_01_02_0001_restore_system_configs_table'
+revision: str = '2380be5e95a3'
+down_revision: Union[str, None] = '2026_01_02_0001'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
