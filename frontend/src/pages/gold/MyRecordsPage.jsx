@@ -16,6 +16,12 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
+  Table,
+  TableHeader,
+  TableBody,
+  TableColumn,
+  TableRow,
+  TableCell,
 } from "@heroui/react";
 import { showToast } from "@/utils/toast";
 import {
@@ -33,7 +39,9 @@ import { xinfaInfoTable } from "@/config/xinfa";
 const formatGold = (amount) => {
   if (!amount) return "-";
   if (amount >= 10000) {
-    return `${(amount / 10000).toFixed(1)}w`;
+    const bricks = Math.floor(amount / 10000);
+    const remainder = amount % 10000;
+    return remainder > 0 ? `${bricks}砖${remainder}金` : `${bricks}砖`;
   }
   return amount.toLocaleString();
 };
@@ -120,8 +128,8 @@ function RecordCell({ cell, characterId, dungeonName, weekStart, isCurrentWeek, 
   };
 
   return (
-    <td
-      className={`border border-default-200 p-1 text-center min-w-[80px] transition-colors ${
+    <div
+      className={`p-1 text-center min-w-[80px] transition-colors ${
         isCleared ? "bg-success-100 dark:bg-success-900/30" : ""
       }`}
     >
@@ -146,7 +154,7 @@ function RecordCell({ cell, characterId, dungeonName, weekStart, isCurrentWeek, 
             onChange={(e) => setGoldAmount(e.target.value)}
             onBlur={handleGoldSave}
             onKeyDown={handleKeyDown}
-            className="w-16"
+            className="w-24"
             autoFocus
           />
         ) : (
@@ -158,7 +166,7 @@ function RecordCell({ cell, characterId, dungeonName, weekStart, isCurrentWeek, 
           </button>
         )}
       </div>
-    </td>
+    </div>
   );
 }
 
@@ -302,6 +310,10 @@ export default function MyRecordsPage() {
   const [matrixData, setMatrixData] = useState(null);
   const [weekList, setWeekList] = useState([]);
   const [selectedWeek, setSelectedWeek] = useState(null);
+  const [sortDescriptor, setSortDescriptor] = useState({
+    column: "character",
+    direction: "ascending",
+  });
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // 加载周列表
@@ -365,6 +377,34 @@ export default function MyRecordsPage() {
     return matrixData.columns.filter((c) => c.type === "primary").map((c) => c.name);
   }, [matrixData]);
 
+  // 排序后的行数据
+  const sortedRows = useMemo(() => {
+    if (!matrixData?.rows) return [];
+
+    const rows = [...matrixData.rows];
+
+    if (sortDescriptor.column === "character") {
+      rows.sort((a, b) => {
+        // 先按心法排序
+        const xinfaA = a.character.xinfa || "";
+        const xinfaB = b.character.xinfa || "";
+        const xinfaCompare = xinfaA.localeCompare(xinfaB, "zh-CN");
+
+        if (xinfaCompare !== 0) {
+          return sortDescriptor.direction === "ascending" ? xinfaCompare : -xinfaCompare;
+        }
+
+        // 心法相同，再按名称排序
+        const nameA = a.character.name || "";
+        const nameB = b.character.name || "";
+        const nameCompare = nameA.localeCompare(nameB, "zh-CN");
+        return sortDescriptor.direction === "ascending" ? nameCompare : -nameCompare;
+      });
+    }
+
+    return rows;
+  }, [matrixData?.rows, sortDescriptor]);
+
   if (loading && !matrixData) {
     return (
       <div className="container mx-auto py-8">
@@ -388,27 +428,29 @@ export default function MyRecordsPage() {
           </div>
 
           <div className="flex gap-2 items-center">
-            {/* 周选择器 */}
-            <Select
-              size="sm"
-              selectedKeys={selectedWeek ? [selectedWeek] : []}
-              onChange={(e) => setSelectedWeek(e.target.value)}
-              className="w-60"
-              label="选择周"
-            >
-              {weekList.map((week) => (
-                <SelectItem key={week.week_start_date} value={week.week_start_date}>
-                  {week.label} {week.is_current && "(本周)"}
-                </SelectItem>
-              ))}
-            </Select>
-
             {/* 列管理按钮（仅当前周可用） */}
             {matrixData?.is_current_week && (
               <Button size="sm" variant="flat" color="primary" onClick={onOpen}>
                 编辑列
               </Button>
             )}
+            {/* 周选择器 */}
+            <Select
+              size="sm"
+              selectedKeys={selectedWeek ? [selectedWeek] : []}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys)[0];
+                if (selected) setSelectedWeek(selected);
+              }}
+              className="w-65"
+              label="选择周"
+            >
+              {weekList.map((week) => (
+                <SelectItem key={week.week_start_date} textValue={`${week.label}${week.is_current ? " (本周)" : ""}`}>
+                  {week.label} {week.is_current && "(本周)"}
+                </SelectItem>
+              ))}
+            </Select>
           </div>
         </CardHeader>
 
@@ -419,29 +461,39 @@ export default function MyRecordsPage() {
               <p className="text-sm mt-2">请先在角色管理中添加角色</p>
             </div>
           ) : (
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-default-100">
-                  <th className="border border-default-200 p-2 text-left min-w-[120px]">角色</th>
-                  {matrixData.columns.map((col) => (
-                    <th key={col.name} className="border border-default-200 p-2 text-center min-w-[80px]">
-                      <Tooltip content={col.type === "primary" ? "主要副本" : "自定义副本"}>
-                        <span className="text-sm">{col.name}</span>
-                      </Tooltip>
-                    </th>
-                  ))}
-                  <th className="border border-default-200 p-2 text-center min-w-[80px] bg-primary-100 dark:bg-primary-900/30">
-                    行合计
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {matrixData.rows.map((row) => {
+            <Table
+              aria-label="我的记录表格"
+              sortDescriptor={sortDescriptor}
+              onSortChange={setSortDescriptor}
+              classNames={{
+                wrapper: "p-0",
+                table: "border-collapse",
+                th: "border border-default-200 bg-default-100 text-sm",
+                td: "border border-default-200",
+              }}
+            >
+              <TableHeader>
+                <TableColumn key="character" allowsSorting className="text-left min-w-[120px]">
+                  角色
+                </TableColumn>
+                {matrixData.columns.map((col) => (
+                  <TableColumn key={col.name} className="text-center min-w-[80px]">
+                    <Tooltip content={col.type === "primary" ? "主要副本" : "自定义副本"}>
+                      <span>{col.name}</span>
+                    </Tooltip>
+                  </TableColumn>
+                ))}
+                <TableColumn key="row_total" className="text-center min-w-[80px] bg-primary-100 dark:bg-primary-900/30">
+                  行合计
+                </TableColumn>
+              </TableHeader>
+              <TableBody>
+                {sortedRows.map((row) => {
                   const xinfa = getXinfaInfo(row.character.xinfa);
                   return (
-                    <tr key={row.character.id} className="hover:bg-default-50">
+                    <TableRow key={row.character.id} className="hover:bg-default-50">
                       {/* 角色列 */}
-                      <td className="border border-default-200 p-2">
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           {xinfa && <img src={`/xinfa/${xinfa.icon}`} alt={xinfa.name} className="w-6 h-6 rounded" />}
                           <div>
@@ -449,47 +501,48 @@ export default function MyRecordsPage() {
                             <div className="text-xs text-default-400">{row.character.server}</div>
                           </div>
                         </div>
-                      </td>
+                      </TableCell>
 
                       {/* 副本单元格 */}
                       {matrixData.columns.map((col) => (
-                        <RecordCell
-                          key={`${row.character.id}-${col.name}`}
-                          cell={row.cells[col.name] || {}}
-                          characterId={row.character.id}
-                          dungeonName={col.name}
-                          weekStart={selectedWeek}
-                          isCurrentWeek={matrixData.is_current_week}
-                          onUpdate={loadMatrixData}
-                        />
+                        <TableCell key={`${row.character.id}-${col.name}`}>
+                          <RecordCell
+                            cell={row.cells[col.name] || {}}
+                            characterId={row.character.id}
+                            dungeonName={col.name}
+                            weekStart={selectedWeek}
+                            isCurrentWeek={matrixData.is_current_week}
+                            onUpdate={loadMatrixData}
+                          />
+                        </TableCell>
                       ))}
 
                       {/* 行合计 */}
-                      <td className="border border-default-200 p-2 text-center font-medium bg-primary-50 dark:bg-primary-900/20">
+                      <TableCell className="text-center font-medium bg-primary-50 dark:bg-primary-900/20">
                         {formatGold(row.row_total)}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
 
                 {/* 列合计行 */}
-                <tr className="bg-primary-100 dark:bg-primary-900/30 font-medium">
-                  <td className="border border-default-200 p-2">列合计</td>
+                <TableRow key="totals" className="bg-primary-100 dark:bg-primary-900/30 font-medium">
+                  <TableCell>列合计</TableCell>
                   {matrixData.columns.map((col) => (
-                    <td key={`total-${col.name}`} className="border border-default-200 p-2 text-center">
+                    <TableCell key={`total-${col.name}`} className="text-center">
                       {formatGold(matrixData.column_totals[col.name])}
-                    </td>
+                    </TableCell>
                   ))}
-                  <td className="border border-default-200 p-2 text-center text-lg bg-success-100 dark:bg-success-900/30">
+                  <TableCell className="text-center text-lg bg-success-100 dark:bg-success-900/30">
                     <Tooltip content="本周总收入">
                       <span className="text-success-600 dark:text-success-400">
                         {formatGold(matrixData.grand_total)}
                       </span>
                     </Tooltip>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           )}
         </CardBody>
       </Card>

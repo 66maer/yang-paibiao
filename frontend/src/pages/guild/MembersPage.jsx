@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import useSWR from "swr";
 import {
   Card,
@@ -23,6 +23,7 @@ import {
   Spinner,
   Avatar,
   User,
+  Pagination,
 } from "@heroui/react";
 import { getGuildMembers, updateMemberRole, updateMemberNickname } from "@/api/user";
 import { showSuccess, showError, showConfirm } from "@/utils/toast.jsx";
@@ -42,6 +43,11 @@ export default function MembersPage() {
   const [newNickname, setNewNickname] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // 搜索和分页状态
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // 获取成员列表
   const {
     data: membersData,
@@ -54,6 +60,51 @@ export default function MembersPage() {
   );
 
   const members = membersData?.data || [];
+
+  // 角色优先级映射
+  const rolePriority = {
+    owner: 1,
+    helper: 2,
+    member: 3,
+  };
+
+  // 搜索、排序和分页后的成员列表
+  const { filteredMembers, paginatedMembers, totalPages } = useMemo(() => {
+    // 1. 搜索过滤
+    let filtered = members;
+    if (searchKeyword.trim()) {
+      const keyword = searchKeyword.toLowerCase().trim();
+      filtered = members.filter((member) => {
+        const nickname = member.user.nickname?.toLowerCase() || "";
+        const qqNumber = member.user.qq_number?.toString() || "";
+        const groupNickname = member.group_nickname?.toLowerCase() || "";
+        return (
+          nickname.includes(keyword) ||
+          qqNumber.includes(keyword) ||
+          groupNickname.includes(keyword)
+        );
+      });
+    }
+
+    // 2. 排序：先按角色优先级，再按 ID 升序
+    const sorted = [...filtered].sort((a, b) => {
+      const roleDiff = rolePriority[a.role] - rolePriority[b.role];
+      if (roleDiff !== 0) return roleDiff;
+      return a.user_id - b.user_id;
+    });
+
+    // 3. 分页
+    const total = Math.ceil(sorted.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginated = sorted.slice(startIndex, endIndex);
+
+    return {
+      filteredMembers: sorted,
+      paginatedMembers: paginated,
+      totalPages: total,
+    };
+  }, [members, searchKeyword, currentPage, itemsPerPage]);
 
   // 当前用户在该群组的角色
   const currentUserMember = members.find(
@@ -221,8 +272,29 @@ export default function MembersPage() {
           <div className="flex flex-col">
             <p className="text-md font-semibold">群组成员</p>
             <p className="text-small text-default-500">
-              共 {members.length} 名成员
+              {searchKeyword ? (
+                <>
+                  找到 {filteredMembers.length} 名成员，共 {members.length} 名
+                </>
+              ) : (
+                <>共 {members.length} 名成员</>
+              )}
             </p>
+          </div>
+          <div className="w-80">
+            <Input
+              placeholder="搜索成员、QQ号或群昵称..."
+              value={searchKeyword}
+              onValueChange={(value) => {
+                setSearchKeyword(value);
+                setCurrentPage(1); // 搜索时重置到第一页
+              }}
+              isClearable
+              onClear={() => {
+                setSearchKeyword("");
+                setCurrentPage(1);
+              }}
+            />
           </div>
         </CardHeader>
         <CardBody>
@@ -230,22 +302,25 @@ export default function MembersPage() {
             <div className="flex justify-center items-center py-20">
               <Spinner size="lg" />
             </div>
-          ) : members.length === 0 ? (
+          ) : filteredMembers.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-default-500">暂无成员</p>
+              <p className="text-default-500">
+                {searchKeyword ? "未找到匹配的成员" : "暂无成员"}
+              </p>
             </div>
           ) : (
-            <Table aria-label="成员列表">
-              <TableHeader>
-                <TableColumn>成员</TableColumn>
-                <TableColumn>QQ号</TableColumn>
-                <TableColumn>群昵称</TableColumn>
-                <TableColumn>角色</TableColumn>
-                <TableColumn>加入时间</TableColumn>
-                {canManageRoles && <TableColumn>操作</TableColumn>}
-              </TableHeader>
-              <TableBody>
-                {members.map((member) => (
+            <>
+              <Table aria-label="成员列表">
+                <TableHeader>
+                  <TableColumn>成员</TableColumn>
+                  <TableColumn>QQ号</TableColumn>
+                  <TableColumn>群昵称</TableColumn>
+                  <TableColumn>角色</TableColumn>
+                  <TableColumn>加入时间</TableColumn>
+                  {canManageRoles && <TableColumn>操作</TableColumn>}
+                </TableHeader>
+                <TableBody>
+                  {paginatedMembers.map((member) => (
                   <TableRow key={member.id}>
                     <TableCell>
                       <User
@@ -277,7 +352,7 @@ export default function MembersPage() {
                               size="sm"
                               color="primary"
                               variant="flat"
-                              onClick={() => openEditRoleModal(member)}
+                              onPress={() => openEditRoleModal(member)}
                               isDisabled={
                                 currentUserRole === "helper" &&
                                 member.role === "helper" &&
@@ -291,7 +366,7 @@ export default function MembersPage() {
                             size="sm"
                             color="secondary"
                             variant="flat"
-                            onClick={() => openEditNicknameModal(member)}
+                            onPress={() => openEditNicknameModal(member)}
                           >
                             修改群昵称
                           </Button>
@@ -302,6 +377,17 @@ export default function MembersPage() {
                 ))}
               </TableBody>
             </Table>
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-4">
+                <Pagination
+                  total={totalPages}
+                  page={currentPage}
+                  onChange={setCurrentPage}
+                  showControls
+                />
+              </div>
+            )}
+            </>
           )}
         </CardBody>
       </Card>
