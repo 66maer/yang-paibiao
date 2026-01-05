@@ -15,6 +15,7 @@ from ..services.member_service import MemberService
 from ..services.session_manager import get_session_manager
 from ..services.parser import get_parser
 from .message_builder import MessageBuilder
+from ..data.xinfa import normalize_xinfa_name
 
 
 # ==================== 查看团队 ====================
@@ -136,6 +137,24 @@ async def handle_update_nickname(event: GroupMessageEvent, plain_text: str = Eve
         logger.exception(f"未知错误: {e}")
         msg = MessageBuilder.build_error_message("系统错误，请联系管理员")
         await update_nickname.finish(msg)
+
+
+def format_xinfa_display(xinfa: str) -> str:
+    """
+    格式化心法名用于输出显示
+    
+    Args:
+        xinfa: 心法名（可能是英文key、中文标准名或昵称）
+    
+    Returns:
+        str: 标准的中文心法名
+    """
+    if not xinfa:
+        return "未知"
+    
+    # 尝试标准化心法名
+    normalized = normalize_xinfa_name(xinfa)
+    return normalized if normalized != xinfa or not xinfa else xinfa
 
 
 # ==================== 报名/代报名/登记老板/取消报名 ====================
@@ -308,9 +327,10 @@ async def _handle_signup(
         )
 
         # 构建成功消息
+        xinfa_display = format_xinfa_display(signup_info.signup_info.get('xinfa', xinfa))
         msg = MessageBuilder.build_success_message(
             f"报名成功！\n"
-            f"心法: {signup_info.signup_info.get('xinfa', xinfa)}\n"
+            f"心法: {xinfa_display}\n"
             f"角色: {signup_info.signup_info.get('character_name', character_name or '待定')}"
         )
         await matcher.finish(msg)
@@ -371,9 +391,10 @@ async def _handle_proxy_signup(
 
         # 构建成功消息
         display_name = user.group_nickname or user.nickname or user.qq_number
+        xinfa_display = format_xinfa_display(signup_info.signup_info.get('xinfa', xinfa))
         msg = MessageBuilder.build_success_message(
             f"代报名成功！已为 {display_name} 报名\n"
-            f"心法: {signup_info.signup_info.get('xinfa', xinfa)}\n"
+            f"心法: {xinfa_display}\n"
             f"角色: {signup_info.signup_info.get('character_name', character_name or '待定')}"
         )
         await matcher.finish(msg)
@@ -432,9 +453,10 @@ async def _handle_register_rich(
 
         # 构建成功消息
         display_name = user.group_nickname or user.nickname or user.qq_number
+        xinfa_display = format_xinfa_display(signup_info.signup_info.get('xinfa', xinfa))
         msg = MessageBuilder.build_success_message(
             f"老板登记成功！已为 {display_name} 登记老板位\n"
-            f"心法: {signup_info.signup_info.get('xinfa', xinfa)}\n"
+            f"心法: {xinfa_display}\n"
             f"角色: {signup_info.signup_info.get('character_name', character_name or '待定')}"
         )
         await matcher.finish(msg)
@@ -474,10 +496,10 @@ async def _handle_cancel_signup(
             signup = signups[0]
             await api_client.signups.cancel_signup(team_id, qq_number)
 
-            xinfa = signup.signup_info.get("xinfa", "未知")
+            xinfa_display = format_xinfa_display(signup.signup_info.get("xinfa", ""))
             char_name = signup.signup_info.get("character_name", "待定")
             msg = MessageBuilder.build_success_message(
-                f"取消报名成功！\n心法: {xinfa}\n角色: {char_name}"
+                f"取消报名成功！\n心法: {xinfa_display}\n角色: {char_name}"
             )
             await matcher.finish(msg)
 
@@ -531,10 +553,10 @@ async def _handle_cancel_signup(
             signup = matched[0]
             await api_client.signups.cancel_signup(team_id, qq_number)
 
-            xinfa = signup.signup_info.get("xinfa", "未知")
+            xinfa_display = format_xinfa_display(signup.signup_info.get("xinfa", ""))
             char_name = signup.signup_info.get("character_name", "待定")
             msg = MessageBuilder.build_success_message(
-                f"取消报名成功！\n心法: {xinfa}\n角色: {char_name}"
+                f"取消报名成功！\n心法: {xinfa_display}\n角色: {char_name}"
             )
             await matcher.finish(msg)
         
@@ -555,7 +577,7 @@ async def _handle_cancel_signup(
                 "signups": [
                     {
                         "id": s.id,
-                        "xinfa": s.signup_info.get("xinfa", "未知"),
+                        "xinfa": format_xinfa_display(s.signup_info.get("xinfa", "")),
                         "character_name": s.signup_info.get("character_name", "待定"),
                         "is_rich": s.is_rich
                     }
@@ -567,10 +589,10 @@ async def _handle_cancel_signup(
         # 构建报名列表消息
         msg_parts = ["你有多个报名，请选择要取消的报名:\n"]
         for idx, signup in enumerate(signups, 1):
-            xinfa = signup.signup_info.get("xinfa", "未知")
+            xinfa_display = format_xinfa_display(signup.signup_info.get("xinfa", ""))
             char_name = signup.signup_info.get("character_name", "待定")
             rich_tag = " [老板]" if signup.is_rich else ""
-            msg_parts.append(f"\n【{idx}】{xinfa} - {char_name}{rich_tag}")
+            msg_parts.append(f"\n【{idx}】{xinfa_display} - {char_name}{rich_tag}")
 
         msg_parts.append("\n\n请回复序号进行取消")
         msg = Message("".join(msg_parts))
@@ -661,7 +683,7 @@ async def _handle_cancel_signup_select(
         session_manager = get_session_manager()
         session_manager.close_session(qq_number, str(event.group_id))
 
-        # 构建成功消息
+        # 构建成功消息（会话数据中的 xinfa 已经格式化过了）
         xinfa = selected_signup["xinfa"]
         char_name = selected_signup["character_name"]
         msg = MessageBuilder.build_success_message(
