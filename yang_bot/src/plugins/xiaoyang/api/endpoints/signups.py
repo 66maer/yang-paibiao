@@ -38,7 +38,9 @@ class SignupsEndpoint:
     async def cancel_signup(
         self,
         team_id: int,
-        qq_number: str
+        qq_number: str,
+        signup_id: int = None,
+        character_id: int = None
     ) -> None:
         """
         取消报名
@@ -46,11 +48,19 @@ class SignupsEndpoint:
         Args:
             team_id: 团队 ID
             qq_number: QQ 号
+            signup_id: 报名 ID（可选，用于精确取消）
+            character_id: 角色 ID（可选，用于精确取消）
         """
+        payload = {"qq_number": qq_number}
+        if signup_id is not None:
+            payload["signup_id"] = signup_id
+        if character_id is not None:
+            payload["character_id"] = character_id
+            
         await self.client.request(
             "DELETE",
             f"/api/v2/bot/guilds/{self.client.guild_id}/teams/{team_id}/signups",
-            json={"qq_number": qq_number}
+            json=payload
         )
 
     async def get_user_signups(

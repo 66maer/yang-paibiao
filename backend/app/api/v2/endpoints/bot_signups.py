@@ -4,7 +4,7 @@ Bot API - 报名管理
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, Integer
 
 from app.database import get_db
 from app.api.deps import get_current_bot, verify_bot_guild_access_by_qq
@@ -167,13 +167,20 @@ async def cancel_signup(
         )
 
     # 查找该用户在该团队的有效报名
-    signup_result = await db.execute(
-        select(Signup).where(
-            Signup.team_id == team_id,
-            Signup.signup_user_id == user.id,
-            Signup.cancelled_at.is_(None)
-        )
+    query = select(Signup).where(
+        Signup.team_id == team_id,
+        Signup.signup_user_id == user.id,
+        Signup.cancelled_at.is_(None)
     )
+    
+    # 如果提供了 signup_id，优先使用 signup_id 精确匹配
+    if payload.signup_id is not None:
+        query = query.where(Signup.id == payload.signup_id)
+    # 如果提供了 character_id，使用 character_id 匹配
+    elif payload.character_id is not None:
+        query = query.where(Signup.signup_info['character_id'].astext.cast(Integer) == payload.character_id)
+    
+    signup_result = await db.execute(query)
     signups = signup_result.scalars().all()
 
     if not signups:
@@ -182,14 +189,14 @@ async def cancel_signup(
             detail="未找到该用户的报名记录"
         )
 
-    # 如果有多个报名，返回错误，要求客户端使用更精确的接口
+    # 如果有多个报名且未提供精确匹配参数，返回错误
     if len(signups) > 1:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"该用户有多个报名记录（共{len(signups)}个），请先使用查询接口获取报名列表，然后选择要取消的报名"
+            detail=f"该用户有多个报名记录（共{len(signups)}个），请提供 signup_id 或 character_id 参数进行精确取消"
         )
 
-    # 单个报名，直接取消
+    # 取消找到的报名
     signup = signups[0]
     
     # 软删除：设置cancelled_at

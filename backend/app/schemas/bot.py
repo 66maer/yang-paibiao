@@ -170,6 +170,8 @@ class BotSignupRequest(BaseModel):
 class BotCancelSignupRequest(BaseModel):
     """取消报名请求"""
     qq_number: str = Field(..., pattern=r'^\d{5,15}$', description="QQ号")
+    signup_id: Optional[int] = Field(None, description="报名ID（用于精确取消）")
+    character_id: Optional[int] = Field(None, description="角色ID（用于精确取消）")
 
 
 class BotSignupInfo(BaseModel):
