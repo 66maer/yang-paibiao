@@ -295,13 +295,12 @@ async def call_members(
             response = await client.post(
                 bot_api_url,
                 json={
-                    "guild_qq_number": guild.qq_number,
+                    "guild_qq_number": guild.guild_qq_number,
                     "qq_numbers": payload.qq_numbers,
                     "message": payload.message or "请进组"
                 }
             )
             response.raise_for_status()
-            bot_response = response.json()
 
         return ResponseModel(
             message=f"已召唤 {len(payload.qq_numbers)} 名成员",
@@ -312,4 +311,10 @@ async def call_members(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"调用机器人服务失败: {str(e)}"
+        ) from e
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"未知错误: {str(e)}"
         ) from e

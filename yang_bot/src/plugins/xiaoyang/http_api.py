@@ -9,6 +9,9 @@ from nonebot.exception import ActionFailed
 # 创建 API 路由器
 api_router = APIRouter(prefix="/api", tags=["HTTP API"])
 
+# 创建根路由器（不带前缀，用于健康检查）
+root_router = APIRouter(tags=["Health"])
+
 
 class CallMembersRequest(BaseModel):
     """召唤成员请求"""
@@ -75,3 +78,9 @@ async def call_members(request: CallMembersRequest) -> CallMembersResponse:
     except Exception as e:
         logger.exception(f"召唤成员失败: {e}")
         raise HTTPException(status_code=500, detail=f"召唤成员失败: {e}") from e
+
+
+@root_router.get("/health")
+async def health_check() -> dict:
+    """健康检查端点"""
+    return {"status": "ok", "service": "yangpaibiao-bot"}

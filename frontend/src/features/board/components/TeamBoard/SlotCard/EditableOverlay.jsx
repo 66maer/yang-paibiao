@@ -7,13 +7,7 @@ import { TrashIcon } from "@/components/common/icons";
  * - assign: 指定报名模式（右上角删除按钮）
  * - mark: 进组标记模式（进组/鸽子/召唤/清除按钮）
  */
-const EditableOverlay = ({
-  mode,
-  signup,
-  onAssignDelete,
-  onPresenceChange,
-  onSummon,
-}) => {
+const EditableOverlay = ({ mode, signup, onAssignDelete, onPresenceChange, onSummon }) => {
   // 指定报名模式
   if (mode === "assign") {
     return (
@@ -68,11 +62,16 @@ const EditableOverlay = ({
           <Button
             size="sm"
             color="default"
-            variant="flat"
+            variant="solid"
             onPress={() => onPresenceChange?.(null)}
             className="min-w-0 px-3"
           >
             清除
+          </Button>
+
+          {/* 召唤按钮 */}
+          <Button size="sm" color="warning" variant="solid" onPress={() => onSummon?.()} className="min-w-0 px-3">
+            召唤
           </Button>
         </div>
       </div>
