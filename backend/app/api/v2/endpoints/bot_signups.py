@@ -174,14 +174,24 @@ async def cancel_signup(
             Signup.cancelled_at.is_(None)
         )
     )
-    signup = signup_result.scalar_one_or_none()
+    signups = signup_result.scalars().all()
 
-    if not signup:
+    if not signups:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="未找到该用户的报名记录"
         )
 
+    # 如果有多个报名，返回错误，要求客户端使用更精确的接口
+    if len(signups) > 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"该用户有多个报名记录（共{len(signups)}个），请先使用查询接口获取报名列表，然后选择要取消的报名"
+        )
+
+    # 单个报名，直接取消
+    signup = signups[0]
+    
     # 软删除：设置cancelled_at
     signup.cancelled_at = datetime.utcnow()
     # 注意：cancelled_by应该设置为操作者，但Bot没有用户ID，这里可以设置为None或者submitter_id
