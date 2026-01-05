@@ -35,6 +35,7 @@ const SlotCard = ({
   onPresenceChange,
   onSlotClick,
   onSignupDelete, // 删除报名回调
+  onCallMember, // 召唤成员回调
 }) => {
   const [ruleModalOpen, setRuleModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -103,7 +104,7 @@ const SlotCard = ({
    * 召唤功能
    */
   const handleSummon = () => {
-    console.log("召唤功能待开发");
+    onCallMember?.(signup);
   };
 
   // 渲染卡片内容

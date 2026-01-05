@@ -40,6 +40,7 @@ const TeamBoard = ({
   onReorder,
   onSlotClick,
   onSignupDelete, // 删除报名回调
+  onCallMember, // 召唤成员回调
 }) => {
   // 分配坑位
   const { slots } = useMemo(() => allocateSlots(rules, signupList), [rules, signupList]);
@@ -164,6 +165,7 @@ const TeamBoard = ({
           onPresenceChange={onPresenceChange}
           onSlotClick={onSlotClick}
           onSignupDelete={onSignupDelete}
+          onCallMember={onCallMember}
         />
       ))}
     </div>
@@ -223,6 +225,7 @@ const TeamBoard = ({
             onPresenceChange={onPresenceChange}
             onSlotClick={onSlotClick}
             onSignupDelete={onSignupDelete}
+            onCallMember={onCallMember}
           />
           {/* 即将被交换的图标 */}
           {hoverIdx === visualIdx && draggedIdx !== null && (

@@ -51,3 +51,15 @@ export const getGuildMembers = async (guildId, params = {}) => {
   const response = await apiClient.get(`/guilds/${guildId}/members`, { params });
   return response;
 };
+
+/**
+ * 召唤成员（发送QQ群消息@成员）
+ * 仅管理员可用
+ * @param {number} guildId - 群组ID
+ * @param {object} data - 召唤数据
+ * @param {string[]} data.qq_numbers - 要召唤的QQ号列表
+ * @param {string} [data.message] - 召唤消息内容（可选，默认"请进组"）
+ */
+export const callMembers = (guildId, data) => {
+  return apiClient.post(`/guilds/${guildId}/call-members`, data);
+};

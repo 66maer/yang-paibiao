@@ -174,3 +174,9 @@ class UpdateMemberRole(BaseModel):
 class UpdateMemberNickname(BaseModel):
     """更新成员群昵称"""
     group_nickname: Optional[str] = Field(None, description="群内昵称")
+
+
+class CallMembersRequest(BaseModel):
+    """召唤成员请求"""
+    qq_numbers: List[str] = Field(..., description="要召唤的QQ号列表", min_length=1)
+    message: Optional[str] = Field(default="请进组", description="召唤消息内容")

@@ -33,6 +33,7 @@ import {
   createSignup,
   cancelSignup,
 } from "@/api/signups";
+import { callMembers } from "@/api/guilds";
 import { showToast, showConfirm } from "@/utils/toast";
 import TeamBoard from "./TeamBoard";
 import { buildEmptyRules } from "@/utils/slotAllocation";
@@ -315,6 +316,57 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
     }
   };
 
+  // 召唤单个成员
+  const handleCallMember = async (signup) => {
+    if (!signup?.playerQqNumber) {
+      showToast.error("无法获取成员QQ号");
+      return;
+    }
+
+    try {
+      await callMembers(team.guild_id, {
+        qq_numbers: [signup.playerQqNumber],
+        message: `请进组：${team.title}`,
+      });
+      showToast.success(`已召唤 ${signup.signupName}`);
+    } catch (error) {
+      console.error("召唤成员失败:", error);
+      showToast.error(error?.response?.data?.message || "召唤成员失败");
+    }
+  };
+
+  // 召唤所有未标记的成员
+  const handleCallAllUnmarked = async () => {
+    // 过滤出已分配坑位但未标记的成员
+    const unmarkedSignups = signupList.filter(
+      (s) => s.lockSlot !== null && s.lockSlot !== undefined && !s.presence
+    );
+
+    if (unmarkedSignups.length === 0) {
+      showToast.warning("没有需要召唤的成员");
+      return;
+    }
+
+    // 提取QQ号（过滤掉空值）
+    const qqNumbers = unmarkedSignups.map((s) => s.playerQqNumber).filter(Boolean);
+
+    if (qqNumbers.length === 0) {
+      showToast.error("无法获取成员QQ号");
+      return;
+    }
+
+    try {
+      await callMembers(team.guild_id, {
+        qq_numbers: qqNumbers,
+        message: `请进组：${team.title}`,
+      });
+      showToast.success(`已召唤 ${qqNumbers.length} 名成员`);
+    } catch (error) {
+      console.error("召唤成员失败:", error);
+      showToast.error(error?.response?.data?.message || "召唤成员失败");
+    }
+  };
+
   return (
     <>
       <Card className="h-full">
@@ -452,6 +504,15 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
                     </Button>
                   </div>
                 )}
+
+                {/* 进组标记模式的操作按钮 */}
+                {isAdmin && boardMode === "mark" && (
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="flat" color="warning" onPress={handleCallAllUnmarked}>
+                      📣 召唤全体未标记
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <TeamBoard
@@ -468,6 +529,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
                 onPresenceChange={handlePresenceChange}
                 onReorder={handleReorder}
                 onSignupDelete={handleSignupDelete}
+                onCallMember={handleCallMember}
               />
             </div>
 

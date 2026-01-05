@@ -6,13 +6,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+import httpx
 
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.models.guild_member import GuildMember
 from app.models.guild import Guild
 from app.schemas.common import ResponseModel
-from app.schemas.guild import GuildMemberInfo, UpdateMemberRole, UpdateMemberNickname
+from app.schemas.guild import GuildMemberInfo, UpdateMemberRole, UpdateMemberNickname, CallMembersRequest
 
 router = APIRouter(prefix="/guilds", tags=["群组用户接口"])
 
@@ -221,3 +222,94 @@ async def update_member_nickname(
     await db.commit()
 
     return ResponseModel(message="成员群昵称更新成功")
+
+
+@router.post("/{guild_id}/call-members", response_model=ResponseModel)
+async def call_members(
+    guild_id: int,
+    payload: CallMembersRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    召唤成员（发送QQ群消息@成员）
+
+    只有群主和管理员(helper)可以召唤成员
+
+    Args:
+        guild_id: 群组ID
+        payload: 包含qq_numbers（QQ号列表）和message（消息内容，可选）
+        current_user: 当前登录用户
+        db: 数据库会话
+
+    Returns:
+        ResponseModel: 召唤结果
+    """
+    # 验证群组存在
+    guild_result = await db.execute(
+        select(Guild).where(Guild.id == guild_id, Guild.deleted_at.is_(None))
+    )
+    guild = guild_result.scalar_one_or_none()
+    if guild is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="群组不存在"
+        )
+
+    # 获取当前用户在该群组的角色
+    current_member_result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id == current_user.id,
+            GuildMember.left_at.is_(None)
+        )
+    )
+    current_member = current_member_result.scalar_one_or_none()
+    if current_member is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="非该群组成员"
+        )
+
+    # 验证权限：只有群主和管理员可以召唤成员
+    if current_member.role not in ['owner', 'helper']:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="权限不足，只有群主和管理员可以召唤成员"
+        )
+
+    # 验证QQ号列表不为空
+    if not payload.qq_numbers:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="QQ号列表不能为空"
+        )
+
+    # 获取 Bot 服务的地址（从环境变量或配置）
+    # 在 Docker 网络中，Bot 容器名为 "bot"，端口为 8080
+    bot_api_url = "http://bot:8080/api/call-members"
+
+    # 调用 Bot API
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                bot_api_url,
+                json={
+                    "guild_qq_number": guild.qq_number,
+                    "qq_numbers": payload.qq_numbers,
+                    "message": payload.message or "请进组"
+                }
+            )
+            response.raise_for_status()
+            bot_response = response.json()
+
+        return ResponseModel(
+            message=f"已召唤 {len(payload.qq_numbers)} 名成员",
+            data={"count": len(payload.qq_numbers)}
+        )
+
+    except httpx.HTTPError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"调用机器人服务失败: {str(e)}"
+        ) from e

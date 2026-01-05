@@ -42,3 +42,14 @@ except Exception as e:
 # 导入 matchers（自动注册）
 from .adapters import matchers as _
 
+# 注册 HTTP API 路由
+try:
+    from nonebot import get_app
+    from .http_api import api_router
+
+    app = get_app()
+    app.include_router(api_router)
+    logger.success("小秧机器人 HTTP API 路由注册成功")
+except Exception as e:
+    logger.error(f"小秧机器人 HTTP API 路由注册失败: {e}")
+
