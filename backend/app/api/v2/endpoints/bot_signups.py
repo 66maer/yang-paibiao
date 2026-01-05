@@ -4,7 +4,7 @@ Bot API - 报名管理
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 
 from app.database import get_db
 from app.api.deps import get_current_bot, verify_bot_guild_access_by_qq
@@ -250,10 +250,19 @@ async def get_user_signups(
         )
 
     # 查找该用户在该团队的所有有效报名
+    # 包括三种情况：
+    # 1. 自己给自己的报名 (submitter_id == user.id && signup_user_id == user.id && !is_proxy)
+    # 2. 自己给别人的报名 (submitter_id == user.id && signup_user_id != user.id && is_proxy)
+    # 3. 别人给自己的报名 (submitter_id != user.id && signup_user_id == user.id && is_proxy)
+    from sqlalchemy import or_
+    
     signups_result = await db.execute(
         select(Signup).where(
             Signup.team_id == team_id,
-            Signup.signup_user_id == user.id,
+            or_(
+                Signup.signup_user_id == user.id,  # 报名人是该用户
+                Signup.submitter_id == user.id      # 提交者是该用户
+            ),
             Signup.cancelled_at.is_(None)
         ).order_by(Signup.created_at.desc())
     )
