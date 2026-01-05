@@ -27,6 +27,8 @@ export default function RankingPage() {
   const [ranking, setRanking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showRecordsDetail, setShowRecordsDetail] = useState(false);
+  const [selectedUserDetail, setSelectedUserDetail] = useState(null);
   const { user } = useAuthStore();
   const currentGuild = user?.guilds?.find((g) => g.id === user?.current_guild_id);
 
@@ -98,34 +100,62 @@ export default function RankingPage() {
     }
 
     const detail = item.calculation_detail;
+    const maxDisplayRecords = 6;
+    const totalRecords = detail.records.length;
+    const hasMore = totalRecords > maxDisplayRecords;
+    // 显示最近的6条（即最后6条）
+    const displayRecords = hasMore ? detail.records.slice(-maxDisplayRecords) : detail.records;
+    const startIdx = hasMore ? totalRecords - maxDisplayRecords : 0;
+
+    const handleShowMore = (e) => {
+      e.stopPropagation();
+      setSelectedUserDetail({ ...item, detail });
+      setShowRecordsDetail(true);
+    };
+
     const tooltipContent = (
       <div className="space-y-2 max-w-sm">
         <div className="font-semibold border-b pb-1">计算详情</div>
 
         <div className="space-y-1 text-xs">
-          <div className="font-medium">黑本记录：</div>
-          {detail.records.map((record, idx) => (
+          <div className="font-medium">
+            黑本记录：{hasMore && <span className="text-gray-400">（显示最近{maxDisplayRecords}条）</span>}
+          </div>
+          {displayRecords.map((record, idx) => (
             <div key={record.record_id} className="pl-2 text-gray-300">
-              {idx + 1}. {record.dungeon} ({new Date(record.run_date).toLocaleDateString()})
+              {startIdx + idx + 1}. {record.dungeon} ({new Date(record.run_date).toLocaleDateString()})
               <div className="pl-2 text-gray-400">
-                金额: {record.gold} × 修正系数: {Number(record.correction_factor).toFixed(2)} ={" "}
+                金额: {record.gold} × 赛季修正: {Number(record.correction_factor).toFixed(2)} ={" "}
                 {Number(record.corrected_gold).toFixed(2)}
+                {record.recent_weight && Number(record.recent_weight) !== 1 && (
+                  <span className="text-yellow-400"> × 近期加权: {Number(record.recent_weight).toFixed(2)}</span>
+                )}
               </div>
             </div>
           ))}
+          {hasMore && (
+            <div className="pl-2 pt-1">
+              <button onClick={handleShowMore} className="text-primary hover:underline cursor-pointer text-xs">
+                查看全部 {totalRecords} 条记录 →
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-1 text-xs border-t pt-2">
           <div>总金额: {detail.total_gold}</div>
           <div>修正后总金额: {Number(detail.corrected_total_gold).toFixed(2)}</div>
+          {detail.weighted_total_gold && <div>近期加权总金额: {Number(detail.weighted_total_gold).toFixed(2)}</div>}
           <div>黑本次数: {detail.heibenren_count}</div>
           <div>平均金额: {Number(detail.average_gold).toFixed(2)}</div>
-          <div>修正后平均金额: {Number(detail.corrected_average_gold).toFixed(2)}</div>
+          {detail.weighted_average_gold && (
+            <div>近期加权平均金额: {Number(detail.weighted_average_gold).toFixed(2)}</div>
+          )}
           <div>Rank修正系数: {Number(detail.rank_modifier).toFixed(4)}</div>
         </div>
 
         <div className="border-t pt-2 font-semibold text-primary">
-          Rank分 = ({Number(detail.corrected_average_gold).toFixed(2)} ÷ 5000) ×{" "}
+          Rank分 = ({Number(detail.weighted_average_gold || detail.corrected_average_gold).toFixed(2)} ÷ 5000) ×{" "}
           {Number(detail.rank_modifier).toFixed(4)} = {Number(detail.rank_score).toFixed(2)}
         </div>
       </div>
@@ -251,13 +281,19 @@ export default function RankingPage() {
                 <h4 className="font-semibold text-lg mb-3">计算公式</h4>
                 <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg space-y-2">
                   <div className="font-mono text-sm">
-                    <strong>Rank分</strong> = (修正后的平均金团金额 ÷ 5000) × Rank修正系数
+                    <strong>Rank分</strong> = (近期加权平均金额 ÷ 5000) × Rank修正系数
                   </div>
                   <div className="font-mono text-sm">
-                    <strong>修正后的平均金团金额</strong> = Σ(每车金团金额 × 副本与赛季修正系数) / 黑本次数
+                    <strong>近期加权平均金额</strong> = Σ(每车修正后金额 × 近期加权系数) / 权重总和
                   </div>
                   <div className="font-mono text-sm">
-                    <strong>Rank修正系数</strong> = 1 + 0.5(1 - e<sup>-(N-5)/5</sup>)
+                    <strong>每车修正后金额</strong> = 金团金额 × 副本与赛季修正系数
+                  </div>
+                  <div className="font-mono text-sm">
+                    <strong>近期加权系数</strong>：最近5车分别为 1.5、1.35、1.2、1.1、1.05，更早的为 1.0
+                  </div>
+                  <div className="font-mono text-sm">
+                    <strong>Rank修正系数</strong> = 1 + 0.2(1 - e<sup>-(N-5)/5</sup>)
                     <span className="text-gray-500 ml-2">其中 N 为黑本次数</span>
                   </div>
                   <div className="font-mono text-sm text-gray-500">
@@ -301,6 +337,7 @@ export default function RankingPage() {
                 <h4 className="font-semibold text-lg mb-3">说明</h4>
                 <ul className="list-disc list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400">
                   <li>赛季修正系数用于平衡不同时期副本的难度差异</li>
+                  <li>近期加权系数让最近的黑本记录有更高权重，体现近期表现</li>
                   <li>Rank修正系数会随着黑本次数增加而提高，鼓励多次参与</li>
                   <li>鼠标悬停在每个人的Rank分上可以查看详细计算过程</li>
                   <li>排名每次有新的黑本记录时自动更新</li>
@@ -310,6 +347,118 @@ export default function RankingPage() {
           </ModalBody>
           <ModalFooter>
             <Button color="primary" onClick={() => setShowExplanation(false)}>
+              关闭
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* 全部黑本记录详情弹窗 */}
+      <Modal isOpen={showRecordsDetail} onClose={() => setShowRecordsDetail(false)} size="2xl" scrollBehavior="inside">
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-xl font-bold">{selectedUserDetail?.user_name} 的黑本记录详情</h3>
+              <p className="text-sm text-gray-500">共 {selectedUserDetail?.detail?.records?.length || 0} 条记录</p>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            {selectedUserDetail?.detail?.records && (
+              <div className="space-y-4">
+                <Table aria-label="黑本记录详情" removeWrapper>
+                  <TableHeader>
+                    <TableColumn>序号</TableColumn>
+                    <TableColumn>副本</TableColumn>
+                    <TableColumn>日期</TableColumn>
+                    <TableColumn>金额</TableColumn>
+                    <TableColumn>赛季修正</TableColumn>
+                    <TableColumn>近期加权</TableColumn>
+                    <TableColumn>加权后金额</TableColumn>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedUserDetail.detail.records.map((record, idx) => (
+                      <TableRow key={record.record_id}>
+                        <TableCell>{idx + 1}</TableCell>
+                        <TableCell>{record.dungeon}</TableCell>
+                        <TableCell>{new Date(record.run_date).toLocaleDateString()}</TableCell>
+                        <TableCell className="font-mono">{record.gold}</TableCell>
+                        <TableCell>
+                          <Chip size="sm" variant="flat" color="primary">
+                            ×{Number(record.correction_factor).toFixed(2)}
+                          </Chip>
+                        </TableCell>
+                        <TableCell>
+                          {record.recent_weight && Number(record.recent_weight) !== 1 ? (
+                            <Chip size="sm" variant="flat" color="warning">
+                              ×{Number(record.recent_weight).toFixed(2)}
+                            </Chip>
+                          ) : (
+                            <span className="text-gray-400">×1.00</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono font-semibold">
+                          {Number(record.weighted_gold || record.corrected_gold).toFixed(0)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg space-y-2 text-sm">
+                  <div className="font-semibold border-b pb-2 mb-2">汇总</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      总金额: <span className="font-mono">{selectedUserDetail.detail.total_gold}</span>
+                    </div>
+                    <div>
+                      修正后总金额:{" "}
+                      <span className="font-mono">
+                        {Number(selectedUserDetail.detail.corrected_total_gold).toFixed(2)}
+                      </span>
+                    </div>
+                    {selectedUserDetail.detail.weighted_total_gold && (
+                      <div>
+                        近期加权总金额:{" "}
+                        <span className="font-mono">
+                          {Number(selectedUserDetail.detail.weighted_total_gold).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      黑本次数: <span className="font-mono">{selectedUserDetail.detail.heibenren_count}</span>
+                    </div>
+                    <div>
+                      平均金额:{" "}
+                      <span className="font-mono">{Number(selectedUserDetail.detail.average_gold).toFixed(2)}</span>
+                    </div>
+                    {selectedUserDetail.detail.weighted_average_gold && (
+                      <div>
+                        近期加权平均金额:{" "}
+                        <span className="font-mono">
+                          {Number(selectedUserDetail.detail.weighted_average_gold).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      Rank修正系数:{" "}
+                      <span className="font-mono">{Number(selectedUserDetail.detail.rank_modifier).toFixed(4)}</span>
+                    </div>
+                  </div>
+                  <div className="border-t pt-2 mt-2 font-semibold text-primary">
+                    Rank分 = (
+                    {Number(
+                      selectedUserDetail.detail.weighted_average_gold ||
+                        selectedUserDetail.detail.corrected_average_gold
+                    ).toFixed(2)}{" "}
+                    ÷ 5000) × {Number(selectedUserDetail.detail.rank_modifier).toFixed(4)} ={" "}
+                    {Number(selectedUserDetail.detail.rank_score).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button color="primary" onClick={() => setShowRecordsDetail(false)}>
               关闭
             </Button>
           </ModalFooter>

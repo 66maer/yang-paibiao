@@ -22,7 +22,7 @@ class RankingService:
     async def calculate_rank_modifier(self, heibenren_count: int) -> Decimal:
         """
         计算Rank修正系数
-        公式：1 + 0.5(1 - e^(-(N-5)/5))
+        公式：1 + 0.2(1 - e^(-(N-5)/5))
 
         Args:
             heibenren_count: 黑本次数
@@ -32,7 +32,7 @@ class RankingService:
         """
         N = heibenren_count
         exponent = -(N - 5) / 5
-        modifier = 1 + 0.5 * (1 - math.exp(exponent))
+        modifier = 1 + 0.2 * (1 - math.exp(exponent))
         return Decimal(str(round(modifier, 4)))
 
     async def get_correction_factor(
@@ -108,16 +108,31 @@ class RankingService:
         if car_number_map is None:
             car_number_map = await self._get_car_number_map(guild_id)
 
+        # 近期加权系数（倒序：最近5车分别为1.5、1.35、1.2、1.1、1.05）
+        recent_weights = [Decimal("1.5"), Decimal("1.35"), Decimal("1.2"), Decimal("1.1"), Decimal("1.05")]
+
         # 计算修正后的总金额
         corrected_total = Decimal("0")
+        weighted_total = Decimal("0")
         total_gold = 0
         record_details = []
+        total_record_count = len(records)
 
-        for record in records:
+        for idx, record in enumerate(records):
             factor = await self.get_correction_factor(record.dungeon, record.run_date)
             corrected_gold = Decimal(str(record.total_gold)) * factor
             corrected_total += corrected_gold
             total_gold += record.total_gold
+
+            # 计算近期加权系数（倒数第1-5条记录有额外权重）
+            reverse_idx = total_record_count - idx - 1  # 从末尾开始计数，0表示最后一条
+            if reverse_idx < len(recent_weights):
+                recent_weight = recent_weights[reverse_idx]
+            else:
+                recent_weight = Decimal("1.0")
+            
+            weighted_gold = corrected_gold * recent_weight
+            weighted_total += weighted_gold
 
             # 如果需要详细信息，收集每条记录的详情
             if include_detail:
@@ -127,15 +142,24 @@ class RankingService:
                     "run_date": record.run_date,
                     "gold": record.total_gold,
                     "correction_factor": factor,
-                    "corrected_gold": corrected_gold
+                    "corrected_gold": corrected_gold,
+                    "recent_weight": recent_weight,
+                    "weighted_gold": weighted_gold
                 })
 
         # 计算各项指标
         heibenren_count = len(records)
         average_gold = Decimal(str(total_gold)) / Decimal(str(heibenren_count))
         corrected_average_gold = corrected_total / Decimal(str(heibenren_count))
+        
+        # 计算加权平均金额（考虑近期加权）
+        # 权重总和 = min(次数, 5)个近期权重 + max(0, 次数-5)个1.0权重
+        num_weighted = min(heibenren_count, len(recent_weights))
+        weight_sum = sum(recent_weights[:num_weighted]) + Decimal(str(max(0, heibenren_count - len(recent_weights))))
+        weighted_average_gold = weighted_total / weight_sum
+        
         # 除以基准值5000
-        normalized_average_gold = corrected_average_gold / Decimal("5000")
+        normalized_average_gold = weighted_average_gold / Decimal("5000")
         rank_modifier = await self.calculate_rank_modifier(heibenren_count)
         rank_score = normalized_average_gold * rank_modifier
 
@@ -161,9 +185,11 @@ class RankingService:
                 "records": record_details,
                 "total_gold": total_gold,
                 "corrected_total_gold": corrected_total,
+                "weighted_total_gold": weighted_total,
                 "heibenren_count": heibenren_count,
                 "average_gold": average_gold,
                 "corrected_average_gold": corrected_average_gold,
+                "weighted_average_gold": weighted_average_gold,
                 "rank_modifier": rank_modifier,
                 "rank_score": rank_score
             }
@@ -386,7 +412,7 @@ class RankingService:
     def calculate_time_modifier(self, cars_since_last: int) -> Decimal:
         """
         计算时间修正系数
-        公式：1 + M/30，其中 M 为距离上次黑本的车次数
+        公式：1 + M/20，其中 M 为距离上次黑本的车次数
 
         Args:
             cars_since_last: 距离上次黑本的车次数
@@ -394,7 +420,7 @@ class RankingService:
         Returns:
             时间修正系数
         """
-        modifier = 1 + Decimal(str(cars_since_last)) / Decimal("30")
+        modifier = 1 + Decimal(str(cars_since_last)) / Decimal("20")
         return Decimal(str(round(modifier, 4)))
 
     async def calculate_heibenren_recommendations(
@@ -434,11 +460,11 @@ class RankingService:
             ranking_data = ranking_map.get(user_id)
 
             if ranking_data is None:
-                # 无黑本记录的用户
-                rank_score = average_rank_score
-                frequency_modifier = Decimal("1.5")
+                # 无黑本记录的用户，使用平均红黑分的2倍
+                rank_score = average_rank_score * Decimal("2")
+                frequency_modifier = Decimal("1.0")
                 time_modifier = Decimal("1.0")
-                recommendation_score = rank_score * frequency_modifier
+                recommendation_score = rank_score
 
                 recommendations.append({
                     "user_id": user_id,
