@@ -494,11 +494,7 @@ async def _handle_cancel_signup(
         # 如果只有一个报名，直接取消
         if len(signups) == 1:
             signup = signups[0]
-            await api_client.signups.cancel_signup(
-                team_id, 
-                qq_number,
-                signup_id=signup.id
-            )
+            await api_client.signups.cancel_signup(team_id, qq_number)
 
             xinfa_display = format_xinfa_display(signup.signup_info.get("xinfa", ""))
             char_name = signup.signup_info.get("character_name", "待定")
@@ -555,17 +551,7 @@ async def _handle_cancel_signup(
         # 如果找到唯一匹配，直接取消
         if len(matched) == 1:
             signup = matched[0]
-            
-            # 优先使用 character_id 参数，如果没有则使用 signup_id
-            cancel_kwargs = {"signup_id": signup.id}
-            if params.get("character_id"):
-                cancel_kwargs["character_id"] = params["character_id"]
-            
-            await api_client.signups.cancel_signup(
-                team_id, 
-                qq_number,
-                **cancel_kwargs
-            )
+            await api_client.signups.cancel_signup(team_id, qq_number)
 
             xinfa_display = format_xinfa_display(signup.signup_info.get("xinfa", ""))
             char_name = signup.signup_info.get("character_name", "待定")
@@ -687,15 +673,11 @@ async def _handle_cancel_signup_select(
         # 获取选择的报名
         selected_signup = signups[index - 1]
 
-        # 调用 API 取消报名（使用 signup_id 精确取消）
+        # 调用 API 取消报名
         guild_id = event.group_id
         api_client = get_api_client(guild_id=guild_id)
         qq_number = str(event.user_id)
-        await api_client.signups.cancel_signup(
-            team_id, 
-            qq_number,
-            signup_id=selected_signup["id"]
-        )
+        await api_client.signups.cancel_signup(team_id, qq_number)
 
         # 关闭会话
         session_manager = get_session_manager()
