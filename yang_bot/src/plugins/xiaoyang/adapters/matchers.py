@@ -469,11 +469,8 @@ async def _handle_cancel_signup(
             msg = MessageBuilder.build_error_message("你在该团队没有报名记录")
             await matcher.finish(msg)
 
-        # 获取可选的标识符
-        identifier = params.get("identifier")
-
+        # 如果只有一个报名，直接取消
         if len(signups) == 1:
-            # 只有一个报名，直接取消
             signup = signups[0]
             await api_client.signups.cancel_signup(team_id, qq_number)
 
@@ -484,67 +481,100 @@ async def _handle_cancel_signup(
             )
             await matcher.finish(msg)
 
-        else:
-            # 多个报名，需要用户选择
-            if identifier:
-                # 尝试通过标识符匹配（心法名或角色名）
-                matched = []
+        # 多个报名，尝试精确匹配
+        matched = []
+        
+        # 优先使用 character_id 精确匹配
+        character_id = params.get("character_id")
+        if character_id:
+            for signup in signups:
+                signup_char_id = signup.signup_info.get("character_id")
+                if signup_char_id == character_id:
+                    matched.append(signup)
+        
+        # 如果没有 character_id 或未匹配到，尝试使用角色名匹配
+        if not matched:
+            character_name = params.get("character_name")
+            xinfa_key = params.get("xinfa_key")
+            
+            if character_name:
+                for signup in signups:
+                    signup_char_name = signup.signup_info.get("character_name", "")
+                    signup_xinfa = signup.signup_info.get("xinfa", "")
+                    
+                    # 如果同时提供了心法和角色名，则两者都要匹配
+                    if xinfa_key and signup_xinfa:
+                        if character_name == signup_char_name and xinfa_key.lower() in signup_xinfa.lower():
+                            matched.append(signup)
+                    # 否则只匹配角色名
+                    elif character_name == signup_char_name:
+                        matched.append(signup)
+        
+        # 如果没有明确的角色信息，尝试使用 identifier（兼容旧逻辑）
+        if not matched:
+            identifier = params.get("identifier")
+            xinfa_key = params.get("xinfa_key")
+            
+            # 优先使用 xinfa_key
+            search_term = xinfa_key or identifier
+            
+            if search_term:
                 for signup in signups:
                     xinfa = signup.signup_info.get("xinfa", "")
                     char_name = signup.signup_info.get("character_name", "")
-
-                    if identifier == xinfa or identifier == char_name:
+                    
+                    if search_term == xinfa or search_term == char_name or search_term.lower() in xinfa.lower():
                         matched.append(signup)
+        
+        # 如果找到唯一匹配，直接取消
+        if len(matched) == 1:
+            signup = matched[0]
+            await api_client.signups.cancel_signup(team_id, qq_number)
 
-                if len(matched) == 1:
-                    # 找到唯一匹配，直接取消
-                    signup = matched[0]
-                    await api_client.signups.cancel_signup(team_id, qq_number)
-
-                    xinfa = signup.signup_info.get("xinfa", "未知")
-                    char_name = signup.signup_info.get("character_name", "待定")
-                    msg = MessageBuilder.build_success_message(
-                        f"取消报名成功！\n心法: {xinfa}\n角色: {char_name}"
-                    )
-                    await matcher.finish(msg)
-
-                elif len(matched) > 1:
-                    # 匹配到多个，仍需选择
-                    signups = matched
-
-            # 创建会话，让用户选择
-            session_manager = get_session_manager()
-            group_id = str(event.group_id)
-
-            session_manager.create_session(
-                user_id=qq_number,
-                group_id=group_id,
-                action="cancel_signup_select",
-                data={
-                    "team_id": team_id,
-                    "signups": [
-                        {
-                            "id": s.id,
-                            "xinfa": s.signup_info.get("xinfa", "未知"),
-                            "character_name": s.signup_info.get("character_name", "待定"),
-                            "is_rich": s.is_rich
-                        }
-                        for s in signups
-                    ]
-                }
+            xinfa = signup.signup_info.get("xinfa", "未知")
+            char_name = signup.signup_info.get("character_name", "待定")
+            msg = MessageBuilder.build_success_message(
+                f"取消报名成功！\n心法: {xinfa}\n角色: {char_name}"
             )
-
-            # 构建报名列表消息
-            msg_parts = ["你有多个报名，请选择要取消的报名:\n"]
-            for idx, signup in enumerate(signups, 1):
-                xinfa = signup.signup_info.get("xinfa", "未知")
-                char_name = signup.signup_info.get("character_name", "待定")
-                rich_tag = " [老板]" if signup.is_rich else ""
-                msg_parts.append(f"\n【{idx}】{xinfa} - {char_name}{rich_tag}")
-
-            msg_parts.append("\n\n请回复序号进行取消")
-            msg = Message("".join(msg_parts))
             await matcher.finish(msg)
+        
+        # 如果匹配到多个，使用匹配结果；否则使用所有报名
+        if matched:
+            signups = matched
+
+        # 无法唯一确定，创建会话让用户选择
+        session_manager = get_session_manager()
+        group_id = str(event.group_id)
+
+        session_manager.create_session(
+            user_id=qq_number,
+            group_id=group_id,
+            action="cancel_signup_select",
+            data={
+                "team_id": team_id,
+                "signups": [
+                    {
+                        "id": s.id,
+                        "xinfa": s.signup_info.get("xinfa", "未知"),
+                        "character_name": s.signup_info.get("character_name", "待定"),
+                        "is_rich": s.is_rich
+                    }
+                    for s in signups
+                ]
+            }
+        )
+
+        # 构建报名列表消息
+        msg_parts = ["你有多个报名，请选择要取消的报名:\n"]
+        for idx, signup in enumerate(signups, 1):
+            xinfa = signup.signup_info.get("xinfa", "未知")
+            char_name = signup.signup_info.get("character_name", "待定")
+            rich_tag = " [老板]" if signup.is_rich else ""
+            msg_parts.append(f"\n【{idx}】{xinfa} - {char_name}{rich_tag}")
+
+        msg_parts.append("\n\n请回复序号进行取消")
+        msg = Message("".join(msg_parts))
+        await matcher.finish(msg)
 
     except (FinishedException, PausedException, RejectedException):
         # 让 NoneBot 的控制流异常正常传播
