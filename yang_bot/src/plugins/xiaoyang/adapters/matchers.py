@@ -174,6 +174,14 @@ async def handle_signup_message(event: GroupMessageEvent, plain_text: str = Even
         parser = get_parser()
         intent = await parser.parse(plain_text, parse_context)
 
+        # 调试日志：打印 NLP 解析结果
+        logger.info(f"[NLP解析] 原始消息: {plain_text}")
+        logger.info(f"[NLP解析] 解析结果: {intent}")
+        if intent:
+            logger.info(f"[NLP解析] 动作: {intent.action}")
+            logger.info(f"[NLP解析] 参数: {intent.params}")
+            logger.info(f"[NLP解析] 是否需要追问: {intent.need_followup}")
+
         # 如果无法解析，直接返回，不处理
         if not intent:
             return
@@ -254,6 +262,7 @@ async def handle_signup_message(event: GroupMessageEvent, plain_text: str = Even
         elif intent.action == "cancel_signup":
             await _handle_cancel_signup(
                 signup_matcher,
+                event,
                 api_client,
                 qq_number,
                 team.id,
@@ -445,6 +454,7 @@ async def _handle_register_rich(
 
 async def _handle_cancel_signup(
     matcher,
+    event: GroupMessageEvent,
     api_client,
     qq_number: str,
     team_id: int,
@@ -504,7 +514,7 @@ async def _handle_cancel_signup(
 
             # 创建会话，让用户选择
             session_manager = get_session_manager()
-            group_id = str(matcher.event.group_id) if hasattr(matcher.event, 'group_id') else "0"
+            group_id = str(event.group_id)
 
             session_manager.create_session(
                 user_id=qq_number,
@@ -676,6 +686,15 @@ async def _handle_nlp_followup(
         else:
             intent = await parser.parse(user_input, parse_context)
 
+        # 调试日志：打印 NLP 多轮对话解析结果
+        logger.info(f"[NLP多轮] 用户输入: {user_input}")
+        logger.info(f"[NLP多轮] 对话历史: {history}")
+        logger.info(f"[NLP多轮] 解析结果: {intent}")
+        if intent:
+            logger.info(f"[NLP多轮] 动作: {intent.action}")
+            logger.info(f"[NLP多轮] 参数: {intent.params}")
+            logger.info(f"[NLP多轮] 是否需要追问: {intent.need_followup}")
+
         # 如果仍无法解析
         if not intent:
             # 保持会话，等待用户继续输入
@@ -755,6 +774,7 @@ async def _handle_nlp_followup(
         elif intent.action == "cancel_signup":
             await _handle_cancel_signup(
                 matcher,
+                event,
                 api_client,
                 qq_number,
                 team.id,

@@ -327,20 +327,34 @@ async def search_members(
             User.deleted_at.is_(None),
             (
                 User.nickname.like(search_pattern) |
-                GuildMember.group_nickname.like(search_pattern) |
-                User.other_nickname.like(search_pattern)
+                GuildMember.group_nickname.like(search_pattern)
             )
         )
     )
 
     members = []
     for user, guild_member in result.all():
+        # 检查 other_nicknames 数组中是否有匹配项
+        matches_other_nicknames = False
+        if user.other_nicknames:
+            for other_nick in user.other_nicknames:
+                if other_nick and nickname.lower() in other_nick.lower():
+                    matches_other_nicknames = True
+                    break
+        
+        # 如果不匹配且也不在 nickname 或 group_nickname 中匹配，则跳过
+        if not matches_other_nicknames:
+            matches_nickname = user.nickname and nickname.lower() in user.nickname.lower()
+            matches_group_nickname = guild_member.group_nickname and nickname.lower() in guild_member.group_nickname.lower()
+            if not (matches_nickname or matches_group_nickname):
+                continue
+        
         members.append(BotMemberInfo(
             user_id=user.id,
             qq_number=user.qq_number,
             nickname=user.nickname,
             group_nickname=guild_member.group_nickname,
-            other_nickname=user.other_nickname
+            other_nickname=user.other_nicknames[0] if user.other_nicknames else None
         ))
 
     return ResponseModel(data=BotMemberSearchResponse(members=members))
