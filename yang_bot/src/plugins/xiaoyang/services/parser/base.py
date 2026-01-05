@@ -10,6 +10,8 @@ class ParsedIntent:
     action: str  # 动作类型: "signup", "proxy_signup", "register_rich", "cancel_signup" 等
     params: Dict[str, Any]  # 解析出的参数
     confidence: float = 1.0  # 置信度 0-1，默认为1.0
+    need_followup: bool = False  # 是否需要追问用户
+    followup_question: Optional[str] = None  # 追问问题
 
 
 class MessageParser(ABC):

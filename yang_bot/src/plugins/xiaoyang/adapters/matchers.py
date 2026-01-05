@@ -13,7 +13,7 @@ from ..services.team_service import TeamService
 from ..services.signup_service import SignupService, MultipleCharactersError
 from ..services.member_service import MemberService
 from ..services.session_manager import get_session_manager
-from ..services.parser import KeywordParser
+from ..services.parser import get_parser
 from .message_builder import MessageBuilder
 
 
@@ -158,22 +158,52 @@ async def handle_signup_message(event: GroupMessageEvent, plain_text: str = Even
     - 取消报名 [序号] [可选标识符]
     """
     try:
+        # 获取 API 客户端（需要在解析前获取，用于构建上下文）
+        guild_id = event.group_id
+        api_client = get_api_client(guild_id=guild_id)
+        qq_number = str(event.user_id)
+
+        # 构建解析上下文
+        parse_context = {
+            "user_id": qq_number,
+            "group_id": str(guild_id),
+            "api_client": api_client,
+        }
+
         # 使用解析器解析消息
-        parser = KeywordParser()
-        intent = await parser.parse(plain_text, {})
+        parser = get_parser()
+        intent = await parser.parse(plain_text, parse_context)
 
         # 如果无法解析，直接返回，不处理
         if not intent:
             return
+
+        # 如果需要追问用户
+        if intent.need_followup and intent.followup_question:
+            session_manager = get_session_manager()
+            session_manager.create_session(
+                user_id=qq_number,
+                group_id=str(guild_id),
+                action="nlp_followup",
+                data={
+                    "history": [
+                        {"role": "user", "content": plain_text},
+                        {"role": "assistant", "content": intent.followup_question},
+                    ],
+                    "partial_intent": {
+                        "action": intent.action,
+                        "params": intent.params,
+                    }
+                }
+            )
+            await signup_matcher.finish(intent.followup_question)
 
         # 如果解析错误，提示用户
         if "error" in intent.params:
             msg = MessageBuilder.build_error_message(intent.params["error"])
             await signup_matcher.finish(msg)
 
-        # 获取 API 客户端
-        guild_id = event.group_id
-        api_client = get_api_client(guild_id=guild_id)
+        # 使用已获取的 API 客户端
         team_service = TeamService(api_client)
         signup_service = SignupService(api_client)
 
@@ -187,9 +217,6 @@ async def handle_signup_message(event: GroupMessageEvent, plain_text: str = Even
         except ValueError as e:
             msg = MessageBuilder.build_error_message(str(e))
             await signup_matcher.finish(msg)
-
-        # 获取用户 QQ 号
-        qq_number = str(event.user_id)
 
         # ==================== 处理报名 ====================
         if intent.action == "signup":
@@ -549,6 +576,13 @@ async def handle_session_message(event: GroupMessageEvent, plain_text: str = Eve
             session,
             plain_text.strip()
         )
+    elif session.action == "nlp_followup":
+        await _handle_nlp_followup(
+            session_handler,
+            event,
+            session,
+            plain_text.strip()
+        )
 
 
 async def _handle_cancel_signup_select(
@@ -603,6 +637,144 @@ async def _handle_cancel_signup_select(
         logger.exception(f"处理取消报名选择失败: {e}")
         msg = MessageBuilder.build_error_message(f"取消报名失败: {str(e)}")
         await matcher.finish(msg)
+
+
+async def _handle_nlp_followup(
+    matcher,
+    event: GroupMessageEvent,
+    session,
+    user_input: str
+):
+    """处理 NLP 多轮对话的追问回复"""
+    try:
+        qq_number = str(event.user_id)
+        guild_id = event.group_id
+        session_manager = get_session_manager()
+
+        # 获取历史对话
+        history = session.data.get("history", [])
+
+        # 添加用户的回复到历史
+        history.append({"role": "user", "content": user_input})
+
+        # 获取 API 客户端
+        api_client = get_api_client(guild_id=guild_id)
+
+        # 构建解析上下文
+        parse_context = {
+            "user_id": qq_number,
+            "group_id": str(guild_id),
+            "api_client": api_client,
+        }
+
+        # 重新调用 NLP 解析器（带历史）
+        parser = get_parser()
+
+        # 检查解析器是否支持 history 参数
+        if hasattr(parser, 'parse') and 'history' in parser.parse.__code__.co_varnames:
+            intent = await parser.parse(user_input, parse_context, history=history)
+        else:
+            intent = await parser.parse(user_input, parse_context)
+
+        # 如果仍无法解析
+        if not intent:
+            # 保持会话，等待用户继续输入
+            return
+
+        # 如果仍需追问
+        if intent.need_followup and intent.followup_question:
+            # 更新会话历史
+            history.append({"role": "assistant", "content": intent.followup_question})
+            session_manager.create_session(
+                user_id=qq_number,
+                group_id=str(guild_id),
+                action="nlp_followup",
+                data={
+                    "history": history,
+                    "partial_intent": {
+                        "action": intent.action,
+                        "params": intent.params,
+                    }
+                }
+            )
+            await matcher.finish(intent.followup_question)
+
+        # 关闭会话
+        session_manager.close_session(qq_number, str(guild_id))
+
+        # 如果解析错误
+        if "error" in intent.params:
+            msg = MessageBuilder.build_error_message(intent.params["error"])
+            await matcher.finish(msg)
+
+        # 获取团队服务
+        team_service = TeamService(api_client)
+        signup_service = SignupService(api_client)
+
+        # 获取团队列表
+        teams = await team_service.get_teams()
+
+        # 根据序号获取团队
+        team_index = intent.params.get("team_index")
+        try:
+            team = await team_service.get_team_by_index(teams, team_index)
+        except ValueError as e:
+            msg = MessageBuilder.build_error_message(str(e))
+            await matcher.finish(msg)
+
+        # 根据意图类型处理
+        if intent.action == "signup":
+            await _handle_signup(
+                matcher,
+                signup_service,
+                qq_number,
+                team.id,
+                intent.params
+            )
+
+        elif intent.action == "proxy_signup":
+            await _handle_proxy_signup(
+                matcher,
+                api_client,
+                signup_service,
+                qq_number,
+                team.id,
+                intent.params
+            )
+
+        elif intent.action == "register_rich":
+            await _handle_register_rich(
+                matcher,
+                api_client,
+                signup_service,
+                qq_number,
+                team.id,
+                intent.params
+            )
+
+        elif intent.action == "cancel_signup":
+            await _handle_cancel_signup(
+                matcher,
+                api_client,
+                qq_number,
+                team.id,
+                intent.params
+            )
+
+    except (FinishedException, PausedException, RejectedException):
+        raise
+
+    except APIError as e:
+        logger.error(f"API 错误: {e}")
+        msg = MessageBuilder.build_error_message(f"操作失败: {e}")
+        await matcher.finish(msg)
+
+    except Exception as e:
+        logger.exception(f"处理 NLP 追问失败: {e}")
+        # 关闭会话
+        session_manager = get_session_manager()
+        session_manager.close_session(str(event.user_id), str(event.group_id))
+        return
 
 
 # ==================== 初始化成员（超级管理员或群主专用）====================

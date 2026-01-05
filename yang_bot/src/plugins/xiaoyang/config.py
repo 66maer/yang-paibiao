@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator
 
@@ -58,4 +58,47 @@ class Config(BaseSettings):
     session_timeout: int = Field(
         default=60,
         description="会话超时时间(秒)"
+    )
+
+    # ==================== NLP 解析器配置 ====================
+    # 解析器类型选择
+    parser_type: Literal["keyword", "nlp"] = Field(
+        default="keyword",
+        description="消息解析器类型: keyword(关键词) 或 nlp(大模型)"
+    )
+
+    # NLP 服务配置
+    nlp_api_base: str = Field(
+        default="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        description="NLP API 基础地址（OpenAI 兼容接口）"
+    )
+    nlp_api_key: str = Field(
+        default="",
+        description="NLP API Key"
+    )
+    nlp_model: str = Field(
+        default="qwen-plus",
+        description="NLP 模型名称"
+    )
+    nlp_timeout: int = Field(
+        default=15,
+        description="NLP 请求超时时间(秒)"
+    )
+    nlp_max_tokens: int = Field(
+        default=256,
+        description="NLP 响应最大 token 数"
+    )
+    nlp_temperature: float = Field(
+        default=0.1,
+        description="NLP 温度参数（越低越确定性）"
+    )
+
+    # NLP 会话配置
+    nlp_max_history: int = Field(
+        default=5,
+        description="NLP 会话最大历史轮数"
+    )
+    nlp_session_timeout: int = Field(
+        default=180,
+        description="NLP 会话超时时间(秒)，默认3分钟"
     )
