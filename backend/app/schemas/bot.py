@@ -215,6 +215,7 @@ class BotCharacterSimple(BaseModel):
     relation_type: str = Field(..., description="关系类型")
     priority: Optional[int] = Field(None, description="优先级")
     created_at: Optional[datetime] = Field(None, description="创建时间")
+    cd_status: Optional[dict] = Field(None, description="本周CD状态 {dungeon_name: is_cleared}")
 
     class Config:
         from_attributes = True

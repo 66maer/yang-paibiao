@@ -53,6 +53,7 @@ class CharacterInfo(BaseModel):
     relation_type: str
     priority: Optional[int] = None
     created_at: Optional[datetime] = None
+    cd_status: Optional[Dict[str, bool]] = None  # 本周CD状态 {dungeon_name: is_cleared}
 
 
 class CharacterCreateRequest(BaseModel):

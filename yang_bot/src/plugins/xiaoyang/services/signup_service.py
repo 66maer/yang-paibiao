@@ -1,5 +1,5 @@
 """报名业务逻辑服务"""
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from nonebot.log import logger
 
 from ..api.client import APIClient, APIError
@@ -15,6 +15,14 @@ class MultipleCharactersError(Exception):
         super().__init__("找到多个匹配的角色")
 
 
+class CdConfirmRequired(Exception):
+    """需要确认CD已清的角色"""
+    def __init__(self, character: CharacterInfo, dungeon: str):
+        self.character = character
+        self.dungeon = dungeon
+        super().__init__(f"角色 {character.name} 本周已清过 {dungeon} 的CD，是否继续报名？")
+
+
 class SignupService:
     """报名业务逻辑服务"""
 
@@ -28,14 +36,16 @@ class SignupService:
         team_id: int,
         xinfa: Optional[str] = None,
         character_name: Optional[str] = None,
-        is_rich: bool = False
+        is_rich: bool = False,
+        dungeon: Optional[str] = None,
+        skip_cd_check: bool = False
     ) -> SignupInfo:
         """
         处理报名逻辑
 
         场景1: 只提供心法
             - 查询用户角色列表
-            - 如果有该心法的角色，优先使用
+            - 如果有该心法的角色，优先使用（已清CD的优先级最低）
             - 否则模糊报名
 
         场景2: 只提供角色名
@@ -53,6 +63,8 @@ class SignupService:
             xinfa: 心法名（可选，标准名称）
             character_name: 角色名（可选）
             is_rich: 是否老板位
+            dungeon: 副本名称（可选，用于CD检查）
+            skip_cd_check: 是否跳过CD检查（二次确认后传入）
 
         Returns:
             SignupInfo: 报名信息
@@ -60,29 +72,30 @@ class SignupService:
         Raises:
             ValueError: 参数错误
             MultipleCharactersError: 多个角色匹配
+            CdConfirmRequired: 需要确认CD已清的角色
             APIError: API 错误
         """
         logger.info(
             f"处理报名: qq={qq_number}, team={team_id}, "
-            f"xinfa={xinfa}, character={character_name}, is_rich={is_rich}"
+            f"xinfa={xinfa}, character={character_name}, is_rich={is_rich}, dungeon={dungeon}"
         )
 
         # 场景2: 只有角色名
         if character_name and not xinfa:
             return await self._signup_by_character_name(
-                qq_number, team_id, character_name, is_rich
+                qq_number, team_id, character_name, is_rich, dungeon, skip_cd_check
             )
 
         # 场景1: 只有心法
         if xinfa and not character_name:
             return await self._signup_by_xinfa(
-                qq_number, team_id, xinfa, is_rich
+                qq_number, team_id, xinfa, is_rich, dungeon, skip_cd_check
             )
 
         # 场景3: 心法+角色名
         if xinfa and character_name:
             return await self._signup_with_xinfa_and_character(
-                qq_number, team_id, xinfa, character_name, is_rich
+                qq_number, team_id, xinfa, character_name, is_rich, dungeon, skip_cd_check
             )
 
         raise ValueError("必须提供心法或角色名")
@@ -92,7 +105,9 @@ class SignupService:
         qq_number: str,
         team_id: int,
         character_name: str,
-        is_rich: bool
+        is_rich: bool,
+        dungeon: Optional[str] = None,
+        skip_cd_check: bool = False
     ) -> SignupInfo:
         """
         通过角色名报名
@@ -102,6 +117,8 @@ class SignupService:
             team_id: 团队 ID
             character_name: 角色名
             is_rich: 是否老板位
+            dungeon: 副本名称（用于CD检查）
+            skip_cd_check: 是否跳过CD检查
 
         Returns:
             SignupInfo: 报名信息
@@ -109,6 +126,7 @@ class SignupService:
         Raises:
             ValueError: 找不到角色
             MultipleCharactersError: 多个同名角色
+            CdConfirmRequired: 需要确认CD已清的角色
         """
         logger.info(f"通过角色名报名: {character_name}")
 
@@ -127,6 +145,11 @@ class SignupService:
 
         character = matched[0]
 
+        # 检查CD状态
+        if dungeon and not skip_cd_check:
+            if await self.character_service.get_character_cd_status(character, dungeon):
+                raise CdConfirmRequired(character, dungeon)
+
         # 使用角色ID报名
         request = SignupRequest(
             qq_number=qq_number,
@@ -143,33 +166,43 @@ class SignupService:
         qq_number: str,
         team_id: int,
         xinfa: str,
-        is_rich: bool
+        is_rich: bool,
+        dungeon: Optional[str] = None,
+        skip_cd_check: bool = False
     ) -> SignupInfo:
         """
         通过心法报名（优先使用已有角色，否则模糊报名）
+        已清CD的角色优先级最低
 
         Args:
             qq_number: QQ 号
             team_id: 团队 ID
             xinfa: 心法名（标准名称）
             is_rich: 是否老板位
+            dungeon: 副本名称（用于CD检查和优先级排序）
+            skip_cd_check: 是否跳过CD检查
 
         Returns:
             SignupInfo: 报名信息
         """
-        logger.info(f"通过心法报名: {xinfa}")
+        logger.info(f"通过心法报名: {xinfa}, dungeon={dungeon}")
 
         # 转换心法名称为英文key
         xinfa_key = get_xinfa_key(xinfa)
         if not xinfa_key:
             raise ValueError(f"无效的心法名称: {xinfa}")
 
-        # 查找该心法的最优先角色
+        # 查找该心法的最优先角色（考虑CD状态）
         character = await self.character_service.get_best_character_by_xinfa(
-            qq_number, xinfa
+            qq_number, xinfa, dungeon
         )
 
         if character:
+            # 检查CD状态（如果选中的角色已清CD且未跳过检查）
+            if dungeon and not skip_cd_check:
+                if await self.character_service.get_character_cd_status(character, dungeon):
+                    raise CdConfirmRequired(character, dungeon)
+
             # 有角色，使用角色ID报名
             request = SignupRequest(
                 qq_number=qq_number,
@@ -197,7 +230,9 @@ class SignupService:
         team_id: int,
         xinfa: str,
         character_name: str,
-        is_rich: bool
+        is_rich: bool,
+        dungeon: Optional[str] = None,
+        skip_cd_check: bool = False
     ) -> SignupInfo:
         """
         使用心法+角色名报名（角色不存在时自动创建）
@@ -208,6 +243,8 @@ class SignupService:
             xinfa: 心法名（标准名称）
             character_name: 角色名
             is_rich: 是否老板位
+            dungeon: 副本名称（用于CD检查）
+            skip_cd_check: 是否跳过CD检查
 
         Returns:
             SignupInfo: 报名信息
@@ -225,6 +262,11 @@ class SignupService:
         )
 
         if character:
+            # 检查CD状态
+            if dungeon and not skip_cd_check:
+                if await self.character_service.get_character_cd_status(character, dungeon):
+                    raise CdConfirmRequired(character, dungeon)
+
             # 角色存在，使用角色ID报名
             request = SignupRequest(
                 qq_number=qq_number,

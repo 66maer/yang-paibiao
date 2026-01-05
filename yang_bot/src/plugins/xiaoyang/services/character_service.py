@@ -81,22 +81,62 @@ class CharacterService:
     async def get_best_character_by_xinfa(
         self,
         qq_number: str,
-        xinfa: str
+        xinfa: str,
+        dungeon: Optional[str] = None
     ) -> Optional[CharacterInfo]:
         """
         获取用户指定心法的最优先角色
+        如果提供了dungeon，会将已清CD的角色优先级降低
 
         Args:
             qq_number: QQ 号
             xinfa: 心法名（可以是英文key、中文名或昵称）
+            dungeon: 副本名称（可选，用于检查CD状态）
 
         Returns:
             Optional[CharacterInfo]: 最优先的角色，如果没有返回 None
         """
         xinfa_chars = await self.find_characters_by_xinfa(qq_number, xinfa)
 
-        if xinfa_chars:
-            return xinfa_chars[0]  # 已按优先级排序，第一个就是最优先的
+        if not xinfa_chars:
+            return None
+
+        # 如果提供了副本名称，将已清CD的角色排到后面
+        if dungeon:
+            # 分离已清CD和未清CD的角色
+            available_chars = []
+            cd_cleared_chars = []
+            for char in xinfa_chars:
+                if char.cd_status and char.cd_status.get(dungeon):
+                    cd_cleared_chars.append(char)
+                else:
+                    available_chars.append(char)
+            # 优先返回未清CD的角色
+            if available_chars:
+                return available_chars[0]
+            # 如果都清了CD，返回第一个
+            return cd_cleared_chars[0] if cd_cleared_chars else None
+        
+        return xinfa_chars[0]  # 已按优先级排序，第一个就是最优先的
+
+    async def get_character_cd_status(
+        self,
+        character: CharacterInfo,
+        dungeon: str
+    ) -> bool:
+        """
+        检查角色是否已清指定副本的CD
+
+        Args:
+            character: 角色信息
+            dungeon: 副本名称
+
+        Returns:
+            bool: 是否已清CD
+        """
+        if not character.cd_status:
+            return False
+        return character.cd_status.get(dungeon, False)
 
         return None
 

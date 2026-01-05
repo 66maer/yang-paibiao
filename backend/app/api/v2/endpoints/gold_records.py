@@ -14,6 +14,7 @@ from app.models.guild_member import GuildMember
 from app.models.gold_record import GoldRecord
 from app.models.character import Character
 from app.models.team import Team
+from app.models.signup import Signup
 from app.schemas.common import ResponseModel, success
 from app.schemas.gold_record import GoldRecordCreate, GoldRecordUpdate, GoldRecordOut
 
@@ -62,6 +63,42 @@ async def _get_heibenren_info(
     # 注意：character_name 在记录时已经覆盖并写入数据库，读取时直接使用数据库中的值
 
     return result_info
+
+
+async def _auto_update_weekly_records(db: AsyncSession, gold_record: GoldRecord):
+    """
+    自动更新每周记录（金团记录联动）
+    根据 team_id 查找报名的角色，自动记录人均金团金额
+    """
+    from app.api.v2.endpoints.my_records import auto_create_weekly_record
+    
+    # 计算人均金额
+    per_person_gold = gold_record.total_gold // gold_record.worker_count
+    
+    # 查找该团队的所有有效报名（非老板、未取消）
+    result = await db.execute(
+        select(Signup).where(
+            Signup.team_id == gold_record.team_id,
+            Signup.cancelled_at.is_(None),
+            Signup.is_rich == False,  # 排除老板
+            Signup.signup_user_id.isnot(None),  # 必须有关联用户
+            Signup.signup_character_id.isnot(None)  # 必须有关联角色
+        )
+    )
+    signups = result.scalars().all()
+    
+    # 为每个报名的角色创建/更新每周记录
+    for signup in signups:
+        await auto_create_weekly_record(
+            db=db,
+            user_id=signup.signup_user_id,
+            character_id=signup.signup_character_id,
+            dungeon_name=gold_record.dungeon,
+            gold_amount=per_person_gold,
+            gold_record_id=gold_record.id
+        )
+    
+    await db.commit()
 
 
 @router.post("/{guild_id}/gold-records", response_model=ResponseModel[GoldRecordOut])
@@ -166,6 +203,10 @@ async def create_gold_record(
         ranking_service = RankingService(db)
         rankings = await ranking_service.calculate_guild_rankings(guild_id)
         await ranking_service.save_ranking_snapshot(guild_id, rankings)
+
+    # 金团记录联动：自动更新每周记录
+    if gold_record.team_id and gold_record.worker_count > 0:
+        await _auto_update_weekly_records(db, gold_record)
 
     # 读取时覆盖黑本人信息（只覆盖 user_name）
     gold_record.heibenren_info = await _get_heibenren_info(

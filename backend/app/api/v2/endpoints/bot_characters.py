@@ -18,6 +18,7 @@ from app.schemas.bot import (
 )
 from app.schemas.character import CharacterResponse
 from app.schemas.common import ResponseModel
+from app.api.v2.endpoints.my_records import get_character_cd_status
 
 router = APIRouter()
 
@@ -174,9 +175,11 @@ async def get_user_characters(
     )
     rows = result.all()
 
-    # 转换为BotCharacterSimple
-    characters = [
-        BotCharacterSimple(
+    # 转换为BotCharacterSimple，附带CD状态
+    characters = []
+    for character, character_player in rows:
+        cd_status = await get_character_cd_status(db, character.id)
+        characters.append(BotCharacterSimple(
             id=character.id,
             user_id=character_player.user_id,
             name=character.name,
@@ -184,9 +187,8 @@ async def get_user_characters(
             xinfa=character.xinfa,
             relation_type=character_player.relation_type,
             priority=character_player.priority,
-            created_at=character.created_at
-        )
-        for character, character_player in rows
-    ]
+            created_at=character.created_at,
+            cd_status=cd_status if cd_status else None
+        ))
 
     return ResponseModel(data=BotCharacterListResponse(characters=characters))
