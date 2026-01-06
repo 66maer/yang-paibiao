@@ -313,7 +313,8 @@ async def _handle_signup(
     """处理报名"""
     try:
         mode = params.get("mode")
-        xinfa = params.get("xinfa")
+        # NLP解析返回的是xinfa_key，兼容旧的xinfa参数名
+        xinfa = params.get("xinfa_key") or params.get("xinfa")
         character_name = params.get("character_name")
         is_rich = params.get("is_rich", False)
 
@@ -377,7 +378,8 @@ async def _handle_proxy_signup(
         proxy_qq_number = user.qq_number
 
         # 调用报名服务（使用被代报名用户的 QQ 号）
-        xinfa = params.get("xinfa")
+        # NLP解析返回的是xinfa_key，兼容旧的xinfa参数名
+        xinfa = params.get("xinfa_key") or params.get("xinfa")
         character_name = params.get("character_name")
         is_rich = params.get("is_rich", False)
 
@@ -440,7 +442,8 @@ async def _handle_register_rich(
         rich_qq_number = user.qq_number
 
         # 调用报名服务（is_rich=True）
-        xinfa = params.get("xinfa")
+        # NLP解析返回的是xinfa_key，兼容旧的xinfa参数名
+        xinfa = params.get("xinfa_key") or params.get("xinfa")
         character_name = params.get("character_name")
 
         signup_info = await signup_service.process_signup(
