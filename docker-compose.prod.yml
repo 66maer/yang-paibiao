@@ -65,6 +65,8 @@ services:
     volumes:
       # 映射截图缓存目录到宿主机
       - ./data/bot/screenshots:/app/cache/screenshots
+      # 映射自定义 NLP 提示词配置文件
+      - ./data/bot/config:/app/config
     networks:
       - shared-network
     depends_on:

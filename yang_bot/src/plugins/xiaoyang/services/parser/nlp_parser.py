@@ -29,7 +29,6 @@ class NLPParser(MessageParser):
         max_tokens: int = 512,
         temperature: float = 0.1,
         max_history: int = 5,
-        custom_prompt: str = "",
     ):
         """
         初始化 NLP 解析器
@@ -42,7 +41,6 @@ class NLPParser(MessageParser):
             max_tokens: 最大 token 数
             temperature: 温度参数
             max_history: 最大历史轮数
-            custom_prompt: 自定义提示词（留空使用默认）
         """
         self.api_base = api_base.rstrip("/")
         self.api_key = api_key
@@ -51,7 +49,7 @@ class NLPParser(MessageParser):
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.max_history = max_history
-        self._system_prompt = build_system_prompt(custom_prompt)
+        self._system_prompt = build_system_prompt()
 
     async def parse(
         self,
@@ -87,6 +85,11 @@ class NLPParser(MessageParser):
                 "user_characters": context.get("user_characters", []),
                 "user_signups": context.get("user_signups", []),
             }
+            
+            # 打印当前上下文用于调试
+            logger.info(f"[NLP上下文] teams: {ctx_info['teams']}")
+            logger.info(f"[NLP上下文] user_characters: {ctx_info['user_characters']}")
+            logger.info(f"[NLP上下文] user_signups: {ctx_info['user_signups']}")
 
             # 调用 LLM
             result = await self._call_llm(message, ctx_info, history)
@@ -173,10 +176,15 @@ class NLPParser(MessageParser):
         if intent == "irrelevant":
             return None
 
-        confidence = result.get("confidence", 0.8)
-
         # 提取参数
         params: Dict[str, Any] = {}
+
+        error_message = result.get("error_message")
+        if error_message:
+            return ParsedIntent(
+                action=intent,
+                error_message=error_message,
+            )
 
         # 团队序号处理
         team_index = result.get("team_index")
@@ -190,12 +198,11 @@ class NLPParser(MessageParser):
             return ParsedIntent(
                 action=intent,
                 params=params,
-                confidence=0.3,
                 need_followup=True,
                 followup_question="请问是哪一车？"
             )
 
-        # 心法处理
+        # 心法处理（取消报名时心法可选）
         xinfa_key = result.get("xinfa_key")
         if xinfa_key and xinfa_key in XINFA_INFO:
             params["xinfa_key"] = xinfa_key
@@ -204,10 +211,10 @@ class NLPParser(MessageParser):
             return ParsedIntent(
                 action=intent,
                 params=params,
-                confidence=0.3,
                 need_followup=True,
                 followup_question="请指定心法，例如：藏剑、奶花、丐帮等"
             )
+        # cancel_signup 时心法可选，不需要追问
 
         # 角色 ID（从用户角色列表匹配）
         character_id = result.get("character_id")
@@ -223,6 +230,15 @@ class NLPParser(MessageParser):
         player_name = result.get("player_name")
         if player_name:
             params["player_name"] = player_name
+        elif intent in ("proxy_signup", "register_rich"):
+            # 代报名/登记老板必须有被报名用户昵称
+            return ParsedIntent(
+                action=intent,
+                params=params,
+                need_followup=True,
+                followup_question="请提供被报名玩家的昵称"
+            )
+            
 
         # 报名 ID（用于取消报名）
         signup_id = result.get("signup_id")
@@ -232,7 +248,6 @@ class NLPParser(MessageParser):
         return ParsedIntent(
             action=intent,
             params=params,
-            confidence=confidence,
             need_followup=False,
             followup_question=None,
         )

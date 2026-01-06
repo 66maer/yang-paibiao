@@ -62,8 +62,7 @@ class KeywordParser(MessageParser):
         if not match:
             return ParsedIntent(
                 action="signup",
-                params={"error": "格式错误，正确格式：报名 [序号] [心法/角色名]"},
-                confidence=0.3
+                params={"error": "格式错误,正确格式:报名 [序号] [心法/角色名]"}
             )
 
         team_index = int(match.group(1))
@@ -75,8 +74,7 @@ class KeywordParser(MessageParser):
             # 没有提供心法或角色名
             return ParsedIntent(
                 action="signup",
-                params={**params, "error": "请提供心法或角色名"},
-                confidence=0.5
+                params={**params, "error": "请提供心法或角色名"}
             )
 
         # 分词处理
@@ -115,8 +113,7 @@ class KeywordParser(MessageParser):
                 # 两个都是心法，不合理
                 return ParsedIntent(
                     action="signup",
-                    params={**params, "error": "提供了两个心法名，请检查输入"},
-                    confidence=0.3
+                    params={**params, "error": "提供了两个心法名,请检查输入"}
                 )
 
             else:
@@ -150,11 +147,10 @@ class KeywordParser(MessageParser):
                 # 多个心法，不合理
                 return ParsedIntent(
                     action="signup",
-                    params={**params, "error": "提供了多个心法名，请检查输入"},
-                    confidence=0.3
+                    params={**params, "error": "提供了多个心法名,请检查输入"}
                 )
 
-        return ParsedIntent(action="signup", params=params, confidence=0.9)
+        return ParsedIntent(action="signup", params=params)
 
     def _parse_proxy_signup(self, message: str) -> Optional[ParsedIntent]:
         """
@@ -177,8 +173,7 @@ class KeywordParser(MessageParser):
         if not match:
             return ParsedIntent(
                 action="proxy_signup",
-                params={"error": "格式错误，正确格式：代报名 [序号] [用户名] [心法/角色名]"},
-                confidence=0.3
+                params={"error": "格式错误,正确格式:代报名 [序号] [用户名] [心法/角色名]"}
             )
 
         team_index = int(match.group(1))
@@ -189,8 +184,7 @@ class KeywordParser(MessageParser):
         if not rest:
             return ParsedIntent(
                 action="proxy_signup",
-                params={**params, "error": "请提供被代报名的用户名"},
-                confidence=0.5
+                params={**params, "error": "请提供被代报名的用户名"}
             )
 
         # 分词处理
@@ -199,8 +193,7 @@ class KeywordParser(MessageParser):
         if len(parts) < 1:
             return ParsedIntent(
                 action="proxy_signup",
-                params={**params, "error": "请提供被代报名的用户名"},
-                confidence=0.5
+                params={**params, "error": "请提供被代报名的用户名"}
             )
 
         # 第一个参数是被代报名的用户名
@@ -211,8 +204,7 @@ class KeywordParser(MessageParser):
             # 只有用户名，没有心法或角色
             return ParsedIntent(
                 action="proxy_signup",
-                params={**params, "error": "请提供心法或角色名"},
-                confidence=0.5
+                params={**params, "error": "请提供心法或角色名"}
             )
 
         elif len(parts) == 2:
@@ -251,7 +243,7 @@ class KeywordParser(MessageParser):
                 params["character_name"] = " ".join(remaining_parts)
                 params["mode"] = "character_only"
 
-        return ParsedIntent(action="proxy_signup", params=params, confidence=0.9)
+        return ParsedIntent(action="proxy_signup", params=params)
 
     def _parse_register_rich(self, message: str) -> Optional[ParsedIntent]:
         """
@@ -300,8 +292,7 @@ class KeywordParser(MessageParser):
         if not match:
             return ParsedIntent(
                 action="cancel_signup",
-                params={"error": "格式错误，正确格式：取消报名 [序号] [可选:编号/心法/角色名]"},
-                confidence=0.3
+                params={"error": "格式错误,正确格式:取消报名 [序号] [可选:编号/心法/角色名]"}
             )
 
         team_index = int(match.group(1))
@@ -312,4 +303,4 @@ class KeywordParser(MessageParser):
             "identifier": identifier.strip() if identifier else None
         }
 
-        return ParsedIntent(action="cancel_signup", params=params, confidence=0.9)
+        return ParsedIntent(action="cancel_signup", params=params)

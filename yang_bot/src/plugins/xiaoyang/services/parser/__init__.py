@@ -46,7 +46,6 @@ def get_parser() -> MessageParser:
                 max_tokens=config.nlp_max_tokens,
                 temperature=config.nlp_temperature,
                 max_history=config.nlp_max_history,
-                custom_prompt=config.nlp_system_prompt,
             )
             logger.info(f"使用 NLP 解析器: {config.nlp_model}")
     else:

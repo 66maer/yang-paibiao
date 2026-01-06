@@ -103,8 +103,5 @@ class Config(BaseSettings):
         description="NLP 会话超时时间(秒)，默认3分钟"
     )
 
-    # NLP 提示词配置（可通过环境变量覆盖）
-    nlp_system_prompt: str = Field(
-        default="",
-        description="NLP 系统提示词（留空则使用内置默认提示词）"
-    )
+    # NLP 提示词配置（现在从 /app/config/nlp_prompt.txt 文件读取）
+    # 如果需要自定义，请编辑 data/bot/config/nlp_prompt.txt 文件

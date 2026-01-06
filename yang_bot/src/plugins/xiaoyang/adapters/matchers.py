@@ -316,14 +316,14 @@ async def handle_signup_keywords(event: GroupMessageEvent, plain_text: str = Eve
         if intent:
             logger.info(f"[NLP解析] 动作: {intent.action}, 参数: {intent.params}")
         
-        # 如果无法解析或置信度太低，不处理
+        # 如果无法解析，不处理
         if not intent:
             return
         
-        if intent.confidence < 0.5:
-            logger.info(f"[NLP解析] 置信度过低 ({intent.confidence})，跳过")
-            return
-        
+        if intent.error_message:
+            msg = MessageBuilder.build_error_message(intent.error_message)
+            await signup_keywords.finish(msg)
+
         # 如果需要追问用户
         if intent.need_followup and intent.followup_question:
             session_manager.create_session(
@@ -406,18 +406,28 @@ async def _handle_self_signup(
     """
     try:
         qq_number = str(event.user_id)
+        xinfa_key = params.get("xinfa_key")
+        
+        # 获取心法（提前获取用于重复检查）
+        if not xinfa_key:
+            msg = MessageBuilder.build_error_message("请指定心法，例如：报1 藏剑")
+            await matcher.finish(msg)
         
         # 检查是否已经报名（通过 player_qq_number 判断是否是自己的报名）
         user_signups = context.get("user_signups", [])
+        logger.info(f"[重复检查] team_id={team_id}, qq_number={qq_number}")
+        logger.info(f"[重复检查] user_signups={user_signups}")
+        
+        # 筛选该团队中自己的报名
         existing_self_signups = [
             s for s in user_signups 
             if s["team_id"] == team_id 
-            and s.get("player_qq_number") == qq_number  # 通过 QQ 号判断
+            and str(s.get("player_qq_number", "")) == qq_number  # 确保字符串比较
         ]
+        logger.info(f"[重复检查] existing_self_signups={existing_self_signups}")
         
         if existing_self_signups:
             # 已有报名，检查是否是相同心法
-            xinfa_key = params.get("xinfa_key")
             same_xinfa = [s for s in existing_self_signups if s.get("xinfa") == xinfa_key]
             if same_xinfa:
                 xinfa_display = format_xinfa_display(xinfa_key)
@@ -425,12 +435,6 @@ async def _handle_self_signup(
                     f"你已经用 {xinfa_display} 报名过该团队了，如需修改请先取消"
                 )
                 await matcher.finish(msg)
-        
-        # 获取心法
-        xinfa_key = params.get("xinfa_key")
-        if not xinfa_key:
-            msg = MessageBuilder.build_error_message("请指定心法，例如：报1 藏剑")
-            await matcher.finish(msg)
         
         # 尝试获取用户昵称
         try:
