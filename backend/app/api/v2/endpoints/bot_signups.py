@@ -22,7 +22,9 @@ from app.models.character import Character, CharacterPlayer
 from app.schemas.bot import BotSignupRequest, BotCancelSignupRequest, BotSignupInfo, BotUserSignupsResponse
 from app.schemas.signup import SignupOut
 from app.schemas.common import ResponseModel
+from app.core.logging import get_logger
 
+logger = get_logger(__name__)
 router = APIRouter()
 
 
@@ -55,8 +57,11 @@ async def create_signup(
        - signup_user_id = null
        - player_name 必填（老板的昵称）
     """
+    logger.info(f"收到报名请求 - 群号: {guild_qq_number}, 团队ID: {team_id}, QQ: {payload.qq_number}, 代报: {payload.is_proxy}, 老板: {payload.is_rich}")
+
     # 验证Bot权限
     guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
+    logger.debug(f"验证通过 - 公会ID: {guild.id}")
 
     # 验证团队存在
     team_result = await db.execute(
@@ -65,10 +70,13 @@ async def create_signup(
     team = team_result.scalar_one_or_none()
 
     if not team:
+        logger.warning(f"团队不存在 - 团队ID: {team_id}, 公会ID: {guild.id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="团队不存在"
         )
+
+    logger.debug(f"找到团队 - 团队名称: {team.name}")
 
     # 查找提交者用户
     submitter_result = await db.execute(
@@ -80,6 +88,7 @@ async def create_signup(
     submitter = submitter_result.scalar_one_or_none()
 
     if not submitter:
+        logger.warning(f"用户未注册 - QQ号: {payload.qq_number}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"QQ号 {payload.qq_number} 未注册"
@@ -87,19 +96,22 @@ async def create_signup(
 
     # 获取提交者昵称
     submitter_nickname = submitter.group_nickname or submitter.nickname or submitter.qq_number
+    logger.debug(f"找到提交者 - 用户ID: {submitter.id}, 昵称: {submitter_nickname}")
 
     # 根据模式处理
     if payload.is_proxy:
         # 代报名或登记老板模式
         if not payload.player_name:
+            logger.warning(f"代报名缺少player_name - QQ: {payload.qq_number}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="代报名或登记老板时必须提供 player_name"
             )
-        
+
         # 构建 signup_info
         if payload.is_rich:
             # 登记老板模式
+            logger.info(f"登记老板模式 - 提交者: {submitter_nickname}, 老板名称: {payload.player_name}, 心法: {payload.xinfa}")
             signup_info = {
                 "submitter_name": submitter_nickname,
                 "submitter_qq_number": payload.qq_number,
@@ -110,6 +122,7 @@ async def create_signup(
             }
         else:
             # 代他人报名模式
+            logger.info(f"代他人报名模式 - 提交者: {submitter_nickname}, 被代报者: {payload.player_name}, 心法: {payload.xinfa}")
             signup_info = {
                 "submitter_name": submitter_nickname,
                 "submitter_qq_number": payload.qq_number,
@@ -132,9 +145,10 @@ async def create_signup(
         )
     else:
         # 自己报名模式
+        logger.info(f"自己报名模式 - 用户: {submitter_nickname}, 心法: {payload.xinfa}")
         signup_character_id = None
         character_name = payload.character_name or ""
-        
+
         # 如果提供了 character_id，验证角色
         if payload.character_id:
             char_result = await db.execute(
@@ -149,6 +163,7 @@ async def create_signup(
             character = char_result.scalar_one_or_none()
 
             if not character:
+                logger.warning(f"角色不存在或不属于用户 - 角色ID: {payload.character_id}, 用户ID: {submitter.id}")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"角色ID {payload.character_id} 不存在或不属于该用户"
@@ -156,6 +171,7 @@ async def create_signup(
 
             signup_character_id = character.id
             character_name = character.name
+            logger.debug(f"关联角色 - 角色ID: {character.id}, 角色名: {character_name}")
             # 如果角色有心法，可以覆盖（但通常保持请求中的心法）
         
         # 构建 signup_info
@@ -184,6 +200,8 @@ async def create_signup(
     await db.commit()
     await db.refresh(signup)
 
+    logger.info(f"报名成功 - 报名ID: {signup.id}, 团队ID: {team_id}, 提交者: {submitter_nickname}")
+
     return ResponseModel(data=SignupOut.from_orm(signup))
 
 
@@ -204,6 +222,8 @@ async def cancel_signup(
     必须提供 signup_id 进行精确取消。
     只有报名的提交者或报名用户本人可以取消。
     """
+    logger.info(f"收到取消报名请求 - 群号: {guild_qq_number}, 团队ID: {team_id}, QQ: {payload.qq_number}, 报名ID: {payload.signup_id}")
+
     # 验证Bot权限
     guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
@@ -217,10 +237,13 @@ async def cancel_signup(
     user = user_result.scalar_one_or_none()
 
     if not user:
+        logger.warning(f"用户未注册 - QQ号: {payload.qq_number}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"QQ号 {payload.qq_number} 未注册"
         )
+
+    logger.debug(f"找到操作者 - 用户ID: {user.id}")
 
     # 查找报名记录
     signup_result = await db.execute(
@@ -233,6 +256,7 @@ async def cancel_signup(
     signup = signup_result.scalar_one_or_none()
 
     if not signup:
+        logger.warning(f"报名记录不存在或已取消 - 报名ID: {payload.signup_id}, 团队ID: {team_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"报名记录 {payload.signup_id} 不存在或已取消"
@@ -243,8 +267,9 @@ async def cancel_signup(
         signup.submitter_id == user.id or
         (signup.signup_user_id is not None and signup.signup_user_id == user.id)
     )
-    
+
     if not can_cancel:
+        logger.warning(f"无权限取消报名 - 用户ID: {user.id}, 报名ID: {signup.id}, 提交者ID: {signup.submitter_id}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="你没有权限取消这条报名记录"
@@ -255,6 +280,8 @@ async def cancel_signup(
     signup.cancelled_by = user.id
 
     await db.commit()
+
+    logger.info(f"取消报名成功 - 报名ID: {signup.id}, 团队ID: {team_id}, 操作者ID: {user.id}")
 
     return ResponseModel(message="报名已取消")
 
@@ -277,9 +304,11 @@ async def get_user_signups(
     1. 自己给自己的报名
     2. 自己给别人的代报名
     3. 别人给自己的代报名（如果 signup_user_id 匹配）
-    
+
     注意：代报名时 signup_user_id 通常为空，所以主要返回的是 submitter_id 匹配的记录
     """
+    logger.info(f"查询用户报名记录 - 群号: {guild_qq_number}, 团队ID: {team_id}, QQ: {qq_number}")
+
     # 验证Bot权限
     guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
@@ -290,6 +319,7 @@ async def get_user_signups(
     team = team_result.scalar_one_or_none()
 
     if not team:
+        logger.warning(f"团队不存在 - 团队ID: {team_id}, 公会ID: {guild.id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="团队不存在"
@@ -305,10 +335,13 @@ async def get_user_signups(
     user = user_result.scalar_one_or_none()
 
     if not user:
+        logger.warning(f"用户未注册 - QQ号: {qq_number}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"QQ号 {qq_number} 未注册"
         )
+
+    logger.debug(f"找到用户 - 用户ID: {user.id}")
 
     # 查找该用户相关的所有有效报名
     # 包括：submitter_id 是该用户 或 signup_user_id 是该用户
@@ -323,6 +356,8 @@ async def get_user_signups(
         ).order_by(Signup.created_at.desc())
     )
     signups = signups_result.scalars().all()
+
+    logger.info(f"查询到 {len(signups)} 条报名记录 - 用户ID: {user.id}, 团队ID: {team_id}")
 
     # 转换为响应格式
     signup_list = [
