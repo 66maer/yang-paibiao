@@ -23,12 +23,21 @@ class TeamInfo(BaseModel):
 
 
 class SignupRequest(BaseModel):
-    """报名请求"""
-    qq_number: str
-    character_id: Optional[int] = None
-    character_name: Optional[str] = None
-    xinfa: str
-    is_rich: bool = False
+    """
+    报名请求
+    
+    支持三种模式：
+    1. 自己报名：qq_number 为报名者 QQ，is_proxy=False
+    2. 代他人报名：qq_number 为提交者 QQ，is_proxy=True，player_name 为被报名者昵称
+    3. 登记老板：qq_number 为提交者 QQ，is_proxy=True，is_rich=True，player_name 为老板昵称
+    """
+    qq_number: str  # 提交者的 QQ 号
+    xinfa: str  # 心法 key（必填）
+    character_id: Optional[int] = None  # 角色 ID（可选，用于自己报名时匹配角色）
+    character_name: Optional[str] = None  # 角色名（可选）
+    is_rich: bool = False  # 是否老板
+    is_proxy: bool = False  # 是否代报名
+    player_name: Optional[str] = None  # 被报名者/老板的昵称（代报名时必填）
 
 
 class SignupInfo(BaseModel):
@@ -36,7 +45,7 @@ class SignupInfo(BaseModel):
     id: int
     team_id: int
     submitter_id: int
-    signup_user_id: int
+    signup_user_id: Optional[int] = None  # 可能为空（代报名时）
     signup_character_id: Optional[int] = None
     signup_info: Dict[str, Any]
     is_rich: bool

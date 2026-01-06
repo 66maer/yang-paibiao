@@ -1,10 +1,16 @@
 """
-Bot API - 报名管理
+Bot API - 报名管理（重构版）
+
+处理模式：
+1. 自己报名：submitter_id = signup_user_id = 当前用户
+2. 代他人报名：submitter_id = 当前用户，signup_user_id = null
+3. 登记老板：submitter_id = 当前用户，signup_user_id = null，is_rich = true
+4. 取消报名：必须使用 signup_id 精确取消
 """
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, Integer
+from sqlalchemy import select, or_
 
 from app.database import get_db
 from app.api.deps import get_current_bot, verify_bot_guild_access_by_qq
@@ -34,8 +40,20 @@ async def create_signup(
     """
     提交报名（通过QQ群号）
 
-    - 如果提供character_id，优先使用角色信息
-    - 如果未提供character_id，必须提供character_name和xinfa
+    支持三种模式：
+    1. 自己报名（is_proxy=False）：
+       - submitter_id = signup_user_id = 当前用户
+       - 可选：通过 character_id 关联角色
+    
+    2. 代他人报名（is_proxy=True, is_rich=False）：
+       - submitter_id = 当前用户
+       - signup_user_id = null（无法确定被代报者的系统用户ID）
+       - player_name 必填（被代报者的昵称）
+    
+    3. 登记老板（is_proxy=True, is_rich=True）：
+       - submitter_id = 当前用户
+       - signup_user_id = null
+       - player_name 必填（老板的昵称）
     """
     # 验证Bot权限
     guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
@@ -52,77 +70,114 @@ async def create_signup(
             detail="团队不存在"
         )
 
-    # 查找用户
-    user_result = await db.execute(
+    # 查找提交者用户
+    submitter_result = await db.execute(
         select(User).where(
             User.qq_number == payload.qq_number,
             User.deleted_at.is_(None)
         )
     )
-    user = user_result.scalar_one_or_none()
+    submitter = submitter_result.scalar_one_or_none()
 
-    if not user:
+    if not submitter:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"QQ号 {payload.qq_number} 未注册"
         )
 
-    # 处理角色信息
-    signup_character_id = None
-    character_name = ""
-    xinfa = payload.xinfa
+    # 获取提交者昵称
+    submitter_nickname = submitter.group_nickname or submitter.nickname or submitter.qq_number
 
-    if payload.character_id:
-        # 优先使用character_id
-        char_result = await db.execute(
-            select(Character)
-            .join(CharacterPlayer)
-            .where(
-                Character.id == payload.character_id,
-                CharacterPlayer.user_id == user.id,
-                Character.deleted_at.is_(None)
-            )
-        )
-        character = char_result.scalar_one_or_none()
-
-        if not character:
+    # 根据模式处理
+    if payload.is_proxy:
+        # 代报名或登记老板模式
+        if not payload.player_name:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"角色ID {payload.character_id} 不存在或不属于该用户"
+                detail="代报名或登记老板时必须提供 player_name"
             )
-
-        signup_character_id = character.id
-        character_name = character.name
-        xinfa = character.xinfa
-    elif payload.character_name:
-        # 使用请求中的角色名
-        character_name = payload.character_name
+        
+        # 构建 signup_info
+        if payload.is_rich:
+            # 登记老板模式
+            signup_info = {
+                "submitter_name": submitter_nickname,
+                "submitter_qq_number": payload.qq_number,
+                "boss_name": payload.player_name,
+                "boss_qq_number": None,
+                "xinfa": payload.xinfa,
+            }
+        else:
+            # 代他人报名模式
+            signup_info = {
+                "submitter_name": submitter_nickname,
+                "submitter_qq_number": payload.qq_number,
+                "player_name": payload.player_name,
+                "player_qq_number": None,
+                "character_name": payload.character_name,
+                "xinfa": payload.xinfa,
+            }
+        
+        # 创建报名记录
+        signup = Signup(
+            team_id=team_id,
+            submitter_id=submitter.id,
+            signup_user_id=None,  # 代报名时无法确定用户ID
+            signup_character_id=None,  # 代报名时无法确定角色ID
+            signup_info=signup_info,
+            is_rich=payload.is_rich,
+            is_proxy=True,
+            priority=0
+        )
     else:
-        # 模糊报名：只提供心法，不提供角色信息
-        # character_name 留空，xinfa 使用请求中的值
-        pass
+        # 自己报名模式
+        signup_character_id = None
+        character_name = payload.character_name or ""
+        
+        # 如果提供了 character_id，验证角色
+        if payload.character_id:
+            char_result = await db.execute(
+                select(Character)
+                .join(CharacterPlayer)
+                .where(
+                    Character.id == payload.character_id,
+                    CharacterPlayer.user_id == submitter.id,
+                    Character.deleted_at.is_(None)
+                )
+            )
+            character = char_result.scalar_one_or_none()
 
-    # 构建signup_info
-    signup_info = {
-        "submitter_name": user.nickname,
-        "submitter_qq_number": user.qq_number,
-        "player_name": user.nickname,
-        "player_qq_number": user.qq_number,
-        "character_name": character_name,
-        "xinfa": xinfa
-    }
+            if not character:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"角色ID {payload.character_id} 不存在或不属于该用户"
+                )
 
-    # 创建报名
-    signup = Signup(
-        team_id=team_id,
-        submitter_id=user.id,
-        signup_user_id=user.id,
-        signup_character_id=signup_character_id,
-        signup_info=signup_info,
-        is_rich=payload.is_rich,
-        is_proxy=False,  # Bot报名都是本人
-        priority=0
-    )
+            signup_character_id = character.id
+            character_name = character.name
+            # 如果角色有心法，可以覆盖（但通常保持请求中的心法）
+        
+        # 构建 signup_info
+        signup_info = {
+            "submitter_name": submitter_nickname,
+            "submitter_qq_number": payload.qq_number,
+            "player_name": submitter_nickname,
+            "player_qq_number": payload.qq_number,
+            "character_name": character_name,
+            "xinfa": payload.xinfa,
+        }
+        
+        # 创建报名记录
+        signup = Signup(
+            team_id=team_id,
+            submitter_id=submitter.id,
+            signup_user_id=submitter.id,  # 自己报名
+            signup_character_id=signup_character_id,
+            signup_info=signup_info,
+            is_rich=payload.is_rich,
+            is_proxy=False,
+            priority=0
+        )
 
     db.add(signup)
     await db.commit()
@@ -145,13 +200,13 @@ async def cancel_signup(
     """
     取消报名（通过QQ群号）
 
-    - 通过QQ号查找用户
-    - 软删除报名记录（设置cancelled_at）
+    必须提供 signup_id 进行精确取消。
+    只有报名的提交者或报名用户本人可以取消。
     """
     # 验证Bot权限
     guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
 
-    # 查找用户
+    # 查找操作者用户
     user_result = await db.execute(
         select(User).where(
             User.qq_number == payload.qq_number,
@@ -166,46 +221,37 @@ async def cancel_signup(
             detail=f"QQ号 {payload.qq_number} 未注册"
         )
 
-    # 查找该用户在该团队的有效报名
-    query = select(Signup).where(
-        Signup.team_id == team_id,
-        or_(
-            Signup.signup_user_id == user.id,  # 报名人是该用户
-            Signup.submitter_id == user.id     # 提交者是该用户
-        ),
-        Signup.cancelled_at.is_(None)
+    # 查找报名记录
+    signup_result = await db.execute(
+        select(Signup).where(
+            Signup.id == payload.signup_id,
+            Signup.team_id == team_id,
+            Signup.cancelled_at.is_(None)
+        )
     )
-    
-    # 如果提供了 signup_id，优先使用 signup_id 精确匹配
-    if payload.signup_id is not None:
-        query = query.where(Signup.id == payload.signup_id)
-    # 如果提供了 character_id，使用 character_id 匹配
-    elif payload.character_id is not None:
-        query = query.where(Signup.signup_character_id == payload.character_id)
-    
-    signup_result = await db.execute(query)
-    signups = signup_result.scalars().all()
+    signup = signup_result.scalar_one_or_none()
 
-    if not signups:
+    if not signup:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="未找到该用户的报名记录"
+            detail=f"报名记录 {payload.signup_id} 不存在或已取消"
         )
 
-    # 如果有多个报名且未提供精确匹配参数，返回错误
-    if len(signups) > 1:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"该用户有多个报名记录（共{len(signups)}个），请提供 signup_id 或 character_id 参数进行精确取消"
-        )
-
-    # 取消找到的报名
-    signup = signups[0]
+    # 验证权限：只有提交者或报名用户本人可以取消
+    can_cancel = (
+        signup.submitter_id == user.id or
+        (signup.signup_user_id is not None and signup.signup_user_id == user.id)
+    )
     
-    # 软删除：设置cancelled_at
+    if not can_cancel:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="你没有权限取消这条报名记录"
+        )
+
+    # 软删除：设置 cancelled_at
     signup.cancelled_at = datetime.utcnow()
-    # 注意：cancelled_by应该设置为操作者，但Bot没有用户ID，这里可以设置为None或者submitter_id
-    signup.cancelled_by = signup.submitter_id
+    signup.cancelled_by = user.id
 
     await db.commit()
 
@@ -226,8 +272,12 @@ async def get_user_signups(
     """
     查询用户在某个团队的所有报名记录（通过QQ群号）
 
-    - 返回该用户在指定团队的所有有效（未取消）报名
-    - 用于取消报名时的多报名场景处理
+    返回该用户相关的所有有效（未取消）报名，包括：
+    1. 自己给自己的报名
+    2. 自己给别人的代报名
+    3. 别人给自己的代报名（如果 signup_user_id 匹配）
+    
+    注意：代报名时 signup_user_id 通常为空，所以主要返回的是 submitter_id 匹配的记录
     """
     # 验证Bot权限
     guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
@@ -259,19 +309,14 @@ async def get_user_signups(
             detail=f"QQ号 {qq_number} 未注册"
         )
 
-    # 查找该用户在该团队的所有有效报名
-    # 包括三种情况：
-    # 1. 自己给自己的报名 (submitter_id == user.id && signup_user_id == user.id && !is_proxy)
-    # 2. 自己给别人的报名 (submitter_id == user.id && signup_user_id != user.id && is_proxy)
-    # 3. 别人给自己的报名 (submitter_id != user.id && signup_user_id == user.id && is_proxy)
-    from sqlalchemy import or_
-    
+    # 查找该用户相关的所有有效报名
+    # 包括：submitter_id 是该用户 或 signup_user_id 是该用户
     signups_result = await db.execute(
         select(Signup).where(
             Signup.team_id == team_id,
             or_(
-                Signup.signup_user_id == user.id,  # 报名人是该用户
-                Signup.submitter_id == user.id      # 提交者是该用户
+                Signup.submitter_id == user.id,
+                Signup.signup_user_id == user.id
             ),
             Signup.cancelled_at.is_(None)
         ).order_by(Signup.created_at.desc())
@@ -288,6 +333,7 @@ async def get_user_signups(
             signup_character_id=signup.signup_character_id,
             signup_info=signup.signup_info,
             is_rich=signup.is_rich,
+            is_proxy=signup.is_proxy,
             created_at=signup.created_at
         )
         for signup in signups

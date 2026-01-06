@@ -159,19 +159,31 @@ class BotTeamDetail(BaseModel):
 # ============ 报名管理 ============
 
 class BotSignupRequest(BaseModel):
-    """报名请求"""
-    qq_number: str = Field(..., pattern=r'^\d{5,15}$', description="QQ号")
-    character_id: Optional[int] = Field(None, description="角色ID（优先使用）")
+    """
+    报名请求
+    
+    支持三种模式：
+    1. 自己报名：qq_number 为报名者 QQ，is_proxy=False
+    2. 代他人报名：qq_number 为提交者 QQ，is_proxy=True，player_name 为被报名者昵称
+    3. 登记老板：qq_number 为提交者 QQ，is_proxy=True，is_rich=True，player_name 为老板昵称
+    """
+    qq_number: str = Field(..., pattern=r'^\d{5,15}$', description="提交者QQ号")
+    xinfa: str = Field(..., min_length=1, max_length=20, description="心法（必填）")
+    character_id: Optional[int] = Field(None, description="角色ID（自己报名时可选，用于匹配角色）")
     character_name: Optional[str] = Field(None, max_length=50, description="角色名称")
-    xinfa: str = Field(..., min_length=1, max_length=20, description="心法")
     is_rich: bool = Field(default=False, description="是否老板")
+    is_proxy: bool = Field(default=False, description="是否代报名")
+    player_name: Optional[str] = Field(None, max_length=50, description="被报名者/老板的昵称（代报名时必填）")
 
 
 class BotCancelSignupRequest(BaseModel):
-    """取消报名请求"""
-    qq_number: str = Field(..., pattern=r'^\d{5,15}$', description="QQ号")
-    signup_id: Optional[int] = Field(None, description="报名ID（用于精确取消）")
-    character_id: Optional[int] = Field(None, description="角色ID（用于精确取消）")
+    """
+    取消报名请求
+    
+    必须提供 signup_id 进行精确取消
+    """
+    qq_number: str = Field(..., pattern=r'^\d{5,15}$', description="操作者QQ号")
+    signup_id: int = Field(..., description="报名ID（必填，用于精确取消）")
 
 
 class BotSignupInfo(BaseModel):
@@ -179,10 +191,11 @@ class BotSignupInfo(BaseModel):
     id: int = Field(..., description="报名ID")
     team_id: int = Field(..., description="团队ID")
     submitter_id: int = Field(..., description="提交者ID")
-    signup_user_id: int = Field(..., description="报名用户ID")
+    signup_user_id: Optional[int] = Field(None, description="报名用户ID（代报名时可能为空）")
     signup_character_id: Optional[int] = Field(None, description="报名角色ID")
     signup_info: dict = Field(..., description="报名信息")
     is_rich: bool = Field(..., description="是否老板")
+    is_proxy: bool = Field(default=False, description="是否代报名")
     created_at: datetime = Field(..., description="报名时间")
 
     class Config:

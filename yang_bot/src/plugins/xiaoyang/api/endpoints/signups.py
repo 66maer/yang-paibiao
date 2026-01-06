@@ -39,23 +39,20 @@ class SignupsEndpoint:
         self,
         team_id: int,
         qq_number: str,
-        signup_id: int = None,
-        character_id: int = None
+        signup_id: int
     ) -> None:
         """
         取消报名
 
         Args:
             team_id: 团队 ID
-            qq_number: QQ 号
-            signup_id: 报名 ID（可选，用于精确取消）
-            character_id: 角色 ID（可选，用于精确取消）
+            qq_number: 操作者 QQ 号
+            signup_id: 报名 ID（必填，用于精确取消）
         """
-        payload = {"qq_number": qq_number}
-        if signup_id is not None:
-            payload["signup_id"] = signup_id
-        if character_id is not None:
-            payload["character_id"] = character_id
+        payload = {
+            "qq_number": qq_number,
+            "signup_id": signup_id
+        }
             
         await self.client.request(
             "DELETE",
