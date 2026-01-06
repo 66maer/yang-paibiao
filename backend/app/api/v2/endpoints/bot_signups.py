@@ -169,7 +169,10 @@ async def cancel_signup(
     # 查找该用户在该团队的有效报名
     query = select(Signup).where(
         Signup.team_id == team_id,
-        Signup.signup_user_id == user.id,
+        or_(
+            Signup.signup_user_id == user.id,  # 报名人是该用户
+            Signup.submitter_id == user.id     # 提交者是该用户
+        ),
         Signup.cancelled_at.is_(None)
     )
     
@@ -178,7 +181,7 @@ async def cancel_signup(
         query = query.where(Signup.id == payload.signup_id)
     # 如果提供了 character_id，使用 character_id 匹配
     elif payload.character_id is not None:
-        query = query.where(Signup.signup_info['character_id'].astext.cast(Integer) == payload.character_id)
+        query = query.where(Signup.signup_character_id == payload.character_id)
     
     signup_result = await db.execute(query)
     signups = signup_result.scalars().all()

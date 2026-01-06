@@ -139,7 +139,12 @@ class NLPParser(MessageParser):
 2. 若用户角色列表中有该心法角色，可自动匹配（按priority排序）
 3. 若用户只有一个报名记录，取消时无需指定车次/心法
 4. 若信息不完整需要追问，设置 need_followup=true 并填写 followup_question
-5. 询问类消息（如"有坑吗"、"几点开"）返回 irrelevant'''
+5. 询问类消息（如"有坑吗"、"几点开"）返回 irrelevant
+
+## 重要提示
+- 必须识别到强烈的报名意图才返回数据，对于模棱两可的聊天类消息返回 irrelevant
+- 用户可能会闲聊时提到 报名、取消等关键词，不要误判。
+'''
 
     def _should_call_llm(self, message: str) -> bool:
         """预过滤：判断是否需要调用 LLM"""
