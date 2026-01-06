@@ -338,9 +338,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
   // 召唤所有未标记的成员
   const handleCallAllUnmarked = async () => {
     // 过滤出已分配坑位但未标记的成员
-    const unmarkedSignups = signupList.filter(
-      (s) => s.lockSlot !== null && s.lockSlot !== undefined && !s.presence
-    );
+    const unmarkedSignups = signupList.filter((s) => s.lockSlot !== null && s.lockSlot !== undefined && !s.presence);
 
     if (unmarkedSignups.length === 0) {
       showToast.warning("没有需要召唤的成员");
@@ -655,8 +653,8 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
                 <div className="font-semibold">计算说明：</div>
                 <div>• 推荐分 = 红黑分 × 频次修正系数 × 时间修正系数</div>
                 <div>• 频次修正系数：1次(1.5) → 2次(1.25) → 3次(1.1) → 4次以上(1.0)</div>
-                <div>• 时间修正系数：1 + 距离上次黑本的车次数 / 20</div>
-                <div>• NEW：无黑本记录的用户，使用平均红黑分 × 2</div>
+                <div>• 时间修正系数：1 + 距离上次黑本的车次数 / 25</div>
+                <div>• NEW：无黑本记录的用户，使用平均红黑分 × 4</div>
               </div>
             </div>
           </ModalBody>
