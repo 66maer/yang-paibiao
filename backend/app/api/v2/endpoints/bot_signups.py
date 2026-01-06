@@ -16,6 +16,7 @@ from app.database import get_db
 from app.api.deps import get_current_bot, verify_bot_guild_access_by_qq
 from app.models.bot import Bot
 from app.models.user import User
+from app.models.guild_member import GuildMember
 from app.models.team import Team
 from app.models.signup import Signup
 from app.models.character import Character, CharacterPlayer
@@ -26,6 +27,45 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()
+
+
+async def _get_user_nickname(
+    db: AsyncSession,
+    guild_id: int,
+    user_id: int
+) -> str:
+    """
+    获取用户昵称，优先级：群昵称 > 用户主昵称 > 用户其他昵称
+    """
+    # 先尝试获取群昵称
+    member_result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id == user_id,
+            GuildMember.left_at.is_(None)
+        )
+    )
+    member = member_result.scalar_one_or_none()
+    if member and member.group_nickname:
+        return member.group_nickname
+
+    # 获取用户信息
+    user_result = await db.execute(
+        select(User).where(User.id == user_id, User.deleted_at.is_(None))
+    )
+    user = user_result.scalar_one_or_none()
+    if not user:
+        return "未知用户"
+
+    # 优先返回主昵称
+    if user.nickname:
+        return user.nickname
+
+    # 最后尝试其他昵称
+    if user.other_nicknames and len(user.other_nicknames) > 0:
+        return user.other_nicknames[0]
+
+    return "未知用户"
 
 
 @router.post(
@@ -95,7 +135,7 @@ async def create_signup(
         )
 
     # 获取提交者昵称
-    submitter_nickname = submitter.group_nickname or submitter.nickname or submitter.qq_number
+    submitter_nickname = await _get_user_nickname(db, guild.id, submitter.id)
     logger.debug(f"找到提交者 - 用户ID: {submitter.id}, 昵称: {submitter_nickname}")
 
     # 根据模式处理
