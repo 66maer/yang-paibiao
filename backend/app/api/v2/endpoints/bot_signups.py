@@ -76,7 +76,7 @@ async def create_signup(
             detail="团队不存在"
         )
 
-    logger.debug(f"找到团队 - 团队名称: {team.name}")
+    logger.debug(f"找到团队 - 团队名称: {team.title}")
 
     # 查找提交者用户
     submitter_result = await db.execute(
