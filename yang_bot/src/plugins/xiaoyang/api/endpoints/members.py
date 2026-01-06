@@ -86,4 +86,6 @@ class MembersEndpoint:
             f"/api/v2/bot/guilds/{self.client.guild_id}/members/search",
             params={"nickname": nickname}
         )
-        return [UserSearchResult(**user) for user in data]
+        # data 是一个字典，包含 members 键
+        members = data.get("members", [])
+        return [UserSearchResult(**user) for user in members]

@@ -152,7 +152,7 @@ XINFA_INFO: Dict[str, Dict[str, any]] = {
     },
     "yinlong": {
         "name": "隐龙诀",
-        "nickname": ["凌雪", "隐龙诀", "隐龙决", "凌雪阁"],
+        "nickname": ["凌雪", "凌血", "0雪", "隐龙诀", "隐龙决", "凌雪阁", "凌血阁"],
         "menpai": "凌雪",
         "type": ["dps", "外功", "身法"],
     },
