@@ -116,6 +116,8 @@ async def health_check():
 @app.get("/test-log")
 async def test_logging():
     """测试日志系统"""
+    with open("/home/maer/work/yang-paibiao/backend/logs/test_log.log", "a") as f:
+        f.write("这是一条测试日志\n")
     logger.debug("这是一条 DEBUG 日志")
     logger.info("这是一条 INFO 日志")
     logger.warning("这是一条 WARNING 日志")
