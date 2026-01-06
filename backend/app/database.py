@@ -4,7 +4,10 @@
 """
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.core.config import settings
+from app.core.logging import get_logger
 from app.models.base import Base
+
+logger = get_logger(__name__)
 
 # 创建异步引擎
 engine = create_async_engine(
@@ -59,11 +62,13 @@ async def init_db():
     alembic_cfg = Config(alembic_cfg_path)
 
     # 运行迁移到最新版本
-    print("运行数据库迁移...")
+    logger.info("运行数据库迁移...")
     command.upgrade(alembic_cfg, "head")
-    print("数据库迁移完成")
+    logger.info("数据库迁移完成")
 
 
 async def close_db():
     """关闭数据库连接"""
+    logger.info("关闭数据库连接池...")
     await engine.dispose()
+    logger.info("数据库连接池已关闭")

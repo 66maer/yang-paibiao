@@ -16,6 +16,12 @@ if [ ! -f ".env" ]; then
     exit 1
 fi
 
+# 创建日志目录
+mkdir -p logs
+
+# 设置 Python 无缓冲输出
+export PYTHONUNBUFFERED=1
+
 # 启动服务
 echo "正在启动开发服务器..."
-uvicorn app.main:app --reload --host 0.0.0.0 --port 9500
+uvicorn app.main:app --reload --host 0.0.0.0 --port 9500 --log-level info

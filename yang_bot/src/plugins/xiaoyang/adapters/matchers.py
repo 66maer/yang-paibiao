@@ -138,6 +138,7 @@ async def pre_query_context(api_client, qq_number: str, guild_id: int) -> Dict[s
                         "xinfa": signup.signup_info.get("xinfa", ""),
                         "character_name": signup.signup_info.get("character_name", ""),
                         "player_name": signup.signup_info.get("player_name", ""),
+                        "player_qq_number": signup.signup_info.get("player_qq_number"),  # 用于判断是否是自己的报名
                         "is_rich": signup.is_rich,
                         "submitter_id": signup.submitter_id,
                         "signup_user_id": signup.signup_user_id,
@@ -258,7 +259,7 @@ async def handle_update_nickname(event: GroupMessageEvent, plain_text: str = Eve
 # ==================== 报名相关关键词匹配 ====================
 # 使用 on_keyword 进行第一层过滤
 signup_keywords = on_keyword(
-    {"报名", "代报", "老板", "取消报名", "取消", "报1", "报2", "报3", "报4", "报5"},
+    {"报名", "代报", "老板", "取消报名", "取消", "报"},
     priority=20,
     block=False  # 不阻断，让后续处理决定
 )
@@ -406,18 +407,24 @@ async def _handle_self_signup(
     try:
         qq_number = str(event.user_id)
         
-        # 检查是否已经报名
+        # 检查是否已经报名（通过 player_qq_number 判断是否是自己的报名）
         user_signups = context.get("user_signups", [])
-        existing = [s for s in user_signups 
-                    if s["team_id"] == team_id and s["signup_user_id"] is not None]
+        existing_self_signups = [
+            s for s in user_signups 
+            if s["team_id"] == team_id 
+            and s.get("player_qq_number") == qq_number  # 通过 QQ 号判断
+        ]
         
-        # 检查是否有自己的报名（signup_user_id 对应的是自己）
-        for signup in existing:
-            # 这里需要判断 signup_user_id 是否是当前用户
-            # 由于 signup_user_id 是数据库 ID，需要额外查询，这里简化处理
-            # 通过 signup_info 中的 player_qq_number 判断
-            # 暂时跳过重复报名检查，由后端处理
-            pass
+        if existing_self_signups:
+            # 已有报名，检查是否是相同心法
+            xinfa_key = params.get("xinfa_key")
+            same_xinfa = [s for s in existing_self_signups if s.get("xinfa") == xinfa_key]
+            if same_xinfa:
+                xinfa_display = format_xinfa_display(xinfa_key)
+                msg = MessageBuilder.build_error_message(
+                    f"你已经用 {xinfa_display} 报名过该团队了，如需修改请先取消"
+                )
+                await matcher.finish(msg)
         
         # 获取心法
         xinfa_key = params.get("xinfa_key")

@@ -9,12 +9,15 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.logging import get_logger
 from app.database import get_db
 from app.core.security import verify_token, verify_password
 from app.models.user import User
 from app.models.admin import SystemAdmin
 from app.models.bot import Bot, BotGuild
 from app.models.guild import Guild
+
+logger = get_logger(__name__)
 
 # HTTP Bearer 认证
 security = HTTPBearer()

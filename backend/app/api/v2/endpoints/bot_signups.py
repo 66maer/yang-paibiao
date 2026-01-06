@@ -103,8 +103,9 @@ async def create_signup(
             signup_info = {
                 "submitter_name": submitter_nickname,
                 "submitter_qq_number": payload.qq_number,
-                "boss_name": payload.player_name,
-                "boss_qq_number": None,
+                "player_name": payload.player_name,  # 老板名称
+                "player_qq_number": None,
+                "character_name": "",
                 "xinfa": payload.xinfa,
             }
         else:

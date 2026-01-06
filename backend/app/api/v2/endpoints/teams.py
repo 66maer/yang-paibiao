@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.logging import get_logger
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.models.guild import Guild
@@ -19,6 +20,8 @@ from app.schemas.ranking import HeibenRecommendationRequest, HeibenRecommendatio
 from app.services.ranking_service import RankingService
 from app.services.team_log_service import TeamLogService
 from app.models.team_log import TeamLog
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/guilds", tags=["团队/开团"]) 
 
@@ -82,6 +85,8 @@ async def create_team(
 
     await db.commit()
     await db.refresh(team)
+
+    logger.info(f"创建团队: {team.title} (ID: {team.id}) | 群组: {guild_id} | 创建者: {current_user.nickname}")
 
     return success(TeamOut.model_validate(team), message="创建成功")
 

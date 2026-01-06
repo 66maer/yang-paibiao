@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.logging import get_logger
 from app.database import get_db
 from app.core.security import (
     verify_password,
@@ -25,6 +26,8 @@ from app.schemas.auth import (
 )
 from app.schemas.common import Response
 from app.api.deps import get_current_user
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -101,6 +104,7 @@ async def login_user(
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(data.password, user.password_hash):
+        logger.warning(f"登录失败: QQ号 {data.username} 验证失败")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="QQ号或密码错误"
@@ -109,6 +113,8 @@ async def login_user(
     # 更新最后登录时间
     user.last_login_at = datetime.utcnow()
     await db.commit()
+
+    logger.info(f"用户登录成功: {user.nickname} (ID: {user.id}, QQ: {user.qq_number})")
 
     # 生成令牌
     token_data = {
