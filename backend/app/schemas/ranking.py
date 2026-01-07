@@ -15,6 +15,8 @@ class RecordDetail(BaseModel):
     gold: int = Field(..., description="金团金额")
     correction_factor: Decimal = Field(..., description="修正系数")
     corrected_gold: Decimal = Field(..., description="修正后金额")
+    recent_weight: Decimal = Field(..., description="近期加权系数")
+    weighted_gold: Decimal = Field(..., description="加权后金额")
 
 
 class RankingCalculationDetail(BaseModel):
@@ -22,9 +24,11 @@ class RankingCalculationDetail(BaseModel):
     records: List[RecordDetail] = Field(..., description="所有黑本记录")
     total_gold: int = Field(..., description="总金团金额")
     corrected_total_gold: Decimal = Field(..., description="修正后总金额")
+    weighted_total_gold: Decimal = Field(..., description="加权后总金额")
     heibenren_count: int = Field(..., description="黑本次数")
     average_gold: Decimal = Field(..., description="平均金额")
     corrected_average_gold: Decimal = Field(..., description="修正后平均金额")
+    weighted_average_gold: Decimal = Field(..., description="加权后平均金额")
     rank_modifier: Decimal = Field(..., description="Rank修正系数")
     rank_score: Decimal = Field(..., description="最终Rank分")
 
