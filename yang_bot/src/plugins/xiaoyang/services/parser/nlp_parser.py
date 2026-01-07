@@ -183,6 +183,7 @@ class NLPParser(MessageParser):
         if error_message:
             return ParsedIntent(
                 action=intent,
+                params={},
                 error_message=error_message,
             )
 
