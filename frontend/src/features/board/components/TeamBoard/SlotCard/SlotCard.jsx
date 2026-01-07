@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
 import { motion } from "framer-motion";
 import EmptySlotCard from "./EmptySlotCard";
@@ -41,6 +41,11 @@ const SlotCard = ({
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [presenceStatus, setPresenceStatus] = useState(signup?.presence || "pending");
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+
+  // 当 signup 变化时，同步更新 presenceStatus
+  useEffect(() => {
+    setPresenceStatus(signup?.presence || "pending");
+  }, [signup?.presence, signup?.id]); // 监听 presence 和 id 的变化
 
   /**
    * 处理点击卡片
