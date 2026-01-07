@@ -168,6 +168,7 @@ async def handle_view_teams(event: GroupMessageEvent, plain_text: str = EventPla
     支持格式:
     - 查看团队 / 查团 / 有团吗 / 有车吗 - 查看所有团队列表
     - 查看团队 1 / 查团 1 - 查看指定序号的团队详情
+    - 查看团队 全部 / 查团 全部 - 一次性发送所有团队截图
     """
     try:
         guild_id = event.group_id
@@ -192,6 +193,20 @@ async def handle_view_teams(event: GroupMessageEvent, plain_text: str = EventPla
             else:
                 msg = MessageBuilder.build_teams_list(teams)
                 await view_teams.finish(msg)
+        elif args_text in ["全部", "all", "ALL"]:
+            # 发送所有团队的截图
+            if not teams:
+                msg = MessageBuilder.build_error_message("当前没有开放的团队")
+                await view_teams.finish(msg)
+
+            # 遍历所有团队，发送每个团队的截图
+            for idx, team in enumerate(teams, 1):
+                msg = await MessageBuilder.build_team_detail(team, idx, str(guild_id))
+                # 除了最后一个团队，其他都用 send，最后一个用 finish
+                if idx < len(teams):
+                    await view_teams.send(msg)
+                else:
+                    await view_teams.finish(msg)
         else:
             try:
                 index = int(args_text)
