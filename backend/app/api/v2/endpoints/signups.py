@@ -135,6 +135,10 @@ async def _enrich_signup_response(
     # 复制 signup_info（避免修改原始数据）
     enriched_info = dict(signup.signup_info)
 
+    # 确保必需字段存在且不为 None
+    if enriched_info.get("character_name") is None:
+        enriched_info["character_name"] = ""
+
     # 获取提交者的昵称和 QQ 号
     submitter_nickname = await _get_user_nickname(db, guild_id, signup.submitter_id)
     submitter_result = await db.execute(
@@ -194,7 +198,7 @@ async def _process_signup_info(
     result_info = {
         "submitter_name": signup_info.submitter_name,  # 使用前端提供的值
         "player_name": signup_info.player_name,  # 使用前端提供的值
-        "character_name": signup_info.character_name,
+        "character_name": signup_info.character_name if signup_info.character_name is not None else "",
         "xinfa": signup_info.xinfa
     }
 
