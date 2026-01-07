@@ -35,14 +35,11 @@ export default function TeamImagePage() {
       try {
         // 使用 axios 直接请求，不使用带认证拦截器的 apiClient
         const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:9500/api/v2";
-        const response = await axios.get(
-          `${baseURL}/bot/guilds/${guild_qq_number}/teams/${team_id}/view`,
-          {
-            headers: {
-              "X-API-Key": apiKey,
-            },
-          }
-        );
+        const response = await axios.get(`${baseURL}/bot/guilds/${guild_qq_number}/teams/${team_id}/view`, {
+          headers: {
+            "X-API-Key": apiKey,
+          },
+        });
         setTeamData(response.data.data);
       } catch (err) {
         console.error("Failed to fetch team data:", err);
@@ -107,9 +104,7 @@ export default function TeamImagePage() {
                   </Chip>
                 </Tooltip>
               )}
-              <h2 className="text-4xl font-bold text-pink-600 dark:text-pink-400">
-                {teamData.title || "未命名开团"}
-              </h2>
+              <h2 className="text-4xl font-bold text-pink-600 dark:text-pink-400">{teamData.title || "未命名开团"}</h2>
               {teamData.is_hidden && (
                 <Chip size="lg" variant="flat" color="default">
                   仅管理员可见
@@ -175,12 +170,7 @@ export default function TeamImagePage() {
                   <h3 className="text-sm font-semibold text-default-600">👥 团队面板</h3>
                 </div>
 
-                <TeamBoard
-                  rules={rules}
-                  signupList={signupList}
-                  view={teamData.slot_view || []}
-                  mode="view"
-                />
+                <TeamBoard rules={rules} signupList={signupList} view={teamData.slot_view || []} mode="view" />
               </div>
 
               {/* 创建信息 */}
@@ -200,24 +190,17 @@ export default function TeamImagePage() {
         {waitList.length > 0 && (
           <Card className="w-full mt-4">
             <CardHeader>
-              <h3 className="text-sm font-semibold text-default-600">
-                📋 候补列表 ({waitList.length})
-              </h3>
+              <h3 className="text-sm font-semibold text-default-600">📋 候补列表 ({waitList.length})</h3>
             </CardHeader>
             <Divider />
             <CardBody>
               <div className="space-y-2">
                 {waitList.map((signup, index) => (
-                  <div
-                    key={signup.id}
-                    className="flex items-center justify-between p-3 bg-default-100 rounded-lg"
-                  >
+                  <div key={signup.id} className="flex items-center justify-between p-3 bg-default-100 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold text-default-500 min-w-[2rem]">
-                        #{index + 1}
-                      </span>
+                      <span className="text-sm font-semibold text-default-500 min-w-[2rem]">#{index + 1}</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{signup.playerName}</span>
+                        <span className="font-medium">{signup.signupName}</span>
                         <Chip size="sm" variant="flat" color="default">
                           {signup.characterName || "待定"}
                         </Chip>

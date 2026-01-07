@@ -398,34 +398,36 @@ async def _handle_self_signup(
 ):
     """
     处理自己报名
-    
+
     逻辑：
     1. 检查是否已报名（防止重复报名）
     2. 构建报名信息
     3. 调用后端 API
+    4. 发送成功消息和团队截图
     """
     try:
         qq_number = str(event.user_id)
+        guild_id = event.group_id
         xinfa_key = params.get("xinfa_key")
-        
+
         # 获取心法（提前获取用于重复检查）
         if not xinfa_key:
             msg = MessageBuilder.build_error_message("请指定心法，例如：报1 藏剑")
             await matcher.finish(msg)
-        
+
         # 检查是否已经报名（通过 player_qq_number 判断是否是自己的报名）
         user_signups = context.get("user_signups", [])
         logger.info(f"[重复检查] team_id={team_id}, qq_number={qq_number}")
         logger.info(f"[重复检查] user_signups={user_signups}")
-        
+
         # 筛选该团队中自己的报名
         existing_self_signups = [
-            s for s in user_signups 
-            if s["team_id"] == team_id 
+            s for s in user_signups
+            if s["team_id"] == team_id
             and str(s.get("player_qq_number", "")) == qq_number  # 确保字符串比较
         ]
         logger.info(f"[重复检查] existing_self_signups={existing_self_signups}")
-        
+
         if existing_self_signups:
             # 已有报名，检查是否是相同心法
             same_xinfa = [s for s in existing_self_signups if s.get("xinfa") == xinfa_key]
@@ -435,14 +437,14 @@ async def _handle_self_signup(
                     f"你已经用 {xinfa_display} 报名过该团队了，如需修改请先取消"
                 )
                 await matcher.finish(msg)
-        
+
         # 尝试获取用户昵称
         try:
             member = await api_client.members.get_member(qq_number)
             user_nickname = member.group_nickname or member.nickname or qq_number
         except:
             user_nickname = qq_number
-        
+
         # 构建报名请求
         signup_request = {
             "qq_number": qq_number,
@@ -451,14 +453,14 @@ async def _handle_self_signup(
             "character_name": params.get("character_name"),
             "is_rich": False,
         }
-        
+
         # 调用后端 API
         from ..api.models import SignupRequest
         signup_info = await api_client.signups.create_signup(
             team_id,
             SignupRequest(**signup_request)
         )
-        
+
         # 构建成功消息
         xinfa_display = format_xinfa_display(xinfa_key)
         char_name = signup_info.signup_info.get("character_name", "") or "待定"
@@ -467,7 +469,30 @@ async def _handle_self_signup(
             f"心法: {xinfa_display}\n"
             f"角色: {char_name}"
         )
-        await matcher.finish(msg)
+        # 发送成功消息（不finish，后续还需要发送截图）
+        await matcher.send(msg)
+
+        # 获取最新的团队信息并发送截图
+        team_service = TeamService(api_client)
+        teams = await team_service.get_teams()
+
+        # 找到当前团队的索引和最新信息
+        team_index = None
+        updated_team = None
+        for idx, team in enumerate(teams, 1):
+            if team.id == team_id:
+                team_index = idx
+                updated_team = team
+                break
+
+        if updated_team and team_index:
+            team_image_msg = await MessageBuilder.build_team_detail(
+                updated_team, team_index, str(guild_id)
+            )
+            await matcher.finish(team_image_msg)
+        else:
+            # 如果找不到团队，只结束对话
+            await matcher.finish()
 
     except (FinishedException, PausedException, RejectedException):
         raise
@@ -491,34 +516,36 @@ async def _handle_proxy_signup(
 ):
     """
     处理代他人报名
-    
+
     逻辑：
     1. 获取被报名用户昵称
     2. 构建报名信息（signup_user_id 为空）
     3. 调用后端 API
+    4. 发送成功消息和团队截图
     """
     try:
         qq_number = str(event.user_id)
-        
+        guild_id = event.group_id
+
         # 获取被报名用户昵称
         player_name = params.get("player_name")
         if not player_name:
             msg = MessageBuilder.build_error_message("请指定被报名的用户名，例如：帮张三报1藏剑")
             await matcher.finish(msg)
-        
+
         # 获取心法
         xinfa_key = params.get("xinfa_key")
         if not xinfa_key:
             msg = MessageBuilder.build_error_message("请指定心法，例如：帮张三报1藏剑")
             await matcher.finish(msg)
-        
+
         # 尝试获取提交者昵称
         try:
             member = await api_client.members.get_member(qq_number)
             submitter_nickname = member.group_nickname or member.nickname or qq_number
         except:
             submitter_nickname = qq_number
-        
+
         # 构建报名请求（代报名模式）
         signup_request = {
             "qq_number": qq_number,  # 提交者的 QQ
@@ -528,14 +555,14 @@ async def _handle_proxy_signup(
             "is_proxy": True,
             "player_name": player_name,
         }
-        
+
         # 调用后端 API（需要修改后端支持代报名）
         from ..api.models import SignupRequest
         signup_info = await api_client.signups.create_signup(
             team_id,
             SignupRequest(**signup_request)
         )
-        
+
         xinfa_display = format_xinfa_display(xinfa_key)
         char_name = params.get("character_name") or "待定"
         msg = MessageBuilder.build_success_message(
@@ -544,7 +571,30 @@ async def _handle_proxy_signup(
             f"心法: {xinfa_display}\n"
             f"角色: {char_name}"
         )
-        await matcher.finish(msg)
+        # 发送成功消息（不finish，后续还需要发送截图）
+        await matcher.send(msg)
+
+        # 获取最新的团队信息并发送截图
+        team_service = TeamService(api_client)
+        teams = await team_service.get_teams()
+
+        # 找到当前团队的索引和最新信息
+        team_index = None
+        updated_team = None
+        for idx, team in enumerate(teams, 1):
+            if team.id == team_id:
+                team_index = idx
+                updated_team = team
+                break
+
+        if updated_team and team_index:
+            team_image_msg = await MessageBuilder.build_team_detail(
+                updated_team, team_index, str(guild_id)
+            )
+            await matcher.finish(team_image_msg)
+        else:
+            # 如果找不到团队，只结束对话
+            await matcher.finish()
 
     except (FinishedException, PausedException, RejectedException):
         raise

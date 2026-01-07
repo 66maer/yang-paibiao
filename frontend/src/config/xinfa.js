@@ -65,7 +65,7 @@ export const xinfaInfoTable = {
   },
   aoxue: {
     name: "傲血战意",
-    nickname: ["天策", "傲血战意", "傲血", "哈士奇", "狗子", "二哈"],
+    nickname: ["天策", "傲血战意", "傲血", "傲雪", "哈士奇", "狗子", "二哈"],
     menpai: "天策",
     icon: "aoxue.png",
     color: "#ff6f53",
