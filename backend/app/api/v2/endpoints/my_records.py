@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.models.character import Character, CharacterPlayer
-from app.models.weekly_record import WeeklyRecord, WeeklyRecordConfig
+from app.models.weekly_record import WeeklyRecord, WeeklyRecordConfig, CharacterCDStatus
 from app.schemas.common import ResponseModel, success
 from app.schemas.weekly_record import (
     ColumnConfig,
@@ -156,7 +156,7 @@ async def get_weekly_matrix(
     )
     characters = result.scalars().all()
     
-    # 获取该周的所有记录
+    # 获取该周的所有工资记录
     result = await db.execute(
         select(WeeklyRecord).where(
             WeeklyRecord.user_id == current_user.id,
@@ -164,13 +164,31 @@ async def get_weekly_matrix(
         )
     )
     records = result.scalars().all()
-    
-    # 构建记录映射 {character_id: {dungeon_name: record}}
+
+    # 构建工资记录映射 {character_id: {dungeon_name: record}}
     record_map = {}
     for record in records:
         if record.character_id not in record_map:
             record_map[record.character_id] = {}
         record_map[record.character_id][record.dungeon_name] = record
+
+    # 获取所有角色的CD状态
+    character_ids = [char.id for char in characters]
+    cd_result = await db.execute(
+        select(CharacterCDStatus).where(
+            CharacterCDStatus.character_id.in_(character_ids),
+            CharacterCDStatus.week_start_date == week_start,
+            CharacterCDStatus.is_cleared == True
+        )
+    )
+    cd_statuses = cd_result.scalars().all()
+
+    # 构建CD状态映射 {character_id: {dungeon_name: is_cleared}}
+    cd_map = {}
+    for cd_status in cd_statuses:
+        if cd_status.character_id not in cd_map:
+            cd_map[cd_status.character_id] = {}
+        cd_map[cd_status.character_id][cd_status.dungeon_name] = cd_status.is_cleared
     
     # 构建行数据
     rows = []
@@ -188,18 +206,23 @@ async def get_weekly_matrix(
         
         cells = {}
         row_total = 0
-        
+
         for col in columns:
+            # 获取工资记录
             record = record_map.get(char.id, {}).get(col.name)
-            if record:
+            # 获取CD状态
+            is_cleared = cd_map.get(char.id, {}).get(col.name, False)
+
+            if record or is_cleared:
                 cells[col.name] = CellData(
-                    record_id=record.id,
-                    is_cleared=record.is_cleared,
-                    gold_amount=record.gold_amount,
-                    gold_record_id=record.gold_record_id
+                    record_id=record.id if record else None,
+                    is_cleared=is_cleared,
+                    gold_amount=record.gold_amount if record else 0,
+                    gold_record_id=record.gold_record_id if record else None
                 )
-                row_total += record.gold_amount
-                column_totals[col.name] += record.gold_amount
+                if record:
+                    row_total += record.gold_amount
+                    column_totals[col.name] += record.gold_amount
             else:
                 cells[col.name] = CellData()
         
@@ -334,8 +357,30 @@ async def create_weekly_record(
             detail="角色不属于当前用户"
         )
     
-    # 检查是否已存在记录
-    result = await db.execute(
+    # 1. 更新或创建角色CD状态
+    cd_result = await db.execute(
+        select(CharacterCDStatus).where(
+            CharacterCDStatus.character_id == payload.character_id,
+            CharacterCDStatus.week_start_date == week_start,
+            CharacterCDStatus.dungeon_name == payload.dungeon_name
+        )
+    )
+    cd_status = cd_result.scalar_one_or_none()
+
+    if cd_status:
+        cd_status.is_cleared = payload.is_cleared
+    elif payload.is_cleared:
+        # 只有当 is_cleared 为 True 时才创建CD状态记录
+        cd_status = CharacterCDStatus(
+            character_id=payload.character_id,
+            week_start_date=week_start,
+            dungeon_name=payload.dungeon_name,
+            is_cleared=True
+        )
+        db.add(cd_status)
+
+    # 2. 更新或创建工资记录
+    record_result = await db.execute(
         select(WeeklyRecord).where(
             WeeklyRecord.user_id == current_user.id,
             WeeklyRecord.character_id == payload.character_id,
@@ -343,39 +388,31 @@ async def create_weekly_record(
             WeeklyRecord.dungeon_name == payload.dungeon_name
         )
     )
-    existing = result.scalar_one_or_none()
-    
-    if existing:
-        # 更新现有记录
-        existing.is_cleared = payload.is_cleared
-        existing.gold_amount = payload.gold_amount
-        await db.commit()
-        await db.refresh(existing)
-        return success(CellData(
-            record_id=existing.id,
-            is_cleared=existing.is_cleared,
-            gold_amount=existing.gold_amount,
-            gold_record_id=existing.gold_record_id
-        ))
-    
-    # 创建新记录
-    record = WeeklyRecord(
-        user_id=current_user.id,
-        character_id=payload.character_id,
-        week_start_date=week_start,
-        dungeon_name=payload.dungeon_name,
-        is_cleared=payload.is_cleared,
-        gold_amount=payload.gold_amount
-    )
-    db.add(record)
+    record = record_result.scalar_one_or_none()
+
+    if record:
+        # 更新现有工资记录
+        record.gold_amount = payload.gold_amount
+    elif payload.gold_amount > 0:
+        # 只有当工资大于0时才创建记录
+        record = WeeklyRecord(
+            user_id=current_user.id,
+            character_id=payload.character_id,
+            week_start_date=week_start,
+            dungeon_name=payload.dungeon_name,
+            gold_amount=payload.gold_amount
+        )
+        db.add(record)
+
     await db.commit()
-    await db.refresh(record)
-    
+    if record:
+        await db.refresh(record)
+
     return success(CellData(
-        record_id=record.id,
-        is_cleared=record.is_cleared,
-        gold_amount=record.gold_amount,
-        gold_record_id=record.gold_record_id
+        record_id=record.id if record else None,
+        is_cleared=payload.is_cleared,
+        gold_amount=payload.gold_amount,
+        gold_record_id=record.gold_record_id if record else None
     ))
 
 
@@ -387,7 +424,7 @@ async def update_weekly_record(
     db: AsyncSession = Depends(get_db)
 ):
     """更新每周记录单元格数据"""
-    # 获取记录
+    # 获取工资记录
     result = await db.execute(
         select(WeeklyRecord).where(
             WeeklyRecord.id == record_id,
@@ -395,25 +432,56 @@ async def update_weekly_record(
         )
     )
     record = result.scalar_one_or_none()
-    
+
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="记录不存在"
         )
-    
-    # 更新字段
+
+    # 1. 更新CD状态（如果需要）
     if payload.is_cleared is not None:
-        record.is_cleared = payload.is_cleared
+        cd_result = await db.execute(
+            select(CharacterCDStatus).where(
+                CharacterCDStatus.character_id == record.character_id,
+                CharacterCDStatus.week_start_date == record.week_start_date,
+                CharacterCDStatus.dungeon_name == record.dungeon_name
+            )
+        )
+        cd_status = cd_result.scalar_one_or_none()
+
+        if cd_status:
+            cd_status.is_cleared = payload.is_cleared
+        elif payload.is_cleared:
+            # 创建新的CD状态记录
+            cd_status = CharacterCDStatus(
+                character_id=record.character_id,
+                week_start_date=record.week_start_date,
+                dungeon_name=record.dungeon_name,
+                is_cleared=True
+            )
+            db.add(cd_status)
+
+    # 2. 更新工资金额（如果需要）
     if payload.gold_amount is not None:
         record.gold_amount = payload.gold_amount
-    
+
     await db.commit()
     await db.refresh(record)
-    
+
+    # 获取最新的CD状态
+    cd_result = await db.execute(
+        select(CharacterCDStatus).where(
+            CharacterCDStatus.character_id == record.character_id,
+            CharacterCDStatus.week_start_date == record.week_start_date,
+            CharacterCDStatus.dungeon_name == record.dungeon_name
+        )
+    )
+    cd_status = cd_result.scalar_one_or_none()
+
     return success(CellData(
         record_id=record.id,
-        is_cleared=record.is_cleared,
+        is_cleared=cd_status.is_cleared if cd_status else False,
         gold_amount=record.gold_amount,
         gold_record_id=record.gold_record_id
     ))
@@ -451,7 +519,6 @@ async def delete_weekly_record(
 async def get_user_cd_status(
     user_id: int,
     dungeon: Optional[str] = Query(None, description="筛选副本名称"),
-    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -459,30 +526,42 @@ async def get_user_cd_status(
     返回 {character_id: {dungeon_name: is_cleared}} 的字典
     """
     week_start = get_week_start_date()
-    
+
+    # 获取该用户的所有角色
+    char_result = await db.execute(
+        select(Character.id).join(CharacterPlayer).where(
+            CharacterPlayer.user_id == user_id,
+            Character.deleted_at.is_(None)
+        )
+    )
+    character_ids = [row[0] for row in char_result.fetchall()]
+
+    if not character_ids:
+        return success({})
+
     # 构建查询条件
     conditions = [
-        WeeklyRecord.user_id == user_id,
-        WeeklyRecord.week_start_date == week_start,
-        WeeklyRecord.is_cleared == True
+        CharacterCDStatus.character_id.in_(character_ids),
+        CharacterCDStatus.week_start_date == week_start,
+        CharacterCDStatus.is_cleared == True
     ]
-    
+
     if dungeon:
-        conditions.append(WeeklyRecord.dungeon_name == dungeon)
-    
+        conditions.append(CharacterCDStatus.dungeon_name == dungeon)
+
     result = await db.execute(
-        select(WeeklyRecord.character_id, WeeklyRecord.dungeon_name).where(
+        select(CharacterCDStatus.character_id, CharacterCDStatus.dungeon_name).where(
             and_(*conditions)
         )
     )
-    
+
     # 构建返回数据
     cd_status = {}
     for character_id, dungeon_name in result.fetchall():
         if character_id not in cd_status:
             cd_status[character_id] = {}
         cd_status[character_id][dungeon_name] = True
-    
+
     return success(cd_status)
 
 
@@ -497,11 +576,33 @@ async def auto_create_weekly_record(
 ):
     """
     自动创建/更新每周记录（金团记录联动时调用）
+    同时更新角色CD状态和用户工资记录
     """
     week_start = get_week_start_date()
-    
-    # 检查是否已存在记录
-    result = await db.execute(
+
+    # 1. 更新或创建角色CD状态
+    cd_result = await db.execute(
+        select(CharacterCDStatus).where(
+            CharacterCDStatus.character_id == character_id,
+            CharacterCDStatus.week_start_date == week_start,
+            CharacterCDStatus.dungeon_name == dungeon_name
+        )
+    )
+    cd_status = cd_result.scalar_one_or_none()
+
+    if cd_status:
+        cd_status.is_cleared = True
+    else:
+        cd_status = CharacterCDStatus(
+            character_id=character_id,
+            week_start_date=week_start,
+            dungeon_name=dungeon_name,
+            is_cleared=True
+        )
+        db.add(cd_status)
+
+    # 2. 更新或创建工资记录
+    record_result = await db.execute(
         select(WeeklyRecord).where(
             WeeklyRecord.user_id == user_id,
             WeeklyRecord.character_id == character_id,
@@ -509,21 +610,19 @@ async def auto_create_weekly_record(
             WeeklyRecord.dungeon_name == dungeon_name
         )
     )
-    existing = result.scalar_one_or_none()
-    
+    existing = record_result.scalar_one_or_none()
+
     if existing:
-        # 更新现有记录
-        existing.is_cleared = True
+        # 更新现有工资记录
         existing.gold_amount = gold_amount
         existing.gold_record_id = gold_record_id
     else:
-        # 创建新记录
+        # 创建新工资记录
         record = WeeklyRecord(
             user_id=user_id,
             character_id=character_id,
             week_start_date=week_start,
             dungeon_name=dungeon_name,
-            is_cleared=True,
             gold_amount=gold_amount,
             gold_record_id=gold_record_id
         )
@@ -539,13 +638,13 @@ async def get_character_cd_status(
     返回 {dungeon_name: is_cleared} 的字典
     """
     week_start = get_week_start_date()
-    
+
     result = await db.execute(
-        select(WeeklyRecord.dungeon_name, WeeklyRecord.is_cleared).where(
-            WeeklyRecord.character_id == character_id,
-            WeeklyRecord.week_start_date == week_start,
-            WeeklyRecord.is_cleared == True
+        select(CharacterCDStatus.dungeon_name, CharacterCDStatus.is_cleared).where(
+            CharacterCDStatus.character_id == character_id,
+            CharacterCDStatus.week_start_date == week_start,
+            CharacterCDStatus.is_cleared == True
         )
     )
-    
+
     return {row[0]: row[1] for row in result.fetchall()}

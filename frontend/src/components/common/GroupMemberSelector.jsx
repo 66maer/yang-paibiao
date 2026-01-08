@@ -31,6 +31,7 @@ import { Input } from "@heroui/react";
  * @param {boolean} props.allowCustomValue - 是否允许自定义输入（不仅从列表选择）
  * @param {boolean} props.showXinfa - 是否显示心法选择器（默认true）
  * @param {Array<number|string>} props.excludeUserIds - 需要排除的用户ID列表
+ * @param {string} props.dungeonFilter - 可选，用于筛选CD状态的副本名称
  */
 export default function GroupMemberSelector({
   guildId,
@@ -50,6 +51,7 @@ export default function GroupMemberSelector({
   allowCustomValue = false,
   showXinfa = true,
   excludeUserIds = [],
+  dungeonFilter = null,
 }) {
   const [searchKeyword, setSearchKeyword] = useState("");
   const { currentGuildId } = useCurrentGuild();
@@ -283,6 +285,7 @@ export default function GroupMemberSelector({
           placeholder="选择或输入角色名..."
           isRequired={false}
           isDisabled={isDisabled}
+          dungeonFilter={dungeonFilter}
         />
       ) : (
         /* 普通角色名输入框（当没有成员或群组时） */

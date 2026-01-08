@@ -170,6 +170,7 @@ export default function SignupModal({ isOpen, onClose, guildId, teamId, team, us
             label="角色名称"
             placeholder="选择或输入角色名..."
             isRequired={false}
+            dungeonFilter={team?.dungeon}
           />
 
           {/* 心法选择 */}

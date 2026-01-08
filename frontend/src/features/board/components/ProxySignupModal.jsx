@@ -124,6 +124,7 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
             isRequired
             allowCustomValue={true}
             excludeUserIds={user?.id ? [user.id] : []}
+            dungeonFilter={team?.dungeon}
           />
 
           {/* 老板位开关 */}
