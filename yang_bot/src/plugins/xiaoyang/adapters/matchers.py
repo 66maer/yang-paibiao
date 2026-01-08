@@ -1027,12 +1027,18 @@ async def handle_init_members(bot: Bot, event: GroupMessageEvent):
 
         result = await member_service.sync_all_members(group_members)
 
-        msg = MessageBuilder.build_success_message(
+        msg_text = (
             f"成员同步完成！\n"
             f"总成员数: {result['total']}\n"
             f"新增成员: {result['added']}\n"
             f"已存在成员: {result['existed']}"
         )
+
+        # 如果有失败的，添加失败信息
+        if result.get('failed', 0) > 0:
+            msg_text += f"\n失败成员: {result['failed']}"
+
+        msg = MessageBuilder.build_success_message(msg_text)
         await init_members.finish(msg)
 
     except (FinishedException, PausedException, RejectedException):

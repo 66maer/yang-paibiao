@@ -76,62 +76,70 @@ class MemberService:
 
         # 统计信息
         total = len(group_members)
-        added = 0
-        existed = 0
+        added = 0  # 新增成员数（包括 created_and_added, added, re_added）
+        existed = 0  # 已存在成员数（already_member）
+        failed = 0  # 失败数
 
-        # 准备要添加的成员列表
-        members_to_add = []
-
+        # 准备所有成员列表
+        all_members = []
         for member in group_members:
             qq_number = str(member.get("user_id"))
             nickname = member.get("nickname", "")
             group_nickname = member.get("card", "")
 
-            # 尝试搜索该用户是否已存在
+            all_members.append(
+                MemberInfo(
+                    qq_number=qq_number,
+                    nickname=nickname,
+                    group_nickname=group_nickname
+                )
+            )
+
+        # 分批处理（每批最多 100 个）
+        batch_size = 100
+        for i in range(0, len(all_members), batch_size):
+            batch = all_members[i:i + batch_size]
+            batch_num = i // batch_size + 1
+            total_batches = (len(all_members) + batch_size - 1) // batch_size
+
+            logger.info(f"处理第 {batch_num}/{total_batches} 批，共 {len(batch)} 个成员")
+
             try:
-                existing_users = await self.search_user_by_nickname(qq_number)
+                request = MemberBatchRequest(members=batch)
+                result = await self.api_client.members.add_members_batch(request)
 
-                # 检查是否有完全匹配的 QQ 号
-                user_exists = any(u.qq_number == qq_number for u in existing_users)
-
-                if user_exists:
-                    logger.info(f"成员已存在: {qq_number} ({nickname})")
-                    existed += 1
-                else:
-                    # 不存在，加入待添加列表
-                    members_to_add.append(
-                        MemberInfo(
-                            qq_number=qq_number,
-                            nickname=nickname,
-                            group_nickname=group_nickname
+                # 统计结果
+                for member_result in result.get("results", []):
+                    status = member_result.get("status")
+                    if status == "already_member":
+                        existed += 1
+                    elif status in ["created_and_added", "added", "re_added"]:
+                        added += 1
+                    elif status == "error":
+                        failed += 1
+                        logger.warning(
+                            f"成员 {member_result.get('qq_number')} 添加失败: "
+                            f"{member_result.get('message')}"
                         )
-                    )
-            except Exception as e:
-                # 搜索失败，假设不存在，加入待添加列表
-                logger.warning(f"搜索成员 {qq_number} 时出错: {e}，将尝试添加")
-                members_to_add.append(
-                    MemberInfo(
-                        qq_number=qq_number,
-                        nickname=nickname,
-                        group_nickname=group_nickname
-                    )
+
+                logger.success(
+                    f"第 {batch_num} 批处理完成: "
+                    f"成功 {result.get('success_count', 0)}, "
+                    f"失败 {result.get('failed_count', 0)}"
                 )
 
-        # 批量添加新成员
-        if members_to_add:
-            try:
-                request = MemberBatchRequest(members=members_to_add)
-                await self.api_client.members.add_members_batch(request)
-                added = len(members_to_add)
-                logger.success(f"成功添加 {added} 个新成员")
             except Exception as e:
-                logger.error(f"批量添加成员失败: {e}")
-                raise
+                logger.error(f"第 {batch_num} 批处理失败: {e}")
+                failed += len(batch)
 
-        logger.success(f"成员同步完成: 总计 {total}，新增 {added}，已存在 {existed}")
+        logger.success(
+            f"成员同步完成: 总计 {total}，新增 {added}，已存在 {existed}"
+            + (f"，失败 {failed}" if failed > 0 else "")
+        )
 
         return {
             "total": total,
             "added": added,
-            "existed": existed
+            "existed": existed,
+            "failed": failed
         }
