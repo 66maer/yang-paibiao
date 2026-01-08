@@ -39,8 +39,9 @@ try:
 except Exception as e:
     logger.error(f"小秧机器人 API 客户端初始化失败: {e}")
 
-# 导入 matchers（自动注册）
+# 导入 matchers 和 event_handlers（自动注册）
 from .adapters import matchers as _
+from .adapters import event_handlers as _
 
 # 注册 HTTP API 路由
 try:

@@ -3,7 +3,8 @@ from nonebot import on_notice
 from nonebot.adapters.onebot.v11 import (
     Bot,
     GroupIncreaseNoticeEvent,
-    GroupDecreaseNoticeEvent
+    GroupDecreaseNoticeEvent,
+    NoticeEvent
 )
 from nonebot.log import logger
 
@@ -16,14 +17,18 @@ group_increase = on_notice(priority=5, block=False)
 
 
 @group_increase.handle()
-async def handle_member_join(bot: Bot, event: GroupIncreaseNoticeEvent):
+async def handle_member_join(bot: Bot, event: NoticeEvent):
     """
     处理群成员增加事件 - 自动同步到后端
 
     Args:
         bot: Bot 实例
-        event: 群成员增加事件
+        event: 通知事件
     """
+    # 只处理群成员增加事件
+    if not isinstance(event, GroupIncreaseNoticeEvent):
+        return
+
     try:
         # 获取用户信息
         user_info = await bot.get_group_member_info(
@@ -48,9 +53,13 @@ async def handle_member_join(bot: Bot, event: GroupIncreaseNoticeEvent):
         )
 
         request = MemberBatchRequest(members=[member])
-        await api_client.members.add_members_batch(request)
+        result = await api_client.members.add_members_batch(request)
 
-        logger.success(f"成功同步新成员到后端: {qq_number}")
+        # 检查结果
+        if result and result.get("success_count", 0) > 0:
+            logger.success(f"成功同步新成员到后端: {qq_number}")
+        else:
+            logger.warning(f"同步新成员到后端可能失败: {qq_number}, 结果: {result}")
 
     except APIError as e:
         logger.error(f"同步新成员到后端失败: {e}")
@@ -64,14 +73,18 @@ group_decrease = on_notice(priority=5, block=False)
 
 
 @group_decrease.handle()
-async def handle_member_leave(bot: Bot, event: GroupDecreaseNoticeEvent):
+async def handle_member_leave(bot: Bot, event: NoticeEvent):
     """
     处理群成员减少事件 - 自动同步到后端
 
     Args:
         bot: Bot 实例
-        event: 群成员减少事件
+        event: 通知事件
     """
+    # 只处理群成员减少事件
+    if not isinstance(event, GroupDecreaseNoticeEvent):
+        return
+
     try:
         qq_number = str(event.user_id)
 
@@ -80,9 +93,13 @@ async def handle_member_leave(bot: Bot, event: GroupDecreaseNoticeEvent):
         # 同步到后端
         guild_id = event.group_id
         api_client = get_api_client(guild_id=guild_id)
-        await api_client.members.remove_members_batch([qq_number])
+        result = await api_client.members.remove_members_batch([qq_number])
 
-        logger.success(f"成功从后端移除成员: {qq_number}")
+        # 检查结果
+        if result and result.get("success_count", 0) > 0:
+            logger.success(f"成功从后端移除成员: {qq_number}")
+        else:
+            logger.warning(f"从后端移除成员可能失败: {qq_number}, 结果: {result}")
 
     except APIError as e:
         logger.error(f"从后端移除成员失败: {e}")
