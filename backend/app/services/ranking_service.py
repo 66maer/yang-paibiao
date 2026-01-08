@@ -310,11 +310,26 @@ class RankingService:
         Returns:
             用户ID -> 变化信息的映射
         """
-        # 获取上一次快照的时间
-        subquery = (
-            select(func.max(RankingSnapshot.snapshot_date))
+        # 获取所有不同的快照时间，按时间倒序排列
+        distinct_times_result = await self.db.execute(
+            select(RankingSnapshot.snapshot_date)
             .where(RankingSnapshot.guild_id == guild_id)
+            .distinct()
+            .order_by(RankingSnapshot.snapshot_date.desc())
+            .limit(2)
         )
+        distinct_times = [row[0] for row in distinct_times_result.all()]
+
+        # 如果少于2个不同的快照时间，说明没有可比较的历史数据
+        if len(distinct_times) < 2:
+            # 没有足够的历史快照，所有人都是新上榜
+            return {
+                ranking["user_id"]: {"change": "new", "value": 0}
+                for ranking in current_rankings
+            }
+
+        # 使用倒数第二次快照时间（即上一次快照）
+        previous_snapshot_time = distinct_times[1]
 
         # 获取上一次快照的所有记录
         result = await self.db.execute(
@@ -322,7 +337,7 @@ class RankingService:
             .where(
                 and_(
                     RankingSnapshot.guild_id == guild_id,
-                    RankingSnapshot.snapshot_date == subquery.scalar_subquery()
+                    RankingSnapshot.snapshot_date == previous_snapshot_time
                 )
             )
         )
