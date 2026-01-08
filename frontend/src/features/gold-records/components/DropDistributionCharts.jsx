@@ -75,7 +75,7 @@ export default function DropDistributionCharts({ records = [] }) {
             const xinfaInfo = xinfaInfoTable[xinfa];
 
             if (xinfaInfo) {
-              itemName = `特效武器(${xinfaInfo.name})`;
+              itemName = `${xinfaInfo.name}`;
               itemColor = xinfaInfo.color;
             } else {
               // 如果找不到心法信息，使用原始名称
