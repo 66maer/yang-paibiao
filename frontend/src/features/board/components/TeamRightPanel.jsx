@@ -6,8 +6,9 @@ import SignupItemCard from "./SignupItemCard";
 import SignupModal from "./SignupModal";
 import ProxySignupModal from "./ProxySignupModal";
 import { getSignups, cancelSignup } from "@/api/signups";
-import { allocateSlots, buildEmptyRules } from "@/utils/slotAllocation";
+import { buildEmptyRules } from "@/utils/slotAllocation";
 import { transformSignups } from "@/utils/signupTransform";
+import { buildWaitlistFromIds } from "./TeamBoard/utils";
 
 /**
  * 右侧面板 - 报名信息与候补列表
@@ -54,12 +55,18 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
     });
   }, [signupList, user]);
 
-  // 计算候补列表
+  // 计算候补列表（优先使用后端返回的，向后兼容前端计算）
   const waitlist = useMemo(() => {
     if (!team) return [];
-    const rules = team?.slot_rules || team?.rules || buildEmptyRules();
-    const allocation = allocateSlots(rules, signupList);
-    return allocation.waitlist || [];
+
+    // 使用后端返回的 waitlist
+    if (team.waitlist && Array.isArray(team.waitlist) && team.waitlist.length > 0) {
+      return buildWaitlistFromIds(team.waitlist, signupList);
+    }
+
+    // 向后兼容：如果没有后端 waitlist，返回空数组
+    // 因为后端现在会计算，这种情况应该只在数据迁移前出现
+    return [];
   }, [team, signupList]);
 
   // 检查当前用户是否已在该车报名

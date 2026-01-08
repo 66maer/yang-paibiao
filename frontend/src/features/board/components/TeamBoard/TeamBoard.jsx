@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { allocateSlots, buildEmptyRules } from "@/utils/slotAllocation";
 import SlotCard from "./SlotCard";
-import { buildSlots } from "./utils";
+import { buildSlots, buildSlotsFromAssignments } from "./utils";
 
 /**
  * 团队面板组件
@@ -10,24 +10,26 @@ import { buildSlots } from "./utils";
  * Props:
  * @param {Array} rules - 坑位规则数组（长度为 25）
  * @param {Array} signupList - 报名列表
- * @param {Array<number>} view - 视觉映射（视觉索引 -> 数据坑位索引）。例如：[1,0,2] 表示 0↔1 交换
+ * @param {Array} slotAssignments - 后端返回的坑位分配 [{signup_id, locked}, ...]（新版本）
+ * @param {Array<number>} view - 视觉映射（已废弃）
  * @param {string} mode - 模式（view/edit/drag/mark），由外部根据权限决定
  * @param {Function} onRuleChange - 规则变化回调 (slotIndex, newRule)
  * @param {Function} onAssign - 团长指定回调 (slotIndex, assignData)
  * @param {Function} onAssignDelete - 团长删除指定回调 (slotIndex)
  * @param {Function} onPresenceChange - 进组状态变化回调 (slotIndex, newStatus)
- * @param {Function} onReorder - 重排序回调 (view: number[]，视觉索引 -> 数据坑位索引)
+ * @param {Function} onSwapSlots - 交换坑位回调 (slotIndexA, slotIndexB)
  * @param {Function} onSlotClick - 坑位点击回调 (slotIndex, signup)
  *
  * 模式说明：
  * - view: 查看模式（默认）
  * - edit: 编辑模式（可编辑规则、指定成员）
- * - drag: 拖动模式（可拖动排序）
+ * - drag: 拖动模式（可拖动排序，使用交换接口）
  * - mark: 标记模式（可标记进组/缺席）
  */
 const TeamBoard = ({
   rules = buildEmptyRules(),
   signupList = [],
+  slotAssignments = null, // 后端返回的坑位分配（新版本）
   view = [],
   mode = "view",
   guildId, // 群组ID（用于AssignModal获取成员列表）
@@ -37,29 +39,45 @@ const TeamBoard = ({
   onAssign,
   onAssignDelete,
   onPresenceChange,
-  onReorder,
+  onSwapSlots, // 新增：交换坑位回调
+  onReorder, // 保留旧接口兼容
   onSlotClick,
   onSignupDelete, // 删除报名回调
   onCallMember, // 召唤成员回调
 }) => {
-  // 分配坑位
-  const { slots } = useMemo(() => allocateSlots(rules, signupList), [rules, signupList]);
+  // 根据是否有 slotAssignments 决定使用哪种分配方式
+  const useBackendAllocation = slotAssignments && Array.isArray(slotAssignments) && slotAssignments.length > 0;
 
-  // assign模式：只显示有slot_position的报名（固定坑位），自动分配的不显示
+  // 分配坑位
+  const slots = useMemo(() => {
+    if (useBackendAllocation) {
+      // 使用后端分配结果
+      return buildSlotsFromAssignments(slotAssignments, signupList, rules);
+    } else {
+      // 向后兼容：使用前端分配
+      const { slots: allocatedSlots } = allocateSlots(rules, signupList);
+      return buildSlots(allocatedSlots, rules);
+    }
+  }, [useBackendAllocation, slotAssignments, signupList, rules]);
+
+  // assign模式：只显示锁定的坑位
   const displaySlots = useMemo(() => {
     if (mode === "assign") {
-      return slots.map((slot) => (slot?.isLock ? slot : null));
+      return slots.map((slot) => ({
+        ...slot,
+        signup: slot.signup?.isLock || slot.locked ? slot.signup : null,
+      }));
     }
     return slots;
   }, [slots, mode]);
 
   // 构建带索引的坑位数组
-  const [orderedSlots, setOrderedSlots] = useState(() => buildSlots(displaySlots, rules));
+  const [orderedSlots, setOrderedSlots] = useState(() => displaySlots);
 
   // 同步坑位变化
   useEffect(() => {
-    setOrderedSlots(buildSlots(displaySlots, rules));
-  }, [displaySlots, rules]);
+    setOrderedSlots(displaySlots);
+  }, [displaySlots]);
 
   // 是否启用拖动
   const dragEnabled = mode === "drag";
@@ -127,15 +145,25 @@ const TeamBoard = ({
   };
 
   /**
-   * 处理放开鼠标：交换两个卡片的 view 映射
+   * 处理放开鼠标：交换两个坑位
    */
   const handleDragEnd = (targetIdx) => {
     if (draggedIdx !== null && targetIdx !== null && draggedIdx !== targetIdx) {
-      // 交换 visualMap 中 draggedIdx 和 targetIdx 的值
-      const newView = [...visualMap];
-      [newView[draggedIdx], newView[targetIdx]] = [newView[targetIdx], newView[draggedIdx]];
-      console.log("[Drag] swap", { draggedIdx, targetIdx, newView: newView.slice(0, 10) });
-      onReorder?.(newView);
+      // 获取实际的坑位索引
+      const slotIndexA = displayItems[draggedIdx]?.slotIndex;
+      const slotIndexB = displayItems[targetIdx]?.slotIndex;
+
+      console.log("[Drag] swap slots", { draggedIdx, targetIdx, slotIndexA, slotIndexB });
+
+      // 优先使用新的交换接口
+      if (onSwapSlots) {
+        onSwapSlots(slotIndexA, slotIndexB);
+      } else if (onReorder) {
+        // 向后兼容：使用旧的视觉映射接口
+        const newView = [...visualMap];
+        [newView[draggedIdx], newView[targetIdx]] = [newView[targetIdx], newView[draggedIdx]];
+        onReorder(newView);
+      }
     }
     setDraggedIdx(null);
     setHoverIdx(null);

@@ -118,3 +118,53 @@ class MessageBuilder:
             Message: 格式化的成功消息
         """
         return Message(f"✅ {success_msg}")
+
+    @staticmethod
+    def build_signup_result_message(
+        player_name: str,
+        xinfa: str,
+        allocation_status: str = None,
+        allocated_slot: int = None,
+        waitlist_position: int = None,
+        is_proxy: bool = False,
+        is_rich: bool = False
+    ) -> Message:
+        """
+        构建报名结果消息
+
+        Args:
+            player_name: 玩家名称
+            xinfa: 心法
+            allocation_status: 分配状态 (allocated/waitlist/unallocated)
+            allocated_slot: 已分配的坑位索引 (0-24)
+            waitlist_position: 候补位置 (0-based)
+            is_proxy: 是否代报名
+            is_rich: 是否老板
+
+        Returns:
+            Message: 格式化的报名结果消息
+        """
+        # 构建基本信息
+        action = "代报名" if is_proxy else "报名"
+        role_type = "老板" if is_rich else xinfa
+        
+        if allocation_status == "allocated":
+            # 分配成功
+            slot_display = allocated_slot + 1 if allocated_slot is not None else "?"
+            return Message(f"✅ {action}成功！\n"
+                          f"玩家: {player_name}\n"
+                          f"心法: {role_type}\n"
+                          f"坑位: 第{slot_display}号")
+        elif allocation_status == "waitlist":
+            # 进入候补
+            position = waitlist_position + 1 if waitlist_position is not None else "?"
+            return Message(f"⏳ {action}成功，但进入候补！\n"
+                          f"玩家: {player_name}\n"
+                          f"心法: {role_type}\n"
+                          f"候补位置: 第{position}位\n"
+                          f"（当有人取消或规则变更时，可能自动补位）")
+        else:
+            # 默认成功消息
+            return Message(f"✅ {action}成功！\n"
+                          f"玩家: {player_name}\n"
+                          f"心法: {role_type}")

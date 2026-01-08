@@ -4,6 +4,7 @@
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -24,6 +25,7 @@ from app.schemas.signup import (
     SignupInfo
 )
 from app.services.team_log_service import TeamLogService
+from app.services.slot_allocation_service import SlotAllocationService
 
 router = APIRouter(prefix="/guilds", tags=["报名管理"])
 
@@ -301,11 +303,23 @@ async def create_signup(
         submitter_name
     )
 
+    # 调用排坑服务重新分配
+    allocation_result = await SlotAllocationService.reallocate(db, team_id, signup.id)
+    
     await db.commit()
     await db.refresh(signup)
 
     # 使用 enrich 函数处理昵称和 QQ 号
     enriched_signup = await _enrich_signup_response(db, guild_id, signup)
+    
+    # 添加分配结果到响应
+    if signup.id in allocation_result.signup_results:
+        alloc_status, alloc_index = allocation_result.signup_results[signup.id]
+        enriched_signup.allocation_status = alloc_status
+        if alloc_status == "allocated":
+            enriched_signup.allocated_slot = alloc_index
+        elif alloc_status == "waitlist":
+            enriched_signup.waitlist_position = alloc_index
 
     return success(enriched_signup, message="报名成功")
 
@@ -410,7 +424,7 @@ async def lock_signup(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """锁定报名位置"""
+    """锁定报名位置（使用新的排坑服务）"""
     # 验证团队访问权限，需要管理员权限
     await _verify_team_access(db, guild_id, team_id, current_user, require_admin=True)
     
@@ -425,8 +439,10 @@ async def lock_signup(
     if signup is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="报名不存在")
     
-    # 锁定位置
-    signup.slot_position = payload.slot_position
+    # 使用排坑服务锁定坑位
+    allocation_result = await SlotAllocationService.lock_slot(
+        db, team_id, signup_id, payload.slot_position
+    )
 
     # 记录坑位分配日志
     await TeamLogService.log_slot_assigned(
@@ -443,6 +459,10 @@ async def lock_signup(
 
     # 使用 enrich 函数处理昵称和 QQ 号
     enriched_signup = await _enrich_signup_response(db, guild_id, signup)
+    
+    # 添加分配结果
+    enriched_signup.allocation_status = "allocated"
+    enriched_signup.allocated_slot = payload.slot_position
 
     return success(enriched_signup, message="锁定成功")
 
@@ -491,6 +511,9 @@ async def cancel_signup(
         signup.signup_info.get("xinfa", ""),
         is_submitter
     )
+
+    # 重新分配坑位（取消的报名会被移除，候补可能会补上）
+    await SlotAllocationService.reallocate(db, team_id)
 
     await db.commit()
 
@@ -559,7 +582,7 @@ async def remove_slot_assignment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """删除坑位分配（排表模式）"""
+    """删除坑位分配（使用新的排坑服务，移除报名的锁定状态）"""
     # 验证团队访问权限，需要管理员权限
     await _verify_team_access(db, guild_id, team_id, current_user, require_admin=True)
 
@@ -574,23 +597,63 @@ async def remove_slot_assignment(
     if signup is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="报名不存在")
 
-    # 记录取消坑位分配日志
-    old_slot_position = signup.slot_position
-    if old_slot_position is not None:
+    # 获取当前坑位位置用于日志
+    current_status, current_slot = await SlotAllocationService.get_signup_allocation_status(
+        db, team_id, signup_id
+    )
+    
+    if current_status == "allocated" and current_slot is not None:
         await TeamLogService.log_slot_unassigned(
             db, team_id, guild_id, current_user.id,
             signup.id,
             signup.signup_info.get("player_name", ""),
-            old_slot_position
+            current_slot
         )
 
-    # 删除坑位分配
-    signup.slot_position = None
+    # 使用排坑服务移除分配（会重新触发分配）
+    allocation_result = await SlotAllocationService.remove_from_slot(db, team_id, signup_id)
 
     await db.commit()
     await db.refresh(signup)
 
     # 使用 enrich 函数处理昵称和 QQ 号
     enriched_signup = await _enrich_signup_response(db, guild_id, signup)
+    
+    # 获取新的分配状态
+    if signup.id in allocation_result.signup_results:
+        alloc_status, alloc_index = allocation_result.signup_results[signup.id]
+        enriched_signup.allocation_status = alloc_status
+        if alloc_status == "allocated":
+            enriched_signup.allocated_slot = alloc_index
+        elif alloc_status == "waitlist":
+            enriched_signup.waitlist_position = alloc_index
 
     return success(enriched_signup, message="已删除坑位分配")
+
+
+class SlotSwapRequest(BaseModel):
+    """交换坑位的请求模型"""
+    slot_index_a: int = Field(..., ge=0, le=24, description="坑位A索引")
+    slot_index_b: int = Field(..., ge=0, le=24, description="坑位B索引")
+
+
+@router.post("/{guild_id}/teams/{team_id}/slots/swap", response_model=ResponseModel)
+async def swap_slots(
+    guild_id: int,
+    team_id: int,
+    payload: SlotSwapRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """交换两个坑位的分配（连连看模式）"""
+    # 验证团队访问权限，需要管理员权限
+    await _verify_team_access(db, guild_id, team_id, current_user, require_admin=True)
+    
+    # 使用排坑服务交换坑位
+    await SlotAllocationService.swap_slots(
+        db, team_id, payload.slot_index_a, payload.slot_index_b
+    )
+    
+    await db.commit()
+    
+    return success(message="交换成功")

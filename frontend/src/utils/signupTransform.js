@@ -79,6 +79,11 @@ export function transformSignup(signup) {
     lockSlot: signup.slot_position,
     presence: signup.presence_status || null,
 
+    // 新增：分配结果（后端排坑服务返回）
+    allocationStatus: signup.allocation_status || null, // "allocated" | "waitlist" | "unallocated"
+    allocatedSlot: signup.allocated_slot, // 已分配的坑位索引
+    waitlistPosition: signup.waitlist_position, // 候补位置
+
     // 取消状态
     cancelTime: signup.cancelled_at,
     cancel_time: signup.cancelled_at,

@@ -39,3 +39,11 @@ export const updatePresenceStatus = (guildId, teamId, signupId, payload) => {
 export const removeSlotAssignment = (guildId, teamId, signupId) => {
   return apiClient.delete(`/guilds/${guildId}/teams/${teamId}/signups/${signupId}/slot`);
 };
+
+// 交换坑位（连连看模式）
+export const swapSlots = (guildId, teamId, slotIndexA, slotIndexB) => {
+  return apiClient.post(`/guilds/${guildId}/teams/${teamId}/slots/swap`, {
+    slot_index_a: slotIndexA,
+    slot_index_b: slotIndexB,
+  });
+};

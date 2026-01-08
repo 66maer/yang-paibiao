@@ -24,6 +24,7 @@ from app.schemas.bot import BotSignupRequest, BotCancelSignupRequest, BotSignupI
 from app.schemas.signup import SignupOut
 from app.schemas.common import ResponseModel
 from app.core.logging import get_logger
+from app.services.slot_allocation_service import SlotAllocationService
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -237,12 +238,36 @@ async def create_signup(
         )
 
     db.add(signup)
+    await db.flush()  # 先flush以获取signup.id
+    
+    # 调用排坑服务重新分配
+    allocation_result = await SlotAllocationService.reallocate(db, team_id, signup.id)
+    
     await db.commit()
     await db.refresh(signup)
+    
+    # 获取分配结果
+    allocation_status = "unallocated"
+    allocated_slot = None
+    waitlist_position = None
+    
+    if signup.id in allocation_result.signup_results:
+        alloc_status, alloc_index = allocation_result.signup_results[signup.id]
+        allocation_status = alloc_status
+        if alloc_status == "allocated":
+            allocated_slot = alloc_index
+        elif alloc_status == "waitlist":
+            waitlist_position = alloc_index
 
-    logger.info(f"报名成功 - 报名ID: {signup.id}, 团队ID: {team_id}, 提交者: {submitter_nickname}")
+    logger.info(f"报名成功 - 报名ID: {signup.id}, 团队ID: {team_id}, 提交者: {submitter_nickname}, 分配状态: {allocation_status}")
 
-    return ResponseModel(data=SignupOut.from_orm(signup))
+    # 构建响应
+    signup_out = SignupOut.model_validate(signup)
+    signup_out.allocation_status = allocation_status
+    signup_out.allocated_slot = allocated_slot
+    signup_out.waitlist_position = waitlist_position
+
+    return ResponseModel(data=signup_out)
 
 
 @router.delete(
@@ -318,6 +343,9 @@ async def cancel_signup(
     # 软删除：设置 cancelled_at
     signup.cancelled_at = datetime.utcnow()
     signup.cancelled_by = user.id
+
+    # 重新分配坑位（取消的报名会被移除，候补可能会补上）
+    await SlotAllocationService.reallocate(db, team_id)
 
     await db.commit()
 

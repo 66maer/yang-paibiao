@@ -50,6 +50,10 @@ class SignupInfo(BaseModel):
     signup_info: Dict[str, Any]
     is_rich: bool
     created_at: datetime
+    # 分配状态字段（后端排坑服务返回）
+    allocation_status: Optional[str] = None  # "allocated" | "waitlist" | "unallocated"
+    allocated_slot: Optional[int] = None  # 分配的坑位索引（0-24）
+    waitlist_position: Optional[int] = None  # 候补位置（0-based）
 
 
 class CharacterInfo(BaseModel):

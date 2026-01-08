@@ -476,15 +476,19 @@ async def _handle_self_signup(
             SignupRequest(**signup_request)
         )
 
-        # 构建成功消息
+        # 构建成功消息（使用分配状态）
         xinfa_display = format_xinfa_display(xinfa_key)
         char_name = signup_info.signup_info.get("character_name", "") or "待定"
-        msg = MessageBuilder.build_success_message(
-            f"报名登记成功！\n"
-            f"第{params.get('team_index')}车\n"
-            f"心法: {xinfa_display}\n"
-            f"角色: {char_name}\n"
-            f"报名信息已登记成功, 具体报名情况请查看排坑图。"
+        
+        # 使用新的报名结果消息构建器（显示分配状态）
+        msg = MessageBuilder.build_signup_result_message(
+            player_name=char_name,
+            xinfa=xinfa_display,
+            allocation_status=signup_info.allocation_status,
+            allocated_slot=signup_info.allocated_slot,
+            waitlist_position=signup_info.waitlist_position,
+            is_proxy=False,
+            is_rich=False
         )
         # 发送成功消息（不finish，后续还需要发送截图）
         await matcher.send(msg)
@@ -581,13 +585,16 @@ async def _handle_proxy_signup(
         )
 
         xinfa_display = format_xinfa_display(xinfa_key)
-        char_name = params.get("character_name") or "待定"
-        msg = MessageBuilder.build_success_message(
-            f"代报名登记成功！\n"
-            f"已为 {player_name} 报名 第{params.get('team_index')}车\n"
-            f"心法: {xinfa_display}\n"
-            f"角色: {char_name}\n"
-            f"报名信息已登记成功, 具体报名情况请查看排坑图。"
+        
+        # 使用新的报名结果消息构建器（显示分配状态）
+        msg = MessageBuilder.build_signup_result_message(
+            player_name=player_name,
+            xinfa=xinfa_display,
+            allocation_status=signup_info.allocation_status,
+            allocated_slot=signup_info.allocated_slot,
+            waitlist_position=signup_info.waitlist_position,
+            is_proxy=True,
+            is_rich=False
         )
         # 发送成功消息（不finish，后续还需要发送截图）
         await matcher.send(msg)
@@ -681,10 +688,16 @@ async def _handle_register_rich(
         )
         
         xinfa_display = format_xinfa_display(xinfa_key)
-        msg = MessageBuilder.build_success_message(
-            f"老板登记成功！\n"
-            f"老板: {boss_name}\n"
-            f"心法: {xinfa_display}"
+        
+        # 使用新的报名结果消息构建器（显示分配状态）
+        msg = MessageBuilder.build_signup_result_message(
+            player_name=boss_name,
+            xinfa=xinfa_display,
+            allocation_status=signup_info.allocation_status,
+            allocated_slot=signup_info.allocated_slot,
+            waitlist_position=signup_info.waitlist_position,
+            is_proxy=True,
+            is_rich=True
         )
         await matcher.finish(msg)
 

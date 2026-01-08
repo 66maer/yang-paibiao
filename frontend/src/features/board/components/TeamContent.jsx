@@ -32,6 +32,7 @@ import {
   updatePresenceStatus,
   createSignup,
   cancelSignup,
+  swapSlots,
 } from "@/api/signups";
 import { callMembers } from "@/api/guilds";
 import { showToast, showConfirm } from "@/utils/toast";
@@ -45,9 +46,8 @@ import TeamLogs from "./TeamLogs";
 /**
  * 中间内容 - 开团详情
  */
-export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
+export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdateTeam }) {
   const [boardMode, setBoardMode] = useState("view");
-  const [pendingSlotView, setPendingSlotView] = useState(null); // 暂存未提交的视觉映射
   const [goldRecordModalOpen, setGoldRecordModalOpen] = useState(false);
   const [recommendationModalOpen, setRecommendationModalOpen] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
@@ -58,19 +58,14 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
   // Always call hooks in the same order - move conditional check below
   const teamTime = team?.team_time ? new Date(team.team_time) : null;
 
-  // 监听团队切换，提示未保存的更改
+  // 监听团队切换，重置模式
   useEffect(() => {
     const currentTeamId = team?.id;
-
-    // 如果团队ID发生变化且不是初始加载
-    if (prevTeamIdRef.current !== null && prevTeamIdRef.current !== currentTeamId && pendingSlotView) {
-      showToast.warning("您有未保存的连连看更改已丢失");
-      setPendingSlotView(null);
+    if (prevTeamIdRef.current !== null && prevTeamIdRef.current !== currentTeamId) {
       setBoardMode("view"); // 重置为浏览模式
     }
-
     prevTeamIdRef.current = currentTeamId;
-  }, [team?.id, pendingSlotView]);
+  }, [team?.id]);
 
   // 使用 SWR 加载报名数据
   const { data: signupsData, mutate: mutateSignups } = useSWR(
@@ -89,14 +84,15 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
     return transformSignups(rawData);
   }, [signupsData]);
 
-  // Prepare rules, signup list, and view mapping with memoization
+  // Prepare rules and slot assignments with memoization
   const memoizedInputs = useMemo(
     () => ({
       rawRules: team?.slot_rules || team?.rules || [],
       signupList: signupList,
-      slotView: team?.slot_view || [],
+      slotAssignments: team?.slot_assignments || null, // 后端返回的坑位分配
+      waitlist: team?.waitlist || [], // 后端返回的候补列表
     }),
-    [team?.slot_rules, team?.rules, signupList, team?.slot_view]
+    [team?.slot_rules, team?.rules, signupList, team?.slot_assignments, team?.waitlist]
   );
 
   // Build rules with memoization to avoid recomputation
@@ -116,14 +112,8 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
     { key: "drag", label: "连连看", icon: "🧲", adminOnly: true },
   ];
 
-  // 处理模式切换
+  // 处理模式切换（简化版，不再需要暂存逻辑）
   const handleModeChange = async (newMode) => {
-    // 如果有未保存的连连看更改，提示用户
-    if (pendingSlotView && boardMode === "drag") {
-      const confirmed = await showConfirm("您有未保存的连连看更改，确定要切换模式吗？未保存的更改将丢失。");
-      if (!confirmed) return;
-      setPendingSlotView(null); // 清空未保存的更改
-    }
     setBoardMode(newMode);
   };
 
@@ -225,6 +215,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
       await removeSlotAssignment(team.guild_id, team.id, signup.id);
       showToast.success(`已删除坑位的分配`);
       await mutateSignups(); // 刷新报名列表
+      onRefresh?.(); // 刷新团队数据以获取新的 slot_assignments
     } catch (error) {
       console.error("删除坑位分配失败:", error);
       showToast.error(error?.response?.data?.message || "删除坑位分配失败");
@@ -251,52 +242,57 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
     }
   };
 
-  // 连连看模式 - 暂存视觉映射(不直接提交)
-  const handleReorder = async (newView) => {
-    setPendingSlotView(newView);
-  };
+  // 连连看模式 - 直接交换坑位（调用后端接口）
+  const handleSwapSlots = async (slotIndexA, slotIndexB) => {
+    console.log("[Swap] Attempting slot swap:", { slotIndexA, slotIndexB });
 
-  // 连连看模式 - 提交视觉映射
-  const handleSubmitReorder = async () => {
-    if (!pendingSlotView) return;
+    // 乐观更新：先在本地交换
+    const originalAssignments = team.slot_assignments || [];
+    const newAssignments = [...originalAssignments];
+
+    // 确保数组足够长
+    while (newAssignments.length < Math.max(slotIndexA, slotIndexB) + 1) {
+      newAssignments.push({ signup_id: null, locked: false });
+    }
+
+    // 交换
+    [newAssignments[slotIndexA], newAssignments[slotIndexB]] = [newAssignments[slotIndexB], newAssignments[slotIndexA]];
+
+    // 乐观更新本地状态（立即更新 UI）
+    if (onUpdateTeam) {
+      onUpdateTeam({ ...team, slot_assignments: newAssignments });
+    }
 
     try {
-      await updateTeam(team.guild_id, team.id, {
-        slot_view: pendingSlotView,
-      });
-      showToast.success("已保存视觉映射");
-      setPendingSlotView(null); // 清空暂存
-      onRefresh?.(); // 刷新团队数据
+      await swapSlots(team.guild_id, team.id, slotIndexA, slotIndexB);
+      console.log("[Swap] API success, slot swapped");
+      showToast.success("已交换坑位");
     } catch (error) {
-      console.error("保存视觉映射失败:", error);
-      showToast.error(error?.response?.data?.message || "保存视觉映射失败");
+      console.error("交换坑位失败:", error);
+      showToast.error(error?.response?.data?.message || "交换坑位失败");
+
+      // 失败时回滚到原始状态
+      if (onUpdateTeam) {
+        onUpdateTeam({ ...team, slot_assignments: originalAssignments });
+      }
     }
   };
 
-  // 连连看模式 - 取消编辑
-  const handleCancelReorder = () => {
-    setPendingSlotView(null);
-    showToast.info("已取消编辑");
-  };
-
   // 连连看模式 - 恢复原始设置
-  const handleResetSlotView = async () => {
-    const confirmed = await showConfirm("确定要恢复到原始面板状态吗？这将重置所有连连看的排列。");
+  const handleResetSlotAssignments = async () => {
+    const confirmed = await showConfirm("确定要重新计算坑位分配吗？这将根据报名规则重新分配所有未锁定的坑位。");
 
+    if (!confirmed) return;
     if (!confirmed) return;
 
     try {
-      // 生成 0-24 的数组作为原始顺序
-      const originalView = Array.from({ length: 25 }, (_, i) => i);
-      await updateTeam(team.guild_id, team.id, {
-        slot_view: originalView,
-      });
-      showToast.success("已恢复到原始面板状态");
-      setPendingSlotView(null); // 清空暂存
-      onRefresh?.(); // 刷新团队数据
+      // 触发后端重新计算坑位分配（通过更新规则触发）
+      // 暂时使用刷新来重新获取数据
+      onRefresh?.();
+      showToast.success("已重新计算坑位分配");
     } catch (error) {
-      console.error("恢复原始设置失败:", error);
-      showToast.error(error?.response?.data?.message || "恢复原始设置失败");
+      console.error("重新计算失败:", error);
+      showToast.error(error?.response?.data?.message || "重新计算失败");
     }
   };
 
@@ -310,6 +306,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
       await cancelSignup(team.guild_id, team.id, signup.id);
       showToast.success("已取消报名");
       await mutateSignups(); // 刷新报名列表
+      onRefresh?.(); // 刷新团队数据以获取新的 slot_assignments
     } catch (error) {
       console.error("取消报名失败:", error);
       showToast.error(error?.response?.data?.message || "取消报名失败");
@@ -484,25 +481,6 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
                   )}
                 </div>
 
-                {/* 连连看模式的操作按钮 */}
-                {isAdmin && boardMode === "drag" && (
-                  <div className="flex items-center gap-2">
-                    {pendingSlotView && (
-                      <>
-                        <Button size="sm" variant="flat" color="default" onPress={handleCancelReorder}>
-                          取消
-                        </Button>
-                        <Button size="sm" variant="solid" color="success" onPress={handleSubmitReorder}>
-                          ✅ 完成编辑
-                        </Button>
-                      </>
-                    )}
-                    <Button size="sm" variant="flat" color="warning" onPress={handleResetSlotView}>
-                      🔄 恢复原始设置
-                    </Button>
-                  </div>
-                )}
-
                 {/* 进组标记模式的操作按钮 */}
                 {isAdmin && boardMode === "mark" && (
                   <div className="flex items-center gap-2">
@@ -516,7 +494,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
               <TeamBoard
                 rules={rules}
                 signupList={memoizedInputs.signupList}
-                view={pendingSlotView || memoizedInputs.slotView}
+                slotAssignments={memoizedInputs.slotAssignments}
                 mode={boardMode}
                 guildId={team.guild_id}
                 isAdmin={isAdmin}
@@ -525,7 +503,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh }) {
                 onAssign={handleAssign}
                 onAssignDelete={handleAssignDelete}
                 onPresenceChange={handlePresenceChange}
-                onReorder={handleReorder}
+                onSwapSlots={handleSwapSlots}
                 onSignupDelete={handleSignupDelete}
                 onCallMember={handleCallMember}
               />

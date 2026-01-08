@@ -64,12 +64,16 @@ class SignupOut(BaseModel):
     priority: int
     is_rich: bool
     is_proxy: bool
-    slot_position: Optional[int] = None
+    slot_position: Optional[int] = Field(default=None, description="锁定位置（已废弃，使用allocation_result）")
     presence_status: Optional[str] = Field(default=None, description="到场状态: ready(就绪)/absent(缺席)/null(空)")
     cancelled_at: Optional[datetime] = None
     cancelled_by: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    # 分配结果（可选，由API填充）
+    allocation_status: Optional[str] = Field(default=None, description="分配状态: allocated/waitlist/unallocated")
+    allocated_slot: Optional[int] = Field(default=None, description="已分配的坑位索引(0-24)")
+    waitlist_position: Optional[int] = Field(default=None, description="候补位置(0-based)")
 
     model_config = {
         "from_attributes": True

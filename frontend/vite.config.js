@@ -32,7 +32,7 @@ export default defineConfig({
     proxy: {
       // 代理所有 /api 开头的请求到远程服务器
       "/api": {
-        // target: "https://zyhm.fun",
+        //target: "https://zyhm.fun",
         target: "http://localhost:9500",
         changeOrigin: true,
         secure: true,

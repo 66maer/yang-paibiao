@@ -57,6 +57,12 @@ class TeamClose(BaseModel):
         return self
 
 
+class SlotAssignmentItem(BaseModel):
+    """坑位分配项"""
+    signup_id: Optional[int] = Field(default=None, description="报名ID")
+    locked: bool = Field(default=False, description="是否锁定")
+
+
 class TeamOut(BaseModel):
     """开团的响应模型"""
     id: int
@@ -73,7 +79,9 @@ class TeamOut(BaseModel):
     status: str
     notice: Optional[str] = None
     rules: List[RuleItem]
-    slot_view: Optional[List[int]] = Field(default=None, description="坑位视觉映射数组（用于连连看模式）")
+    slot_view: Optional[List[int]] = Field(default=None, description="坑位视觉映射数组（已废弃）")
+    slot_assignments: Optional[List[SlotAssignmentItem]] = Field(default=None, description="坑位分配情况")
+    waitlist: Optional[List[int]] = Field(default=None, description="候补列表")
     created_at: datetime
     updated_at: datetime
     closed_at: Optional[datetime] = None

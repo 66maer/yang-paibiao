@@ -58,6 +58,11 @@ export default function BoardPage() {
     }
   };
 
+  // 更新单个团队（避免刷新整个列表）
+  const updateTeam = (updatedTeam) => {
+    setTeams((prevTeams) => prevTeams.map((t) => (t.id === updatedTeam.id ? { ...t, ...updatedTeam } : t)));
+  };
+
   // 初始加载
   useEffect(() => {
     loadTeams();
@@ -119,7 +124,13 @@ export default function BoardPage() {
             <div className="grid grid-cols-12 gap-4 h-full">
               {/* 团队详情 */}
               <div className="col-span-10 overflow-auto">
-                <TeamContent team={selectedTeam} isAdmin={isAdmin} onEdit={handleEditTeam} onRefresh={loadTeams} />
+                <TeamContent
+                  team={selectedTeam}
+                  isAdmin={isAdmin}
+                  onEdit={handleEditTeam}
+                  onRefresh={loadTeams}
+                  onUpdateTeam={updateTeam}
+                />
               </div>
 
               {/* 右侧面板 - 我的报名/候补列表 或 候补列表/报名日志 */}
