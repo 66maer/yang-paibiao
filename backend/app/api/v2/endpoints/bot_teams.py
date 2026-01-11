@@ -254,6 +254,8 @@ async def get_team_for_screenshot(
         notice=team.notice,
         rules=team.rule,  # 数据库字段是 rule
         slot_view=team.slot_view,
+        slot_assignments=team.slot_assignments,  # 后端计算的坑位分配
+        waitlist=team.waitlist,  # 后端计算的候补列表
         signups=signup_list,
         created_at=team.created_at,
         updated_at=team.updated_at,

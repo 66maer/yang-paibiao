@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import axios from "axios";
 import TeamBoard from "@/features/board/components/TeamBoard";
-import { buildEmptyRules, allocateSlots } from "@/utils/slotAllocation";
+import { buildEmptyRules } from "@/utils/slotAllocation";
 import { transformSignups } from "@/utils/signupTransform";
 
 /**
@@ -53,18 +53,23 @@ export default function TeamImagePage() {
   }, [guild_qq_number, team_id, apiKey]);
 
   // 解析团队数据
-  const { teamTime, signupList, rules, waitList } = useMemo(() => {
-    if (!teamData) return { teamTime: null, signupList: [], rules: [], waitList: [] };
+  const { teamTime, signupList, rules, slotAssignments, waitList } = useMemo(() => {
+    if (!teamData) return { teamTime: null, signupList: [], rules: [], slotAssignments: null, waitList: [] };
 
     const teamTime = teamData.team_time ? new Date(teamData.team_time) : null;
     const signupList = transformSignups(teamData.signups || []);
     const rules = teamData.rules && teamData.rules.length > 0 ? teamData.rules : buildEmptyRules();
 
-    // 候补列表：通过 allocateSlots 计算
-    const allocation = allocateSlots(rules, signupList);
-    const waitList = allocation.waitlist || [];
+    // 直接使用后端返回的坑位分配和候补列表
+    const slotAssignments = teamData.slot_assignments || null;
+    const waitlistIds = teamData.waitlist || [];
 
-    return { teamTime, signupList, rules, waitList };
+    // 根据候补列表ID构建候补详情
+    const waitList = waitlistIds
+      .map((signupId) => signupList.find((s) => s.id === signupId))
+      .filter(Boolean); // 过滤掉找不到的
+
+    return { teamTime, signupList, rules, slotAssignments, waitList };
   }, [teamData]);
 
   // 加载状态
@@ -170,7 +175,7 @@ export default function TeamImagePage() {
                   <h3 className="text-sm font-semibold text-default-600">👥 团队面板</h3>
                 </div>
 
-                <TeamBoard rules={rules} signupList={signupList} view={teamData.slot_view || []} mode="view" />
+                <TeamBoard rules={rules} signupList={signupList} slotAssignments={slotAssignments} mode="view" />
               </div>
 
               {/* 创建信息 */}
