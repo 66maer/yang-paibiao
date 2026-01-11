@@ -267,7 +267,15 @@ async def create_signup(
     signup_out.allocated_slot = allocated_slot
     signup_out.waitlist_position = waitlist_position
 
-    return ResponseModel(data=signup_out)
+    # 根据分配状态返回不同的消息
+    if allocation_status == "allocated":
+        response_message = "报名成功"
+    elif allocation_status == "waitlist":
+        response_message = "登记成功，在候补列表"
+    else:
+        response_message = "报名成功，但暂时无法分配坑位"
+
+    return ResponseModel(data=signup_out, message=response_message)
 
 
 @router.delete(

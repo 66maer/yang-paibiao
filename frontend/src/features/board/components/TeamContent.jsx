@@ -246,21 +246,35 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
   const handleSwapSlots = async (slotIndexA, slotIndexB) => {
     console.log("[Swap] Attempting slot swap:", { slotIndexA, slotIndexB });
 
-    // 乐观更新：先在本地交换
+    // 乐观更新：先在本地交换 slot_assignments 和 rules
     const originalAssignments = team.slot_assignments || [];
+    const originalRules = team.slot_rules || team.rules || [];
+
     const newAssignments = [...originalAssignments];
+    const newRules = [...originalRules];
 
     // 确保数组足够长
     while (newAssignments.length < Math.max(slotIndexA, slotIndexB) + 1) {
       newAssignments.push({ signup_id: null, locked: false });
     }
+    while (newRules.length < Math.max(slotIndexA, slotIndexB) + 1) {
+      newRules.push({ allowRich: false, allowXinfaList: [] });
+    }
 
-    // 交换
+    // 交换 slot_assignments
     [newAssignments[slotIndexA], newAssignments[slotIndexB]] = [newAssignments[slotIndexB], newAssignments[slotIndexA]];
+
+    // 同时交换 rules（确保下次重新计算时交换效果不会失效）
+    [newRules[slotIndexA], newRules[slotIndexB]] = [newRules[slotIndexB], newRules[slotIndexA]];
 
     // 乐观更新本地状态（立即更新 UI）
     if (onUpdateTeam) {
-      onUpdateTeam({ ...team, slot_assignments: newAssignments });
+      onUpdateTeam({
+        ...team,
+        slot_assignments: newAssignments,
+        slot_rules: newRules,
+        rules: newRules, // 兼容旧字段名
+      });
     }
 
     try {
@@ -273,7 +287,12 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
 
       // 失败时回滚到原始状态
       if (onUpdateTeam) {
-        onUpdateTeam({ ...team, slot_assignments: originalAssignments });
+        onUpdateTeam({
+          ...team,
+          slot_assignments: originalAssignments,
+          slot_rules: originalRules,
+          rules: originalRules, // 兼容旧字段名
+        });
       }
     }
   };

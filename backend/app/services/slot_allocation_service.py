@@ -154,58 +154,61 @@ class SlotAllocationService:
     ) -> AllocationResult:
         """
         执行排坑算法
-        
+
         约束：
-        1. 第一约束：报名顺序优先，不允许挤占
-        2. 第二约束：坑位规则匹配
-        
+        1. 第一约束：保留所有现有分配（包括连连看手动交换的结果）
+        2. 第二约束：报名顺序优先，不允许挤占
+        3. 第三约束：坑位规则匹配
+
         策略：
-        1. 保留所有 locked=true 的分配
-        2. 按报名顺序处理每个未分配的报名
-        3. 优先找空位中符合规则的
-        4. 如果没有符合规则的空位，尝试换位策略
+        1. 保留所有现有的分配（不管是否 locked），只要报名仍然有效
+        2. 只对新报名进行分配
+        3. 新报名优先找空位中符合规则的
+        4. 如果没有符合规则的空位，尝试换位策略（只能换未锁定的坑位）
         5. 无法安排的加入候补
         """
-        # 初始化分配数组
+        # 构建报名ID到报名对象的映射
+        signup_map = {s.id: s for s in signups}
+        signup_ids = set(s.id for s in signups)
+
+        # 初始化分配数组，并保留所有现有的有效分配
         assignments: List[Dict[str, Any]] = [
             {"signup_id": None, "locked": False}
             for _ in range(max_slots)
         ]
-        
-        # 构建报名ID到报名对象的映射
-        signup_map = {s.id: s for s in signups}
-        signup_ids = set(s.id for s in signups)
-        
-        # 保留锁定的分配（只保留仍然有效的报名）
+
+        # 保留所有现有的分配（不管是否 locked），只要报名仍然有效
         for i, assignment in enumerate(current_assignments):
             if i >= max_slots:
                 break
-            if assignment and assignment.get("locked") and assignment.get("signup_id"):
+            if assignment and assignment.get("signup_id"):
                 signup_id = assignment["signup_id"]
                 if signup_id in signup_ids:
+                    # 保留现有分配（包括连连看交换的结果）
                     assignments[i] = {
                         "signup_id": signup_id,
-                        "locked": True
+                        "locked": assignment.get("locked", False)
                     }
-        
+
         # 找出已分配的报名ID
         assigned_signup_ids = set(
             a["signup_id"] for a in assignments if a["signup_id"]
         )
-        
-        # 按报名顺序处理未分配的报名
-        unassigned_signups = [s for s in signups if s.id not in assigned_signup_ids]
+
+        # 按报名顺序处理新报名（未在现有分配中的报名）
+        new_signups = [s for s in signups if s.id not in assigned_signup_ids]
         waitlist: List[int] = []
         signup_results: Dict[int, Tuple[str, Optional[int]]] = {}
-        
+
         # 记录已分配的报名结果
         for i, a in enumerate(assignments):
             if a["signup_id"]:
                 signup_results[a["signup_id"]] = ("allocated", i)
-        
-        for signup in unassigned_signups:
+
+        # 只对新报名进行分配
+        for signup in new_signups:
             slot_index = cls._find_slot_for_signup(assignments, rules, signup, signup_map)
-            
+
             if slot_index is not None:
                 assignments[slot_index] = {
                     "signup_id": signup.id,
@@ -213,9 +216,10 @@ class SlotAllocationService:
                 }
                 signup_results[signup.id] = ("allocated", slot_index)
             else:
+                # 无法分配，加入候补
                 waitlist.append(signup.id)
                 signup_results[signup.id] = ("waitlist", len(waitlist) - 1)
-        
+
         return AllocationResult(
             slot_assignments=assignments,
             waitlist=waitlist,
@@ -464,6 +468,7 @@ class SlotAllocationService:
     ) -> AllocationResult:
         """
         交换两个坑位的分配（连连看模式）
+        同时交换对应的 rule（规则），确保下次重新计算时交换效果不会失效
         """
         lock = cls._get_team_lock(team_id)
         async with lock:
@@ -473,25 +478,33 @@ class SlotAllocationService:
             team = team_result.scalar_one_or_none()
             if not team:
                 return AllocationResult([], [], {})
-            
+
             max_slots = team.max_members or 25
             assignments = team.slot_assignments or [
                 {"signup_id": None, "locked": False}
                 for _ in range(max_slots)
             ]
-            
+
             if slot_index_a >= len(assignments) or slot_index_b >= len(assignments):
                 return AllocationResult(assignments, team.waitlist or [], {})
-            
-            # 交换
+
+            # 交换 slot_assignments
             assignments[slot_index_a], assignments[slot_index_b] = \
                 assignments[slot_index_b], assignments[slot_index_a]
-            
+
+            # 同时交换 rule 数组中对应的规则
+            rules = team.rule or []
+            if isinstance(rules, list) and len(rules) > max(slot_index_a, slot_index_b):
+                rules[slot_index_a], rules[slot_index_b] = \
+                    rules[slot_index_b], rules[slot_index_a]
+                team.rule = rules
+                flag_modified(team, "rule")
+
             team.slot_assignments = assignments
             # 标记 JSON 字段已修改（SQLAlchemy 需要显式标记）
             flag_modified(team, "slot_assignments")
             await db.flush()
-            
+
             # 构建结果
             signup_results = {}
             for i, a in enumerate(assignments):
@@ -500,7 +513,7 @@ class SlotAllocationService:
             waitlist = team.waitlist or []
             for i, sid in enumerate(waitlist):
                 signup_results[sid] = ("waitlist", i)
-            
+
             return AllocationResult(
                 slot_assignments=assignments,
                 waitlist=waitlist,

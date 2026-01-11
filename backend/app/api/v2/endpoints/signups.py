@@ -312,16 +312,22 @@ async def create_signup(
     # 使用 enrich 函数处理昵称和 QQ 号
     enriched_signup = await _enrich_signup_response(db, guild_id, signup)
     
-    # 添加分配结果到响应
+    # 添加分配结果到响应，并根据分配状态返回不同的消息
+    response_message = "报名成功"
     if signup.id in allocation_result.signup_results:
         alloc_status, alloc_index = allocation_result.signup_results[signup.id]
         enriched_signup.allocation_status = alloc_status
         if alloc_status == "allocated":
             enriched_signup.allocated_slot = alloc_index
+            response_message = f"报名成功，已分配到 {alloc_index + 1} 号坑位"
         elif alloc_status == "waitlist":
             enriched_signup.waitlist_position = alloc_index
+            response_message = f"报名成功，当前为候补第 {alloc_index + 1} 位"
+        else:
+            # unallocated 或其他状态
+            response_message = "报名成功，但暂时无法分配坑位"
 
-    return success(enriched_signup, message="报名成功")
+    return success(enriched_signup, message=response_message)
 
 
 @router.get("/{guild_id}/teams/{team_id}/signups", response_model=ResponseModel[List[SignupOut]])

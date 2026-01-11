@@ -6,6 +6,7 @@ import SignupItemCard from "./SignupItemCard";
 import SignupModal from "./SignupModal";
 import ProxySignupModal from "./ProxySignupModal";
 import { getSignups, cancelSignup } from "@/api/signups";
+import { getTeamDetail } from "@/api/teams";
 import { buildEmptyRules } from "@/utils/slotAllocation";
 import { transformSignups } from "@/utils/signupTransform";
 import { buildWaitlistFromIds } from "./TeamBoard/utils";
@@ -15,7 +16,7 @@ import { buildWaitlistFromIds } from "./TeamBoard/utils";
  * - 第一页：报名信息（本人报名 + 代报名列表）
  * - 第二页：候补列表（管理员可取消候补）
  */
-export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
+export default function TeamRightPanel({ team, isAdmin, onRefresh, onUpdateTeam }) {
   const { user } = useAuthStore();
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showProxyModal, setShowProxyModal] = useState(false);
@@ -118,12 +119,26 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh }) {
   };
 
   /**
-   * 报名成功后的回调：刷新本组件的报名数据
+   * 报名成功后的回调：刷新本组件的报名数据和团队数据
    * 注意：不需要刷新整个团队列表，避免页面闪烁影响用户体验
    */
   const handleSignupSuccess = async () => {
-    await reloadSignups(); // 刷新报名数据
-    // 不再调用 onRefresh，避免重新加载整个团队列表
+    // 并行刷新报名数据和团队数据
+    await Promise.all([
+      reloadSignups(), // 刷新报名数据
+      (async () => {
+        // 刷新团队数据（排表和候补列表）
+        if (team && onUpdateTeam) {
+          try {
+            const response = await getTeamDetail(team.guild_id, team.id);
+            const updatedTeam = response.data || response;
+            onUpdateTeam(updatedTeam);
+          } catch (error) {
+            console.error("刷新团队数据失败:", error);
+          }
+        }
+      })(),
+    ]);
   };
 
   if (!team) {

@@ -135,7 +135,7 @@ export default function BoardPage() {
 
               {/* 右侧面板 - 我的报名/候补列表 或 候补列表/报名日志 */}
               <div className="col-span-2 overflow-hidden">
-                <TeamRightPanel team={selectedTeam} isAdmin={isAdmin} onRefresh={loadTeams} />
+                <TeamRightPanel team={selectedTeam} isAdmin={isAdmin} onRefresh={loadTeams} onUpdateTeam={updateTeam} />
               </div>
             </div>
           ) : (

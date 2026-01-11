@@ -110,7 +110,7 @@ export default function SignupModal({ isOpen, onClose, guildId, teamId, team, us
       }
 
       // 2. 提交报名
-      await createSignup(guildId, teamId, {
+      const response = await createSignup(guildId, teamId, {
         signup_user_id: user?.id || null,
         signup_character_id: characterId,
         signup_info: {
@@ -122,8 +122,9 @@ export default function SignupModal({ isOpen, onClose, guildId, teamId, team, us
         is_rich: isRich,
       });
 
-      // 3. 成功提示
-      showToast.success("报名成功");
+      // 3. 成功提示（显示后端返回的详细消息）
+      const message = response?.message || response?.data?.message || "报名成功";
+      showToast.success(message);
       onSuccess?.();
       onClose?.();
     } catch (e) {

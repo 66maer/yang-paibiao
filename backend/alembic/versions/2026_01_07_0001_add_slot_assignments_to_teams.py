@@ -18,28 +18,31 @@ depends_on = None
 
 def upgrade():
     # 添加 slot_assignments 字段 - 坑位分配情况 [{signup_id, locked}, ...]
-    op.add_column(
-        'teams',
-        sa.Column(
-            'slot_assignments',
-            sa.JSON(),
-            nullable=True,
-            comment='坑位分配情况 [{signup_id, locked}, ...]'
-        )
-    )
-    
+    # 使用 IF NOT EXISTS 避免重复添加
+    op.execute("""
+        ALTER TABLE teams
+        ADD COLUMN IF NOT EXISTS slot_assignments JSON;
+    """)
+    op.execute("""
+        COMMENT ON COLUMN teams.slot_assignments IS '坑位分配情况 [{signup_id, locked}, ...]';
+    """)
+
     # 添加 waitlist 字段 - 候补列表 [signup_id, ...]
-    op.add_column(
-        'teams',
-        sa.Column(
-            'waitlist',
-            sa.JSON(),
-            nullable=True,
-            comment='候补列表 [signup_id, ...]'
-        )
-    )
+    op.execute("""
+        ALTER TABLE teams
+        ADD COLUMN IF NOT EXISTS waitlist JSON;
+    """)
+    op.execute("""
+        COMMENT ON COLUMN teams.waitlist IS '候补列表 [signup_id, ...]';
+    """)
 
 
 def downgrade():
-    op.drop_column('teams', 'waitlist')
-    op.drop_column('teams', 'slot_assignments')
+    op.execute("""
+        ALTER TABLE teams
+        DROP COLUMN IF EXISTS waitlist;
+    """)
+    op.execute("""
+        ALTER TABLE teams
+        DROP COLUMN IF EXISTS slot_assignments;
+    """)

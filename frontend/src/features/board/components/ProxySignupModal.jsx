@@ -65,7 +65,7 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
 
     try {
       setSubmitting(true);
-      await createSignup(guildId, teamId, {
+      const response = await createSignup(guildId, teamId, {
         signup_user_id: memberId ? Number(memberId) : null, // 允许为空
         signup_character_id: characterId,
         signup_info: {
@@ -76,7 +76,9 @@ export default function ProxySignupModal({ isOpen, onClose, guildId, teamId, tea
         },
         is_rich: isRich,
       });
-      showToast.success("代报名成功");
+      // 显示后端返回的详细消息
+      const message = response?.message || response?.data?.message || "代报名成功";
+      showToast.success(message);
       onSuccess?.();
       onClose?.();
     } catch (e) {
