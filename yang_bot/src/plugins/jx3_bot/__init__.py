@@ -96,7 +96,7 @@ config = get_plugin_config(Config)
 from .commands import admin, daily, role, luck, trade, faction, rank, misc
 
 # 导入数据管理模块
-from .data.guild_config import guild_config_manager
+from .data.guild_config import guild_config
 
 # 导入 API 客户端
 from .api.client import api_client
