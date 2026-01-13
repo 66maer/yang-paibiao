@@ -427,7 +427,7 @@ class RankingService:
     def calculate_time_modifier(self, cars_since_last: int) -> Decimal:
         """
         计算时间修正系数
-        公式：1 + M/25，其中 M 为距离上次黑本的车次数
+        公式：ln(20 + e^(0.1(x-20))) - 2，其中 x 为距离上次黑本的车次数
 
         Args:
             cars_since_last: 距离上次黑本的车次数
@@ -435,7 +435,11 @@ class RankingService:
         Returns:
             时间修正系数
         """
-        modifier = 1 + Decimal(str(cars_since_last)) / Decimal("25")
+        x = cars_since_last
+        # 计算 e^(0.1(x-20))
+        exp_term = math.exp(0.1 * (x - 20))
+        # 计算 ln(20 + e^(0.1(x-20))) - 2
+        modifier = math.log(20 + exp_term) - 2
         return Decimal(str(round(modifier, 4)))
 
     async def calculate_heibenren_recommendations(
