@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服务器烟花统计</title>
+  <style>
+    @font-face {
+      font-family: "DengXian";
+      src: local("DengXian"), local("SimHei");
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 1600px;
+      margin: 0 auto;
+      font-family: "Microsoft YaHei", "Heiti SC", sans-serif;
+      background-color: #f0f0f0;
+      background-image:
+        linear-gradient(90deg, #bebebe 1px, transparent 1px),
+        linear-gradient(#bebebe 1px, transparent 1px);
+      background-size: 40px 40px;
+      color: #000;
+      padding-bottom: 40px;
+    }
+
+    .container {
+      padding: 40px;
+    }
+
+    /* Page Header */
+    .page-header {
+      margin-bottom: 40px;
+      text-align: left;
+      position: relative;
+      z-index: 10;
+    }
+
+    .page-title {
+      font-size: 42px;
+      font-weight: 900;
+      color: #000;
+      display: inline-block;
+      background: #ffeb3b;
+      padding: 15px 40px;
+      border: 4px solid #000;
+      box-shadow: 10px 10px 0px 0px #000;
+      transform: rotate(-2deg);
+      text-transform: uppercase;
+    }
+
+    .page-subtitle {
+      margin-top: 15px;
+      display: inline-block;
+      color: #fff;
+      background: #000;
+      padding: 8px 16px;
+      border: 3px solid #000;
+      font-weight: 900;
+      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.3);
+      transform: rotate(1deg);
+      font-size: 16px;
+    }
+
+    .server-info {
+      margin-top: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    /* Grid Layout */
+    .record-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+
+    /* Card Styling */
+    .record-card {
+      background: #fff;
+      border: 4px solid #000;
+      padding: 30px;
+      position: relative;
+      box-shadow: 10px 10px 0px 0px #000;
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+      transition: all 0.1s;
+      min-height: 320px;
+    }
+
+    .record-card:hover {
+      transform: translate(-4px, -4px);
+      box-shadow: 14px 14px 0px 0px #000;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 5px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid #000;
+    }
+
+    .firework-badge {
+      font-size: 24px;
+      font-weight: 900;
+      color: #000;
+      background: #e0f7fa;
+      padding: 10px 18px;
+      border: 3px solid #000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 4px 4px 0px 0px #000;
+    }
+
+    .firework-icon {
+      width: 28px;
+      height: 28px;
+      fill: #000;
+    }
+
+    .count-badge {
+      font-size: 42px;
+      font-weight: 900;
+      color: #000;
+      font-family: "Arial Black", sans-serif;
+      text-decoration: underline;
+      text-decoration-thickness: 5px;
+      text-decoration-color: #ff5252;
+    }
+
+    .count-badge small {
+      font-size: 24px;
+      color: #000;
+      margin-right: 4px;
+      font-weight: bold;
+    }
+
+    /* People Info */
+    .people-info {
+      background: #fff;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      border: 2px solid #000;
+      box-shadow: 6px 6px 0px 0px #000;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .people-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      font-size: 24px;
+    }
+
+    .role-tag {
+      font-size: 16px;
+      font-weight: 900;
+      color: #000;
+      padding: 6px 12px;
+      border: 2px solid #000;
+      min-width: 42px;
+      text-align: center;
+      box-shadow: 3px 3px 0px 0px #000;
+      flex-shrink: 0;
+    }
+
+    .role-sender {
+      background: #ff7675;
+    }
+
+    .role-receiver {
+      background: #74b9ff;
+    }
+
+    .role-name {
+      font-weight: 900;
+      color: #000;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 24px;
+    }
+
+    /* Footer */
+    .card-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-top: auto;
+    }
+
+    .time-tag {
+      font-size: 18px;
+      color: #000;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      padding: 10px 20px;
+      border: 3px solid #000;
+      box-shadow: 4px 4px 0px 0px #000;
+    }
+
+    .time-icon {
+      width: 20px;
+      height: 20px;
+      fill: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <div class="page-title">
+        <span>FIREWORKS LOG</span>
+      </div>
+      <br>
+      <div class="page-subtitle">服务器烟花统计</div>
+      {% if server %}
+      <div class="server-info">📍 {{ server }}</div>
+      {% endif %}
+    </div>
+
+    <div class="record-grid">
+      {% for item in data %}
+      <div class="record-card">
+        <div class="card-header">
+          <div class="firework-badge">
+            <svg class="firework-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+            </svg>
+            {{ item.name }}
+          </div>
+          <div class="count-badge"><small>x</small>{{ item.count }}</div>
+        </div>
+
+        <div class="people-info">
+          <div class="people-row">
+            <span class="role-tag role-sender">赠</span>
+            <span class="role-name">{{ item.sender }}</span>
+          </div>
+          <div class="people-row">
+            <span class="role-tag role-receiver">予</span>
+            <span class="role-name">{{ item.receive }}</span>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <div class="time-tag">
+            <svg class="time-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                clip-rule="evenodd"/>
+            </svg>
+            {{ item.time | format_time('%m-%d %H:%M') }}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</body>
+</html>

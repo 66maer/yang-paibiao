@@ -2,6 +2,7 @@
 角色与战绩命令
 角色详情、属性、精耐、名片、奇穴、阵眼、名剑排行、门派表现等
 """
+import base64
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import (
     Bot,
@@ -14,6 +15,7 @@ from nonebot.params import CommandArg
 from ..api.client import api_client, JX3APIError
 from ..utils.server_resolver import get_effective_server
 from ..utils.parser import parse_args
+from ..render.service import render_service
 
 
 # ============== 角色详情 ==============
@@ -80,7 +82,7 @@ async def handle_role_attribute(
     event: GroupMessageEvent,
     args: Message = CommandArg()
 ):
-    """查询角色属性"""
+    """查询角色属性 - 使用图片渲染"""
     arg_list = parse_args(args.extract_plain_text())
     
     if len(arg_list) < 1:
@@ -97,18 +99,41 @@ async def handle_role_attribute(
         result = await api_client.get_role_attribute(server, name)
         data = result["data"]
         
-        msg = f"📊 {name} 属性面板\n"
-        msg += f"🖥️ {server}\n"
-        msg += f"🏫 {data.get('forceName', '未知')} - {data.get('kungfuName', '未知')}\n"
-        msg += f"⭐ 装分：{data.get('score', 0)}\n"
+        # 准备渲染数据
+        render_data = {
+            "zone_name": data.get("zoneName", ""),
+            "server_name": data.get("serverName", server),
+            "role_name": data.get("roleName", name),
+            "force_name": data.get("forceName", "未知"),
+            "body_name": data.get("bodyName", "未知"),
+            "person_avatar": data.get("personAvatar", ""),
+            "equip_list": data.get("equipList", []),
+            "panel_list": {
+                "score": data.get("score", 0),
+                "panel": data.get("panelList", [])
+            }
+        }
         
-        # 基础属性
-        if data.get('panelList'):
-            msg += "\n【基础属性】\n"
-            for panel in data['panelList'][:8]:  # 显示前8项
-                msg += f"• {panel.get('name', '')}: {panel.get('value', '')}\n"
-        
-        await role_attribute.finish(msg)
+        try:
+            img_bytes = await render_service.render(
+                "role_attribute",
+                render_data,
+                cache_key=f"attr_{server}_{name}",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await role_attribute.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception as render_error:
+            # 渲染失败时回退到文字
+            msg = f"📊 {name} 属性面板\n"
+            msg += f"🖥️ {server}\n"
+            msg += f"🏫 {data.get('forceName', '未知')} - {data.get('kungfuName', '未知')}\n"
+            msg += f"⭐ 装分：{data.get('score', 0)}\n"
+            if data.get('panelList'):
+                msg += "\n【基础属性】\n"
+                for panel in data['panelList'][:8]:
+                    msg += f"• {panel.get('name', '')}: {panel.get('value', '')}\n"
+            await role_attribute.finish(msg)
         
     except JX3APIError as e:
         await role_attribute.finish(f"查询失败：{e.msg}")
@@ -129,7 +154,7 @@ async def handle_role_monster(
     event: GroupMessageEvent,
     args: Message = CommandArg()
 ):
-    """查询角色精耐"""
+    """查询角色精耐 - 使用图片渲染"""
     arg_list = parse_args(args.extract_plain_text())
     
     if len(arg_list) < 1:
@@ -146,12 +171,24 @@ async def handle_role_monster(
         result = await api_client.get_role_monster(server, name)
         data = result["data"]
         
-        msg = f"💪 {name} 精耐信息\n"
-        msg += f"🖥️ {server}\n"
-        msg += f"⚡ 精力：{data.get('energy', 0)}/{data.get('maxEnergy', 0)}\n"
-        msg += f"💪 耐力：{data.get('stamina', 0)}/{data.get('maxStamina', 0)}\n"
-        
-        await role_monster.finish(msg)
+        # 使用渲染服务
+        try:
+            render_data = {"data": data}
+            img_bytes = await render_service.render(
+                "role_monster",
+                render_data,
+                cache_key=f"monster_{server}_{name}",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await role_monster.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 渲染失败时回退到文字
+            msg = f"💪 {name} 精耐信息\n"
+            msg += f"🖥️ {server}\n"
+            msg += f"⚡ 精力：{data.get('gameEnergy', 0)}\n"
+            msg += f"💪 耐力：{data.get('gameStamina', 0)}\n"
+            await role_monster.finish(msg)
         
     except JX3APIError as e:
         await role_monster.finish(f"查询失败：{e.msg}")
@@ -291,7 +328,7 @@ school_force = on_command(
 
 @school_force.handle()
 async def handle_school_force(args: Message = CommandArg()):
-    """查询心法奇穴"""
+    """查询心法奇穴 - 使用图片渲染"""
     name = args.extract_plain_text().strip()
     
     if not name:
@@ -301,15 +338,28 @@ async def handle_school_force(args: Message = CommandArg()):
         result = await api_client.get_school_force(name)
         data = result["data"]
         
-        msg = f"🔮 {name} 奇穴\n"
-        
-        # 显示奇穴信息
-        if isinstance(data, dict) and data.get("data"):
-            for i, row in enumerate(data["data"][:12], 1):
-                skills = [s.get("name", "") for s in row] if isinstance(row, list) else []
-                msg += f"\n第{i}重：{' / '.join(skills)}"
-        
-        await school_force.finish(msg)
+        # 使用渲染服务
+        try:
+            render_data = {
+                "name": name,
+                "data": data.get("data", []) if isinstance(data, dict) else []
+            }
+            img_bytes = await render_service.render(
+                "school_force",
+                render_data,
+                cache_key=f"qixue_{name}",
+                use_cache=True
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await school_force.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 渲染失败时回退到文字
+            msg = f"🔮 {name} 奇穴\n"
+            if isinstance(data, dict) and data.get("data"):
+                for i, row in enumerate(data["data"][:12], 1):
+                    skills = [s.get("name", "") for s in row.get("data", [])] if isinstance(row, dict) else []
+                    msg += f"\n第{i}重：{' / '.join(skills)}"
+            await school_force.finish(msg)
         
     except JX3APIError as e:
         await school_force.finish(f"查询失败：{e.msg}")
@@ -363,7 +413,7 @@ arena_awesome = on_command(
 
 @arena_awesome.handle()
 async def handle_arena_awesome(args: Message = CommandArg()):
-    """查询名剑排行"""
+    """查询名剑排行 - 使用图片渲染"""
     mode = args.extract_plain_text().strip() or "33"
     
     # 验证模式
@@ -371,21 +421,33 @@ async def handle_arena_awesome(args: Message = CommandArg()):
         mode = "33"
     
     try:
-        result = await api_client.get_arena_awesome(mode=mode, limit=10)
+        result = await api_client.get_arena_awesome(mode=mode, limit=20)
         data = result["data"]
         
         mode_name = {"22": "2v2", "33": "3v3", "55": "5v5"}.get(mode, mode)
-        msg = f"🏆 名剑大会排行榜 ({mode_name})\n"
         
-        if not data:
-            msg += "暂无数据"
-        else:
-            for i, player in enumerate(data[:10], 1):
-                msg += f"\n{i}. {player.get('roleName', '未知')}"
-                msg += f" ({player.get('forceName', '未知')})"
-                msg += f" - {player.get('score', 0)}分"
-        
-        await arena_awesome.finish(msg)
+        # 使用渲染服务
+        try:
+            render_data = {"data": data, "mode": mode_name}
+            img_bytes = await render_service.render(
+                "arena_awesome",
+                render_data,
+                cache_key=f"arena_{mode}",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await arena_awesome.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 渲染失败时回退到文字
+            msg = f"🏆 名剑大会排行榜 ({mode_name})\n"
+            if not data:
+                msg += "暂无数据"
+            else:
+                for i, player in enumerate(data[:10], 1):
+                    msg += f"\n{i}. {player.get('roleName', '未知')}"
+                    msg += f" ({player.get('forceName', '未知')})"
+                    msg += f" - {player.get('score', 0)}分"
+            await arena_awesome.finish(msg)
         
     except JX3APIError as e:
         await arena_awesome.finish(f"查询失败：{e.msg}")
@@ -403,7 +465,7 @@ arena_schools = on_command(
 
 @arena_schools.handle()
 async def handle_arena_schools(args: Message = CommandArg()):
-    """查询门派表现"""
+    """查询门派表现 - 使用图片渲染"""
     mode = args.extract_plain_text().strip() or "33"
     
     if mode not in ["22", "33", "55"]:
@@ -414,16 +476,28 @@ async def handle_arena_schools(args: Message = CommandArg()):
         data = result["data"]
         
         mode_name = {"22": "2v2", "33": "3v3", "55": "5v5"}.get(mode, mode)
-        msg = f"📊 门派竞技场表现 ({mode_name})\n"
         
         if not data:
-            msg += "暂无数据"
-        else:
+            await arena_schools.finish(f"📊 门派竞技场表现 ({mode_name})\n暂无数据")
+        
+        # 使用渲染服务
+        try:
+            render_data = {"data": data, "mode": mode_name}
+            img_bytes = await render_service.render(
+                "arena_schools",
+                render_data,
+                cache_key=f"arena_schools_{mode}",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await arena_schools.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 降级到文本
+            msg = f"📊 门派竞技场表现 ({mode_name})\n"
             for school in data[:15]:
                 msg += f"\n• {school.get('forceName', '未知')}"
                 msg += f" - 胜率{school.get('winRate', 0)}%"
-        
-        await arena_schools.finish(msg)
+            await arena_schools.finish(msg)
         
     except JX3APIError as e:
         await arena_schools.finish(f"查询失败：{e.msg}")

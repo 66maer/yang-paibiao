@@ -2,6 +2,7 @@
 交易与物品命令
 金价、物价、贴吧物价、拍卖记录、的卢、掉落、挂件、装饰、器物谱
 """
+import base64
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import (
     Bot,
@@ -15,6 +16,7 @@ from datetime import datetime
 from ..api.client import api_client, JX3APIError
 from ..utils.server_resolver import get_effective_server
 from ..utils.parser import parse_args
+from ..render.service import render_service
 
 
 # ============== 金价 ==============
@@ -74,7 +76,7 @@ trade_records = on_command(
 
 @trade_records.handle()
 async def handle_trade_records(args: Message = CommandArg()):
-    """查询物价"""
+    """查询物价 - 使用图片渲染"""
     name = args.extract_plain_text().strip()
     
     if not name:
@@ -84,22 +86,39 @@ async def handle_trade_records(args: Message = CommandArg()):
         result = await api_client.get_trade_item_records(name)
         data = result["data"]
         
-        msg = f"💎 {name} 物价信息\n"
-        
         if not data:
-            msg += "暂无该物品价格记录"
-        elif isinstance(data, dict):
-            if data.get("info"):
-                info = data["info"]
-                msg += f"📦 {info.get('name', name)}\n"
-                msg += f"⭐ 品质：{info.get('quality', '未知')}\n"
-            
-            if data.get("data"):
-                msg += "\n【价格记录】\n"
-                for record in data["data"][:5]:
-                    msg += f"• {record.get('server', '未知')}: {record.get('price', 0)} 金\n"
+            await trade_records.finish(f"未找到 {name} 的物价记录")
         
-        await trade_records.finish(msg)
+        # 准备渲染数据
+        render_data = {
+            "name": data.get("name", name),
+            "view": data.get("view", ""),
+            "item_class": data.get("class", "物品"),
+            "alias": data.get("alias", ""),
+            "subalias": data.get("subalias", ""),
+            "desc": data.get("desc", ""),
+            "list": data.get("list", [[], [], [], [], [], []]),
+            "data": data,  # 完整数据用于JS图表
+        }
+        
+        # 使用渲染服务生成图片
+        try:
+            img_bytes = await render_service.render(
+                "trade_records",
+                render_data,
+                cache_key=f"trade_{name}",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await trade_records.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception as render_error:
+            # 渲染失败时回退到文字
+            msg = f"💎 {name} 物价信息\n"
+            if data.get("list") and data["list"][4]:
+                msg += "\n【在售期】\n"
+                for record in data["list"][4][:5]:
+                    msg += f"• {record.get('server', '未知')}: ¥{record.get('value', 0)}\n"
+            await trade_records.finish(msg)
         
     except JX3APIError as e:
         await trade_records.finish(f"查询失败：{e.msg}")
@@ -168,7 +187,7 @@ async def handle_auction_records(
     event: GroupMessageEvent,
     args: Message = CommandArg()
 ):
-    """查询拍卖记录"""
+    """查询拍卖记录 - 使用图片渲染"""
     arg_list = parse_args(args.extract_plain_text())
     
     if len(arg_list) < 1:
@@ -185,19 +204,30 @@ async def handle_auction_records(
         result = await api_client.get_auction_records(server, name)
         data = result["data"]
         
-        msg = f"🔨 拍卖记录 - {name}\n"
-        msg += f"🖥️ {server}\n"
-        
         if not data:
-            msg += "暂无拍卖记录"
-        else:
+            await auction_records.finish(f"🔨 {name} 暂无拍卖记录")
+        
+        # 使用渲染服务
+        try:
+            render_data = {"data": data[:20]}
+            img_bytes = await render_service.render(
+                "auction_record",
+                render_data,
+                cache_key=f"auction_{server}_{name}",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await auction_records.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 降级到文本
+            msg = f"🔨 拍卖记录 - {name}\n"
+            msg += f"🖥️ {server}\n"
             for record in data[:10]:
                 time_str = datetime.fromtimestamp(record.get("time", 0)).strftime("%m-%d")
                 msg += f"\n• {record.get('price', 0)}金 - {time_str}"
                 if record.get("buyer"):
                     msg += f" ({record['buyer']})"
-        
-        await auction_records.finish(msg)
+            await auction_records.finish(msg)
         
     except JX3APIError as e:
         await auction_records.finish(f"查询失败：{e.msg}")

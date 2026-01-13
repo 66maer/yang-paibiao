@@ -2,6 +2,7 @@
 日常活动命令
 日常、月历、开服、维护、新闻、技改、百战、楚天社等
 """
+import base64
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import (
     Bot,
@@ -13,6 +14,7 @@ from nonebot.params import CommandArg
 
 from ..api.client import api_client, JX3APIError
 from ..utils.server_resolver import get_effective_server
+from ..render.service import render_service
 
 
 # ============== 日常 ==============
@@ -30,7 +32,7 @@ async def handle_daily(
     event: GroupMessageEvent,
     args: Message = CommandArg()
 ):
-    """查询日常活动"""
+    """查询日常活动 - 使用图片渲染"""
     server_arg = args.extract_plain_text().strip()
     server = get_effective_server(server_arg, event)
     
@@ -38,28 +40,42 @@ async def handle_daily(
         result = await api_client.get_active_calendar(server)
         data = result["data"]
         
-        msg = f"📅 {data['date']} 星期{data['week']}\n"
-        msg += f"🏰 秘境大战：{data['war']}\n"
-        msg += f"⚔️ 战场任务：{data['battle']}\n"
-        msg += f"🏫 宗门事件：{data['school']}\n"
-        msg += f"🚗 驰援任务：{data['rescue']}\n"
-        msg += f"🏕️ 阵营任务：{data['orecar']}\n"
-        msg += f"🐾 福源宠物：{';'.join(data['luck'])}\n"
-        
-        # 攻防时间
-        if data['week'] in ["二", "四"]:
-            msg += "⚔️ 小攻防：20:00-22:00\n"
-        elif data['week'] in ["六", "日"]:
-            msg += "⚔️ 大攻防：13:00-15:00, 17:00-19:00\n"
-        
-        if data.get('draw'):
-            msg += f"🎨 美人画像：{data['draw']}\n"
-        
-        msg += f"\n📜 家园加倍：{';'.join(data['card'])}\n"
-        msg += f"📋 公共任务：{data['team'][0] if data['team'] else '无'}\n"
-        msg += f"🏯 团队秘境：{data['team'][2] if len(data['team']) > 2 else '无'}"
-        
-        await daily.finish(msg)
+        # 使用渲染服务
+        try:
+            render_data = {
+                "server": server,
+                "data": data
+            }
+            img_bytes = await render_service.render(
+                "active_list",
+                render_data,
+                cache_key=f"daily_{server}_{data.get('date', '')}",
+                use_cache=True
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await daily.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 降级到文本
+            msg = f"📅 {data['date']} 星期{data['week']}\n"
+            msg += f"🏰 秘境大战：{data['war']}\n"
+            msg += f"⚔️ 战场任务：{data['battle']}\n"
+            msg += f"🏫 宗门事件：{data['school']}\n"
+            msg += f"🚗 驰援任务：{data['rescue']}\n"
+            msg += f"🏕️ 阵营任务：{data['orecar']}\n"
+            msg += f"🐾 福源宠物：{';'.join(data['luck'])}\n"
+            
+            if data['week'] in ["二", "四"]:
+                msg += "⚔️ 小攻防：20:00-22:00\n"
+            elif data['week'] in ["六", "日"]:
+                msg += "⚔️ 大攻防：13:00-15:00, 17:00-19:00\n"
+            
+            if data.get('draw'):
+                msg += f"🎨 美人画像：{data['draw']}\n"
+            
+            msg += f"\n📜 家园加倍：{';'.join(data['card'])}\n"
+            msg += f"📋 公共任务：{data['team'][0] if data['team'] else '无'}\n"
+            msg += f"🏯 团队秘境：{data['team'][2] if len(data['team']) > 2 else '无'}"
+            await daily.finish(msg)
         
     except JX3APIError as e:
         await daily.finish(f"查询失败：{e.msg}")
@@ -257,14 +273,30 @@ async def handle_active_monster():
         result = await api_client.get_active_monster()
         data = result["data"]
         
-        msg = "👹 本周百战异闻录\n"
-        
-        for boss in data.get("data", []):
-            msg += f"\n🔸 Lv.{boss['level']} {boss['name']}\n"
-            if boss.get("skill"):
-                msg += f"   技能：{', '.join(boss['skill'])}\n"
-        
-        await active_monster.finish(msg)
+        # 使用渲染服务
+        try:
+            render_data = {
+                "start": data.get("start", 0),
+                "end": data.get("end", 0),
+                "boss": data.get("boss", ""),
+                "data": data.get("data", [])
+            }
+            img_bytes = await render_service.render(
+                "baizhan",
+                render_data,
+                cache_key=f"baizhan_{data.get('start', 0)}",
+                use_cache=True
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await active_monster.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 降级到文本
+            msg = "👹 本周百战异闻录\n"
+            for boss in data.get("data", []):
+                msg += f"\n🔸 Lv.{boss['level']} {boss['name']}\n"
+                if boss.get("skill"):
+                    msg += f"   技能：{', '.join(boss['skill'])}\n"
+            await active_monster.finish(msg)
         
     except JX3APIError as e:
         await active_monster.finish(f"查询失败：{e.msg}")
@@ -289,15 +321,30 @@ async def handle_chutian():
         if not data:
             await chutian.finish("暂无楚天社数据")
         
-        msg = "🏛️ 楚天社进度\n"
-        for item in data:
-            msg += f"\n📍 {item['map']} - {item['site']}\n"
-            msg += f"   阶段：{item['stage']}\n"
-            msg += f"   {item['desc']}\n"
-            if item.get('time'):
-                msg += f"   ⏰ {item['time']}\n"
-        
-        await chutian.finish(msg)
+        # 使用渲染服务
+        try:
+            render_data = {
+                "name": "楚天社",
+                "data": data
+            }
+            img_bytes = await render_service.render(
+                "celebs",
+                render_data,
+                cache_key=f"celebs_楚天社",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await chutian.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 降级到文本
+            msg = "🏛️ 楚天社进度\n"
+            for item in data:
+                msg += f"\n📍 {item['map']} - {item['site']}\n"
+                msg += f"   阶段：{item['stage']}\n"
+                msg += f"   {item['desc']}\n"
+                if item.get('time'):
+                    msg += f"   ⏰ {item['time']}\n"
+            await chutian.finish(msg)
         
     except JX3APIError as e:
         await chutian.finish(f"查询失败：{e.msg}")
@@ -322,15 +369,30 @@ async def handle_yuncong():
         if not data:
             await yuncong.finish("暂无云从社数据")
         
-        msg = "🏛️ 云从社进度\n"
-        for item in data:
-            msg += f"\n📍 {item['map']} - {item['site']}\n"
-            msg += f"   阶段：{item['stage']}\n"
-            msg += f"   {item['desc']}\n"
-            if item.get('time'):
-                msg += f"   ⏰ {item['time']}\n"
-        
-        await yuncong.finish(msg)
+        # 使用渲染服务
+        try:
+            render_data = {
+                "name": "云从社",
+                "data": data
+            }
+            img_bytes = await render_service.render(
+                "celebs",
+                render_data,
+                cache_key=f"celebs_云从社",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await yuncong.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 降级到文本
+            msg = "🏛️ 云从社进度\n"
+            for item in data:
+                msg += f"\n📍 {item['map']} - {item['site']}\n"
+                msg += f"   阶段：{item['stage']}\n"
+                msg += f"   {item['desc']}\n"
+                if item.get('time'):
+                    msg += f"   ⏰ {item['time']}\n"
+            await yuncong.finish(msg)
         
     except JX3APIError as e:
         await yuncong.finish(f"查询失败：{e.msg}")
@@ -355,15 +417,30 @@ async def handle_pifeng():
         if not data:
             await pifeng.finish("暂无披风会数据")
         
-        msg = "🏛️ 披风会进度\n"
-        for item in data:
-            msg += f"\n📍 {item['map']} - {item['site']}\n"
-            msg += f"   阶段：{item['stage']}\n"
-            msg += f"   {item['desc']}\n"
-            if item.get('time'):
-                msg += f"   ⏰ {item['time']}\n"
-        
-        await pifeng.finish(msg)
+        # 使用渲染服务
+        try:
+            render_data = {
+                "name": "披风会",
+                "data": data
+            }
+            img_bytes = await render_service.render(
+                "celebs",
+                render_data,
+                cache_key=f"celebs_披风会",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await pifeng.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 降级到文本
+            msg = "🏛️ 披风会进度\n"
+            for item in data:
+                msg += f"\n📍 {item['map']} - {item['site']}\n"
+                msg += f"   阶段：{item['stage']}\n"
+                msg += f"   {item['desc']}\n"
+                if item.get('time'):
+                    msg += f"   ⏰ {item['time']}\n"
+            await pifeng.finish(msg)
         
     except JX3APIError as e:
         await pifeng.finish(f"查询失败：{e.msg}")

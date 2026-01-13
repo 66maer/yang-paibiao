@@ -2,6 +2,7 @@
 奇遇与宠物命令
 奇遇统计、奇遇汇总、奇遇记录、未出奇遇、蹲宠、赤兔、马场
 """
+import base64
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import (
     Bot,
@@ -15,6 +16,7 @@ from datetime import datetime
 from ..api.client import api_client, JX3APIError
 from ..utils.server_resolver import get_effective_server
 from ..utils.parser import parse_args
+from ..render.service import render_service
 
 
 # ============== 奇遇记录 ==============
@@ -32,7 +34,7 @@ async def handle_luck_adventure(
     event: GroupMessageEvent,
     args: Message = CommandArg()
 ):
-    """查询个人奇遇记录"""
+    """查询个人奇遇记录 - 使用图片渲染"""
     arg_list = parse_args(args.extract_plain_text())
     
     if len(arg_list) < 1:
@@ -49,19 +51,41 @@ async def handle_luck_adventure(
         result = await api_client.get_luck_adventure(server, name)
         data = result["data"]
         
-        msg = f"🍀 {name} 的奇遇记录\n"
-        msg += f"🖥️ {server}\n"
-        
         if not data:
-            msg += "暂无奇遇记录"
-        else:
+            await luck_adventure.finish(f"未查询到 {name} 的奇遇记录")
+        
+        # 按等级分组数据
+        bindao = [item for item in data if item.get("level") == 2]  # 绝世奇遇
+        normal = [item for item in data if item.get("level") == 1]  # 普通奇遇
+        pet = [item for item in data if item.get("level") == 3]     # 宠物奇遇
+        
+        render_data = {
+            "server_name": server,
+            "role_name": name,
+            "bindao": bindao,
+            "normal": normal,
+            "pet": pet,
+        }
+        
+        try:
+            img_bytes = await render_service.render(
+                "user_qiyu_record",
+                render_data,
+                cache_key=f"qiyu_{server}_{name}",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await luck_adventure.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception as render_error:
+            # 渲染失败时回退到文字
+            msg = f"🍀 {name} 的奇遇记录\n"
+            msg += f"🖥️ {server}\n"
             msg += f"共 {len(data)} 条记录\n"
             for luck in data[:10]:
                 time_str = datetime.fromtimestamp(luck.get("time", 0)).strftime("%Y-%m-%d")
                 level_icon = "⭐" * luck.get("level", 1)
                 msg += f"\n{level_icon} {luck.get('event', '未知')} - {time_str}"
-        
-        await luck_adventure.finish(msg)
+            await luck_adventure.finish(msg)
         
     except JX3APIError as e:
         await luck_adventure.finish(f"查询失败：{e.msg}")
@@ -81,7 +105,7 @@ async def handle_luck_statistical(
     event: GroupMessageEvent,
     args: Message = CommandArg()
 ):
-    """查询奇遇统计"""
+    """查询奇遇统计 - 使用图片渲染"""
     arg_list = parse_args(args.extract_plain_text())
     
     if len(arg_list) < 1:
@@ -98,18 +122,29 @@ async def handle_luck_statistical(
         result = await api_client.get_luck_statistical(server, luck_name)
         data = result["data"]
         
-        msg = f"📊 奇遇统计 - {luck_name}\n"
-        msg += f"🖥️ {server}\n"
-        
         if not data:
-            msg += "暂无统计数据"
-        else:
+            await luck_statistical.finish(f"📊 奇遇统计 - {luck_name}\n暂无统计数据")
+        
+        # 使用渲染服务
+        try:
+            render_data = {"data": data[:30]}
+            img_bytes = await render_service.render(
+                "server_qiyu_summary",
+                render_data,
+                cache_key=f"luck_stat_{server}_{luck_name}",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await luck_statistical.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 降级到文本
+            msg = f"📊 奇遇统计 - {luck_name}\n"
+            msg += f"🖥️ {server}\n"
             msg += f"近期触发 {len(data)} 次\n"
             for record in data[:10]:
                 time_str = datetime.fromtimestamp(record.get("time", 0)).strftime("%m-%d %H:%M")
                 msg += f"\n• {record.get('name', '未知')} - {time_str}"
-        
-        await luck_statistical.finish(msg)
+            await luck_statistical.finish(msg)
         
     except JX3APIError as e:
         await luck_statistical.finish(f"查询失败：{e.msg}")
@@ -130,7 +165,7 @@ async def handle_luck_collect(
     event: GroupMessageEvent,
     args: Message = CommandArg()
 ):
-    """查询服务器近期奇遇"""
+    """查询服务器近期奇遇 - 使用图片渲染"""
     server_arg = args.extract_plain_text().strip()
     server = get_effective_server(server_arg, event)
     
@@ -138,12 +173,23 @@ async def handle_luck_collect(
         result = await api_client.get_luck_collect(server)
         data = result["data"]
         
-        msg = f"🍀 {server} 近期奇遇汇总\n"
-        
         if not data:
-            msg += "暂无数据"
-        else:
-            # 按奇遇分组统计
+            await luck_collect.finish(f"🍀 {server} 暂无奇遇数据")
+        
+        # 使用渲染服务
+        try:
+            render_data = {"data": data[:30]}
+            img_bytes = await render_service.render(
+                "server_qiyu_summary",
+                render_data,
+                cache_key=f"luck_collect_{server}",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await luck_collect.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 降级到文本
+            msg = f"🍀 {server} 近期奇遇汇总\n"
             luck_count = {}
             for record in data:
                 event_name = record.get("event", "未知")
@@ -152,8 +198,7 @@ async def handle_luck_collect(
             sorted_lucks = sorted(luck_count.items(), key=lambda x: x[1], reverse=True)
             for luck_name, count in sorted_lucks[:15]:
                 msg += f"\n• {luck_name}: {count}次"
-        
-        await luck_collect.finish(msg)
+            await luck_collect.finish(msg)
         
     except JX3APIError as e:
         await luck_collect.finish(f"查询失败：{e.msg}")

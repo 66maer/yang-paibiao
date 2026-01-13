@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>角色奇遇记录</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 1400px;
+      margin: 0 auto;
+      font-family: "Courier New", Courier, monospace, "Microsoft YaHei";
+      background-color: #f4d03f;
+      background-image: radial-gradient(circle, #000 2px, transparent 2.5px);
+      background-size: 30px 30px;
+      color: #000;
+      padding: 50px;
+    }
+
+    .container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .page-header {
+      margin-bottom: 50px;
+      background: #fff;
+      border: 4px solid #000;
+      box-shadow: 10px 10px 0px #000;
+      padding: 20px 60px;
+      transform: rotate(-1deg);
+      display: inline-block;
+    }
+
+    .page-header h1 {
+      font-size: 48px;
+      margin: 0;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-family: "Impact", "SimHei", sans-serif;
+      text-shadow: 3px 3px 0 #d35400;
+      letter-spacing: 2px;
+    }
+
+    .page-header .subtitle {
+      font-size: 18px;
+      text-align: center;
+      margin-top: 10px;
+      font-family: "Microsoft YaHei", sans-serif;
+      color: #636e72;
+    }
+
+    .section {
+      width: 100%;
+      margin-bottom: 40px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-left: 10px;
+    }
+
+    .section-title {
+      font-size: 32px;
+      font-weight: 900;
+      font-family: "Impact", "SimHei", sans-serif;
+      padding: 10px 30px;
+      border: 4px solid #000;
+      box-shadow: 6px 6px 0px #000;
+      transform: skew(-5deg);
+    }
+
+    .section-title.bindao {
+      background: #ff7675;
+      color: #fff;
+      text-shadow: 2px 2px 0 #d63031;
+    }
+
+    .section-title.normal {
+      background: #74b9ff;
+      color: #fff;
+      text-shadow: 2px 2px 0 #0984e3;
+    }
+
+    .section-title.pet {
+      background: #55efc4;
+      color: #000;
+      text-shadow: 2px 2px 0 #00b894;
+    }
+
+    .section-count {
+      margin-left: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #636e72;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 30px;
+      width: 100%;
+    }
+
+    .card {
+      background: #fff;
+      border: 4px solid #000;
+      box-shadow: 8px 8px 0px #000;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      transition: all 0.1s;
+      position: relative;
+    }
+
+    .card:hover {
+      transform: translate(4px, 4px);
+      box-shadow: 4px 4px 0px #000;
+    }
+
+    .qiyu-img {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      background: #ebf5fb;
+      border: 2px solid #000;
+      padding: 10px;
+    }
+
+    .qiyu-img img {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .qiyu-name {
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      color: #2d3436;
+    }
+
+    .time {
+      font-size: 16px;
+      font-weight: 900;
+      color: #000;
+      background-color: #ffeaa7;
+      padding: 10px 20px;
+      border: 3px solid #000;
+      box-shadow: 4px 4px 0px #000;
+      font-family: "Consolas", monospace, "SimHei";
+      white-space: nowrap;
+      transform: skew(-5deg);
+    }
+
+    .section.bindao .time { background-color: #fab1a0; }
+    .section.normal .time { background-color: #81ecec; }
+    .section.pet .time { background-color: #a29bfe; }
+
+    .empty-state {
+      width: 100%;
+      text-align: center;
+      padding: 30px;
+      font-size: 18px;
+      color: #636e72;
+      background: #fff;
+      border: 3px dashed #b2bec3;
+      border-radius: 10px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: #636e72;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <h1># 角色奇遇记录 #</h1>
+      <div class="subtitle">{{ server_name }} · {{ role_name }}</div>
+    </div>
+
+    {% if bindao %}
+    <div class="section bindao">
+      <div class="section-header">
+        <div class="section-title bindao">★ 绝世奇遇</div>
+        <span class="section-count">共 {{ bindao | length }} 个</span>
+      </div>
+      <div class="grid">
+        {% for item in bindao %}
+        <div class="card">
+          <div class="qiyu-img">
+            <img src="{{ static_base }}/images/qiyu/{{ item.event }}.png" alt="{{ item.event }}" onerror="this.parentElement.innerHTML='<div style=\'font-size:24px;color:#666;\'>{{ item.event }}</div>'" />
+          </div>
+          <div class="qiyu-name">{{ item.event }}</div>
+          <div class="time">{% if item.time %}{{ item.time | format_time('%Y-%m-%d %H:%M') }}{% else %}太久啦！已经忘记了！{% endif %}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if normal %}
+    <div class="section normal">
+      <div class="section-header">
+        <div class="section-title normal">◆ 普通奇遇</div>
+        <span class="section-count">共 {{ normal | length }} 个</span>
+      </div>
+      <div class="grid">
+        {% for item in normal %}
+        <div class="card">
+          <div class="qiyu-img">
+            <img src="{{ static_base }}/images/qiyu/{{ item.event }}.png" alt="{{ item.event }}" onerror="this.parentElement.innerHTML='<div style=\'font-size:24px;color:#666;\'>{{ item.event }}</div>'" />
+          </div>
+          <div class="qiyu-name">{{ item.event }}</div>
+          <div class="time">{% if item.time %}{{ item.time | format_time('%Y-%m-%d %H:%M') }}{% else %}太久啦！已经忘记了！{% endif %}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if pet %}
+    <div class="section pet">
+      <div class="section-header">
+        <div class="section-title pet">✿ 宠物奇遇</div>
+        <span class="section-count">共 {{ pet | length }} 个</span>
+      </div>
+      <div class="grid">
+        {% for item in pet %}
+        <div class="card">
+          <div class="qiyu-img">
+            <img src="{{ static_base }}/images/qiyu/{{ item.event }}.png" alt="{{ item.event }}" onerror="this.parentElement.innerHTML='<div style=\'font-size:24px;color:#666;\'>{{ item.event }}</div>'" />
+          </div>
+          <div class="qiyu-name">{{ item.event }}</div>
+          <div class="time">{% if item.time %}{{ item.time | format_time('%Y-%m-%d %H:%M') }}{% else %}太久啦！已经忘记了！{% endif %}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if not bindao and not normal and not pet %}
+    <div class="empty-state">暂无奇遇记录</div>
+    {% endif %}
+
+    <div class="footer">数据来源：www.jx3api.com</div>
+  </div>
+</body>
+</html>

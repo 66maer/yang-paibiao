@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>名剑大会排行</title>
+  <style>
+    @font-face {
+      font-family: "DengXian";
+      src: local("DengXian"), local("SimHei");
+    }
+
+    /* Reset & Base */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 1400px;
+      margin: 0 auto;
+      font-family: "Microsoft YaHei", "Heiti SC", sans-serif;
+      background-color: #f0f0f0;
+      background-image:
+        linear-gradient(90deg, #bebebe 1px, transparent 1px),
+        linear-gradient(#bebebe 1px, transparent 1px);
+      background-size: 40px 40px;
+      color: #000;
+      padding: 40px;
+    }
+
+    /* Header Section */
+    .page-header {
+      margin-bottom: 30px;
+      text-align: left;
+      position: relative;
+    }
+
+    .page-title {
+      font-size: 36px;
+      font-weight: 900;
+      color: #000;
+      display: inline-block;
+      background: #ffeb3b;
+      padding: 15px 30px;
+      border: 4px solid #000;
+      box-shadow: 8px 8px 0px 0px #000;
+      transform: rotate(-2deg);
+      text-transform: uppercase;
+      letter-spacing: -1px;
+    }
+
+    .page-title-icon {
+      margin-right: 10px;
+      font-size: 30px;
+    }
+
+    .page-subtitle {
+      margin-top: 15px;
+      display: inline-block;
+      background: #000;
+      color: #fff;
+      padding: 8px 16px;
+      border: 3px solid #000;
+      font-weight: 900;
+      font-size: 16px;
+      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.3);
+      transform: rotate(1deg);
+    }
+
+    /* Card Container */
+    .card {
+      background: #ffffff;
+      border: 4px solid #000;
+      box-shadow: 12px 12px 0px 0px #000;
+      padding: 20px;
+    }
+
+    /* Table Styling */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    thead {
+      background-color: #000;
+    }
+
+    th {
+      padding: 15px;
+      text-align: center;
+      font-weight: 900;
+      font-size: 20px;
+      color: #fff;
+      border: 3px solid #000;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+
+    tbody tr:nth-child(odd) {
+      background-color: #e0f7fa;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #fce4ec;
+    }
+
+    td {
+      padding: 15px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 20px;
+      border-right: 3px solid #000;
+      border-bottom: 3px solid #000;
+      color: #000;
+      font-weight: bold;
+    }
+
+    td:first-child {
+      border-left: 3px solid #000;
+    }
+
+    /* Column Specific Styles */
+    .col-rank {
+      font-weight: 900;
+      font-size: 26px;
+      font-family: "DengXian", monospace;
+    }
+
+    .rank-1 { color: #e1b12c; text-shadow: 1px 1px 0 #000; font-size: 32px; }
+    .rank-2 { color: #7f8c8d; text-shadow: 1px 1px 0 #000; font-size: 30px; }
+    .rank-3 { color: #d35400; text-shadow: 1px 1px 0 #000; font-size: 28px; }
+
+    .col-player {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      justify-content: flex-start;
+    }
+
+    .avatar {
+      width: 50px;
+      height: 50px;
+      border: 3px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      object-fit: cover;
+    }
+
+    .role-name {
+      font-weight: 900;
+      color: #000;
+      font-size: 22px;
+      text-decoration: underline;
+      text-decoration-thickness: 3px;
+    }
+
+    .force-icon img {
+      width: 44px;
+      height: 44px;
+      border: 2px solid #000;
+      background: #fff;
+      object-fit: contain;
+    }
+
+    .server-badge {
+      background: #000;
+      color: #fff;
+      padding: 4px 10px;
+      font-weight: 700;
+      font-size: 16px;
+      transform: rotate(-2deg);
+      display: inline-block;
+    }
+
+    .score-cell {
+      font-family: "DengXian", monospace;
+      font-weight: 900;
+      font-size: 24px;
+      background: #fff;
+      border: 2px solid #000;
+      padding: 4px 8px;
+      box-shadow: 3px 3px 0 #000;
+      display: inline-block;
+    }
+
+    .winrate-cell {
+      font-weight: 900;
+      color: #27ae60;
+    }
+
+    .up-cell {
+      font-weight: 900;
+      color: #e74c3c;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <div class="page-title">
+        <span class="page-title-icon">⚔️</span>
+        <span>JX3 ARENA RANKING</span>
+      </div>
+      <br>
+      <div class="page-subtitle">名剑大会排行</div>
+    </div>
+
+    <div class="card">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 8%">排名</th>
+              <th style="width: 30%">选手</th>
+              <th style="width: 10%">心法</th>
+              <th style="width: 15%">服务器</th>
+              <th style="width: 15%">积分</th>
+              <th style="width: 12%">胜率</th>
+              <th style="width: 10%">变动</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in data %}
+            <tr>
+              <td class="col-rank{% if item.rankNum == 1 %} rank-1{% elif item.rankNum == 2 %} rank-2{% elif item.rankNum == 3 %} rank-3{% endif %}">#{{ item.rankNum }}</td>
+              <td>
+                <div class="col-player">
+                  <img src="{{ item.avatarUrl | default_value('https://jx3box.com/img/avatar/default.png') }}" 
+                       class="avatar" alt="avatar" referrerpolicy="no-referrer"
+                       onerror="this.src='https://jx3box.com/img/avatar/default.png'">
+                  <span class="role-name">{{ item.roleName }}</span>
+                </div>
+              </td>
+              <td class="force-icon">
+                <img src="https://icon.jx3box.com/icon/{{ item.forceName }}.png" 
+                     alt="{{ item.forceName }}"
+                     onerror="this.style.display='none'">
+              </td>
+              <td>
+                <span class="server-badge">{{ item.serverName }}</span>
+              </td>
+              <td>
+                <span class="score-cell">{{ item.score }}</span>
+              </td>
+              <td class="winrate-cell">{{ item.winRate | default_value('0%') }}</td>
+              <td class="up-cell">{% if item.upNum %}↑{{ item.upNum }}{% else %}-{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

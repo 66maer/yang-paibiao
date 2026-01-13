@@ -2,6 +2,7 @@
 排行榜命令
 名士、江湖、兵甲、名师、阵营、薪火、家园排行
 """
+import base64
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import (
     Bot,
@@ -13,6 +14,7 @@ from nonebot.params import CommandArg
 
 from ..api.client import api_client, JX3APIError
 from ..utils.server_resolver import get_effective_server
+from ..render.service import render_service
 
 
 # 排行榜配置
@@ -32,7 +34,7 @@ async def handle_rank(
     event: GroupMessageEvent,
     args: Message
 ):
-    """通用排行榜处理"""
+    """通用排行榜处理，返回 MessageSegment"""
     server_arg = args.extract_plain_text().strip()
     server = get_effective_server(server_arg, event)
     
@@ -48,19 +50,35 @@ async def handle_rank(
         )
         data = result["data"]
         
-        msg = f"🏆 {server} {config['name']}\n"
-        
         if not data:
-            msg += "暂无排行数据"
-        else:
+            return f"🏆 {server} {config['name']}\n暂无排行数据"
+        
+        # 使用渲染服务
+        try:
+            render_data = {
+                "server": server,
+                "table": config["table"],
+                "name": config["name"],
+                "data": data
+            }
+            img_bytes = await render_service.render(
+                "rank_statistical",
+                render_data,
+                cache_key=f"rank_{server}_{config['name']}",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            return MessageSegment.image(f"base64://{img_b64}")
+        except Exception:
+            # 降级到文本
+            msg = f"🏆 {server} {config['name']}\n"
             for i, player in enumerate(data[:20], 1):
                 msg += f"\n{i}. {player.get('roleName', '未知')}"
                 if player.get('forceName'):
                     msg += f" ({player['forceName']})"
                 if player.get('value'):
                     msg += f" - {player['value']}"
-        
-        return msg
+            return msg
         
     except JX3APIError as e:
         return f"查询失败：{e.msg}"

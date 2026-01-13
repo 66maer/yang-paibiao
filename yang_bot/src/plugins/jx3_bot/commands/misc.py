@@ -2,6 +2,7 @@
 其他命令
 副本、烟花统计、烟花记录、科举、骚话、舔狗日记
 """
+import base64
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import (
     Bot,
@@ -15,6 +16,7 @@ from datetime import datetime
 from ..api.client import api_client, JX3APIError
 from ..utils.server_resolver import get_effective_server
 from ..utils.parser import parse_args
+from ..render.service import render_service
 
 
 # ============== 副本 ==============
@@ -82,7 +84,7 @@ async def handle_fireworks_collect(
     event: GroupMessageEvent,
     args: Message = CommandArg()
 ):
-    """查询烟花统计"""
+    """查询烟花统计 - 使用图片渲染"""
     server_arg = args.extract_plain_text().strip()
     server = get_effective_server(server_arg, event)
     
@@ -90,12 +92,26 @@ async def handle_fireworks_collect(
         result = await api_client.get_fireworks_collect(server)
         data = result["data"]
         
-        msg = f"🎆 {server} 烟花统计（近7天）\n"
-        
         if not data:
-            msg += "暂无烟花记录"
-        else:
-            # 统计接收最多的人
+            await fireworks_collect.finish(f"🎆 {server} 暂无烟花记录")
+        
+        # 使用渲染服务
+        try:
+            render_data = {
+                "server": server,
+                "data": data[:15]  # 最多显示15条
+            }
+            img_bytes = await render_service.render(
+                "fireworks_records",
+                render_data,
+                cache_key=f"fireworks_collect_{server}",
+                use_cache=False
+            )
+            img_b64 = base64.b64encode(img_bytes).decode()
+            await fireworks_collect.finish(MessageSegment.image(f"base64://{img_b64}"))
+        except Exception:
+            # 降级到文本
+            msg = f"🎆 {server} 烟花统计（近7天）\n"
             receive_count = {}
             for record in data:
                 receive = record.get("receive", "未知")
@@ -106,8 +122,7 @@ async def handle_fireworks_collect(
             msg += "\n【烟花接收榜】\n"
             for i, (name, count) in enumerate(sorted_receive[:10], 1):
                 msg += f"{i}. {name}: {count}个\n"
-        
-        await fireworks_collect.finish(msg)
+            await fireworks_collect.finish(msg)
         
     except JX3APIError as e:
         await fireworks_collect.finish(f"查询失败：{e.msg}")
