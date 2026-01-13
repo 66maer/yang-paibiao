@@ -83,20 +83,34 @@ async def handle_server_check(
     """查询开服状态"""
     server_arg = args.extract_plain_text().strip()
     server = get_effective_server(server_arg, event)
-    
+
     try:
-        result = await api_client.get_server_check(server)
-        data = result["data"]
-        
-        status_text = "🟢 已开服" if data["status"] == 1 else "🔴 维护中"
-        
+        result = await api_client.get_server_check()
+        servers = result["data"]
+
+        # 从返回的服务器列表中查找指定服务器
+        server_info = None
+        for s in servers:
+            if s["server"] == server:
+                server_info = s
+                break
+
+        if not server_info:
+            await server_check.finish(f"未找到服务器：{server}")
+            return
+
+        status_text = "🟢 已开服" if server_info["status"] == 1 else "🔴 维护中"
+
         await server_check.finish(
-            f"🖥️ {data['zone']} - {data['server']}\n"
+            f"🖥️ {server_info['zone']} - {server_info['server']}\n"
             f"状态：{status_text}"
         )
-        
+
     except JX3APIError as e:
-        await server_check.finish(f"查询失败：{e.msg}")
+        error_msg = f"查询失败：{e.msg}"
+        if server:
+            error_msg += f"\n查询的区服：{server}"
+        await server_check.finish(error_msg)
 
 
 # ============== 服务器热度 ==============

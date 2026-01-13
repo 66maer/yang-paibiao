@@ -82,11 +82,16 @@ class JX3APIClient:
             response = await client.post(endpoint, json=request_data)
             response.raise_for_status()
             result = response.json()
-            
+
             # 检查 API 响应状态
-            if result.get("code") != 0:
-                raise JX3APIError(result.get("code", -1), result.get("msg", "未知错误"))
-            
+            # JX3API 使用 HTTP 状态码风格：200 表示成功
+            code = result.get("code", -1)
+            if code not in [0, 200]:
+                msg = result.get("msg", "未知错误")
+                # 记录完整的错误响应以便调试
+                logger.warning(f"JX3API 错误响应 {endpoint}: code={code}, msg={msg}, data={result.get('data')}")
+                raise JX3APIError(code, msg)
+
             return result
             
         except httpx.HTTPStatusError as e:
@@ -131,7 +136,9 @@ class JX3APIClient:
     
     async def get_server_check(self, server: Optional[str] = None) -> Dict[str, Any]:
         """获取服务器开服状态"""
-        data = {"server": server} if server else {}
+        data = {}
+        if server:
+            data["server"] = server
         return await self.post("/data/server/check", data)
     
     async def get_server_status(self, server: str) -> Dict[str, Any]:
