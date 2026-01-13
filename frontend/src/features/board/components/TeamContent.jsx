@@ -649,7 +649,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
               <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
                 <div className="font-semibold">计算说明：</div>
                 <div>• 推荐分 = 红黑分 × 频次修正系数 × 时间修正系数</div>
-                <div>• 频次修正系数：1次(1.5) → 2次(1.25) → 3次(1.1) → 4次以上(1.0)</div>
+                <div>• 频次修正系数：1次(1.25) → 2次(1.1) → 3次(1.05) → 4次及以上(1.0)</div>
                 <div>• 时间修正系数：ln(20 + e^(0.04(x-10))) - 2，其中 x 为距离上次黑本的车次数</div>
                 <div>• NEW：无黑本记录的用户，使用平均红黑分 × 4</div>
               </div>

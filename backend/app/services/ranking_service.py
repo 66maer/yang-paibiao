@@ -388,11 +388,11 @@ class RankingService:
             频次修正系数
         """
         if heibenren_count == 1:
-            return Decimal("1.5")
-        elif heibenren_count == 2:
             return Decimal("1.25")
-        elif heibenren_count == 3:
+        elif heibenren_count == 2:
             return Decimal("1.1")
+        elif heibenren_count == 3:
+            return Decimal("1.05")
         else:
             return Decimal("1.0")
 
