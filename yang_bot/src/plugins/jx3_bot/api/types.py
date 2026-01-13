@@ -268,17 +268,17 @@ class LuckServerStatistical(JX3APIResponse):
 
 # ============== 交易相关 ==============
 
-class TradeDemonData(TypedDict):
-    """金价数据"""
-    zone: str
-    server: str
-    tieba: float
-    wanbaolou: float
-    dd373: float
-    uu898: float
-    5173: float
-    7881: float
-    time: int
+TradeDemonData = TypedDict('TradeDemonData', {
+    'zone': str,
+    'server': str,
+    'tieba': float,
+    'wanbaolou': float,
+    'dd373': float,
+    'uu898': float,
+    '5173': float,
+    '7881': float,
+    'time': int,
+})
 
 
 class TradeDemon(JX3APIResponse):
