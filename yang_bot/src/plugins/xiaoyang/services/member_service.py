@@ -1,9 +1,45 @@
 """成员管理业务逻辑服务"""
+import re
 from typing import List, Optional, Dict, Any
 from nonebot.log import logger
 
 from ..api.client import APIClient
 from ..api.models import UserSearchResult, MemberInfo, MemberBatchRequest
+
+
+def clean_and_truncate_nickname(nickname: str, fallback: str = "", max_length: int = 6) -> str:
+    """
+    清理和截断昵称
+
+    处理逻辑：
+    1. 移除特殊字符和表情符号（只保留中文、英文字母、数字）
+    2. 截断到指定长度
+    3. 如果清理后为空，使用fallback
+
+    Args:
+        nickname: 原始昵称
+        fallback: 如果清理后为空，使用的后备值
+        max_length: 最大长度，默认6个字符
+
+    Returns:
+        str: 清理和截断后的昵称
+    """
+    if not nickname:
+        return fallback[:max_length] if fallback else ""
+
+    # 去除首尾空格
+    nickname = nickname.strip()
+
+    # 只保留中文、英文字母、数字（移除特殊字符和emoji）
+    # \u4e00-\u9fff 是中文汉字的 Unicode 范围
+    cleaned = re.sub(r'[^\u4e00-\u9fffa-zA-Z0-9]', '', nickname)
+
+    # 如果清理后为空，使用fallback
+    if not cleaned:
+        cleaned = fallback[:max_length] if fallback else ""
+
+    # 截断到最大长度
+    return cleaned[:max_length]
 
 
 class MemberService:
@@ -84,8 +120,14 @@ class MemberService:
         all_members = []
         for member in group_members:
             qq_number = str(member.get("user_id"))
-            nickname = member.get("nickname", "")
-            group_nickname = member.get("card", "")
+            raw_nickname = member.get("nickname", "")
+            raw_group_nickname = member.get("card", "")
+
+            # 清理和截断nickname（如果为空使用QQ号作为后备）
+            nickname = clean_and_truncate_nickname(raw_nickname, fallback=qq_number)
+
+            # 清理和截断group_nickname（如果为空使用处理后的nickname）
+            group_nickname = clean_and_truncate_nickname(raw_group_nickname, fallback=nickname)
 
             all_members.append(
                 MemberInfo(

@@ -25,7 +25,7 @@ from typing import Optional, List, Dict, Any
 
 from ..api.client import get_api_client, APIError
 from ..services.team_service import TeamService
-from ..services.member_service import MemberService
+from ..services.member_service import MemberService, clean_and_truncate_nickname
 from ..services.session_manager import get_session_manager
 from ..services.parser import get_parser
 from .message_builder import MessageBuilder
@@ -243,18 +243,33 @@ update_nickname = on_keyword(
 async def handle_update_nickname(event: GroupMessageEvent, plain_text: str = EventPlainText()):
     """处理修改昵称命令"""
     try:
-        new_nickname = plain_text.replace("修改昵称", "", 1).strip()
+        raw_nickname = plain_text.replace("修改昵称", "", 1).strip()
 
-        if not new_nickname:
+        if not raw_nickname:
             msg = MessageBuilder.build_error_message("请提供新昵称，格式：修改昵称 <新昵称>")
             await update_nickname.finish(msg)
 
         qq_number = str(event.user_id)
+
+        # 清理和截断昵称（如果为空使用QQ号作为后备）
+        new_nickname = clean_and_truncate_nickname(raw_nickname, fallback=qq_number)
+
+        # 如果清理后的昵称与原始昵称不同，提示用户
+        if new_nickname != raw_nickname:
+            logger.info(f"昵称被自动处理: {raw_nickname} -> {new_nickname}")
+
         guild_id = event.group_id
         api_client = get_api_client(guild_id=guild_id)
         await api_client.members.update_nickname(qq_number, new_nickname)
 
-        msg = MessageBuilder.build_success_message(f"昵称已修改为: {new_nickname}")
+        # 如果昵称被修改，告知用户实际使用的昵称
+        if new_nickname != raw_nickname:
+            msg = MessageBuilder.build_success_message(
+                f"昵称已修改为: {new_nickname}\n"
+                f"（原昵称包含特殊字符或超长，已自动处理）"
+            )
+        else:
+            msg = MessageBuilder.build_success_message(f"昵称已修改为: {new_nickname}")
         await update_nickname.finish(msg)
 
     except (FinishedException, PausedException, RejectedException):

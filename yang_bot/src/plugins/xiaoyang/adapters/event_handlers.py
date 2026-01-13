@@ -10,6 +10,7 @@ from nonebot.log import logger
 
 from ..api.client import get_api_client, APIError
 from ..api.models import MemberInfo, MemberBatchRequest
+from ..services.member_service import clean_and_truncate_nickname
 
 
 # ==================== 群成员增加事件 ====================
@@ -37,10 +38,16 @@ async def handle_member_join(bot: Bot, event: NoticeEvent):
         )
 
         qq_number = str(event.user_id)
-        nickname = user_info.get("nickname", "")
-        group_nickname = user_info.get("card", "")
+        raw_nickname = user_info.get("nickname", "")
+        raw_group_nickname = user_info.get("card", "")
 
-        logger.info(f"群成员加入: qq={qq_number}, nickname={nickname}, card={group_nickname}")
+        logger.info(f"群成员加入: qq={qq_number}, nickname={raw_nickname}, card={raw_group_nickname}")
+
+        # 清理和截断昵称（如果为空使用QQ号作为后备）
+        nickname = clean_and_truncate_nickname(raw_nickname, fallback=qq_number)
+
+        # 清理和截断group_nickname（如果为空使用处理后的nickname）
+        group_nickname = clean_and_truncate_nickname(raw_group_nickname, fallback=nickname)
 
         # 同步到后端
         guild_id = event.group_id
