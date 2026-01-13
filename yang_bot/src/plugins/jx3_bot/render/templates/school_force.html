@@ -1,190 +1,195 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>心法奇穴</title>
-  <style>
-    /* Reset & Base */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心法奇穴</title>
+    <style>
+        /* Reset & Base */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    body {
-      font-family: "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: #f0f2f5;
-      padding: 40px;
-      color: #333;
-      line-height: 1.5;
-      width: 1440px;
-    }
+        body {
+            font-family: "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f2f5;
+            padding: 40px;
+            color: #333;
+            line-height: 1.5;
+            width: 1440px;
+        }
 
-    /* Card Container */
-    .card {
-      max-width: 1400px;
-      margin: 0 auto;
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-      overflow: hidden;
-    }
+        /* Card Container */
+        .card {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
 
-    /* Header */
-    .header {
-      padding: 24px 32px;
-      background: linear-gradient(to right, #f8f9fa, #ffffff);
-      border-bottom: 1px solid #eaeaea;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+        /* Header */
+        .header {
+            padding: 24px 32px;
+            background: linear-gradient(to right, #f8f9fa, #ffffff);
+            border-bottom: 1px solid #eaeaea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    .header h1 {
-      font-size: 28px;
-      font-weight: 600;
-      color: #2c3e50;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 0;
-    }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0;
+        }
 
-    .icon-star {
-      color: #f1c40f;
-      width: 32px;
-      height: 32px;
-    }
+        .icon-star {
+            color: #f1c40f;
+            width: 32px;
+            height: 32px;
+        }
 
-    /* Table Styling */
-    .table-container {
-      width: 100%;
-      overflow-x: auto;
-    }
+        /* Table Styling */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      border-spacing: 0;
-    }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
 
-    thead {
-      background-color: #f8fafc;
-    }
+        thead {
+            background-color: #f8fafc;
+        }
 
-    th {
-      padding: 20px 16px;
-      text-align: center;
-      font-weight: 600;
-      font-size: 20px;
-      color: #64748b;
-      border-bottom: 2px solid #e2e8f0;
-      white-space: nowrap;
-    }
+        th {
+            padding: 20px 16px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 20px;
+            color: #64748b;
+            border-bottom: 2px solid #e2e8f0;
+            white-space: nowrap;
+        }
 
-    td {
-      padding: 20px 16px;
-      text-align: center;
-      vertical-align: middle;
-      font-size: 20px;
-      border-bottom: 1px solid #edf2f7;
-    }
+        td {
+            padding: 20px 16px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 20px;
+            border-bottom: 1px solid #edf2f7;
+        }
 
-    tbody tr:last-child td {
-      border-bottom: none;
-    }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
 
-    tbody tr:hover {
-      background-color: #f8fafc;
-    }
+        tbody tr:hover {
+            background-color: #f8fafc;
+        }
 
-    /* Column Specific Styles */
-    .col-meta {
-      color: #718096;
-      font-weight: 600;
-    }
+        /* Column Specific Styles */
+        .col-meta {
+            color: #718096;
+            font-weight: 600;
+        }
 
-    .text-name {
-      font-weight: 600;
-      color: #2c3e50;
-    }
+        .text-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
 
-    .text-desc {
-      color: #475569;
-      text-align: left;
-      line-height: 1.6;
-      font-size: 18px;
-    }
+        .text-desc {
+            color: #475569;
+            text-align: left;
+            line-height: 1.6;
+            font-size: 18px;
+        }
 
-    .qixue-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      vertical-align: middle;
-    }
+        .qixue-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            vertical-align: middle;
+        }
 
-    /* Footer/Bottom Spacing */
-    .footer-space {
-      height: 16px;
-      background: #fff;
-    }
-  </style>
+        /* Footer/Bottom Spacing */
+        .footer-space {
+            height: 16px;
+            background: #fff;
+        }
+    </style>
 </head>
-<body>
-  <div class="card">
-    <div class="header">
-      <h1>
-        <svg class="icon-star" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z"/>
-        </svg>
-        {{ name }} 奇穴信息
-      </h1>
-    </div>
 
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 10%">位置</th>
-            <th style="width: 8%">图标</th>
-            <th style="width: 12%">名称</th>
-            <th style="width: 10%">类型</th>
-            <th style="width: 60%">简介</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for level_data in data %}
-            {% for item in level_data.data %}
-          <tr>
-            {% if loop.first %}
-            <td class="col-meta" rowspan="{{ level_data.data | length }}" style="border-right: 1px solid #edf2f7;">
-              第 {{ level_data.level }} 层
-            </td>
-            {% endif %}
-            <td>
-              <img src="{{ item.icon }}" alt="{{ item.name }}" class="qixue-icon"
-                   onerror="this.style.display='none'">
-            </td>
-            <td class="text-name">{{ item.name }}</td>
-            <td class="col-meta">
-              {% if item.class == 0 %}
-              奇穴
-              {% elif item.class == 1 %}
-              技能
-              {% else %}
-              -
-              {% endif %}
-            </td>
-            <td class="text-desc">{{ item.desc | default_value('-') }}</td>
-          </tr>
-            {% endfor %}
-          {% endfor %}
-        </tbody>
-      </table>
+<body>
+    <div class="card">
+        <div class="header">
+            <h1>
+                <svg class="icon-star" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z" />
+                </svg>
+                {{ name }} 奇穴信息
+            </h1>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 10%">位置</th>
+                        <th style="width: 8%">图标</th>
+                        <th style="width: 12%">名称</th>
+                        <th style="width: 10%">类型</th>
+                        <th style="width: 60%">简介</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for level_data in data %}
+                    {% for item in level_data.data %}
+                    <tr>
+                        {% if loop.first %}
+                        <td class="col-meta" rowspan="{{ level_data.data | length }}"
+                            style="border-right: 1px solid #edf2f7;">
+                            第 {{ level_data.level }} 层
+                        </td>
+                        {% endif %}
+                        <td>
+                            <img src="{{ item.icon }}" alt="{{ item.name }}" class="qixue-icon"
+                                onerror="this.style.display='none'">
+                        </td>
+                        <td class="text-name">{{ item.name }}</td>
+                        <td class="col-meta">
+                            {% if item.class == 0 %}
+                            奇穴
+                            {% elif item.class == 1 %}
+                            技能
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="text-desc">{{ item.desc | default_value('-') }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="footer-space"></div>
     </div>
-    <div class="footer-space"></div>
-  </div>
 </body>
+
 </html>

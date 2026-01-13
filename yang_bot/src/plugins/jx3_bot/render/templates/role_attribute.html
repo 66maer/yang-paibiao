@@ -1,358 +1,420 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>角色装备</title>
-  <style>
-    :root {
-      --nb-bg: #E0E7FF;
-      --nb-surface: #FFFFFF;
-      --nb-border: #000000;
-      --nb-shadow: 4px 4px 0px #000000;
-      --nb-red: #FF6B6B;
-      --nb-yellow: #FFE66D;
-      --nb-teal: #4ECDC4;
-      --nb-blue: #45B7D1;
-      --nb-purple: #9D50BB;
-      --nb-orange: #FF9F1C;
-      --quality-0: #9d9d9d;
-      --quality-1: #ffffff;
-      --quality-2: #00E676;
-      --quality-3: #2979FF;
-      --quality-4: #D500F9;
-      --quality-5: #FF6D00;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色装备</title>
+    <style>
+        :root {
+            --nb-bg: #E0E7FF;
+            --nb-surface: #FFFFFF;
+            --nb-border: #000000;
+            --nb-shadow: 4px 4px 0px #000000;
+            --nb-red: #FF6B6B;
+            --nb-yellow: #FFE66D;
+            --nb-teal: #4ECDC4;
+            --nb-blue: #45B7D1;
+            --nb-purple: #9D50BB;
+            --nb-orange: #FF9F1C;
+            --quality-0: #9d9d9d;
+            --quality-1: #ffffff;
+            --quality-2: #00E676;
+            --quality-3: #2979FF;
+            --quality-4: #D500F9;
+            --quality-5: #FF6D00;
+        }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    body {
-      font-family: "Microsoft YaHei", "Arial Black", sans-serif;
-      background-color: var(--nb-bg);
-      background-image: radial-gradient(#000000 1px, transparent 1px);
-      background-size: 20px 20px;
-      color: #000;
-      width: 1200px;
-      padding: 30px;
-      font-weight: bold;
-    }
+        body {
+            font-family: "Microsoft YaHei", "Arial Black", sans-serif;
+            background-color: var(--nb-bg);
+            background-image: radial-gradient(#000000 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #000;
+            width: 1200px;
+            padding: 30px;
+            font-weight: bold;
+        }
 
-    .container {
-      background-color: var(--nb-surface);
-      border: 3px solid var(--nb-border);
-      box-shadow: var(--nb-shadow);
-      padding: 24px;
-    }
+        .container {
+            background-color: var(--nb-surface);
+            border: 3px solid var(--nb-border);
+            box-shadow: var(--nb-shadow);
+            padding: 24px;
+        }
 
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 3px solid var(--nb-border);
-    }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid var(--nb-border);
+        }
 
-    .role-info { display: flex; align-items: center; gap: 20px; }
+        .role-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
 
-    .avatar {
-      width: 80px;
-      height: 80px;
-      border: 3px solid var(--nb-border);
-      box-shadow: var(--nb-shadow);
-      background-color: #fff;
-      object-fit: cover;
-    }
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border: 3px solid var(--nb-border);
+            box-shadow: var(--nb-shadow);
+            background-color: #fff;
+            object-fit: cover;
+        }
 
-    .role-text h1 {
-      font-size: 36px;
-      color: #000;
-      text-transform: uppercase;
-      letter-spacing: -1px;
-      margin-bottom: 8px;
-    }
+        .role-text h1 {
+            font-size: 36px;
+            color: #000;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
 
-    .role-tags { display: flex; gap: 10px; }
+        .role-tags {
+            display: flex;
+            gap: 10px;
+        }
 
-    .tag {
-      font-size: 14px;
-      color: #000;
-      background: var(--nb-yellow);
-      padding: 4px 12px;
-      border: 2px solid var(--nb-border);
-      box-shadow: 2px 2px 0px #000;
-      font-weight: 700;
-    }
+        .tag {
+            font-size: 14px;
+            color: #000;
+            background: var(--nb-yellow);
+            padding: 4px 12px;
+            border: 2px solid var(--nb-border);
+            box-shadow: 2px 2px 0px #000;
+            font-weight: 700;
+        }
 
-    .tag:nth-child(2) { background: var(--nb-teal); }
-    .tag:nth-child(3) { background: var(--nb-red); color: #fff; }
+        .tag:nth-child(2) {
+            background: var(--nb-teal);
+        }
 
-    .total-score {
-      text-align: right;
-      background: #000;
-      color: var(--nb-yellow);
-      padding: 10px 20px;
-      border: 3px solid #000;
-      box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
-    }
+        .tag:nth-child(3) {
+            background: var(--nb-red);
+            color: #fff;
+        }
 
-    .total-score .label {
-      font-size: 14px;
-      color: #fff;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
+        .total-score {
+            text-align: right;
+            background: #000;
+            color: var(--nb-yellow);
+            padding: 10px 20px;
+            border: 3px solid #000;
+            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.2);
+        }
 
-    .total-score .value {
-      font-size: 42px;
-      font-weight: 900;
-      line-height: 1;
-    }
+        .total-score .label {
+            font-size: 14px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
 
-    .main-content {
-      display: grid;
-      grid-template-columns: 340px 1fr 340px;
-      gap: 24px;
-      align-items: start;
-    }
+        .total-score .value {
+            font-size: 42px;
+            font-weight: 900;
+            line-height: 1;
+        }
 
-    .equip-column { display: flex; flex-direction: column; gap: 16px; }
+        .main-content {
+            display: grid;
+            grid-template-columns: 340px 1fr 340px;
+            gap: 24px;
+            align-items: start;
+        }
 
-    .equip-item {
-      display: flex;
-      gap: 12px;
-      background: #fff;
-      padding: 10px;
-      border: 3px solid var(--nb-border);
-      box-shadow: var(--nb-shadow);
-      align-items: center;
-    }
+        .equip-column {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
 
-    .equip-column:last-child .equip-item {
-      flex-direction: row-reverse;
-      text-align: right;
-    }
+        .equip-item {
+            display: flex;
+            gap: 12px;
+            background: #fff;
+            padding: 10px;
+            border: 3px solid var(--nb-border);
+            box-shadow: var(--nb-shadow);
+            align-items: center;
+        }
 
-    .equip-column:last-child .equip-stones { justify-content: flex-end; }
+        .equip-column:last-child .equip-item {
+            flex-direction: row-reverse;
+            text-align: right;
+        }
 
-    .equip-icon-wrapper {
-      position: relative;
-      width: 56px;
-      height: 56px;
-      flex-shrink: 0;
-      border: 3px solid var(--nb-border);
-      background: #eee;
-    }
+        .equip-column:last-child .equip-stones {
+            justify-content: flex-end;
+        }
 
-    .equip-icon { width: 100%; height: 100%; display: block; }
+        .equip-icon-wrapper {
+            position: relative;
+            width: 56px;
+            height: 56px;
+            flex-shrink: 0;
+            border: 3px solid var(--nb-border);
+            background: #eee;
+        }
 
-    .equip-strength {
-      position: absolute;
-      bottom: -6px;
-      right: -6px;
-      background: #000;
-      color: #fff;
-      font-size: 12px;
-      padding: 2px 4px;
-      font-weight: bold;
-      border: 2px solid #fff;
-    }
+        .equip-icon {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
 
-    .equip-details { flex: 1; min-width: 0; }
+        .equip-strength {
+            position: absolute;
+            bottom: -6px;
+            right: -6px;
+            background: #000;
+            color: #fff;
+            font-size: 12px;
+            padding: 2px 4px;
+            font-weight: bold;
+            border: 2px solid #fff;
+        }
 
-    .equip-name {
-      font-size: 16px;
-      font-weight: 900;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 2px;
-      color: #000;
-    }
+        .equip-details {
+            flex: 1;
+            min-width: 0;
+        }
 
-    .q-text-3 { color: var(--quality-3); text-shadow: 0.5px 0.5px 0 #000; }
-    .q-text-4 { color: var(--quality-4); text-shadow: 0.5px 0.5px 0 #000; }
-    .q-text-5 { color: var(--quality-5); text-shadow: 0.5px 0.5px 0 #000; }
+        .equip-name {
+            font-size: 16px;
+            font-weight: 900;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+            color: #000;
+        }
 
-    .equip-item.q-3 { border-color: var(--quality-3); }
-    .equip-item.q-4 { border-color: var(--quality-4); }
-    .equip-item.q-5 { border-color: var(--quality-5); }
+        .q-text-3 {
+            color: var(--quality-3);
+            text-shadow: 0.5px 0.5px 0 #000;
+        }
 
-    .equip-enchant {
-      font-size: 12px;
-      color: #333;
-      font-weight: 600;
-      background: #f0f0f0;
-      display: inline-block;
-      padding: 0 4px;
-      margin-bottom: 4px;
-    }
+        .q-text-4 {
+            color: var(--quality-4);
+            text-shadow: 0.5px 0.5px 0 #000;
+        }
 
-    .equip-stones { display: flex; gap: 4px; }
+        .q-text-5 {
+            color: var(--quality-5);
+            text-shadow: 0.5px 0.5px 0 #000;
+        }
 
-    .stone-icon {
-      width: 14px;
-      height: 14px;
-      border: 1px solid #000;
-      background: #ccc;
-    }
+        .equip-item.q-3 {
+            border-color: var(--quality-3);
+        }
 
-    .stone-name {
-      font-size: 11px;
-      line-height: 14px;
-      color: #000;
-      font-weight: bold;
-      margin: 0 4px;
-    }
+        .equip-item.q-4 {
+            border-color: var(--quality-4);
+        }
 
-    .stats-panel {
-      background: var(--nb-blue);
-      border: 3px solid var(--nb-border);
-      box-shadow: var(--nb-shadow);
-      padding: 20px;
-    }
+        .equip-item.q-5 {
+            border-color: var(--quality-5);
+        }
 
-    .stats-panel h3 {
-      font-size: 24px;
-      color: #000;
-      text-transform: uppercase;
-      text-align: center;
-      margin-bottom: 20px;
-      border-bottom: 3px solid #000;
-      padding-bottom: 10px;
-      background: #fff;
-      border: 3px solid #000;
-      box-shadow: 2px 2px 0px #000;
-    }
+        .equip-enchant {
+            font-size: 12px;
+            color: #333;
+            font-weight: 600;
+            background: #f0f0f0;
+            display: inline-block;
+            padding: 0 4px;
+            margin-bottom: 4px;
+        }
 
-    .stat-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 2px dashed rgba(0,0,0,0.2);
-      font-size: 16px;
-    }
+        .equip-stones {
+            display: flex;
+            gap: 4px;
+        }
 
-    .stat-row:last-child { border-bottom: none; }
-    .stat-label { font-weight: 700; color: rgba(0,0,0,0.7); }
-    .stat-value {
-      font-weight: 900;
-      color: #000;
-      background: rgba(255,255,255,0.5);
-      padding: 0 6px;
-    }
+        .stone-icon {
+            width: 14px;
+            height: 14px;
+            border: 1px solid #000;
+            background: #ccc;
+        }
 
-    .deco-bar {
-      height: 12px;
-      background: repeating-linear-gradient(45deg, #000, #000 10px, var(--nb-yellow) 10px, var(--nb-yellow) 20px);
-      margin-top: 20px;
-      border: 3px solid #000;
-    }
+        .stone-name {
+            font-size: 11px;
+            line-height: 14px;
+            color: #000;
+            font-weight: bold;
+            margin: 0 4px;
+        }
 
-    .footer {
-      text-align: center;
-      margin-top: 15px;
-      color: #666;
-      font-size: 12px;
-    }
-  </style>
+        .stats-panel {
+            background: var(--nb-blue);
+            border: 3px solid var(--nb-border);
+            box-shadow: var(--nb-shadow);
+            padding: 20px;
+        }
+
+        .stats-panel h3 {
+            font-size: 24px;
+            color: #000;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #000;
+            padding-bottom: 10px;
+            background: #fff;
+            border: 3px solid #000;
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 2px dashed rgba(0, 0, 0, 0.2);
+            font-size: 16px;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-weight: 700;
+            color: rgba(0, 0, 0, 0.7);
+        }
+
+        .stat-value {
+            font-weight: 900;
+            color: #000;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 0 6px;
+        }
+
+        .deco-bar {
+            height: 12px;
+            background: repeating-linear-gradient(45deg, #000, #000 10px, var(--nb-yellow) 10px, var(--nb-yellow) 20px);
+            margin-top: 20px;
+            border: 3px solid #000;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
 </head>
+
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="role-info">
-        {% if person_avatar %}
-        <img src="{{ person_avatar }}" class="avatar">
-        {% else %}
-        <div class="avatar" style="display: flex; align-items: center; justify-content: center; background: #333; color: #fff; font-size: 32px; font-weight: 900;">?</div>
-        {% endif %}
-        <div class="role-text">
-          <h1>{{ role_name }}</h1>
-          <div class="role-tags">
-            <span class="tag">{{ zone_name }} {{ server_name }}</span>
-            <span class="tag">{{ force_name }}</span>
-            <span class="tag">{{ body_name }}</span>
-          </div>
+    <div class="container">
+        <div class="header">
+            <div class="role-info">
+                {% if person_avatar %}
+                <img src="{{ person_avatar }}" class="avatar">
+                {% else %}
+                <div class="avatar"
+                    style="display: flex; align-items: center; justify-content: center; background: #333; color: #fff; font-size: 32px; font-weight: 900;">
+                    ?</div>
+                {% endif %}
+                <div class="role-text">
+                    <h1>{{ role_name }}</h1>
+                    <div class="role-tags">
+                        <span class="tag">{{ zone_name }} {{ server_name }}</span>
+                        <span class="tag">{{ force_name }}</span>
+                        <span class="tag">{{ body_name }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="total-score">
+                <div class="label">GS SCORE</div>
+                <div class="value">{{ panel_list.score }}</div>
+            </div>
         </div>
-      </div>
-      <div class="total-score">
-        <div class="label">GS SCORE</div>
-        <div class="value">{{ panel_list.score }}</div>
-      </div>
+
+        <div class="main-content">
+            <!-- Left Column -->
+            <div class="equip-column">
+                {% for idx in [3, 2, 4, 6, 5, 7] %}
+                {% set equip = equip_list[idx] if equip_list and idx < equip_list|length else none %} {% if equip %}
+                    <div class="equip-item q-{{ equip.color }}">
+                    <div class="equip-icon-wrapper">
+                        <img src="{{ equip.icon }}" class="equip-icon" onerror="this.style.display='none'">
+                        <div class="equip-strength">+{{ equip.strengthLevel }}</div>
+                    </div>
+                    <div class="equip-details">
+                        <div class="equip-name q-text-{{ equip.color }}">{{ equip.name }}</div>
+                        <div class="equip-enchant">
+                            {% for ench in equip.permanentEnchant %}{{ ench.name }} {% endfor %}
+                            {% if equip.commonEnchant %}<br>{{ equip.commonEnchant.name }}{% endif %}
+                        </div>
+                        <div class="equip-stones">
+                            {% for stone in equip.fiveStone %}
+                            <img src="{{ stone.icon }}" class="stone-icon" title="{{ stone.name }}">
+                            {% endfor %}
+                        </div>
+                    </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Center: Stats -->
+        <div class="stats-panel">
+            <h3>属性详情</h3>
+            {% for stat in panel_list.panel %}
+            <div class="stat-row">
+                <span class="stat-label">{{ stat.name }}</span>
+                <span class="stat-value">{{ stat.value }}{% if stat.percent %}%{% endif %}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Right Column -->
+        <div class="equip-column">
+            {% for idx in [8, 9, 10, 11, 1, 0] %}
+            {% set equip = equip_list[idx] if equip_list and idx < equip_list|length else none %} {% if equip %} <div
+                class="equip-item q-{{ equip.color }}">
+                <div class="equip-icon-wrapper">
+                    <img src="{{ equip.icon }}" class="equip-icon" onerror="this.style.display='none'">
+                    <div class="equip-strength">+{{ equip.strengthLevel }}</div>
+                </div>
+                <div class="equip-details">
+                    <div class="equip-name q-text-{{ equip.color }}">{{ equip.name }}</div>
+                    <div class="equip-enchant">
+                        {% for ench in equip.permanentEnchant %}{{ ench.name }} {% endfor %}
+                    </div>
+                    <div class="equip-stones">
+                        {% if equip.colorStone %}
+                        <img src="{{ equip.colorStone.icon }}" class="stone-icon" style="border: 2px solid #a335ee;">
+                        <span class="stone-name">{{ equip.colorStone.name }}</span>
+                        {% endif %}
+                        {% for stone in equip.fiveStone %}
+                        <img src="{{ stone.icon }}" class="stone-icon">
+                        {% endfor %}
+                    </div>
+                </div>
+        </div>
+        {% endif %}
+        {% endfor %}
     </div>
-
-    <div class="main-content">
-      <!-- Left Column -->
-      <div class="equip-column">
-        {% for idx in [3, 2, 4, 6, 5, 7] %}
-        {% set equip = equip_list[idx] if equip_list and idx < equip_list|length else none %}
-        {% if equip %}
-        <div class="equip-item q-{{ equip.color }}">
-          <div class="equip-icon-wrapper">
-            <img src="{{ equip.icon }}" class="equip-icon" onerror="this.style.display='none'">
-            <div class="equip-strength">+{{ equip.strengthLevel }}</div>
-          </div>
-          <div class="equip-details">
-            <div class="equip-name q-text-{{ equip.color }}">{{ equip.name }}</div>
-            <div class="equip-enchant">
-              {% for ench in equip.permanentEnchant %}{{ ench.name }} {% endfor %}
-              {% if equip.commonEnchant %}<br>{{ equip.commonEnchant.name }}{% endif %}
-            </div>
-            <div class="equip-stones">
-              {% for stone in equip.fiveStone %}
-              <img src="{{ stone.icon }}" class="stone-icon" title="{{ stone.name }}">
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-        {% endif %}
-        {% endfor %}
-      </div>
-
-      <!-- Center: Stats -->
-      <div class="stats-panel">
-        <h3>属性详情</h3>
-        {% for stat in panel_list.panel %}
-        <div class="stat-row">
-          <span class="stat-label">{{ stat.name }}</span>
-          <span class="stat-value">{{ stat.value }}{% if stat.percent %}%{% endif %}</span>
-        </div>
-        {% endfor %}
-      </div>
-
-      <!-- Right Column -->
-      <div class="equip-column">
-        {% for idx in [8, 9, 10, 11, 1, 0] %}
-        {% set equip = equip_list[idx] if equip_list and idx < equip_list|length else none %}
-        {% if equip %}
-        <div class="equip-item q-{{ equip.color }}">
-          <div class="equip-icon-wrapper">
-            <img src="{{ equip.icon }}" class="equip-icon" onerror="this.style.display='none'">
-            <div class="equip-strength">+{{ equip.strengthLevel }}</div>
-          </div>
-          <div class="equip-details">
-            <div class="equip-name q-text-{{ equip.color }}">{{ equip.name }}</div>
-            <div class="equip-enchant">
-              {% for ench in equip.permanentEnchant %}{{ ench.name }} {% endfor %}
-            </div>
-            <div class="equip-stones">
-              {% if equip.colorStone %}
-              <img src="{{ equip.colorStone.icon }}" class="stone-icon" style="border: 2px solid #a335ee;">
-              <span class="stone-name">{{ equip.colorStone.name }}</span>
-              {% endif %}
-              {% for stone in equip.fiveStone %}
-              <img src="{{ stone.icon }}" class="stone-icon">
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-        {% endif %}
-        {% endfor %}
-      </div>
     </div>
 
     <div class="deco-bar"></div>
     <div class="footer">数据来源：www.jx3api.com</div>
-  </div>
+    </div>
 </body>
+
 </html>

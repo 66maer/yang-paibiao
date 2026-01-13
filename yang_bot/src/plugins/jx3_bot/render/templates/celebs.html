@@ -1,238 +1,267 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>活动时刻表</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动时刻表</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    body {
-      width: 1200px;
-      margin: 0 auto;
-      font-family: "Microsoft YaHei", "Heiti SC", sans-serif;
-      background-color: #f0f0f0;
-      background-image:
-        linear-gradient(90deg, #bebebe 1px, transparent 1px),
-        linear-gradient(#bebebe 1px, transparent 1px);
-      background-size: 40px 40px;
-      color: #000;
-      padding: 40px;
-    }
+        body {
+            width: 1200px;
+            margin: 0 auto;
+            font-family: "Microsoft YaHei", "Heiti SC", sans-serif;
+            background-color: #f0f0f0;
+            background-image:
+                linear-gradient(90deg, #bebebe 1px, transparent 1px),
+                linear-gradient(#bebebe 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: #000;
+            padding: 40px;
+        }
 
-    .page-header {
-      margin-bottom: 30px;
-      text-align: left;
-      position: relative;
-    }
+        .page-header {
+            margin-bottom: 30px;
+            text-align: left;
+            position: relative;
+        }
 
-    .page-title {
-      font-size: 36px;
-      font-weight: 900;
-      color: #000;
-      display: inline-block;
-      background: #ffeb3b;
-      padding: 15px 30px;
-      border: 4px solid #000;
-      box-shadow: 8px 8px 0px 0px #000;
-      transform: rotate(-2deg);
-      text-transform: uppercase;
-      letter-spacing: -1px;
-    }
+        .page-title {
+            font-size: 36px;
+            font-weight: 900;
+            color: #000;
+            display: inline-block;
+            background: #ffeb3b;
+            padding: 15px 30px;
+            border: 4px solid #000;
+            box-shadow: 8px 8px 0px 0px #000;
+            transform: rotate(-2deg);
+            text-transform: uppercase;
+            letter-spacing: -1px;
+        }
 
-    .page-subtitle {
-      margin-top: 15px;
-      display: inline-block;
-      background: #000;
-      color: #fff;
-      padding: 8px 16px;
-      border: 3px solid #000;
-      font-weight: 900;
-      font-size: 16px;
-      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.3);
-      transform: rotate(1deg);
-    }
+        .page-subtitle {
+            margin-top: 15px;
+            display: inline-block;
+            background: #000;
+            color: #fff;
+            padding: 8px 16px;
+            border: 3px solid #000;
+            font-weight: 900;
+            font-size: 16px;
+            box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.3);
+            transform: rotate(1deg);
+        }
 
-    .card {
-      background: #ffffff;
-      border: 4px solid #000;
-      box-shadow: 12px 12px 0px 0px #000;
-      padding: 20px;
-    }
+        .card {
+            background: #ffffff;
+            border: 4px solid #000;
+            box-shadow: 12px 12px 0px 0px #000;
+            padding: 20px;
+        }
 
-    table { width: 100%; border-collapse: separate; border-spacing: 0; }
-    thead { background-color: #000; }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
 
-    th {
-      padding: 15px;
-      text-align: center;
-      font-weight: 900;
-      font-size: 20px;
-      color: #fff;
-      border: 3px solid #000;
-      white-space: nowrap;
-      text-transform: uppercase;
-    }
+        thead {
+            background-color: #000;
+        }
 
-    tbody tr:nth-child(odd) { background-color: #e0f7fa; }
-    tbody tr:nth-child(even) { background-color: #fce4ec; }
+        th {
+            padding: 15px;
+            text-align: center;
+            font-weight: 900;
+            font-size: 20px;
+            color: #fff;
+            border: 3px solid #000;
+            white-space: nowrap;
+            text-transform: uppercase;
+        }
 
-    td {
-      padding: 15px;
-      text-align: center;
-      vertical-align: middle;
-      font-size: 20px;
-      border-right: 3px solid #000;
-      border-bottom: 3px solid #000;
-      color: #000;
-      font-weight: bold;
-    }
+        tbody tr:nth-child(odd) {
+            background-color: #e0f7fa;
+        }
 
-    td:first-child { border-left: 3px solid #000; }
+        tbody tr:nth-child(even) {
+            background-color: #fce4ec;
+        }
 
-    .time-cell {
-      font-weight: 900;
-      color: #000;
-      font-size: 24px;
-      background: #fff;
-      border: 2px solid #000;
-      padding: 5px 15px;
-      display: inline-block;
-      box-shadow: 3px 3px 0px 0px #000;
-      min-width: 120px;
-    }
+        td {
+            padding: 15px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 20px;
+            border-right: 3px solid #000;
+            border-bottom: 3px solid #000;
+            color: #000;
+            font-weight: bold;
+        }
 
-    .location-cell {
-      font-weight: 900;
-      color: #000;
-      text-decoration: underline;
-      text-decoration-thickness: 2px;
-    }
+        td:first-child {
+            border-left: 3px solid #000;
+        }
 
-    .site-cell { color: #000; }
+        .time-cell {
+            font-weight: 900;
+            color: #000;
+            font-size: 24px;
+            background: #fff;
+            border: 2px solid #000;
+            padding: 5px 15px;
+            display: inline-block;
+            box-shadow: 3px 3px 0px 0px #000;
+            min-width: 120px;
+        }
 
-    .stage-wrapper {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 6px 14px;
-      border: 2px solid #000;
-      background: #fff;
-      font-size: 18px;
-      font-weight: 900;
-      box-shadow: 3px 3px 0px 0px #000;
-    }
+        .location-cell {
+            font-weight: 900;
+            color: #000;
+            text-decoration: underline;
+            text-decoration-thickness: 2px;
+        }
 
-    .status-dot {
-      width: 12px;
-      height: 12px;
-      background-color: #000;
-      display: inline-block;
-      border: 2px solid #000;
-    }
+        .site-cell {
+            color: #000;
+        }
 
-    .stage-active .status-dot { background-color: #1dd1a1; }
-    .stage-active { color: #000; background: #fff; }
+        .stage-wrapper {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 14px;
+            border: 2px solid #000;
+            background: #fff;
+            font-size: 18px;
+            font-weight: 900;
+            box-shadow: 3px 3px 0px 0px #000;
+        }
 
-    tr.current {
-      position: relative;
-      z-index: 1;
-      transform: scale(1.02);
-      box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.5);
-    }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #000;
+            display: inline-block;
+            border: 2px solid #000;
+        }
 
-    tr.current td {
-      background-color: #ffeb3b !important;
-      border-top: 3px solid #000;
-      border-bottom: 3px solid #000;
-    }
+        .stage-active .status-dot {
+            background-color: #1dd1a1;
+        }
 
-    tr.current .time-cell {
-      background: #000;
-      color: #ffeb3b;
-      border-color: #000;
-      box-shadow: 3px 3px 0px 0px #fff;
-    }
+        .stage-active {
+            color: #000;
+            background: #fff;
+        }
 
-    tr.current .stage-wrapper {
-      background: #000;
-      color: #ffeb3b;
-      border-color: #000;
-      box-shadow: 3px 3px 0px 0px #fff;
-    }
+        tr.current {
+            position: relative;
+            z-index: 1;
+            transform: scale(1.02);
+            box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.5);
+        }
 
-    tr.current .stage-active .status-dot {
-      background-color: #ff5252;
-      border-color: #fff;
-    }
+        tr.current td {
+            background-color: #ffeb3b !important;
+            border-top: 3px solid #000;
+            border-bottom: 3px solid #000;
+        }
 
-    .map-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      background: #74b9ff;
-      color: #000;
-      border: 2px solid #000;
-      font-size: 16px;
-      margin-right: 8px;
-      font-weight: 900;
-      box-shadow: 2px 2px 0px 0px #000;
-    }
+        tr.current .time-cell {
+            background: #000;
+            color: #ffeb3b;
+            border-color: #000;
+            box-shadow: 3px 3px 0px 0px #fff;
+        }
 
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      color: #666;
-      font-size: 12px;
-    }
-  </style>
+        tr.current .stage-wrapper {
+            background: #000;
+            color: #ffeb3b;
+            border-color: #000;
+            box-shadow: 3px 3px 0px 0px #fff;
+        }
+
+        tr.current .stage-active .status-dot {
+            background-color: #ff5252;
+            border-color: #fff;
+        }
+
+        .map-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #74b9ff;
+            color: #000;
+            border: 2px solid #000;
+            font-size: 16px;
+            margin-right: 8px;
+            font-weight: 900;
+            box-shadow: 2px 2px 0px 0px #000;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
 </head>
+
 <body>
-  <div class="container">
-    <div class="page-header">
-      <div class="page-title">
-        <span>JX3 EVENT TRACKER</span>
-      </div>
-      <br>
-      <div class="page-subtitle">{{ name }}</div>
-    </div>
+    <div class="container">
+        <div class="page-header">
+            <div class="page-title">
+                <span>JX3 EVENT TRACKER</span>
+            </div>
+            <br>
+            <div class="page-subtitle">{{ name }}</div>
+        </div>
 
-    <div class="card">
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 20%">TIME</th>
-              <th style="width: 20%">MAP</th>
-              <th style="width: 25%">LOCATION</th>
-              <th style="width: 35%">STATUS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in data %}
-            <tr class="{% if loop.first %}current{% endif %}">
-              <td>
-                <span class="time-cell">{{ item.time }}</span>
-              </td>
-              <td>
-                <span class="location-cell">{{ item.map }}</span>
-              </td>
-              <td>
-                <span class="site-cell">{{ item.site }}</span>
-              </td>
-              <td>
-                <div class="stage-wrapper {% if loop.first %}stage-active{% endif %}">
-                  <span class="status-dot"></span>
-                  <span>{{ item.stage }}</span>
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
+        <div class="card">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 20%">TIME</th>
+                            <th style="width: 20%">MAP</th>
+                            <th style="width: 25%">LOCATION</th>
+                            <th style="width: 35%">STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in data %}
+                        <tr class="{% if loop.first %}current{% endif %}">
+                            <td>
+                                <span class="time-cell">{{ item.time }}</span>
+                            </td>
+                            <td>
+                                <span class="location-cell">{{ item.map }}</span>
+                            </td>
+                            <td>
+                                <span class="site-cell">{{ item.site }}</span>
+                            </td>
+                            <td>
+                                <div class="stage-wrapper {% if loop.first %}stage-active{% endif %}">
+                                    <span class="status-dot"></span>
+                                    <span>{{ item.stage }}</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-    <div class="footer">数据来源：www.jx3api.com</div>
-  </div>
+        <div class="footer">数据来源：www.jx3api.com</div>
+    </div>
 </body>
+
 </html>

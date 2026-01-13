@@ -1,242 +1,262 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>活动日历</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>活动日历</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    body {
-      width: 1600px;
-      margin: 0 auto;
-      font-family: "Microsoft YaHei", "Heiti SC", sans-serif;
-      background-color: #f0f0f0;
-      background-image:
-        linear-gradient(90deg, #bebebe 1px, transparent 1px),
-        linear-gradient(#bebebe 1px, transparent 1px);
-      background-size: 40px 40px;
-      color: #000;
-      padding: 40px;
-    }
+        body {
+            width: 1600px;
+            margin: 0 auto;
+            font-family: "Microsoft YaHei", "Heiti SC", sans-serif;
+            background-color: #f0f0f0;
+            background-image:
+                linear-gradient(90deg, #bebebe 1px, transparent 1px),
+                linear-gradient(#bebebe 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: #000;
+            padding: 40px;
+        }
 
-    .page-header {
-      margin-bottom: 25px;
-      text-align: left;
-      position: relative;
-    }
+        .page-header {
+            margin-bottom: 25px;
+            text-align: left;
+            position: relative;
+        }
 
-    .page-title {
-      font-size: 36px;
-      font-weight: 900;
-      color: #000;
-      display: inline-block;
-      background: #ffeb3b;
-      padding: 15px 30px;
-      border: 4px solid #000;
-      box-shadow: 8px 8px 0px 0px #000;
-      transform: rotate(-2deg);
-      text-transform: uppercase;
-      letter-spacing: -1px;
-    }
+        .page-title {
+            font-size: 36px;
+            font-weight: 900;
+            color: #000;
+            display: inline-block;
+            background: #ffeb3b;
+            padding: 15px 30px;
+            border: 4px solid #000;
+            box-shadow: 8px 8px 0px 0px #000;
+            transform: rotate(-2deg);
+            text-transform: uppercase;
+            letter-spacing: -1px;
+        }
 
-    .calendar-wrapper {
-      background: #fff;
-      border: 4px solid #000;
-      padding: 20px;
-      box-shadow: 12px 12px 0px 0px #000;
-    }
+        .calendar-wrapper {
+            background: #fff;
+            border: 4px solid #000;
+            padding: 20px;
+            box-shadow: 12px 12px 0px 0px #000;
+        }
 
-    .week-header {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 12px;
-      margin-bottom: 15px;
-    }
+        .week-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
 
-    .week-day-badge {
-      text-align: center;
-      background: #000;
-      color: #fff;
-      font-weight: 900;
-      padding: 10px;
-      border: 3px solid #000;
-      font-size: 16px;
-      text-transform: uppercase;
-      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.3);
-    }
+        .week-day-badge {
+            text-align: center;
+            background: #000;
+            color: #fff;
+            font-weight: 900;
+            padding: 10px;
+            border: 3px solid #000;
+            font-size: 16px;
+            text-transform: uppercase;
+            box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.3);
+        }
 
-    .week-day-badge:nth-child(6),
-    .week-day-badge:nth-child(7) {
-      background: #ff5252;
-      border-color: #000;
-      box-shadow: 4px 4px 0px 0px #000;
-    }
+        .week-day-badge:nth-child(6),
+        .week-day-badge:nth-child(7) {
+            background: #ff5252;
+            border-color: #000;
+            box-shadow: 4px 4px 0px 0px #000;
+        }
 
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 12px;
-    }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 12px;
+        }
 
-    .day-card {
-      background: #fff;
-      border: 3px solid #000;
-      min-height: 150px;
-      display: flex;
-      flex-direction: column;
-      transition: all 0.1s;
-      position: relative;
-    }
+        .day-card {
+            background: #fff;
+            border: 3px solid #000;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.1s;
+            position: relative;
+        }
 
-    .day-card.active-day {
-      box-shadow: 6px 6px 0px 0px #000;
-    }
+        .day-card.active-day {
+            box-shadow: 6px 6px 0px 0px #000;
+        }
 
-    .day-card.active-day:nth-child(odd) { background-color: #e0f7fa; }
-    .day-card.active-day:nth-child(even) { background-color: #fce4ec; }
+        .day-card.active-day:nth-child(odd) {
+            background-color: #e0f7fa;
+        }
 
-    .day-card.active-day:hover {
-      transform: translate(-3px, -3px);
-      box-shadow: 9px 9px 0px 0px #000;
-    }
+        .day-card.active-day:nth-child(even) {
+            background-color: #fce4ec;
+        }
 
-    .day-card.empty {
-      background: repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 10px, #e0e0e0 10px, #e0e0e0 20px);
-      border: 3px dashed #bbb;
-      box-shadow: none;
-    }
+        .day-card.active-day:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 9px 9px 0px 0px #000;
+        }
 
-    .day-header {
-      padding: 10px;
-      border-bottom: 3px solid #000;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #fff;
-    }
+        .day-card.empty {
+            background: repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 10px, #e0e0e0 10px, #e0e0e0 20px);
+            border: 3px dashed #bbb;
+            box-shadow: none;
+        }
 
-    .date-text {
-      font-weight: 900;
-      color: #000;
-      font-size: 20px;
-      font-family: "Arial Black", sans-serif;
-    }
+        .day-header {
+            padding: 10px;
+            border-bottom: 3px solid #000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+        }
 
-    .date-week {
-      font-size: 12px;
-      font-weight: 900;
-      color: #000;
-      background: #74b9ff;
-      border: 2px solid #000;
-      padding: 2px 8px;
-      box-shadow: 2px 2px 0px 0px #000;
-    }
+        .date-text {
+            font-weight: 900;
+            color: #000;
+            font-size: 20px;
+            font-family: "Arial Black", sans-serif;
+        }
 
-    .activity-list {
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex: 1;
-    }
+        .date-week {
+            font-size: 12px;
+            font-weight: 900;
+            color: #000;
+            background: #74b9ff;
+            border: 2px solid #000;
+            padding: 2px 8px;
+            box-shadow: 2px 2px 0px 0px #000;
+        }
 
-    .activity-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+        .activity-list {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+        }
 
-    .badge {
-      padding: 4px 8px;
-      color: #000;
-      font-weight: 900;
-      font-size: 12px;
-      border: 2px solid #000;
-      text-transform: uppercase;
-      box-shadow: 2px 2px 0px 0px #000;
-      white-space: nowrap;
-    }
+        .activity-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-    .badge.war { background: #ff5252; }
-    .badge.battle { background: #ff9f43; }
-    .badge.school { background: #1dd1a1; }
+        .badge {
+            padding: 4px 8px;
+            color: #000;
+            font-weight: 900;
+            font-size: 12px;
+            border: 2px solid #000;
+            text-transform: uppercase;
+            box-shadow: 2px 2px 0px 0px #000;
+            white-space: nowrap;
+        }
 
-    .activity-name {
-      font-size: 14px;
-      font-weight: bold;
-      color: #000;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      text-decoration: underline;
-      text-decoration-thickness: 2px;
-    }
+        .badge.war {
+            background: #ff5252;
+        }
 
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      color: #666;
-      font-size: 12px;
-    }
-  </style>
+        .badge.battle {
+            background: #ff9f43;
+        }
+
+        .badge.school {
+            background: #1dd1a1;
+        }
+
+        .activity-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #000;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            text-decoration: underline;
+            text-decoration-thickness: 2px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
 </head>
+
 <body>
-  <div class="container">
-    <div class="page-header">
-      <div class="page-title">
-        <span>JX3 ACTIVITY CALENDAR</span>
-      </div>
-    </div>
-
-    <div class="calendar-wrapper">
-      <div class="week-header">
-        <div class="week-day-badge">MON</div>
-        <div class="week-day-badge">TUE</div>
-        <div class="week-day-badge">WED</div>
-        <div class="week-day-badge">THU</div>
-        <div class="week-day-badge">FRI</div>
-        <div class="week-day-badge">SAT</div>
-        <div class="week-day-badge">SUN</div>
-      </div>
-
-      <div class="calendar-grid">
-        {% for day in data %}
-        {% if day %}
-        <div class="day-card active-day">
-          <div class="day-header">
-            <div class="date-text">{{ day.date }}</div>
-            <div class="date-week">{{ day.week }}</div>
-          </div>
-          <div class="activity-list">
-            {% if day.war %}
-            <div class="activity-row">
-              <span class="badge war">大战</span>
-              <span class="activity-name">{{ day.war }}</span>
+    <div class="container">
+        <div class="page-header">
+            <div class="page-title">
+                <span>JX3 ACTIVITY CALENDAR</span>
             </div>
-            {% endif %}
-            {% if day.battle %}
-            <div class="activity-row">
-              <span class="badge battle">战场</span>
-              <span class="activity-name">{{ day.battle }}</span>
-            </div>
-            {% endif %}
-            {% if day.school %}
-            <div class="activity-row">
-              <span class="badge school">门派</span>
-              <span class="activity-name">{{ day.school }}</span>
-            </div>
-            {% endif %}
-          </div>
         </div>
-        {% else %}
-        <div class="day-card empty"></div>
-        {% endif %}
-        {% endfor %}
-      </div>
-    </div>
 
-    <div class="footer">数据来源：www.jx3api.com</div>
-  </div>
+        <div class="calendar-wrapper">
+            <div class="week-header">
+                <div class="week-day-badge">MON</div>
+                <div class="week-day-badge">TUE</div>
+                <div class="week-day-badge">WED</div>
+                <div class="week-day-badge">THU</div>
+                <div class="week-day-badge">FRI</div>
+                <div class="week-day-badge">SAT</div>
+                <div class="week-day-badge">SUN</div>
+            </div>
+
+            <div class="calendar-grid">
+                {% for day in data %}
+                {% if day %}
+                <div class="day-card active-day">
+                    <div class="day-header">
+                        <div class="date-text">{{ day.date }}</div>
+                        <div class="date-week">{{ day.week }}</div>
+                    </div>
+                    <div class="activity-list">
+                        {% if day.war %}
+                        <div class="activity-row">
+                            <span class="badge war">大战</span>
+                            <span class="activity-name">{{ day.war }}</span>
+                        </div>
+                        {% endif %}
+                        {% if day.battle %}
+                        <div class="activity-row">
+                            <span class="badge battle">战场</span>
+                            <span class="activity-name">{{ day.battle }}</span>
+                        </div>
+                        {% endif %}
+                        {% if day.school %}
+                        <div class="activity-row">
+                            <span class="badge school">门派</span>
+                            <span class="activity-name">{{ day.school }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="day-card empty"></div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="footer">数据来源：www.jx3api.com</div>
+    </div>
 </body>
+
 </html>
