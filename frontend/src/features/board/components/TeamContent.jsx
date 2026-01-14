@@ -129,6 +129,21 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
     onRefresh?.();
   };
 
+  // 计算频次修正系数
+  const getFrequencyCoefficient = (count) => {
+    if (count === 1) return 1.25;
+    if (count === 2) return 1.1;
+    if (count === 3) return 1.05;
+    return 1.0;
+  };
+
+  // 计算时间修正系数
+  const getTimeCoefficient = (carsSinceLast) => {
+    if (carsSinceLast === null || carsSinceLast === undefined) return 1.0;
+    const x = carsSinceLast;
+    return Math.log(1 + Math.exp(0.05 * (x - 33))) + 0.83;
+  };
+
   // 处理黑本推荐
   const handleHeibenRecommendation = async () => {
     if (!signupList || signupList.length === 0) {
@@ -620,26 +635,50 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
                         <div className="font-mono">{Number(rec.rank_score).toFixed(2)}</div>
                       </TableCell>
                       <TableCell>
-                        <Chip size="sm" variant="flat">
-                          {rec.heibenren_count}次
-                        </Chip>
+                        <Tooltip content={`×${getFrequencyCoefficient(rec.heibenren_count).toFixed(2)}`}>
+                          <Chip size="sm" variant="flat" className="cursor-help">
+                            {rec.heibenren_count}次
+                          </Chip>
+                        </Tooltip>
                       </TableCell>
                       <TableCell>
-                        <div className="font-bold text-lg text-primary">
-                          {Number(rec.recommendation_score).toFixed(2)}
-                        </div>
+                        <Tooltip
+                          content={
+                            <div className="space-y-1 p-1">
+                              <div>红黑分：{Number(rec.rank_score).toFixed(2)}</div>
+                              <div>频次系数：{getFrequencyCoefficient(rec.heibenren_count).toFixed(2)}</div>
+                              <div>时间系数：{getTimeCoefficient(rec.cars_since_last).toFixed(2)}</div>
+                              <div className="pt-1 border-t border-gray-300">
+                                = {Number(rec.rank_score).toFixed(2)} ×{" "}
+                                {getFrequencyCoefficient(rec.heibenren_count).toFixed(2)} ×{" "}
+                                {getTimeCoefficient(rec.cars_since_last).toFixed(2)}
+                              </div>
+                              <div className="font-bold">= {Number(rec.recommendation_score).toFixed(2)}</div>
+                            </div>
+                          }
+                        >
+                          <div className="font-bold text-lg text-primary cursor-help">
+                            {Number(rec.recommendation_score).toFixed(2)}
+                          </div>
+                        </Tooltip>
                       </TableCell>
                       <TableCell>
                         {rec.is_new ? (
-                          <Chip size="sm" color="primary" variant="flat">
-                            NEW
-                          </Chip>
+                          <Tooltip content="无黑本记录，×4.00">
+                            <Chip size="sm" color="primary" variant="flat" className="cursor-help">
+                              NEW
+                            </Chip>
+                          </Tooltip>
                         ) : rec.cars_since_last !== null && rec.cars_since_last > 0 ? (
-                          <Chip size="sm" color="warning" variant="flat">
-                            {rec.cars_since_last}车未黑
-                          </Chip>
+                          <Tooltip content={`×${getTimeCoefficient(rec.cars_since_last).toFixed(2)}`}>
+                            <Chip size="sm" color="warning" variant="flat" className="cursor-help">
+                              {rec.cars_since_last}车未黑
+                            </Chip>
+                          </Tooltip>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <Tooltip content={`上车刚黑 ×${getTimeCoefficient(rec.cars_since_last).toFixed(2)}`}>
+                            <span className="text-gray-400 cursor-help">—</span>
+                          </Tooltip>
                         )}
                       </TableCell>
                     </TableRow>
@@ -652,7 +691,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
                 <div className="font-semibold">计算说明：</div>
                 <div>• 推荐分 = 红黑分 × 频次修正系数 × 时间修正系数</div>
                 <div>• 频次修正系数：1次(1.25) → 2次(1.1) → 3次(1.05) → 4次及以上(1.0)</div>
-                <div>• 时间修正系数：ln(1 + e^(0.05(x-89))) + 1，其中 x 为距离上次黑本的车次数</div>
+                <div>• 时间修正系数：ln(1 + e^(0.05(x-33))) + 0.83，其中 x 为距离上次黑本的车次数</div>
                 <div>• NEW：无黑本记录的用户，使用平均红黑分 × 4</div>
               </div>
             </div>
