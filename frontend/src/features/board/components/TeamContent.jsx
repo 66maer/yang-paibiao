@@ -404,25 +404,27 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
             </div>
 
             {/* 操作按钮 */}
-            {isAdmin && (
-              <div className="flex items-center gap-2">
-                <Tooltip content="查看黑本推荐">
-                  <Button size="md" variant="flat" color="secondary" onPress={handleHeibenRecommendation}>
-                    🎯 黑本推荐
-                  </Button>
-                </Tooltip>
-                <Tooltip content="编辑开团">
-                  <Button size="md" variant="flat" color="primary" onPress={() => onEdit(team)}>
-                    ✏️ 编辑
-                  </Button>
-                </Tooltip>
-                <Tooltip content="关闭开团">
-                  <Button size="md" variant="flat" color="danger" onPress={handleCloseTeam}>
-                    ❌ 关闭
-                  </Button>
-                </Tooltip>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <Tooltip content="查看黑本推荐">
+                <Button size="md" variant="flat" color="secondary" onPress={handleHeibenRecommendation}>
+                  🎯 黑本推荐
+                </Button>
+              </Tooltip>
+              {isAdmin && (
+                <>
+                  <Tooltip content="编辑开团">
+                    <Button size="md" variant="flat" color="primary" onPress={() => onEdit(team)}>
+                      ✏️ 编辑
+                    </Button>
+                  </Tooltip>
+                  <Tooltip content="关闭开团">
+                    <Button size="md" variant="flat" color="danger" onPress={handleCloseTeam}>
+                      ❌ 关闭
+                    </Button>
+                  </Tooltip>
+                </>
+              )}
+            </div>
           </div>
 
           {/* 基础信息标签 */}
