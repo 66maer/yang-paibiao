@@ -63,6 +63,7 @@ class CharacterInfo(BaseModel):
     name: str
     server: str
     xinfa: str
+    secondary_xinfas: Optional[List[str]] = None  # 多修心法列表
     relation_type: str
     priority: Optional[int] = None
     created_at: Optional[datetime] = None

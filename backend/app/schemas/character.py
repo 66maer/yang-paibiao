@@ -10,7 +10,8 @@ class CharacterCreate(BaseModel):
     """创建角色请求"""
     name: str = Field(..., min_length=1, max_length=50, description="角色名")
     server: str = Field(..., min_length=1, max_length=30, description="服务器")
-    xinfa: str = Field(..., min_length=1, max_length=20, description="心法")
+    xinfa: str = Field(..., min_length=1, max_length=20, description="主心法")
+    secondary_xinfas: Optional[List[str]] = Field(None, description="多修心法列表")
     remark: Optional[str] = Field(None, description="备注")
     relation_type: str = Field(default="owner", description="关系类型: owner(特别关注), shared(一般关注)")
     priority: int = Field(default=0, description="优先级，数值越小优先级越高")
@@ -27,7 +28,8 @@ class CharacterUpdate(BaseModel):
     """更新角色请求"""
     name: Optional[str] = Field(None, min_length=1, max_length=50, description="角色名")
     server: Optional[str] = Field(None, min_length=1, max_length=30, description="服务器")
-    xinfa: Optional[str] = Field(None, min_length=1, max_length=20, description="心法")
+    xinfa: Optional[str] = Field(None, min_length=1, max_length=20, description="主心法")
+    secondary_xinfas: Optional[List[str]] = Field(None, description="多修心法列表")
     remark: Optional[str] = Field(None, description="备注")
 
 
@@ -89,6 +91,7 @@ class CharacterResponse(BaseModel):
     name: str
     server: str
     xinfa: str
+    secondary_xinfas: Optional[List[str]] = None
     remark: Optional[str] = None
     created_at: datetime
     updated_at: datetime

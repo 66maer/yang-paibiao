@@ -62,11 +62,14 @@ export default function SignupModal({ isOpen, onClose, guildId, teamId, team, us
   }, [user, guildId, membersData]);
 
   // 判断是否显示"保存到我的角色"勾选框
-  // 只有当角色名不为空，且（角色名+心法）组合在用户角色列表中不存在时，才显示勾选框
+  // 条件：角色名不为空，且没有选择已有角色（characterId为空），且角色名不在用户角色列表中
   const shouldShowSaveSwitch = useMemo(() => {
     if (!characterName || !xinfa) return false;
-    return !characters.some((c) => c.name === characterName && c.xinfa === xinfa);
-  }, [characterName, xinfa, characters]);
+    // 如果选择了已有角色（有characterId），说明是切换多修心法，不需要保存
+    if (characterId) return false;
+    // 检查是否存在同名角色
+    return !characters.some((c) => c.name === characterName);
+  }, [characterName, xinfa, characterId, characters]);
 
   useEffect(() => {
     if (isOpen) {

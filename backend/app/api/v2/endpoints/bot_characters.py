@@ -185,6 +185,7 @@ async def get_user_characters(
             name=character.name,
             server=character.server,
             xinfa=character.xinfa,
+            secondary_xinfas=character.secondary_xinfas,
             relation_type=character_player.relation_type,
             priority=character_player.priority,
             created_at=character.created_at,

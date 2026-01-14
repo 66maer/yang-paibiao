@@ -3,6 +3,7 @@
 """
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
@@ -28,7 +29,12 @@ class Character(Base):
     xinfa = Column(
         String(20),
         nullable=False,
-        comment="心法"
+        comment="主心法"
+    )
+    secondary_xinfas = Column(
+        ARRAY(String(20)),
+        nullable=True,
+        comment="多修心法列表（主心法以外的心法）"
     )
     remark = Column(
         Text,

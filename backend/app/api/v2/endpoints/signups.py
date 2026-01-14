@@ -196,15 +196,18 @@ async def _process_signup_info(
     处理报名信息的字段覆盖逻辑（仅在报名时使用）
     只检查 signup_character_id，不检查 signup_user_id
     返回处理后的 signup_info 字典
+    
+    注意：心法(xinfa)使用前端传递的值，不再用角色主心法覆盖
+    这是为了支持多修角色切换心法报名的场景
     """
     result_info = {
         "submitter_name": signup_info.submitter_name,  # 使用前端提供的值
         "player_name": signup_info.player_name,  # 使用前端提供的值
         "character_name": signup_info.character_name if signup_info.character_name is not None else "",
-        "xinfa": signup_info.xinfa
+        "xinfa": signup_info.xinfa  # 始终使用前端传递的心法，支持多修切换
     }
 
-    # 如果有 signup_character_id，从数据库取角色名和心法覆盖
+    # 如果有 signup_character_id，从数据库取角色名覆盖（但保留前端传递的心法）
     if signup_character_id:
         char_result = await db.execute(
             select(Character).where(Character.id == signup_character_id)
@@ -212,7 +215,7 @@ async def _process_signup_info(
         character = char_result.scalar_one_or_none()
         if character:
             result_info["character_name"] = character.name
-            result_info["xinfa"] = character.xinfa
+            # 不再覆盖心法，使用前端传递的值
 
     return result_info
 

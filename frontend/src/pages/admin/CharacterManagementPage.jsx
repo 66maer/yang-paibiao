@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import useSWR from 'swr'
+import { useState } from "react";
+import useSWR from "swr";
 import {
   Card,
   CardHeader,
@@ -21,44 +21,42 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-} from '@heroui/react'
-import {
-  getAllCharacters,
-  createCharacter,
-  updateCharacter,
-  deleteCharacter,
-} from '../../api/characters'
-import XinfaSelector from '@/components/common/XinfaSelector'
-import ServerSelector from '@/components/common/ServerSelector'
+} from "@heroui/react";
+import { getAllCharacters, createCharacter, updateCharacter, deleteCharacter } from "../../api/characters";
+import XinfaSelector from "@/components/common/XinfaSelector";
+import SecondaryXinfaSelector from "@/components/common/SecondaryXinfaSelector";
+import ServerSelector from "@/components/common/ServerSelector";
 
 export default function CharacterManagementPage() {
-  const [page, setPage] = useState(1)
-  const [keyword, setKeyword] = useState('')
-  const [searchInput, setSearchInput] = useState('')
-  const [filterServer, setFilterServer] = useState('')
-  const [filterXinfa, setFilterXinfa] = useState('')
-  const pageSize = 20
+  const [page, setPage] = useState(1);
+  const [keyword, setKeyword] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [filterServer, setFilterServer] = useState("");
+  const [filterXinfa, setFilterXinfa] = useState("");
+  const pageSize = 20;
 
-  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure()
-  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure()
-  
-  const [selectedChar, setSelectedChar] = useState(null)
+  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
+
+  const [selectedChar, setSelectedChar] = useState(null);
   const [createForm, setCreateForm] = useState({
-    name: '',
-    server: '',
-    xinfa: '',
-    remark: '',
-  })
+    name: "",
+    server: "",
+    xinfa: "",
+    secondary_xinfas: [],
+    remark: "",
+  });
   const [editForm, setEditForm] = useState({
-    name: '',
-    server: '',
-    xinfa: '',
-    remark: '',
-  })
+    name: "",
+    server: "",
+    xinfa: "",
+    secondary_xinfas: [],
+    remark: "",
+  });
 
   // 获取角色列表
   const { data, error, mutate } = useSWR(
-    ['characters', page, keyword, filterServer, filterXinfa],
+    ["characters", page, keyword, filterServer, filterXinfa],
     () =>
       getAllCharacters({
         page,
@@ -68,76 +66,80 @@ export default function CharacterManagementPage() {
         xinfa: filterXinfa || undefined,
       }),
     { revalidateOnFocus: false }
-  )
+  );
 
-  const characters = data?.data?.items || []
-  const total = data?.data?.total || 0
-  const pages = data?.data?.pages || 0
+  const characters = data?.data?.items || [];
+  const total = data?.data?.total || 0;
+  const pages = data?.data?.pages || 0;
 
   const handleSearch = () => {
-    setKeyword(searchInput)
-    setPage(1)
-  }
+    setKeyword(searchInput);
+    setPage(1);
+  };
 
   const handleCreate = async () => {
     if (!createForm.name || !createForm.server || !createForm.xinfa) {
-      showError('请填写所有必填项')
-      return
+      showError("请填写所有必填项");
+      return;
     }
 
     try {
-      await createCharacter(createForm)
-      mutate()
-      onCreateClose()
-      setCreateForm({ name: '', server: '', xinfa: '', remark: '' })
-      showSuccess('创建成功')
+      await createCharacter({
+        ...createForm,
+        secondary_xinfas: createForm.secondary_xinfas.length > 0 ? createForm.secondary_xinfas : undefined,
+      });
+      mutate();
+      onCreateClose();
+      setCreateForm({ name: "", server: "", xinfa: "", secondary_xinfas: [], remark: "" });
+      showSuccess("创建成功");
     } catch (error) {
-      showError(error.response?.data?.detail || error.response?.data?.message || '创建失败')
+      showError(error.response?.data?.detail || error.response?.data?.message || "创建失败");
     }
-  }
+  };
 
   const handleEdit = (char) => {
-    setSelectedChar(char)
+    setSelectedChar(char);
     setEditForm({
-      name: char.name || '',
-      server: char.server || '',
-      xinfa: char.xinfa || '',
-      remark: char.remark || '',
-    })
-    onEditOpen()
-  }
+      name: char.name || "",
+      server: char.server || "",
+      xinfa: char.xinfa || "",
+      secondary_xinfas: char.secondary_xinfas || [],
+      remark: char.remark || "",
+    });
+    onEditOpen();
+  };
 
   const handleUpdate = async () => {
     try {
-      await updateCharacter(selectedChar.id, editForm)
-      mutate()
-      onEditClose()
-      showSuccess('更新成功')
+      await updateCharacter(selectedChar.id, editForm);
+      mutate();
+      onEditClose();
+      showSuccess("更新成功");
     } catch (error) {
-      showError(error.response?.data?.detail || error.response?.data?.message || '更新失败')
+      showError(error.response?.data?.detail || error.response?.data?.message || "更新失败");
     }
-  }
+  };
 
   const handleDelete = async (charId, charName) => {
-    const confirmed = await showConfirm(`确定要删除角色 ${charName} 吗？`)
-    if (!confirmed) return
+    const confirmed = await showConfirm(`确定要删除角色 ${charName} 吗？`);
+    if (!confirmed) return;
 
     try {
-      await deleteCharacter(charId)
-      mutate()
-      showSuccess('删除成功')
+      await deleteCharacter(charId);
+      mutate();
+      showSuccess("删除成功");
     } catch (error) {
-      showError(error.response?.data?.detail || error.response?.data?.message || '删除失败')
+      showError(error.response?.data?.detail || error.response?.data?.message || "删除失败");
     }
-  }
+  };
 
   const resetFilters = () => {
-    setKeyword('')
-    setSearchInput('')
-    setFilterServer('')
-    setFilterXinfa('')
-    setPage(1)
-  }
+    setKeyword("");
+    setSearchInput("");
+    setFilterServer("");
+    setFilterXinfa("");
+    setPage(1);
+  };
 
   if (error) {
     return (
@@ -148,7 +150,7 @@ export default function CharacterManagementPage() {
           </CardBody>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -159,9 +161,7 @@ export default function CharacterManagementPage() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
             角色管理 ⚔️
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            管理所有游戏角色
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">管理所有游戏角色</p>
         </div>
         <Button color="primary" size="lg" onPress={onCreateOpen}>
           + 创建角色
@@ -178,11 +178,11 @@ export default function CharacterManagementPage() {
                 placeholder="搜索角色名或心法..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="flex-1"
                 variant="bordered"
                 isClearable
-                onClear={() => setSearchInput('')}
+                onClear={() => setSearchInput("")}
               />
               <ServerSelector
                 label="服务器"
@@ -190,8 +190,8 @@ export default function CharacterManagementPage() {
                 className="w-48"
                 value={filterServer}
                 onChange={(value) => {
-                  setFilterServer(value)
-                  setPage(1)
+                  setFilterServer(value);
+                  setPage(1);
                 }}
                 variant="bordered"
               />
@@ -201,8 +201,8 @@ export default function CharacterManagementPage() {
                 className="w-48"
                 value={filterXinfa}
                 onChange={(value) => {
-                  setFilterXinfa(value)
-                  setPage(1)
+                  setFilterXinfa(value);
+                  setPage(1);
                 }}
                 variant="bordered"
               />
@@ -242,9 +242,7 @@ export default function CharacterManagementPage() {
               items={characters}
               emptyContent={
                 <div className="text-center py-8 text-gray-500">
-                  {keyword || filterServer || filterXinfa
-                    ? '没有找到匹配的角色'
-                    : '暂无角色数据'}
+                  {keyword || filterServer || filterXinfa ? "没有找到匹配的角色" : "暂无角色数据"}
                 </div>
               }
             >
@@ -260,27 +258,27 @@ export default function CharacterManagementPage() {
                     </Chip>
                   </TableCell>
                   <TableCell>
-                    <Chip color="primary" variant="flat" size="sm">
-                      {char.xinfa}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-[200px] truncate text-sm text-gray-600">
-                      {char.remark || '-'}
+                    <div className="flex items-center gap-1">
+                      <Chip color="primary" variant="flat" size="sm">
+                        {char.xinfa}
+                      </Chip>
+                      {char.secondary_xinfas?.length > 0 && (
+                        <Tooltip content={`多修: ${char.secondary_xinfas.join(", ")}`}>
+                          <Chip color="default" variant="flat" size="sm">
+                            +{char.secondary_xinfas.length}
+                          </Chip>
+                        </Tooltip>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    {new Date(char.created_at).toLocaleDateString('zh-CN')}
+                    <div className="max-w-[200px] truncate text-sm text-gray-600">{char.remark || "-"}</div>
                   </TableCell>
+                  <TableCell>{new Date(char.created_at).toLocaleDateString("zh-CN")}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Tooltip content="编辑">
-                        <Button
-                          size="sm"
-                          color="primary"
-                          variant="flat"
-                          onPress={() => handleEdit(char)}
-                        >
+                        <Button size="sm" color="primary" variant="flat" onPress={() => handleEdit(char)}>
                           编辑
                         </Button>
                       </Tooltip>
@@ -304,13 +302,7 @@ export default function CharacterManagementPage() {
           {/* 分页 */}
           {pages > 1 && (
             <div className="flex justify-center mt-4">
-              <Pagination
-                total={pages}
-                page={page}
-                onChange={setPage}
-                color="primary"
-                showControls
-              />
+              <Pagination total={pages} page={page} onChange={setPage} color="primary" showControls />
             </div>
           )}
         </CardBody>
@@ -328,35 +320,40 @@ export default function CharacterManagementPage() {
                 label="角色名"
                 placeholder="请输入角色名"
                 value={createForm.name}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, name: e.target.value })
-                }
+                onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                 isRequired
               />
               <ServerSelector
                 label="服务器"
                 placeholder="请选择服务器"
                 value={createForm.server}
-                onChange={(value) =>
-                  setCreateForm({ ...createForm, server: value })
-                }
+                onChange={(value) => setCreateForm({ ...createForm, server: value })}
                 isRequired
               />
               <XinfaSelector
                 label="心法"
                 value={createForm.xinfa}
-                onChange={(value) =>
-                  setCreateForm({ ...createForm, xinfa: value })
-                }
+                onChange={(value) => {
+                  setCreateForm({
+                    ...createForm,
+                    xinfa: value,
+                    secondary_xinfas: createForm.secondary_xinfas.filter((x) => x !== value),
+                  });
+                }}
                 isRequired
+              />
+              <SecondaryXinfaSelector
+                label="多修心法"
+                value={createForm.secondary_xinfas}
+                onChange={(value) => setCreateForm({ ...createForm, secondary_xinfas: value })}
+                excludeXinfa={createForm.xinfa}
+                maxCount={5}
               />
               <Input
                 label="备注"
                 placeholder="请输入备注（可选）"
                 value={createForm.remark}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, remark: e.target.value })
-                }
+                onChange={(e) => setCreateForm({ ...createForm, remark: e.target.value })}
               />
             </div>
           </ModalBody>
@@ -383,32 +380,37 @@ export default function CharacterManagementPage() {
                 label="角色名"
                 placeholder="请输入角色名"
                 value={editForm.name}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, name: e.target.value })
-                }
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
               />
               <ServerSelector
                 label="服务器"
                 placeholder="请选择服务器"
                 value={editForm.server}
-                onChange={(value) =>
-                  setEditForm({ ...editForm, server: value })
-                }
+                onChange={(value) => setEditForm({ ...editForm, server: value })}
               />
               <XinfaSelector
                 label="心法"
                 value={editForm.xinfa}
-                onChange={(value) =>
-                  setEditForm({ ...editForm, xinfa: value })
-                }
+                onChange={(value) => {
+                  setEditForm({
+                    ...editForm,
+                    xinfa: value,
+                    secondary_xinfas: editForm.secondary_xinfas.filter((x) => x !== value),
+                  });
+                }}
+              />
+              <SecondaryXinfaSelector
+                label="多修心法"
+                value={editForm.secondary_xinfas}
+                onChange={(value) => setEditForm({ ...editForm, secondary_xinfas: value })}
+                excludeXinfa={editForm.xinfa}
+                maxCount={5}
               />
               <Input
                 label="备注"
                 placeholder="请输入备注"
                 value={editForm.remark}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, remark: e.target.value })
-                }
+                onChange={(e) => setEditForm({ ...editForm, remark: e.target.value })}
               />
             </div>
           </ModalBody>
@@ -423,5 +425,5 @@ export default function CharacterManagementPage() {
         </ModalContent>
       </Modal>
     </div>
-  )
+  );
 }

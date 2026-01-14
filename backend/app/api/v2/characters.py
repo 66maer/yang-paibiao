@@ -80,6 +80,7 @@ async def create_character(
             name=character_data.name,
             server=character_data.server,
             xinfa=character_data.xinfa,
+            secondary_xinfas=character_data.secondary_xinfas,
             remark=character_data.remark,
         )
         db.add(new_character)
@@ -319,6 +320,8 @@ async def update_character(
         character.server = character_data.server
     if character_data.xinfa is not None:
         character.xinfa = character_data.xinfa
+    if character_data.secondary_xinfas is not None:
+        character.secondary_xinfas = character_data.secondary_xinfas
     if character_data.remark is not None:
         character.remark = character_data.remark
     

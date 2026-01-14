@@ -9,10 +9,11 @@ import {
   Input,
   Textarea,
   Select,
-  SelectItem
+  SelectItem,
 } from "@heroui/react";
 import ServerSelector from "@/components/common/ServerSelector";
 import XinfaSelector from "@/components/common/XinfaSelector";
+import SecondaryXinfaSelector from "@/components/common/SecondaryXinfaSelector";
 import { createCharacter } from "@/api/characters";
 import { showToast } from "@/utils/toast";
 
@@ -22,13 +23,14 @@ export default function CreateCharacterModal({ isOpen, onClose, onSuccess }) {
     name: "",
     server: "",
     xinfa: "",
+    secondaryXinfas: [],
     remark: "",
     relationType: "owner", // 初始关系类型
-    priority: 0 // 初始优先级
+    priority: 0, // 初始优先级
   });
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async () => {
@@ -54,9 +56,10 @@ export default function CreateCharacterModal({ isOpen, onClose, onSuccess }) {
         name: formData.name.trim(),
         server: formData.server,
         xinfa: formData.xinfa,
+        secondary_xinfas: formData.secondaryXinfas.length > 0 ? formData.secondaryXinfas : undefined,
         remark: formData.remark.trim() || undefined,
         relation_type: formData.relationType,
-        priority: formData.priority
+        priority: formData.priority,
       });
 
       showToast.success("角色创建成功");
@@ -66,9 +69,10 @@ export default function CreateCharacterModal({ isOpen, onClose, onSuccess }) {
         name: "",
         server: "",
         xinfa: "",
+        secondaryXinfas: [],
         remark: "",
         relationType: "owner",
-        priority: 0
+        priority: 0,
       });
 
       // 关闭模态框并刷新列表
@@ -89,9 +93,10 @@ export default function CreateCharacterModal({ isOpen, onClose, onSuccess }) {
       name: "",
       server: "",
       xinfa: "",
+      secondaryXinfas: [],
       remark: "",
       relationType: "owner",
-      priority: 0
+      priority: 0,
     });
     onClose();
   };
@@ -124,12 +129,30 @@ export default function CreateCharacterModal({ isOpen, onClose, onSuccess }) {
 
             {/* 心法 */}
             <XinfaSelector
-              label="心法"
-              placeholder="请选择心法"
+              label="主心法"
+              placeholder="请选择主心法"
               value={formData.xinfa}
-              onChange={(value) => handleChange("xinfa", value)}
+              onChange={(value) => {
+                handleChange("xinfa", value);
+                // 当主心法改变时，从多修心法中移除该心法
+                if (formData.secondaryXinfas.includes(value)) {
+                  handleChange(
+                    "secondaryXinfas",
+                    formData.secondaryXinfas.filter((x) => x !== value)
+                  );
+                }
+              }}
               isRequired
               variant="flat"
+            />
+
+            {/* 多修心法 */}
+            <SecondaryXinfaSelector
+              label="多修心法"
+              value={formData.secondaryXinfas}
+              onChange={(value) => handleChange("secondaryXinfas", value)}
+              excludeXinfa={formData.xinfa}
+              maxCount={5}
             />
 
             {/* 备注 */}
@@ -171,9 +194,7 @@ export default function CreateCharacterModal({ isOpen, onClose, onSuccess }) {
               </SelectItem>
             </Select>
 
-            <p className="text-xs text-default-500">
-              注：归属分类可以随时调整，用于区分角色的归属类别。
-            </p>
+            <p className="text-xs text-default-500">注：归属分类可以随时调整，用于区分角色的归属类别。</p>
           </div>
         </ModalBody>
         <ModalFooter>

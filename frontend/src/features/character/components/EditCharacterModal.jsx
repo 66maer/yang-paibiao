@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea } from "@heroui/react";
 import ServerSelector from "@/components/common/ServerSelector";
 import XinfaSelector from "@/components/common/XinfaSelector";
+import SecondaryXinfaSelector from "@/components/common/SecondaryXinfaSelector";
 import { updateCharacter, updateCharacterRelation } from "@/api/characters";
 import { showToast } from "@/utils/toast";
 import useAuthStore from "@/stores/authStore";
@@ -13,6 +14,7 @@ export default function EditCharacterModal({ isOpen, onClose, character, onSucce
     name: "",
     server: "",
     xinfa: "",
+    secondaryXinfas: [],
     remark: "",
     priority: 0,
   });
@@ -22,13 +24,14 @@ export default function EditCharacterModal({ isOpen, onClose, character, onSucce
   useEffect(() => {
     if (character && user) {
       // 从 character.players 中找到当前用户的关联记录
-      const currentUserPlayer = character.players?.find(p => p.user_id === user.id);
+      const currentUserPlayer = character.players?.find((p) => p.user_id === user.id);
       const priority = currentUserPlayer?.priority ?? 0;
 
       setFormData({
         name: character.name || "",
         server: character.server || "",
         xinfa: character.xinfa || "",
+        secondaryXinfas: character.secondary_xinfas || [],
         remark: character.remark || "",
         priority: priority,
       });
@@ -63,6 +66,7 @@ export default function EditCharacterModal({ isOpen, onClose, character, onSucce
         name: formData.name.trim(),
         server: formData.server,
         xinfa: formData.xinfa,
+        secondary_xinfas: formData.secondaryXinfas,
         remark: formData.remark.trim() || undefined,
       });
 
@@ -138,12 +142,30 @@ export default function EditCharacterModal({ isOpen, onClose, character, onSucce
 
             {/* 心法 */}
             <XinfaSelector
-              label="心法"
-              placeholder="请选择心法"
+              label="主心法"
+              placeholder="请选择主心法"
               value={formData.xinfa}
-              onChange={(value) => handleChange("xinfa", value)}
+              onChange={(value) => {
+                handleChange("xinfa", value);
+                // 当主心法改变时，从多修心法中移除该心法
+                if (formData.secondaryXinfas.includes(value)) {
+                  handleChange(
+                    "secondaryXinfas",
+                    formData.secondaryXinfas.filter((x) => x !== value)
+                  );
+                }
+              }}
               isRequired
               variant="flat"
+            />
+
+            {/* 多修心法 */}
+            <SecondaryXinfaSelector
+              label="多修心法"
+              value={formData.secondaryXinfas}
+              onChange={(value) => handleChange("secondaryXinfas", value)}
+              excludeXinfa={formData.xinfa}
+              maxCount={5}
             />
 
             {/* 备注 */}

@@ -11,7 +11,7 @@ export default function CharacterCard({ character, relationType, onEdit, onDelet
   const user = useAuthStore((state) => state.user);
 
   // 获取当前用户的优先级
-  const currentUserPlayer = character.players?.find(p => p.user_id === user?.id);
+  const currentUserPlayer = character.players?.find((p) => p.user_id === user?.id);
   const priority = currentUserPlayer?.priority ?? 0;
 
   // 获取心法信息（兼容旧数据的中文名称和新数据的key）
@@ -29,6 +29,11 @@ export default function CharacterCard({ character, relationType, onEdit, onDelet
   };
 
   const xinfa = getXinfaInfo(character.xinfa);
+
+  // 获取多修心法信息
+  const secondaryXinfas = (character.secondary_xinfas || [])
+    .map((key) => ({ key, info: getXinfaInfo(key) }))
+    .filter((x) => x.info);
 
   // 切换关系类型
   const handleToggleRelation = async () => {
@@ -90,12 +95,41 @@ export default function CharacterCard({ character, relationType, onEdit, onDelet
         <div className="flex-1 flex flex-col">
           {/* 第一层：心法图标+服务器 | 角色名称 */}
           <div className="flex items-center gap-3 flex-1">
-            {/* 心法图标 + 服务器 + 优先级 */}
+            {/* 心法图标（主心法 + 多修） */}
             <div className="flex flex-col items-center justify-center gap-1">
-              {xinfa && <img src={`/xinfa/${xinfa.icon}`} alt={xinfa.name} className="w-12 h-12 rounded shadow-lg" />}
+              <div className="flex items-center gap-1">
+                {xinfa && (
+                  <img
+                    src={`/xinfa/${xinfa.icon}`}
+                    alt={xinfa.name}
+                    className="w-12 h-12 rounded shadow-lg"
+                    title={`主心法: ${xinfa.name}`}
+                  />
+                )}
+                {/* 多修心法小图标 */}
+                {secondaryXinfas.length > 0 && (
+                  <div className="flex flex-col gap-0.5">
+                    {secondaryXinfas.slice(0, 3).map(({ key, info }) => (
+                      <img
+                        key={key}
+                        src={`/xinfa/${info.icon}`}
+                        alt={info.name}
+                        className="w-5 h-5 rounded opacity-70 hover:opacity-100 transition-opacity"
+                        title={`多修: ${info.name}`}
+                      />
+                    ))}
+                    {secondaryXinfas.length > 3 && (
+                      <span className="text-[10px] opacity-50 text-center">+{secondaryXinfas.length - 3}</span>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="text-xs opacity-80 text-center leading-tight whitespace-nowrap">{character.server}</div>
               {priority > 0 && (
-                <div className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/30 text-yellow-200 border border-yellow-500/50" title={`优先级: ${priority}`}>
+                <div
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/30 text-yellow-200 border border-yellow-500/50"
+                  title={`优先级: ${priority}`}
+                >
                   P{priority}
                 </div>
               )}
