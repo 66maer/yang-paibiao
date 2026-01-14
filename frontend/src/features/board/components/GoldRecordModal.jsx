@@ -41,6 +41,7 @@ export default function GoldRecordModal({
   // 状态
   const [currentPage, setCurrentPage] = useState(1);
   const [totalGold, setTotalGold] = useState(0);
+  const [subsidyGold, setSubsidyGold] = useState(0);
   const [workerCount, setWorkerCount] = useState(25);
   const [selectedDrops, setSelectedDrops] = useState(new Map());
   const [isWildHeibenren, setIsWildHeibenren] = useState(false);
@@ -86,6 +87,7 @@ export default function GoldRecordModal({
     if (isEditMode && record) {
       // 编辑模式：从record初始化
       setTotalGold(record.total_gold || 0);
+      setSubsidyGold(record.subsidy_gold || 0);
       setWorkerCount(record.worker_count || 25);
       setSelectedDungeon(record.dungeon || "");
 
@@ -179,6 +181,7 @@ export default function GoldRecordModal({
       }
       // 重置其他字段
       setTotalGold(0);
+      setSubsidyGold(0);
       setWorkerCount(25);
       setSelectedDrops(new Map());
       setIsWildHeibenren(false);
@@ -190,6 +193,7 @@ export default function GoldRecordModal({
     } else {
       // Create模式：使用默认值
       setTotalGold(0);
+      setSubsidyGold(0);
       setWorkerCount(25);
       setSelectedDrops(new Map());
       setIsWildHeibenren(false);
@@ -248,6 +252,7 @@ export default function GoldRecordModal({
       dungeon,
       run_date: runDate,
       total_gold: totalGold,
+      subsidy_gold: subsidyGold,
       worker_count: workerCount,
       special_drops: formattedDrops,
       xuanjing_drops: xuanjingDrops,
@@ -391,7 +396,10 @@ export default function GoldRecordModal({
                 </div>
               )}
 
-              <GoldAmountInput value={totalGold} onChange={setTotalGold} isRequired />
+              <div className="grid grid-cols-2 gap-4">
+                <GoldAmountInput value={totalGold} onChange={setTotalGold} isRequired />
+                <GoldAmountInput value={subsidyGold} onChange={setSubsidyGold} label="总补贴" />
+              </div>
 
               <DropSelector selectedDrops={selectedDrops} onChange={setSelectedDrops} />
 

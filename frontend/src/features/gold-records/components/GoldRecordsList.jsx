@@ -280,7 +280,14 @@ export default function GoldRecordsList({ records = [], loading, onEdit, isAdmin
               <span className="text-sm font-medium">{record.dungeon}</span>
             </TableCell>
             <TableCell>
-              <span className="text-sm font-semibold text-primary">{formatGold(record.total_gold)}</span>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-primary">{formatGold(record.total_gold)}</span>
+                {record.subsidy_gold > 0 && (
+                  <span className="text-xs text-gray-500">
+                    不含补：{formatGold(record.total_gold - record.subsidy_gold)}
+                  </span>
+                )}
+              </div>
             </TableCell>
             <TableCell>{renderHeibenren(record.heibenren_info, record.total_gold)}</TableCell>
             <TableCell className="min-w-[200px]">{renderDrops(record.special_drops, record.has_xuanjing)}</TableCell>

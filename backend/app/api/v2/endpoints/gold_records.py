@@ -69,11 +69,13 @@ async def _auto_update_weekly_records(db: AsyncSession, gold_record: GoldRecord)
     """
     自动更新每周记录（金团记录联动）
     根据 team_id 查找报名的角色，自动记录人均金团金额
+    工资计算公式：(总金团 - 总补贴) / 打工人数
     """
     from app.api.v2.endpoints.my_records import auto_create_weekly_record
     
-    # 计算人均金额
-    per_person_gold = gold_record.total_gold // gold_record.worker_count
+    # 计算人均金额：(总金团 - 总补贴) / 打工人数
+    effective_gold = gold_record.total_gold - (gold_record.subsidy_gold or 0)
+    per_person_gold = effective_gold // gold_record.worker_count
     
     # 查找该团队的所有有效报名（非老板、未取消）
     result = await db.execute(
@@ -166,6 +168,7 @@ async def create_gold_record(
         gold_record.dungeon = payload.dungeon
         gold_record.run_date = payload.run_date
         gold_record.total_gold = payload.total_gold
+        gold_record.subsidy_gold = payload.subsidy_gold
         gold_record.worker_count = payload.worker_count
         gold_record.special_drops = payload.special_drops
         gold_record.xuanjing_drops = payload.xuanjing_drops
@@ -183,6 +186,7 @@ async def create_gold_record(
             dungeon=payload.dungeon,
             run_date=payload.run_date,
             total_gold=payload.total_gold,
+            subsidy_gold=payload.subsidy_gold,
             worker_count=payload.worker_count,
             special_drops=payload.special_drops,
             xuanjing_drops=payload.xuanjing_drops,
@@ -364,6 +368,8 @@ async def update_gold_record(
         gold_record.run_date = payload.run_date
     if payload.total_gold is not None:
         gold_record.total_gold = payload.total_gold
+    if payload.subsidy_gold is not None:
+        gold_record.subsidy_gold = payload.subsidy_gold
     if payload.worker_count is not None:
         gold_record.worker_count = payload.worker_count
     if payload.special_drops is not None:

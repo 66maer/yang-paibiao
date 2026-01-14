@@ -18,6 +18,7 @@ class GoldRecordBase(BaseModel):
     dungeon: str = Field(..., min_length=1, max_length=50, description="副本名称")
     run_date: date = Field(..., description="运行日期")
     total_gold: int = Field(..., ge=0, description="总金团")
+    subsidy_gold: int = Field(0, ge=0, description="总补贴金额")
     worker_count: int = Field(..., ge=0, description="打工人数")
     special_drops: Optional[List[str]] = Field(None, description="特殊掉落（字符串数组）")
     xuanjing_drops: Optional[Dict[str, int]] = Field(None, description="玄晶掉落信息（包含价格）")
@@ -38,6 +39,7 @@ class GoldRecordUpdate(BaseModel):
     dungeon: Optional[str] = Field(None, min_length=1, max_length=50)
     run_date: Optional[date] = None
     total_gold: Optional[int] = Field(None, ge=0)
+    subsidy_gold: Optional[int] = Field(None, ge=0)
     worker_count: Optional[int] = Field(None, ge=0)
     special_drops: Optional[List[str]] = None
     xuanjing_drops: Optional[Dict[str, int]] = None
@@ -57,6 +59,7 @@ class GoldRecordOut(BaseModel):
     dungeon: str
     run_date: date
     total_gold: int
+    subsidy_gold: int = 0
     worker_count: int
     special_drops: Optional[List[str]] = None
     xuanjing_drops: Optional[Dict[str, int]] = None

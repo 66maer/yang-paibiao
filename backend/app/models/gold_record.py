@@ -17,6 +17,7 @@ class GoldRecord(Base):
     dungeon = Column(String(50), nullable=False, index=True, comment="副本名称")
     run_date = Column(Date, nullable=False, index=True, comment="运行日期")
     total_gold = Column(Integer, nullable=False, comment="总金团")
+    subsidy_gold = Column(Integer, nullable=False, default=0, comment="总补贴金额")
     worker_count = Column(Integer, nullable=False, comment="打工人数")
     special_drops = Column(JSON, nullable=True, comment="特殊掉落（字符串数组）")
     xuanjing_drops = Column(JSON, nullable=True, comment="玄晶掉落信息（包含价格）")
