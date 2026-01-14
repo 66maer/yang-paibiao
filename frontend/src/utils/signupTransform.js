@@ -97,6 +97,9 @@ export function transformSignup(signup) {
     // 优先级
     priority: signup.priority || 0,
 
+    // 编辑次数
+    editCount: signup.edit_count || 0,
+
     // 时间戳
     createdAt: signup.created_at,
     updatedAt: signup.updated_at,

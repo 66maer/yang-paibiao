@@ -12,9 +12,10 @@ import { xinfaInfoTable } from "@/config/xinfa";
  * @param {number} waitlistOrder - 候补顺序（仅当type为waitlist时）
  * @param {boolean} isAdmin - 是否是管理员
  * @param {Object} currentUser - 当前登录用户
+ * @param {Function} onEdit - 修改报名回调
  * @param {Function} onDelete - 取消报名回调
  */
-export default function SignupItemCard({ signup, type = "signup", waitlistOrder, isAdmin, currentUser, onDelete }) {
+export default function SignupItemCard({ signup, type = "signup", waitlistOrder, isAdmin, currentUser, onEdit, onDelete }) {
   const { user } = useAuthStore();
   const [copied, setCopied] = useState("");
 
@@ -38,6 +39,15 @@ export default function SignupItemCard({ signup, type = "signup", waitlistOrder,
   // 管理员可以取消所有报名，或者报名人自己（submitterId 或 userId 是当前用户）可以取消
   const canDelete =
     isAdmin || (currentUser?.id && (currentUser.id === signup?.submitterId || currentUser.id === signup?.userId));
+
+  // 检查是否可以编辑报名（权限与取消报名相同）
+  const canEdit = canDelete;
+
+  // 编辑次数限制（非管理员每车最多3次）
+  const MAX_EDIT_COUNT = 3;
+  const currentEditCount = signup?.editCount || 0;
+  const remainingEdits = MAX_EDIT_COUNT - currentEditCount;
+  const hasEditQuota = isAdmin || remainingEdits > 0;
 
   // 格式化时间
   const formatTime = (timeStr) => {
@@ -132,11 +142,31 @@ export default function SignupItemCard({ signup, type = "signup", waitlistOrder,
       <div className="text-xs text-default-500">报名时间：{formatTime(signup?.createdAt)}</div>
 
       {/* 操作按钮 */}
-      {onDelete && canDelete && (
-        <div className="pt-2 border-t border-default-200">
-          <Button size="sm" color="danger" variant="flat" onPress={onDelete} fullWidth>
-            取消报名
-          </Button>
+      {(onEdit || onDelete) && canEdit && (
+        <div className="pt-2 border-t border-default-200 space-y-2">
+          {onEdit && canEdit && (
+            <>
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                onPress={onEdit}
+                fullWidth
+                isDisabled={!hasEditQuota}
+              >
+                {hasEditQuota ? "修改报名" : `已用${MAX_EDIT_COUNT}次`}
+              </Button>
+              {/* 编辑次数提示（仅对非管理员显示） */}
+              {!isAdmin && canEdit && remainingEdits <= 2 && remainingEdits > 0 && (
+                <div className="text-xs text-warning-500 text-center">剩余 {remainingEdits} 次修改机会</div>
+              )}
+            </>
+          )}
+          {onDelete && canDelete && (
+            <Button size="sm" color="danger" variant="flat" onPress={onDelete} fullWidth>
+              取消报名
+            </Button>
+          )}
         </div>
       )}
     </div>

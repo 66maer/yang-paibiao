@@ -12,9 +12,10 @@ import RuleTooltip from "./RuleTooltip";
  * @param {Object} rule - 坑位规则对象
  * @param {boolean} isAdmin - 是否是管理员
  * @param {Object} currentUser - 当前登录用户
+ * @param {Function} onEdit - 修改报名回调
  * @param {Function} onDelete - 删除报名回调
  */
-const SignupTooltip = ({ signup, rule, isAdmin, currentUser, onDelete }) => {
+const SignupTooltip = ({ signup, rule, isAdmin, currentUser, onEdit, onDelete }) => {
   const [copied, setCopied] = useState("");
   const xinfa = signup?.characterXinfa ? xinfaInfoTable[signup.characterXinfa] : null;
 
@@ -22,6 +23,15 @@ const SignupTooltip = ({ signup, rule, isAdmin, currentUser, onDelete }) => {
   // 管理员可以取消所有报名，或者报名人自己（submitterId 或 userId 是当前用户）可以取消
   const canDelete =
     isAdmin || (currentUser?.id && (currentUser.id === signup?.submitterId || currentUser.id === signup?.userId));
+
+  // 检查是否可以编辑报名（权限与取消报名相同）
+  const canEdit = canDelete;
+
+  // 编辑次数限制（非管理员每车最多3次）
+  const MAX_EDIT_COUNT = 3;
+  const currentEditCount = signup?.editCount || 0;
+  const remainingEdits = MAX_EDIT_COUNT - currentEditCount;
+  const hasEditQuota = isAdmin || remainingEdits > 0;
 
   // 复制QQ号
   const copyToClipboard = async (text, label) => {
@@ -106,13 +116,33 @@ const SignupTooltip = ({ signup, rule, isAdmin, currentUser, onDelete }) => {
       {/* 坑位规则信息 */}
       <RuleTooltip rule={rule} />
 
-      {/* 删除按钮 */}
-      {onDelete && canDelete && (
+      {/* 操作按钮 */}
+      {(onEdit || onDelete) && canEdit && (
         <>
           <Divider className="my-1" />
-          <Button size="sm" color="danger" variant="flat" onPress={onDelete} fullWidth className="mt-2">
-            取消报名
-          </Button>
+          <div className="flex gap-2 mt-2">
+            {onEdit && canEdit && (
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                onPress={onEdit}
+                className="flex-1"
+                isDisabled={!hasEditQuota}
+              >
+                {hasEditQuota ? "修改报名" : `已用${MAX_EDIT_COUNT}次`}
+              </Button>
+            )}
+            {onDelete && canDelete && (
+              <Button size="sm" color="danger" variant="flat" onPress={onDelete} className="flex-1">
+                取消报名
+              </Button>
+            )}
+          </div>
+          {/* 编辑次数提示（仅对非管理员显示） */}
+          {!isAdmin && canEdit && remainingEdits <= 2 && remainingEdits > 0 && (
+            <div className="text-xs text-warning-500 text-center mt-1">剩余 {remainingEdits} 次修改机会</div>
+          )}
         </>
       )}
     </div>

@@ -5,6 +5,7 @@ import useAuthStore from "@/stores/authStore";
 import SignupItemCard from "./SignupItemCard";
 import SignupModal from "./SignupModal";
 import ProxySignupModal from "./ProxySignupModal";
+import EditSignupModal from "./EditSignupModal";
 import { getSignups, cancelSignup } from "@/api/signups";
 import { getTeamDetail } from "@/api/teams";
 import { buildEmptyRules } from "@/utils/slotAllocation";
@@ -20,6 +21,8 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh, onUpdateTeam 
   const { user } = useAuthStore();
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showProxyModal, setShowProxyModal] = useState(false);
+  const [editSignupModalOpen, setEditSignupModalOpen] = useState(false);
+  const [editingSignup, setEditingSignup] = useState(null);
 
   // 使用 SWR 加载报名数据
   const { data: signupsData, mutate: reloadSignups } = useSWR(
@@ -116,6 +119,38 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh, onUpdateTeam 
       console.error("取消候补失败:", error);
       alert(error.response?.data?.message || "取消候补失败，请重试");
     }
+  };
+
+  /**
+   * 处理编辑报名
+   */
+  const handleEditSignup = (signup) => {
+    setEditingSignup(signup);
+    setEditSignupModalOpen(true);
+  };
+
+  /**
+   * 编辑报名成功后的回调
+   */
+  const handleEditSignupSuccess = async () => {
+    setEditSignupModalOpen(false);
+    setEditingSignup(null);
+    // 并行刷新报名数据和团队数据
+    await Promise.all([
+      reloadSignups(), // 刷新报名数据
+      (async () => {
+        // 刷新团队数据（排表和候补列表）
+        if (team && onUpdateTeam) {
+          try {
+            const response = await getTeamDetail(team.guild_id, team.id);
+            const updatedTeam = response.data || response;
+            onUpdateTeam(updatedTeam);
+          } catch (error) {
+            console.error("刷新团队数据失败:", error);
+          }
+        }
+      })(),
+    ]);
   };
 
   /**
@@ -226,6 +261,7 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh, onUpdateTeam 
                         type="signup"
                         isAdmin={isAdmin}
                         currentUser={user}
+                        onEdit={() => handleEditSignup(mySignup)}
                         onDelete={() => handleDeleteSignup(mySignup)}
                       />
                     </div>
@@ -243,6 +279,7 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh, onUpdateTeam 
                             type="signup"
                             isAdmin={isAdmin}
                             currentUser={user}
+                            onEdit={() => handleEditSignup(signup)}
                             onDelete={() => handleDeleteSignup(signup)}
                           />
                         ))}
@@ -277,6 +314,7 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh, onUpdateTeam 
                       waitlistOrder={item.waitlist_order || index + 1}
                       isAdmin={isAdmin}
                       currentUser={user}
+                      onEdit={() => handleEditSignup(item)}
                       onDelete={() => handleRemoveWaitlist(item)}
                     />
                   ))}
@@ -305,6 +343,20 @@ export default function TeamRightPanel({ team, isAdmin, onRefresh, onUpdateTeam 
         team={team}
         user={user}
         onSuccess={handleSignupSuccess}
+      />
+
+      <EditSignupModal
+        isOpen={editSignupModalOpen}
+        onClose={() => {
+          setEditSignupModalOpen(false);
+          setEditingSignup(null);
+        }}
+        guildId={team?.guild_id}
+        teamId={team?.id}
+        signup={editingSignup}
+        user={user}
+        isAdmin={isAdmin}
+        onSuccess={handleEditSignupSuccess}
       />
     </Card>
   );

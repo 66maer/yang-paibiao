@@ -390,6 +390,18 @@ async def update_signup(
     if not (is_submitter or is_admin):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="权限不足")
     
+    # 编辑次数限制检查：非管理员每车最多编辑3次
+    MAX_EDIT_COUNT = 3
+    if not is_admin and signup.edit_count >= MAX_EDIT_COUNT:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail=f"已达到修改次数上限（{MAX_EDIT_COUNT}次），无法继续修改"
+        )
+    
+    # 非管理员编辑时增加编辑计数
+    if not is_admin:
+        signup.edit_count = (signup.edit_count or 0) + 1
+    
     # 更新字段
     if payload.signup_user_id is not None:
         signup.signup_user_id = payload.signup_user_id

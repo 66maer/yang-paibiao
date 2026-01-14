@@ -41,6 +41,7 @@ import { buildEmptyRules } from "@/utils/slotAllocation";
 import { transformSignups } from "@/utils/signupTransform";
 import useAuthStore from "@/stores/authStore";
 import GoldRecordModal from "./GoldRecordModal";
+import EditSignupModal from "./EditSignupModal";
 import TeamLogs from "./TeamLogs";
 
 /**
@@ -49,6 +50,8 @@ import TeamLogs from "./TeamLogs";
 export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdateTeam }) {
   const [boardMode, setBoardMode] = useState("view");
   const [goldRecordModalOpen, setGoldRecordModalOpen] = useState(false);
+  const [editSignupModalOpen, setEditSignupModalOpen] = useState(false);
+  const [editingSignup, setEditingSignup] = useState(null);
   const [recommendationModalOpen, setRecommendationModalOpen] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
@@ -347,6 +350,20 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
     }
   };
 
+  // 编辑报名
+  const handleSignupEdit = (signup) => {
+    setEditingSignup(signup);
+    setEditSignupModalOpen(true);
+  };
+
+  // 编辑报名成功回调
+  const handleEditSignupSuccess = async () => {
+    setEditSignupModalOpen(false);
+    setEditingSignup(null);
+    await mutateSignups(); // 刷新报名列表
+    onRefresh?.(); // 刷新团队数据
+  };
+
   // 召唤单个成员
   const handleCallMember = async (signup) => {
     if (!signup?.playerQqNumber) {
@@ -540,6 +557,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
                 onAssignDelete={handleAssignDelete}
                 onPresenceChange={handlePresenceChange}
                 onSwapSlots={handleSwapSlots}
+                onSignupEdit={handleSignupEdit}
                 onSignupDelete={handleSignupDelete}
                 onCallMember={handleCallMember}
               />
@@ -570,6 +588,21 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
         team={team}
         guildId={team?.guild_id}
         onSuccess={handleGoldRecordSuccess}
+      />
+
+      {/* 编辑报名弹窗 */}
+      <EditSignupModal
+        isOpen={editSignupModalOpen}
+        onClose={() => {
+          setEditSignupModalOpen(false);
+          setEditingSignup(null);
+        }}
+        guildId={team?.guild_id}
+        teamId={team?.id}
+        signup={editingSignup}
+        user={user}
+        isAdmin={isAdmin}
+        onSuccess={handleEditSignupSuccess}
       />
 
       {/* 黑本推荐弹窗 */}

@@ -68,6 +68,7 @@ class SignupOut(BaseModel):
     presence_status: Optional[str] = Field(default=None, description="到场状态: ready(就绪)/absent(缺席)/null(空)")
     cancelled_at: Optional[datetime] = None
     cancelled_by: Optional[int] = None
+    edit_count: int = Field(default=0, description="编辑次数")
     created_at: datetime
     updated_at: Optional[datetime] = None
     # 分配结果（可选，由API填充）

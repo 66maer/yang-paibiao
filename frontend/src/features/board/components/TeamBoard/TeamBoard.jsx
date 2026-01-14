@@ -42,6 +42,7 @@ const TeamBoard = ({
   onSwapSlots, // 新增：交换坑位回调
   onReorder, // 保留旧接口兼容
   onSlotClick,
+  onSignupEdit, // 编辑报名回调
   onSignupDelete, // 删除报名回调
   onCallMember, // 召唤成员回调
 }) => {
@@ -192,6 +193,7 @@ const TeamBoard = ({
           onAssignDelete={onAssignDelete}
           onPresenceChange={onPresenceChange}
           onSlotClick={onSlotClick}
+          onSignupEdit={onSignupEdit}
           onSignupDelete={onSignupDelete}
           onCallMember={onCallMember}
         />
@@ -252,6 +254,7 @@ const TeamBoard = ({
             onAssignDelete={onAssignDelete}
             onPresenceChange={onPresenceChange}
             onSlotClick={onSlotClick}
+            onSignupEdit={onSignupEdit}
             onSignupDelete={onSignupDelete}
             onCallMember={onCallMember}
           />

@@ -34,6 +34,7 @@ const SlotCard = ({
   onAssignDelete,
   onPresenceChange,
   onSlotClick,
+  onSignupEdit, // 编辑报名回调
   onSignupDelete, // 删除报名回调
   onCallMember, // 召唤成员回调
 }) => {
@@ -131,7 +132,14 @@ const SlotCard = ({
       rule={rule}
       isAdmin={isAdmin}
       currentUser={currentUser}
-      onDelete={() => onSignupDelete?.(signup)}
+      onEdit={() => {
+        setIsPopoverOpen(false); // 关闭 popover
+        onSignupEdit?.(signup);
+      }}
+      onDelete={() => {
+        setIsPopoverOpen(false); // 关闭 popover
+        onSignupDelete?.(signup);
+      }}
     />
   ) : (
     <RuleTooltip rule={rule} />

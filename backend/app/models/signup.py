@@ -82,6 +82,12 @@ class Signup(Base):
         nullable=True,
         comment="取消者用户ID"
     )
+    edit_count = Column(
+        Integer,
+        default=0,
+        nullable=False,
+        comment="编辑次数（用于限制普通用户修改次数）"
+    )
     created_at = Column(
         DateTime,
         default=datetime.utcnow,
