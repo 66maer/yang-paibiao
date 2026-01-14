@@ -57,11 +57,24 @@ export default function EditSignupModal({ isOpen, onClose, guildId, teamId, sign
     }
   }, [isOpen, signup]);
 
-  // 处理角色卡片选择
+  // 处理角色卡片选择（从列表选择角色）
   const handleRoleSelect = (name, xinfaKey, charId) => {
     setCharacterName(name);
     setXinfa(xinfaKey);
     setCharacterId(charId || null);
+  };
+
+  // 处理直接输入角色名（非从列表选择）
+  const handleCharacterNameChange = (newName) => {
+    setCharacterName(newName);
+    // 如果输入的名字不是当前选中角色的名字，则清空 characterId
+    // 这样可以避免后端用旧角色的名字覆盖用户输入的新名字
+    if (characterId) {
+      const selectedChar = characters.find((c) => c.id === characterId);
+      if (!selectedChar || selectedChar.name !== newName) {
+        setCharacterId(null);
+      }
+    }
   };
 
   const handleSubmit = async () => {
@@ -155,7 +168,7 @@ export default function EditSignupModal({ isOpen, onClose, guildId, teamId, sign
               <MemberRoleSelector
                 memberId={user?.id}
                 value={characterName}
-                onChange={setCharacterName}
+                onChange={handleCharacterNameChange}
                 onRoleSelect={handleRoleSelect}
                 label="角色名称"
                 placeholder="选择或输入角色名..."

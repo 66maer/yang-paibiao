@@ -180,6 +180,7 @@ async def _enrich_signup_response(
         "presence_status": signup.presence_status,
         "cancelled_at": signup.cancelled_at,
         "cancelled_by": signup.cancelled_by,
+        "edit_count": signup.edit_count or 0,
         "created_at": signup.created_at,
         "updated_at": signup.updated_at
     }
@@ -406,7 +407,9 @@ async def update_signup(
     if payload.signup_user_id is not None:
         signup.signup_user_id = payload.signup_user_id
     
-    if payload.signup_character_id is not None:
+    # 处理 signup_character_id：显式传递 null 时清空
+    # 使用特殊判断：如果 payload 中显式传递了 signup_character_id（即使是 None），则更新
+    if "signup_character_id" in (payload.model_dump(exclude_unset=True) if hasattr(payload, 'model_dump') else payload.dict(exclude_unset=True)):
         signup.signup_character_id = payload.signup_character_id
     
     if payload.is_rich is not None:
@@ -427,6 +430,13 @@ async def update_signup(
         signup.signup_user_id != current_user.id
     )
     
+    # 先flush以保存signup的修改，但不commit
+    await db.flush()
+    
+    # 修改后重新排坑（心法可能改变，需要重新匹配坑位规则）
+    await SlotAllocationService.reallocate(db, team_id)
+    
+    # 排坑完成后再commit，这样team的slot_assignments更新也会被保存
     await db.commit()
     await db.refresh(signup)
 
