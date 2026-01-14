@@ -8,8 +8,9 @@ import { getDungeonOptions } from "@/api/configs";
  * @param {function} onDungeonChange - 副本变化回调
  * @param {function} onCreateClick - 新增按钮点击回调
  * @param {function} onDungeonsLoaded - 副本列表加载完成回调
+ * @param {boolean} isAdmin - 是否是管理员（群主或helper）
  */
-export default function GoldRecordToolbar({ selectedDungeon, onDungeonChange, onCreateClick, onDungeonsLoaded }) {
+export default function GoldRecordToolbar({ selectedDungeon, onDungeonChange, onCreateClick, onDungeonsLoaded, isAdmin }) {
   const [dungeons, setDungeons] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -74,10 +75,12 @@ export default function GoldRecordToolbar({ selectedDungeon, onDungeonChange, on
             </Select>
           </div>
 
-          {/* 新增按钮 */}
-          <Button color="primary" className="bg-gradient-to-r from-pink-500 to-purple-500" onPress={onCreateClick}>
-            新增金团记录
-          </Button>
+          {/* 新增按钮 - 仅群主和管理员可见 */}
+          {isAdmin && (
+            <Button color="primary" className="bg-gradient-to-r from-pink-500 to-purple-500" onPress={onCreateClick}>
+              新增金团记录
+            </Button>
+          )}
         </div>
       </CardBody>
     </Card>

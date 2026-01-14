@@ -195,6 +195,7 @@ export default function GoldRecordsPage() {
             onDungeonChange={setSelectedDungeon}
             onCreateClick={handleCreate}
             onDungeonsLoaded={handleDungeonsLoaded}
+            isAdmin={isAdmin}
           />
 
           {/* 只有选中副本时才显示内容 */}
