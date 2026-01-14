@@ -235,7 +235,7 @@ async def list_gold_records(
     db: AsyncSession = Depends(get_db)
 ):
     """获取金团记录列表"""
-    # 验证权限：群主或管理员
+    # 验证权限：所有群组成员都可以查看
     gm_result = await db.execute(
         select(GuildMember).where(
             GuildMember.guild_id == guild_id,
@@ -244,7 +244,8 @@ async def list_gold_records(
         )
     )
     gm = gm_result.scalar_one_or_none()
-    _ensure_member_with_role(gm, roles=["owner", "helper"])
+    if gm is None or gm.left_at is not None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="非该群组成员")
 
     # 构建查询条件
     conditions = [
@@ -291,7 +292,7 @@ async def get_gold_record(
     db: AsyncSession = Depends(get_db)
 ):
     """获取金团记录详情"""
-    # 验证权限：群主或管理员
+    # 验证权限：所有群组成员都可以查看
     gm_result = await db.execute(
         select(GuildMember).where(
             GuildMember.guild_id == guild_id,
@@ -300,7 +301,8 @@ async def get_gold_record(
         )
     )
     gm = gm_result.scalar_one_or_none()
-    _ensure_member_with_role(gm, roles=["owner", "helper"])
+    if gm is None or gm.left_at is not None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="非该群组成员")
 
     # 查询金团记录
     result = await db.execute(
@@ -470,7 +472,7 @@ async def get_gold_record_by_team(
     db: AsyncSession = Depends(get_db)
 ):
     """通过开团ID获取金团记录"""
-    # 验证权限：群主或管理员
+    # 验证权限：所有群组成员都可以查看
     gm_result = await db.execute(
         select(GuildMember).where(
             GuildMember.guild_id == guild_id,
@@ -479,7 +481,8 @@ async def get_gold_record_by_team(
         )
     )
     gm = gm_result.scalar_one_or_none()
-    _ensure_member_with_role(gm, roles=["owner", "helper"])
+    if gm is None or gm.left_at is not None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="非该群组成员")
 
     # 验证团队存在
     team_result = await db.execute(
