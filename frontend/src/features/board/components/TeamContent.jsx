@@ -761,7 +761,7 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
                                 }
                               >
                                 <Chip size="sm" color="danger" variant="flat" className="cursor-help">
-                                  {rec.teams_since_last_participation}车未跟
+                                  参与度不足（{rec.teams_since_last_participation}）
                                 </Chip>
                               </Tooltip>
                             )}
