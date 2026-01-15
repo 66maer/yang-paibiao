@@ -147,6 +147,19 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
     return Math.log(1 + Math.exp(0.05 * (x - 33))) + 0.83;
   };
 
+  // 计算参与度惩罚系数（用于惩罚长期不跟车的用户）
+  const getParticipationCoefficient = (teamsSinceLastParticipation) => {
+    if (
+      teamsSinceLastParticipation === null ||
+      teamsSinceLastParticipation === undefined ||
+      teamsSinceLastParticipation === 0
+    )
+      return 1.0;
+    const x = teamsSinceLastParticipation;
+    const modifier = 1 / (1 + Math.exp(0.1 * (x - 50)));
+    return Math.max(modifier, 0.1);
+  };
+
   // 处理黑本推荐
   const handleHeibenRecommendation = async () => {
     if (!signupList || signupList.length === 0) {
@@ -681,10 +694,12 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
                               <div>红黑分：{Number(rec.rank_score).toFixed(2)}</div>
                               <div>频次系数：{getFrequencyCoefficient(rec.heibenren_count).toFixed(2)}</div>
                               <div>时间系数：{getTimeCoefficient(rec.cars_since_last).toFixed(2)}</div>
+                              <div>参与度系数：{Number(rec.participation_modifier || 1).toFixed(2)}</div>
                               <div className="pt-1 border-t border-gray-300">
                                 = {Number(rec.rank_score).toFixed(2)} ×{" "}
                                 {getFrequencyCoefficient(rec.heibenren_count).toFixed(2)} ×{" "}
-                                {getTimeCoefficient(rec.cars_since_last).toFixed(2)}
+                                {getTimeCoefficient(rec.cars_since_last).toFixed(2)} ×{" "}
+                                {Number(rec.participation_modifier || 1).toFixed(2)}
                               </div>
                               <div className="font-bold">= {Number(rec.recommendation_score).toFixed(2)}</div>
                             </div>
@@ -696,23 +711,61 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
                         </Tooltip>
                       </TableCell>
                       <TableCell>
-                        {rec.is_new ? (
-                          <Tooltip content="无黑本记录，×4.00">
-                            <Chip size="sm" color="primary" variant="flat" className="cursor-help">
-                              NEW
-                            </Chip>
-                          </Tooltip>
-                        ) : rec.cars_since_last !== null && rec.cars_since_last > 0 ? (
-                          <Tooltip content={`×${getTimeCoefficient(rec.cars_since_last).toFixed(2)}`}>
-                            <Chip size="sm" color="warning" variant="flat" className="cursor-help">
-                              {rec.cars_since_last}车未黑
-                            </Chip>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip content={`上车刚黑 ×${getTimeCoefficient(rec.cars_since_last).toFixed(2)}`}>
-                            <span className="text-gray-400 cursor-help">—</span>
-                          </Tooltip>
-                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {rec.is_new ? (
+                            <Tooltip content="无黑本记录，×4.00">
+                              <Chip size="sm" color="primary" variant="flat" className="cursor-help">
+                                NEW
+                              </Chip>
+                            </Tooltip>
+                          ) : rec.cars_since_last !== null && rec.cars_since_last > 0 ? (
+                            <Tooltip content={`×${getTimeCoefficient(rec.cars_since_last).toFixed(2)}`}>
+                              <Chip size="sm" color="warning" variant="flat" className="cursor-help">
+                                {rec.cars_since_last}车未黑
+                              </Chip>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip content={`上车刚黑 ×${getTimeCoefficient(rec.cars_since_last).toFixed(2)}`}>
+                              <span className="text-gray-400 cursor-help">—</span>
+                            </Tooltip>
+                          )}
+                          {rec.participation_modifier !== null &&
+                            rec.participation_modifier !== undefined &&
+                            Number(rec.participation_modifier) < 1 && (
+                              <Tooltip
+                                content={
+                                  <div className="space-y-1 p-1">
+                                    <div className="font-semibold">参与度惩罚详情：</div>
+                                    {rec.recent_3_participations && rec.recent_3_participations.length > 0 ? (
+                                      <>
+                                        <div>最近3次跟车：</div>
+                                        {rec.recent_3_participations.map((carsAgo, idx) => (
+                                          <div key={idx} className="ml-2">
+                                            第{idx + 1}次：距今{carsAgo}车
+                                          </div>
+                                        ))}
+                                        <div className="pt-1 border-t border-gray-300">
+                                          基于最近3次（{rec.teams_since_last_participation}车前）计算
+                                        </div>
+                                        <div className="font-bold">
+                                          惩罚系数：×{Number(rec.participation_modifier).toFixed(2)}
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <div>
+                                        倒数第3次跟车距今{rec.teams_since_last_participation}车，×
+                                        {Number(rec.participation_modifier).toFixed(2)}
+                                      </div>
+                                    )}
+                                  </div>
+                                }
+                              >
+                                <Chip size="sm" color="danger" variant="flat" className="cursor-help">
+                                  {rec.teams_since_last_participation}车未跟
+                                </Chip>
+                              </Tooltip>
+                            )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -722,9 +775,13 @@ export default function TeamContent({ team, isAdmin, onEdit, onRefresh, onUpdate
             <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
               <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
                 <div className="font-semibold">计算说明：</div>
-                <div>• 推荐分 = 红黑分 × 频次修正系数 × 时间修正系数</div>
+                <div>• 推荐分 = 红黑分 × 频次修正系数 × 时间修正系数 × 参与度惩罚系数</div>
                 <div>• 频次修正系数：1次(1.25) → 2次(1.1) → 3次(1.05) → 4次及以上(1.0)</div>
                 <div>• 时间修正系数：ln(1 + e^(0.05(x-33))) + 0.83，其中 x 为距离上次黑本的车次数</div>
+                <div>
+                  • 参与度惩罚系数：以倒数第三次跟车的车次差 x 计算
+                  1/(1+e^(0.1(x-50)))，&gt;0.9置为1，&lt;0.1置为0.1，不足3次为0.1
+                </div>
                 <div>• NEW：无黑本记录的用户，使用平均红黑分 × 4</div>
               </div>
             </div>

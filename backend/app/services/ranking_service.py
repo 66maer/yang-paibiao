@@ -11,6 +11,8 @@ from sqlalchemy import select, and_, or_, func
 from app.models.gold_record import GoldRecord
 from app.models.ranking_snapshot import RankingSnapshot
 from app.models.season_correction_factor import SeasonCorrectionFactor
+from app.models.signup import Signup
+from app.models.team import Team
 
 
 class RankingService:
@@ -442,6 +444,87 @@ class RankingService:
         modifier = math.log(1 + exp_term) + 0.83
         return Decimal(str(round(modifier, 4)))
 
+    async def calculate_participation_penalty(
+        self,
+        guild_id: int,
+        user_id: int
+    ) -> tuple[Decimal, int, List[Dict]]:
+        """
+        计算参与度惩罚系数（用于惩罚长期不跟车的用户）
+        
+        规则：
+        - 找到用户倒数第三次跟车的记录
+        - 计算该记录距离最新开团的车次差 x
+        - 使用公式：1/(1+e^(0.1(x-50))) 计算
+        - 结果 > 0.9 置为 1，< 0.1 置为 0.1
+        - 跟车次数不足3次，直接返回 0.1
+
+        Args:
+            guild_id: 群组ID
+            user_id: 用户ID
+
+        Returns:
+            (参与度惩罚系数, 倒数第三次跟车距今的车次差, 最近3次跟车详情)
+        """
+        # 获取该群组所有开团列表（按时间倒序）
+        recent_teams_result = await self.db.execute(
+            select(Team.id)
+            .where(
+                and_(
+                    Team.guild_id == guild_id,
+                    Team.status.in_(["open", "completed"])  # 只看有效的开团
+                )
+            )
+            .order_by(Team.team_time.desc())
+            .limit(100)  # 取足够多的开团用于计算
+        )
+        recent_team_ids = [row[0] for row in recent_teams_result.all()]
+
+        if not recent_team_ids:
+            # 没有开团记录，返回系数1
+            return Decimal("1.0"), 0, []
+
+        # 查询该用户在这些开团中的报名记录（未取消的）
+        signups_result = await self.db.execute(
+            select(Signup.team_id)
+            .where(
+                and_(
+                    Signup.team_id.in_(recent_team_ids),
+                    Signup.signup_user_id == user_id,
+                    Signup.cancelled_at.is_(None)  # 未取消
+                )
+            )
+        )
+        participated_team_ids = set(row[0] for row in signups_result.all())
+
+        # 找到用户跟车的记录（按开团时间倒序排列）
+        user_participations = []
+        for idx, team_id in enumerate(recent_team_ids):
+            if team_id in participated_team_ids:
+                user_participations.append(idx)  # idx 就是距离最新开团的车次差
+
+        # 收集最近3次跟车的车次差（只需要车次，不需要系数）
+        recent_3_participations = [cars_ago for cars_ago in user_participations[:3]]
+
+        # 跟车次数不足3次，直接返回 0.1
+        if len(user_participations) < 3:
+            return Decimal("0.1"), len(recent_team_ids) if not user_participations else user_participations[-1], recent_3_participations
+
+        # 取倒数第三次跟车距今的车次差
+        x = user_participations[2]  # 第三次跟车（索引2）
+
+        # 使用公式计算：1/(1+e^(0.1(x-50)))
+        exp_term = math.exp(0.1 * (x - 50))
+        modifier = 1 / (1 + exp_term)
+        
+        # 结果 > 0.9 置为 1，< 0.1 置为 0.1
+        if modifier > 0.9:
+            modifier = 1.0
+        elif modifier < 0.1:
+            modifier = 0.1
+        
+        return Decimal(str(round(modifier, 4))), x, recent_3_participations
+
     async def calculate_heibenren_recommendations(
         self,
         guild_id: int,
@@ -478,12 +561,18 @@ class RankingService:
         for user_id in valid_user_ids:
             ranking_data = ranking_map.get(user_id)
 
+            # 计算参与度惩罚系数（对所有用户都计算）
+            participation_modifier, teams_since_last_participation, recent_3_participations = await self.calculate_participation_penalty(
+                guild_id, user_id
+            )
+
             if ranking_data is None:
                 # 无黑本记录的用户，使用平均红黑分的4倍
                 rank_score = average_rank_score * Decimal("4")
                 frequency_modifier = Decimal("1.0")
                 time_modifier = Decimal("1.0")
-                recommendation_score = rank_score
+                # 推荐分 = 红黑分 × 参与度惩罚系数
+                recommendation_score = rank_score * participation_modifier
 
                 recommendations.append({
                     "user_id": user_id,
@@ -491,6 +580,9 @@ class RankingService:
                     "heibenren_count": 0,
                     "frequency_modifier": frequency_modifier,
                     "time_modifier": time_modifier,
+                    "participation_modifier": participation_modifier,
+                    "teams_since_last_participation": teams_since_last_participation if participation_modifier < Decimal("1.0") else None,
+                    "recent_3_participations": recent_3_participations,
                     "recommendation_score": recommendation_score,
                     "last_heibenren_date": None,
                     "cars_since_last": None,
@@ -531,8 +623,8 @@ class RankingService:
                 # 计算时间修正系数
                 time_modifier = self.calculate_time_modifier(cars_since_last)
 
-                # 计算推荐分
-                recommendation_score = rank_score * frequency_modifier * time_modifier
+                # 计算推荐分 = 红黑分 × 频次修正系数 × 时间修正系数 × 参与度惩罚系数
+                recommendation_score = rank_score * frequency_modifier * time_modifier * participation_modifier
 
                 recommendations.append({
                     "user_id": user_id,
@@ -540,6 +632,9 @@ class RankingService:
                     "heibenren_count": heibenren_count,
                     "frequency_modifier": frequency_modifier,
                     "time_modifier": time_modifier,
+                    "participation_modifier": participation_modifier,
+                    "teams_since_last_participation": teams_since_last_participation if participation_modifier < Decimal("1.0") else None,
+                    "recent_3_participations": recent_3_participations,
                     "recommendation_score": recommendation_score,
                     "last_heibenren_date": ranking_data.get("last_heibenren_date"),
                     "cars_since_last": cars_since_last,
