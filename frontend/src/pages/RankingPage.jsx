@@ -65,7 +65,7 @@ export default function RankingPage() {
     // 计算分数变化（正数表示增加）
     const scoreChange = Number(score_change_value) || 0;
     const hasScoreChange = Math.abs(scoreChange) >= 0.01;
-    const hasRankChange = rank_change_value > 0;
+    const hasRankChange = prev_rank !== null && prev_rank !== undefined && prev_rank !== item.rank_position;
 
     if (!hasScoreChange && !hasRankChange) {
       return <span className="text-gray-400">—</span>;
@@ -73,12 +73,8 @@ export default function RankingPage() {
 
     const tooltipContent = (
       <div className="space-y-1 text-xs">
-        {prev_rank !== null && prev_rank !== undefined && (
-          <div>上次排名: #{prev_rank}</div>
-        )}
-        {prev_score !== null && prev_score !== undefined && (
-          <div>上次分数: {Number(prev_score).toFixed(2)}</div>
-        )}
+        {prev_rank !== null && prev_rank !== undefined && <div>上次排名: #{prev_rank}</div>}
+        {prev_score !== null && prev_score !== undefined && <div>上次分数: {Number(prev_score).toFixed(2)}</div>}
       </div>
     );
 
@@ -87,15 +83,22 @@ export default function RankingPage() {
         <div className="flex flex-col gap-0.5 cursor-help">
           {/* 分数变化 */}
           {hasScoreChange && (
-            <span className={`font-medium flex items-center gap-0.5 text-sm ${scoreChange > 0 ? "text-red-500" : "text-green-500"}`}>
-              <span>{scoreChange > 0 ? "+" : ""}{scoreChange.toFixed(2)}</span>
+            <span
+              className={`font-medium flex items-center gap-0.5 text-sm ${scoreChange > 0 ? "text-red-500" : "text-green-500"}`}
+            >
+              <span>
+                {scoreChange > 0 ? "+" : ""}
+                {scoreChange.toFixed(2)}
+              </span>
             </span>
           )}
           {/* 排名变化 */}
           {hasRankChange && (
-            <span className={`font-medium flex items-center gap-0.5 text-xs ${rank_change === "up" ? "text-red-400" : "text-green-400"}`}>
-              <span>{rank_change === "up" ? "↑" : "↓"}</span>
-              <span>{rank_change_value}</span>
+            <span
+              className={`font-medium flex items-center gap-0.5 text-xs ${rank_change === "up" ? "text-red-400" : "text-green-400"}`}
+            >
+              <span>{item.rank_position < prev_rank ? "↑" : "↓"}</span>
+              <span>{Math.abs(prev_rank - item.rank_position)}</span>
             </span>
           )}
         </div>
