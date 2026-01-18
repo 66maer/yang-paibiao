@@ -60,14 +60,14 @@ export default function RankingPage() {
       );
     } else if (change === "up") {
       return (
-        <span className="text-green-500 font-medium flex items-center gap-1">
+        <span className="text-red-500 font-medium flex items-center gap-1">
           <span>↑</span>
           <span>{value}</span>
         </span>
       );
     } else if (change === "down") {
       return (
-        <span className="text-red-500 font-medium flex items-center gap-1">
+        <span className="text-green-500 font-medium flex items-center gap-1">
           <span>↓</span>
           <span>{value}</span>
         </span>
@@ -224,8 +224,8 @@ export default function RankingPage() {
                               item.rank_position === 1
                                 ? "text-yellow-500"
                                 : item.rank_position === 2
-                                ? "text-gray-400"
-                                : "text-orange-600"
+                                  ? "text-gray-400"
+                                  : "text-orange-600"
                             }
                           >
                             #{item.rank_position}
@@ -254,7 +254,7 @@ export default function RankingPage() {
                       {formatLastHeibenren(
                         item.last_heibenren_date,
                         item.last_heibenren_car_number,
-                        item.last_heibenren_days_ago
+                        item.last_heibenren_days_ago,
                       )}
                     </TableCell>
                     <TableCell>{renderChangeIndicator(item.rank_change, item.rank_change_value)}</TableCell>
@@ -448,7 +448,7 @@ export default function RankingPage() {
                     Rank分 = (
                     {Number(
                       selectedUserDetail.detail.weighted_average_gold ||
-                        selectedUserDetail.detail.corrected_average_gold
+                        selectedUserDetail.detail.corrected_average_gold,
                     ).toFixed(2)}{" "}
                     ÷ 5000) × {Number(selectedUserDetail.detail.rank_modifier).toFixed(4)} ={" "}
                     {Number(selectedUserDetail.detail.rank_score).toFixed(2)}
