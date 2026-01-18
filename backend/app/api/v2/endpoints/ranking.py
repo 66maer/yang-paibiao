@@ -114,7 +114,13 @@ async def get_guild_ranking(
             continue
 
         gm_member = gm_map.get(user_id)
-        change_info = changes.get(user_id, {"change": "new", "value": 0})
+        change_info = changes.get(user_id, {
+            "change": "new",
+            "rank_change_value": 0,
+            "score_change_value": 0,
+            "prev_rank": None,
+            "prev_score": None
+        })
 
         # 计算距离最近一次黑本的天数
         days_ago = None
@@ -134,7 +140,10 @@ async def get_guild_ranking(
             last_heibenren_car_number=ranking["last_heibenren_car_number"],
             last_heibenren_days_ago=days_ago,
             rank_change=change_info["change"],
-            rank_change_value=change_info["value"],
+            rank_change_value=change_info["rank_change_value"],
+            score_change_value=change_info["score_change_value"],
+            prev_rank=change_info["prev_rank"],
+            prev_score=change_info["prev_score"],
             calculation_detail=ranking.get("calculation_detail")
         ))
 

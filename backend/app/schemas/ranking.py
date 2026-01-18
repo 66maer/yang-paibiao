@@ -48,6 +48,9 @@ class RankingItemOut(BaseModel):
     last_heibenren_days_ago: Optional[int] = Field(None, description="距离最近一次黑本的天数")
     rank_change: str = Field(..., description="排名变化: up/down/same/new")
     rank_change_value: int = Field(0, description="排名变化值（正数表示上升）")
+    score_change_value: Decimal = Field(Decimal("0"), description="分数变化值（与自己上次相比）")
+    prev_rank: Optional[int] = Field(None, description="上一次的排名位置")
+    prev_score: Optional[Decimal] = Field(None, description="上一次的Rank分数")
     calculation_detail: Optional[RankingCalculationDetail] = Field(None, description="计算详情")
 
 

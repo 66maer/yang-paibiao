@@ -271,20 +271,80 @@ class RankingService:
         rankings: List[Dict]
     ) -> None:
         """
-        保存排名快照
+        保存排名快照，并计算每个用户的变化值
 
         Args:
             guild_id: 群组ID
             rankings: 排名数据列表
         """
         snapshot_date = datetime.utcnow()
+        user_ids = [r["user_id"] for r in rankings]
+
+        # 获取每个用户的上一次快照（用于计算变化）
+        from sqlalchemy import func as sql_func
+
+        subquery = (
+            select(
+                RankingSnapshot.user_id,
+                sql_func.max(RankingSnapshot.snapshot_date).label("max_date")
+            )
+            .where(
+                and_(
+                    RankingSnapshot.guild_id == guild_id,
+                    RankingSnapshot.user_id.in_(user_ids)
+                )
+            )
+            .group_by(RankingSnapshot.user_id)
+            .subquery()
+        )
+
+        result = await self.db.execute(
+            select(RankingSnapshot)
+            .join(
+                subquery,
+                and_(
+                    RankingSnapshot.user_id == subquery.c.user_id,
+                    RankingSnapshot.snapshot_date == subquery.c.max_date
+                )
+            )
+            .where(RankingSnapshot.guild_id == guild_id)
+        )
+        last_snapshots = {s.user_id: s for s in result.scalars().all()}
 
         for ranking in rankings:
+            user_id = ranking["user_id"]
+            current_score = ranking["rank_score"]
+            current_rank = ranking["rank_position"]
+
+            last_snapshot = last_snapshots.get(user_id)
+
+            if last_snapshot is None:
+                # 新用户，无变化
+                prev_score = None
+                prev_rank = None
+                score_change = Decimal("0")
+                rank_change_value = 0
+            else:
+                last_score = last_snapshot.rank_score
+                # 判断分数是否变化（允许小误差）
+                if abs(float(current_score) - float(last_score)) >= 0.01:
+                    # 分数变了，记录与上一次的变化
+                    prev_score = last_score
+                    prev_rank = last_snapshot.rank_position
+                    score_change = current_score - last_score
+                    rank_change_value = last_snapshot.rank_position - current_rank
+                else:
+                    # 分数没变，复制上一次的变化值
+                    prev_score = last_snapshot.prev_score
+                    prev_rank = last_snapshot.prev_rank
+                    score_change = last_snapshot.score_change or Decimal("0")
+                    rank_change_value = last_snapshot.rank_change_value or 0
+
             snapshot = RankingSnapshot(
                 guild_id=guild_id,
-                user_id=ranking["user_id"],
-                rank_position=ranking["rank_position"],
-                rank_score=ranking["rank_score"],
+                user_id=user_id,
+                rank_position=current_rank,
+                rank_score=current_score,
                 heibenren_count=ranking["heibenren_count"],
                 total_gold=ranking["total_gold"],
                 average_gold=ranking["average_gold"],
@@ -292,6 +352,10 @@ class RankingService:
                 last_heibenren_date=ranking["last_heibenren_date"],
                 last_heibenren_car_number=ranking["last_heibenren_car_number"],
                 snapshot_date=snapshot_date,
+                prev_score=prev_score,
+                prev_rank=prev_rank,
+                score_change=score_change,
+                rank_change_value=rank_change_value,
             )
             self.db.add(snapshot)
 
@@ -303,7 +367,7 @@ class RankingService:
         current_rankings: List[Dict]
     ) -> Dict[int, Dict]:
         """
-        获取排名变化信息（与上一次快照比较）
+        获取排名变化信息（从最新快照读取预计算的变化字段）
 
         Args:
             guild_id: 群组ID
@@ -311,71 +375,82 @@ class RankingService:
 
         Returns:
             用户ID -> 变化信息的映射
+            变化信息包含：
+            - change: "up"/"down"/"same"/"new"
+            - rank_change_value: 排名变化值
+            - score_change_value: 分数变化值
+            - prev_rank: 上一次排名
+            - prev_score: 上一次分数
         """
-        # 获取所有不同的快照时间，按时间倒序排列
-        distinct_times_result = await self.db.execute(
-            select(RankingSnapshot.snapshot_date)
-            .where(RankingSnapshot.guild_id == guild_id)
-            .distinct()
-            .order_by(RankingSnapshot.snapshot_date.desc())
-            .limit(2)
-        )
-        distinct_times = [row[0] for row in distinct_times_result.all()]
+        if not current_rankings:
+            return {}
 
-        # 如果少于2个不同的快照时间，说明没有可比较的历史数据
-        if len(distinct_times) < 2:
-            # 没有足够的历史快照，所有人都是新上榜
-            return {
-                ranking["user_id"]: {"change": "new", "value": 0}
-                for ranking in current_rankings
-            }
+        user_ids = [r["user_id"] for r in current_rankings]
 
-        # 使用倒数第二次快照时间（即上一次快照）
-        previous_snapshot_time = distinct_times[1]
+        # 获取每个用户最新的快照
+        from sqlalchemy import func as sql_func
 
-        # 获取上一次快照的所有记录
-        result = await self.db.execute(
-            select(RankingSnapshot)
+        subquery = (
+            select(
+                RankingSnapshot.user_id,
+                sql_func.max(RankingSnapshot.snapshot_date).label("max_date")
+            )
             .where(
                 and_(
                     RankingSnapshot.guild_id == guild_id,
-                    RankingSnapshot.snapshot_date == previous_snapshot_time
+                    RankingSnapshot.user_id.in_(user_ids)
                 )
             )
+            .group_by(RankingSnapshot.user_id)
+            .subquery()
         )
-        last_snapshots = result.scalars().all()
 
-        if not last_snapshots:
-            # 没有历史快照，所有人都是新上榜
-            return {
-                ranking["user_id"]: {"change": "new", "value": 0}
-                for ranking in current_rankings
-            }
+        result = await self.db.execute(
+            select(RankingSnapshot)
+            .join(
+                subquery,
+                and_(
+                    RankingSnapshot.user_id == subquery.c.user_id,
+                    RankingSnapshot.snapshot_date == subquery.c.max_date
+                )
+            )
+            .where(RankingSnapshot.guild_id == guild_id)
+        )
+        latest_snapshots = {s.user_id: s for s in result.scalars().all()}
 
-        # 构建上一次排名映射
-        last_rank_map = {
-            snapshot.user_id: snapshot.rank_position
-            for snapshot in last_snapshots
-        }
-
-        # 计算变化
+        # 构建变化信息
         changes = {}
         for ranking in current_rankings:
             user_id = ranking["user_id"]
-            current_rank = ranking["rank_position"]
+            snapshot = latest_snapshots.get(user_id)
 
-            if user_id not in last_rank_map:
-                changes[user_id] = {"change": "new", "value": 0}
+            if snapshot is None or snapshot.prev_score is None:
+                # 没有快照或无变化记录，显示为新上榜
+                changes[user_id] = {
+                    "change": "new",
+                    "rank_change_value": 0,
+                    "score_change_value": Decimal("0"),
+                    "prev_rank": None,
+                    "prev_score": None
+                }
             else:
-                last_rank = last_rank_map[user_id]
-                diff = last_rank - current_rank  # 正数表示排名上升（从大到小）
+                rank_change = snapshot.rank_change_value or 0
+                score_change = snapshot.score_change or Decimal("0")
 
-                if diff > 0:
-                    changes[user_id] = {"change": "up", "value": diff}
-                elif diff < 0:
-                    changes[user_id] = {"change": "down", "value": abs(diff)}
+                if rank_change > 0:
+                    change_type = "up"
+                elif rank_change < 0:
+                    change_type = "down"
                 else:
-                    changes[user_id] = {"change": "same", "value": 0}
+                    change_type = "same"
+
+                changes[user_id] = {
+                    "change": change_type,
+                    "rank_change_value": abs(rank_change),
+                    "score_change_value": score_change,
+                    "prev_rank": snapshot.prev_rank,
+                    "prev_score": snapshot.prev_score
+                }
 
         return changes
 

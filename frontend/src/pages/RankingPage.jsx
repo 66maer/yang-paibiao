@@ -51,30 +51,56 @@ export default function RankingPage() {
     }
   };
 
-  const renderChangeIndicator = (change, value) => {
-    if (change === "new") {
+  const renderChangeIndicator = (item) => {
+    const { rank_change, rank_change_value, score_change_value, prev_rank, prev_score } = item;
+
+    if (rank_change === "new") {
       return (
         <Chip size="sm" color="primary" variant="flat">
           NEW
         </Chip>
       );
-    } else if (change === "up") {
-      return (
-        <span className="text-red-500 font-medium flex items-center gap-1">
-          <span>↑</span>
-          <span>{value}</span>
-        </span>
-      );
-    } else if (change === "down") {
-      return (
-        <span className="text-green-500 font-medium flex items-center gap-1">
-          <span>↓</span>
-          <span>{value}</span>
-        </span>
-      );
-    } else {
+    }
+
+    // 计算分数变化（正数表示增加）
+    const scoreChange = Number(score_change_value) || 0;
+    const hasScoreChange = Math.abs(scoreChange) >= 0.01;
+    const hasRankChange = rank_change_value > 0;
+
+    if (!hasScoreChange && !hasRankChange) {
       return <span className="text-gray-400">—</span>;
     }
+
+    const tooltipContent = (
+      <div className="space-y-1 text-xs">
+        {prev_rank !== null && prev_rank !== undefined && (
+          <div>上次排名: #{prev_rank}</div>
+        )}
+        {prev_score !== null && prev_score !== undefined && (
+          <div>上次分数: {Number(prev_score).toFixed(2)}</div>
+        )}
+      </div>
+    );
+
+    return (
+      <Tooltip content={tooltipContent} placement="left">
+        <div className="flex flex-col gap-0.5 cursor-help">
+          {/* 分数变化 */}
+          {hasScoreChange && (
+            <span className={`font-medium flex items-center gap-0.5 text-sm ${scoreChange > 0 ? "text-red-500" : "text-green-500"}`}>
+              <span>{scoreChange > 0 ? "+" : ""}{scoreChange.toFixed(2)}</span>
+            </span>
+          )}
+          {/* 排名变化 */}
+          {hasRankChange && (
+            <span className={`font-medium flex items-center gap-0.5 text-xs ${rank_change === "up" ? "text-red-400" : "text-green-400"}`}>
+              <span>{rank_change === "up" ? "↑" : "↓"}</span>
+              <span>{rank_change_value}</span>
+            </span>
+          )}
+        </div>
+      </Tooltip>
+    );
   };
 
   const formatLastHeibenren = (dateStr, carNumber, daysAgo) => {
@@ -257,7 +283,7 @@ export default function RankingPage() {
                         item.last_heibenren_days_ago,
                       )}
                     </TableCell>
-                    <TableCell>{renderChangeIndicator(item.rank_change, item.rank_change_value)}</TableCell>
+                    <TableCell>{renderChangeIndicator(item)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

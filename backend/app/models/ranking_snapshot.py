@@ -26,5 +26,11 @@ class RankingSnapshot(Base):
     last_heibenren_car_number = Column(Integer, nullable=True, comment="最近一次黑本的车次")
     snapshot_date = Column(DateTime, default=datetime.utcnow, nullable=False, index=True, comment="快照时间")
 
+    # 变化记录字段（与上一次分数变化时的快照比较）
+    prev_score = Column(DECIMAL(12, 2), nullable=True, comment="上一次分数变化时的分数")
+    prev_rank = Column(Integer, nullable=True, comment="上一次分数变化时的排名")
+    score_change = Column(DECIMAL(12, 2), nullable=True, default=0, comment="分数变化值")
+    rank_change_value = Column(Integer, nullable=True, default=0, comment="排名变化值（正数表示上升）")
+
     def __repr__(self):
         return f"<RankingSnapshot(id={self.id}, guild_id={self.guild_id}, user_id={self.user_id}, rank={self.rank_position})>"
