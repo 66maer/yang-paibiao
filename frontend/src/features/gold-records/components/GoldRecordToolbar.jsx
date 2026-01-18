@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Select, SelectItem, Button, Card, CardBody } from "@heroui/react";
-import { getDungeonOptions } from "@/api/configs";
+import { getGuildDungeonOptions } from "@/api/guildConfigs";
 
 /**
  * 金团记录工具栏
@@ -10,7 +10,13 @@ import { getDungeonOptions } from "@/api/configs";
  * @param {function} onDungeonsLoaded - 副本列表加载完成回调
  * @param {boolean} isAdmin - 是否是管理员（群主或helper）
  */
-export default function GoldRecordToolbar({ selectedDungeon, onDungeonChange, onCreateClick, onDungeonsLoaded, isAdmin }) {
+export default function GoldRecordToolbar({
+  selectedDungeon,
+  onDungeonChange,
+  onCreateClick,
+  onDungeonsLoaded,
+  isAdmin,
+}) {
   const [dungeons, setDungeons] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,8 +26,8 @@ export default function GoldRecordToolbar({ selectedDungeon, onDungeonChange, on
 
   const loadDungeons = async () => {
     try {
-      // 获取所有副本（不限制类型）
-      const response = await getDungeonOptions();
+      // 获取当前群组的所有副本（不限制类型）
+      const response = await getGuildDungeonOptions();
       // 后端返回的数据格式：{options: [{name, type, order}, ...]}
       // 转换为选择器需要的格式
       const dungeonList = (response.options || [])

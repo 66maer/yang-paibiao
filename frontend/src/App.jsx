@@ -32,6 +32,9 @@ import RankingPage from "@/pages/RankingPage";
 import HistoryPage from "@/pages/board/HistoryPage";
 import ToolsPage from "@/pages/ToolsPage";
 import TeamImagePage from "@/pages/bot/TeamImagePage";
+import GuildConfigLayout from "@/layouts/GuildConfigLayout";
+import GuildDungeonConfigPage from "@/pages/guild/GuildDungeonConfigPage";
+import GuildSeasonCorrectionPage from "@/pages/guild/GuildSeasonCorrectionPage";
 
 function AppContent() {
   const navigate = useNavigate();
@@ -96,6 +99,12 @@ function AppContent() {
           <Route path="/templates/new" element={<TemplateEditPage />} />
           <Route path="/templates/:templateId/edit" element={<TemplateEditPage />} />
           <Route path="/history" element={<HistoryPage />} />
+          {/* 群组预设配置 */}
+          <Route path="/guild-settings" element={<GuildConfigLayout />}>
+            <Route index element={<GuildDungeonConfigPage />} />
+            <Route path="dungeons" element={<GuildDungeonConfigPage />} />
+            <Route path="seasons" element={<GuildSeasonCorrectionPage />} />
+          </Route>
         </Route>
 
         {/* 根据用户角色智能重定向 */}

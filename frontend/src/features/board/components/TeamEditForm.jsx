@@ -18,7 +18,7 @@ import { parseDateTime, now, getLocalTimeZone } from "@internationalized/date";
 import { createTeam, updateTeam } from "@/api/teams";
 import { showToast } from "@/utils/toast";
 import { getTemplateList, createTemplate } from "@/api/templates";
-import { getDungeonOptions } from "@/api/configs";
+import { getGuildDungeonOptions } from "@/api/guildConfigs";
 import TeamBoard from "@/features/board/components/TeamBoard/TeamBoard";
 import { buildEmptyRules } from "@/utils/slotAllocation";
 import useAuthStore from "@/stores/authStore";
@@ -32,17 +32,16 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
   const { user } = useAuthStore();
 
   // 获取副本选项（只获取 primary 类型）
-  const { data: dungeonData } = useSWR(
-    'dungeon-options-primary',
-    () => getDungeonOptions('primary'),
-    { revalidateOnFocus: false }
-  );
+  const { data: dungeonData } = useSWR("guild-dungeon-options-primary", () => getGuildDungeonOptions("primary"), {
+    revalidateOnFocus: false,
+  });
 
   // 转换为 Select 组件需要的格式
-  const dungeons = dungeonData?.options?.map(opt => ({
-    value: opt.name,
-    label: opt.name,
-  })) || [];
+  const dungeons =
+    dungeonData?.options?.map((opt) => ({
+      value: opt.name,
+      label: opt.name,
+    })) || [];
 
   // 右侧帮助提示组件
   const HelpPanel = () => (
@@ -111,7 +110,7 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
     const { year, month, day, hour, minute } = calendarDateTime;
     return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hour).padStart(
       2,
-      "0"
+      "0",
     )}:${String(minute).padStart(2, "0")}`;
   };
 

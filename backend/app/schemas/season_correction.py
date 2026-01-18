@@ -18,7 +18,7 @@ class SeasonCorrectionFactorBase(BaseModel):
 
 class SeasonCorrectionFactorCreate(SeasonCorrectionFactorBase):
     """创建赛季修正系数的请求模型"""
-    pass
+    guild_id: Optional[int] = Field(None, description="群组ID，不传则为全局配置")
 
 
 class SeasonCorrectionFactorUpdate(BaseModel):
@@ -32,6 +32,7 @@ class SeasonCorrectionFactorUpdate(BaseModel):
 class SeasonCorrectionFactorOut(SeasonCorrectionFactorBase):
     """赛季修正系数的响应模型"""
     id: int
+    guild_id: Optional[int] = None
 
     class Config:
         from_attributes = True

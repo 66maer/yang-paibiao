@@ -2,31 +2,32 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { Card } from "@heroui/react";
 
 /**
- * 全局配置布局 - 带左侧导航栏
- * 用于系统级别的全局配置（非群组级别）
+ * 群组配置布局 - 带左侧导航栏
+ * 用于群组级别的配置，如副本配置、赛季修正等
  */
-export default function ConfigLayout() {
+export default function GuildConfigLayout() {
   const location = useLocation();
 
   const configMenuItems = [
-    // 副本配置和赛季修正已迁移到群组级别配置
-    // 以下为系统级别的全局配置预留
-    // { path: "/admin/configs/system", label: "系统配置", icon: "⚙️" },
-    // { path: "/admin/configs/notifications", label: "通知配置", icon: "🔔" },
+    { path: "/guild-settings/dungeons", label: "副本配置", icon: "🏔️" },
+    { path: "/guild-settings/seasons", label: "赛季修正", icon: "📅" },
+    // 未来可以在这里添加更多群组配置项
+    // { path: "/guild-settings/notifications", label: "通知设置", icon: "🔔" },
+    // { path: "/guild-settings/permissions", label: "权限设置", icon: "🔐" },
   ];
 
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-          全局配置
+        <h1 className="text-2xl md:text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+          群组预设
         </h1>
 
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-12 gap-4 md:gap-6">
           {/* 左侧导航栏 */}
-          <div className="col-span-3">
+          <div className="col-span-12 md:col-span-3">
             <Card className="p-4">
               <nav className="space-y-1">
                 {configMenuItems.map((item) => (
@@ -51,7 +52,7 @@ export default function ConfigLayout() {
           </div>
 
           {/* 右侧内容区 */}
-          <div className="col-span-9">
+          <div className="col-span-12 md:col-span-9">
             <Outlet />
           </div>
         </div>

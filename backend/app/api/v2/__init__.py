@@ -11,6 +11,7 @@ from app.api.v2.endpoints import gold_records
 from app.api.v2.endpoints import configs
 from app.api.v2.endpoints import ranking
 from app.api.v2.endpoints import my_records
+from app.api.v2.endpoints import guild_configs
 from app.api.v2 import admin
 from app.api.v2 import users
 from app.api.v2 import characters
@@ -98,4 +99,11 @@ api_router.include_router(
     bot.router,
     prefix="/bot",
     tags=["机器人API"]
+)
+
+# 群组配置接口（群组级别的副本配置、赛季修正等）
+api_router.include_router(
+    guild_configs.router,
+    prefix="/guild-configs",
+    tags=["群组配置"]
 )

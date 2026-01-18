@@ -78,6 +78,12 @@ const userMenuConfig = [
         path: "/history",
         icon: "📜",
       },
+      {
+        key: "guild-settings",
+        label: "群组预设",
+        path: "/guild-settings",
+        icon: "🔧",
+      },
     ],
   },
 ];

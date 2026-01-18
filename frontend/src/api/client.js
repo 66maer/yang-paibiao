@@ -22,7 +22,7 @@ const decodeToken = (token) => {
       atob(base64)
         .split("")
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
+        .join(""),
     );
     return JSON.parse(jsonPayload);
   } catch (e) {
@@ -56,7 +56,7 @@ const refreshAccessToken = async () => {
     const response = await axios.post(
       `${apiClient.defaults.baseURL}/auth/refresh`,
       { refresh_token: refreshToken },
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
 
     const { access_token, refresh_token } = response.data.data;
@@ -108,11 +108,17 @@ apiClient.interceptors.request.use(
       }
     }
 
+    // 添加当前群组ID到请求头
+    const { user } = useAuthStore.getState();
+    if (user?.current_guild_id) {
+      config.headers["X-Guild-Id"] = user.current_guild_id;
+    }
+
     return config;
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // 响应拦截器
@@ -169,7 +175,7 @@ apiClient.interceptors.response.use(
     }
 
     return Promise.reject(error.message || "网络错误");
-  }
+  },
 );
 
 export default apiClient;

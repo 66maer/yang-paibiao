@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Select, SelectItem } from "@heroui/react";
-import { getDungeonOptions } from "@/api/configs";
+import { getGuildDungeonOptions } from "@/api/guildConfigs";
 
 /**
  * 副本选择器（模态框版本）
@@ -18,8 +18,8 @@ export default function DungeonSelector({ value, onChange, isRequired = true }) 
 
   const loadDungeons = async () => {
     try {
-      // 获取所有副本（不限制类型）
-      const response = await getDungeonOptions();
+      // 获取当前群组的所有副本（不限制类型）
+      const response = await getGuildDungeonOptions();
       // 后端返回格式：{options: [{name, type, order}, ...]}
       // 按 order 排序
       const sortedDungeons = (response.options || []).sort((a, b) => a.order - b.order);

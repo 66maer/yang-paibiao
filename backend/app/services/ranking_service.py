@@ -40,22 +40,50 @@ class RankingService:
     async def get_correction_factor(
         self,
         dungeon: str,
-        run_date: date
+        run_date: date,
+        guild_id: Optional[int] = None
     ) -> Decimal:
         """
         获取指定副本和日期的修正系数
+        
+        优先使用群组级别的配置，如果没有则使用全局配置
 
         Args:
             dungeon: 副本名称
             run_date: 运行日期
+            guild_id: 群组ID（可选）
 
         Returns:
             修正系数（如果没有配置则返回1.00）
         """
+        # 首先尝试获取群组级别的配置
+        if guild_id:
+            result = await self.db.execute(
+                select(SeasonCorrectionFactor)
+                .where(
+                    and_(
+                        SeasonCorrectionFactor.guild_id == guild_id,
+                        SeasonCorrectionFactor.dungeon == dungeon,
+                        SeasonCorrectionFactor.start_date <= run_date,
+                        or_(
+                            SeasonCorrectionFactor.end_date.is_(None),
+                            SeasonCorrectionFactor.end_date >= run_date
+                        )
+                    )
+                )
+                .order_by(SeasonCorrectionFactor.start_date.desc())
+                .limit(1)
+            )
+            factor = result.scalar_one_or_none()
+            if factor:
+                return factor.correction_factor
+        
+        # 如果没有群组配置，尝试获取全局配置
         result = await self.db.execute(
             select(SeasonCorrectionFactor)
             .where(
                 and_(
+                    SeasonCorrectionFactor.guild_id.is_(None),
                     SeasonCorrectionFactor.dungeon == dungeon,
                     SeasonCorrectionFactor.start_date <= run_date,
                     or_(
@@ -121,7 +149,7 @@ class RankingService:
         total_record_count = len(records)
 
         for idx, record in enumerate(records):
-            factor = await self.get_correction_factor(record.dungeon, record.run_date)
+            factor = await self.get_correction_factor(record.dungeon, record.run_date, guild_id)
             corrected_gold = Decimal(str(record.total_gold)) * factor
             corrected_total += corrected_gold
             total_gold += record.total_gold

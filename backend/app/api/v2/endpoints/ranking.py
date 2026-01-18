@@ -57,15 +57,18 @@ async def get_guild_ranking(
     # 获取排名变化
     changes = await ranking_service.get_ranking_changes(guild_id, current_rankings)
 
-    # 获取当前使用的修正系数
+    # 获取当前使用的修正系数（优先使用群组级别配置，如没有则使用全局配置）
     from app.models.season_correction_factor import SeasonCorrectionFactor
     from app.schemas.ranking import SeasonFactorInfo
     from datetime import datetime
     today = date.today()
+
+    # 先获取群组级别的配置
     factors_result = await db.execute(
         select(SeasonCorrectionFactor)
         .where(
             and_(
+                SeasonCorrectionFactor.guild_id == guild_id,
                 SeasonCorrectionFactor.start_date <= today,
                 or_(
                     SeasonCorrectionFactor.end_date.is_(None),
@@ -75,6 +78,28 @@ async def get_guild_ranking(
         )
         .order_by(SeasonCorrectionFactor.dungeon, SeasonCorrectionFactor.start_date.desc())
     )
+    guild_factors = list(factors_result.scalars().all())
+    guild_dungeons = set(f.dungeon for f in guild_factors)
+
+    # 获取全局配置（guild_id 为 NULL），仅补充群组配置中没有的副本
+    global_factors_result = await db.execute(
+        select(SeasonCorrectionFactor)
+        .where(
+            and_(
+                SeasonCorrectionFactor.guild_id.is_(None),
+                SeasonCorrectionFactor.start_date <= today,
+                or_(
+                    SeasonCorrectionFactor.end_date.is_(None),
+                    SeasonCorrectionFactor.end_date >= today
+                )
+            )
+        )
+        .order_by(SeasonCorrectionFactor.dungeon, SeasonCorrectionFactor.start_date.desc())
+    )
+    global_factors = [f for f in global_factors_result.scalars().all() if f.dungeon not in guild_dungeons]
+
+    # 合并配置
+    all_factors = guild_factors + global_factors
     season_factors = [
         SeasonFactorInfo(
             dungeon=factor.dungeon,
@@ -83,7 +108,7 @@ async def get_guild_ranking(
             correction_factor=factor.correction_factor,
             description=factor.description
         )
-        for factor in factors_result.scalars().all()
+        for factor in all_factors
     ]
 
     # 获取用户信息

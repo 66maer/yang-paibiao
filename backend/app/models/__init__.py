@@ -17,6 +17,7 @@ from app.models.ranking_snapshot import RankingSnapshot
 from app.models.team_log import TeamLog
 from app.models.bot import Bot, BotGuild
 from app.models.weekly_record import WeeklyRecordConfig, WeeklyRecord
+from app.models.guild_dungeon_config import GuildDungeonConfig
 
 __all__ = [
 	"SystemAdmin",
@@ -37,4 +38,5 @@ __all__ = [
 	"BotGuild",
 	"WeeklyRecordConfig",
 	"WeeklyRecord",
+	"GuildDungeonConfig",
 ]

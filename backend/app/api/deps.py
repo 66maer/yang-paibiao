@@ -16,6 +16,7 @@ from app.models.user import User
 from app.models.admin import SystemAdmin
 from app.models.bot import Bot, BotGuild
 from app.models.guild import Guild
+from app.models.guild_member import GuildMember
 
 logger = get_logger(__name__)
 
@@ -270,3 +271,119 @@ async def verify_bot_guild_access_by_qq(
         )
 
     return guild
+
+
+async def get_current_guild(
+    x_guild_id: Optional[str] = Header(None, alias="X-Guild-Id"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Guild:
+    """
+    获取当前选中的群组
+    
+    通过 X-Guild-Id 请求头获取群组 ID
+    
+    Args:
+        x_guild_id: 群组ID（从X-Guild-Id请求头获取）
+        db: 数据库会话
+        current_user: 当前用户
+    
+    Returns:
+        Guild: 当前群组对象
+    
+    Raises:
+        HTTPException: 未选择群组或群组不存在
+    """
+    if not x_guild_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="请先选择一个群组"
+        )
+    
+    try:
+        guild_id = int(x_guild_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="无效的群组ID"
+        )
+    
+    # 查询群组
+    result = await db.execute(
+        select(Guild).where(Guild.id == guild_id, Guild.deleted_at.is_(None))
+    )
+    guild = result.scalar_one_or_none()
+    
+    if not guild:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="群组不存在"
+        )
+    
+    # 验证用户是否是群组成员
+    member_result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id == current_user.id
+        )
+    )
+    member = member_result.scalar_one_or_none()
+    
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="您不是该群组的成员"
+        )
+    
+    return guild
+
+
+async def get_current_member_role(
+    x_guild_id: Optional[str] = Header(None, alias="X-Guild-Id"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> str:
+    """
+    获取当前用户在选中群组中的角色
+    
+    Args:
+        x_guild_id: 群组ID（从X-Guild-Id请求头获取）
+        db: 数据库会话
+        current_user: 当前用户
+    
+    Returns:
+        str: 角色（owner/helper/member）
+    
+    Raises:
+        HTTPException: 未选择群组或不是群组成员
+    """
+    if not x_guild_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="请先选择一个群组"
+        )
+    
+    try:
+        guild_id = int(x_guild_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="无效的群组ID"
+        )
+    
+    # 查询成员关系
+    result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id == current_user.id
+        )
+    )
+    member = result.scalar_one_or_none()
+    
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="您不是该群组的成员"
+        )
+    
+    return member.role
