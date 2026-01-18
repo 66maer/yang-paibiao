@@ -42,3 +42,24 @@ class GuildDungeonConfigOut(GuildDungeonConfigBase):
 class DungeonOptionsResponse(BaseModel):
     """副本选项响应"""
     options: List[DungeonOption]
+
+
+# ==================== 快捷开团配置 ====================
+
+class QuickTeamOption(BaseModel):
+    """快捷开团选项"""
+    name: str = Field(..., min_length=1, max_length=20, description="选项名称（显示在按钮上）")
+    label: Optional[str] = Field(None, max_length=10, description="标题标签（用于自动生成标题，为空则使用name）")
+    hour: int = Field(..., ge=0, le=23, description="小时")
+    minute: int = Field(..., ge=0, le=59, description="分钟")
+    order: int = Field(..., ge=0, description="排序顺序")
+
+
+class QuickTeamOptionsUpdate(BaseModel):
+    """更新快捷开团选项的请求模型"""
+    quick_team_options: List[QuickTeamOption] = Field(..., description="快捷开团选项配置")
+
+
+class QuickTeamOptionsResponse(BaseModel):
+    """快捷开团选项响应"""
+    options: List[QuickTeamOption]

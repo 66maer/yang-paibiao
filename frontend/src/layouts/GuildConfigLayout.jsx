@@ -11,6 +11,7 @@ export default function GuildConfigLayout() {
   const configMenuItems = [
     { path: "/guild-settings/dungeons", label: "副本配置", icon: "🏔️" },
     { path: "/guild-settings/seasons", label: "赛季修正", icon: "📅" },
+    { path: "/guild-settings/quick-team", label: "快捷开团", icon: "🚗" },
     // 未来可以在这里添加更多群组配置项
     // { path: "/guild-settings/notifications", label: "通知设置", icon: "🔔" },
     // { path: "/guild-settings/permissions", label: "权限设置", icon: "🔐" },

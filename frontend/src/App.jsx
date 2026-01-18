@@ -35,6 +35,7 @@ import TeamImagePage from "@/pages/bot/TeamImagePage";
 import GuildConfigLayout from "@/layouts/GuildConfigLayout";
 import GuildDungeonConfigPage from "@/pages/guild/GuildDungeonConfigPage";
 import GuildSeasonCorrectionPage from "@/pages/guild/GuildSeasonCorrectionPage";
+import GuildQuickTeamConfigPage from "@/pages/guild/GuildQuickTeamConfigPage";
 
 function AppContent() {
   const navigate = useNavigate();
@@ -104,6 +105,7 @@ function AppContent() {
             <Route index element={<GuildDungeonConfigPage />} />
             <Route path="dungeons" element={<GuildDungeonConfigPage />} />
             <Route path="seasons" element={<GuildSeasonCorrectionPage />} />
+            <Route path="quick-team" element={<GuildQuickTeamConfigPage />} />
           </Route>
         </Route>
 

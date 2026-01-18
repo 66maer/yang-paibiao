@@ -18,7 +18,7 @@ import { parseDateTime, now, getLocalTimeZone } from "@internationalized/date";
 import { createTeam, updateTeam } from "@/api/teams";
 import { showToast } from "@/utils/toast";
 import { getTemplateList, createTemplate } from "@/api/templates";
-import { getGuildDungeonOptions } from "@/api/guildConfigs";
+import { getGuildDungeonOptions, getGuildQuickTeamOptions } from "@/api/guildConfigs";
 import TeamBoard from "@/features/board/components/TeamBoard/TeamBoard";
 import { buildEmptyRules } from "@/utils/slotAllocation";
 import useAuthStore from "@/stores/authStore";
@@ -35,6 +35,14 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
   const { data: dungeonData } = useSWR("guild-dungeon-options-primary", () => getGuildDungeonOptions("primary"), {
     revalidateOnFocus: false,
   });
+
+  // 获取快捷开团选项
+  const { data: quickTeamData } = useSWR("guild-quick-team-options", () => getGuildQuickTeamOptions(), {
+    revalidateOnFocus: false,
+  });
+
+  // 快捷开团选项列表
+  const quickTeamOptions = quickTeamData?.options || [];
 
   // 转换为 Select 组件需要的格式
   const dungeons =
@@ -85,12 +93,6 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
     return currentDate.set({ hour: 19, minute: 30, second: 0, millisecond: 0 });
   };
 
-  // 获取当天指定时间
-  const getTodayTime = (hour, minute) => {
-    const currentDate = now(getLocalTimeZone());
-    return currentDate.set({ hour, minute, second: 0, millisecond: 0 });
-  };
-
   // 将 ISO 字符串转换为 CalendarDateTime
   const isoToCalendarDateTime = (isoString) => {
     if (!isoString) return null;
@@ -128,6 +130,7 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
     no_specific_time: false,
     auto_generate_title: !isEdit, // 新建默认开启，编辑默认关闭
     selected_template: "",
+    quick_option_label: "", // 快捷选项标签（用于自动生成标题）
   });
 
   // 团队面板：规则数组（在创建/编辑团队时用于“保存为模板”或“应用模板”）
@@ -155,6 +158,7 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
         no_specific_time: !team.team_time,
         auto_generate_title: false, // 编辑模式默认关闭
         selected_template: "",
+        quick_option_label: "",
       });
       // 加载团队的规则数据
       if (Array.isArray(team.rules) && team.rules.length > 0) {
@@ -187,6 +191,11 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
   const updateField = (field, value) => {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
+
+      // 如果通过 DatePicker 修改了时间，清除快捷选项标签
+      if (field === "team_time") {
+        newData.quick_option_label = "";
+      }
 
       // 如果修改了时间、副本或时间开关，且自动生成开启，则自动生成标题
       if (
@@ -224,6 +233,11 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
       parts.push(data.dungeon);
     }
 
+    // 如果有快捷选项标签，添加到标题末尾
+    if (data.quick_option_label) {
+      parts.push(data.quick_option_label);
+    }
+
     return parts.join(" ");
   };
 
@@ -245,14 +259,18 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
     });
   };
 
-  // 设置预设时间
-  const setPresetTime = (hour, minute, label) => {
-    const newTime = getTodayTime(hour, minute);
+  // 设置预设时间（只修改时间，保留日期）
+  const setPresetTime = (hour, minute, optionLabel = "") => {
     setFormData((prev) => {
+      // 如果已有选择的日期，保留日期只修改时间；否则使用今天的日期
+      const baseDate = prev.team_time || now(getLocalTimeZone());
+      const newTime = baseDate.set({ hour, minute, second: 0, millisecond: 0 });
+
       const newData = {
         ...prev,
         team_time: newTime,
         no_specific_time: false,
+        quick_option_label: optionLabel, // 存储快捷选项标签
       };
 
       // 如果开启了自动生成标题，则自动更新标题
@@ -443,27 +461,19 @@ export default function TeamEditForm({ team = null, guildId, onSuccess, onCancel
                     }}
                   />
                   {/* 快捷时间按钮 */}
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      color="primary"
-                      variant="flat"
-                      onPress={() => setPresetTime(19, 50, "今天第一车 19:50")}
-                      isDisabled={formData.no_specific_time}
-                      className="flex-1"
-                    >
-                      🚗 第一车 19:50
-                    </Button>
-                    <Button
-                      size="sm"
-                      color="secondary"
-                      variant="flat"
-                      onPress={() => setPresetTime(22, 0, "今天第二车 22:00")}
-                      isDisabled={formData.no_specific_time}
-                      className="flex-1"
-                    >
-                      🚙 第二车 22:00
-                    </Button>
+                  <div className="flex gap-2 flex-wrap">
+                    {quickTeamOptions.map((option, index) => (
+                      <Button
+                        key={`${option.name}-${index}`}
+                        size="sm"
+                        color={index % 2 === 0 ? "primary" : "secondary"}
+                        variant="flat"
+                        onPress={() => setPresetTime(option.hour, option.minute, option.label || option.name)}
+                        isDisabled={formData.no_specific_time}
+                      >
+                        {option.name}
+                      </Button>
+                    ))}
 
                     <Switch
                       size="sm"

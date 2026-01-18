@@ -17,6 +17,7 @@ class GuildDungeonConfig(Base):
     id = Column(Integer, primary_key=True, index=True)
     guild_id = Column(Integer, ForeignKey("guilds.id", ondelete="CASCADE"), nullable=False, unique=True, index=True, comment="群组ID")
     dungeon_options = Column(JSON, nullable=False, default=list, comment="副本选项配置")
+    quick_team_options = Column(JSON, nullable=False, default=list, comment="快捷开团选项配置")
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, comment="创建时间")
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False, comment="更新时间")
 

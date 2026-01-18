@@ -49,3 +49,22 @@ export const updateGuildSeasonCorrection = (factorId, data) => {
 export const deleteGuildSeasonCorrection = (factorId) => {
   return apiClient.delete(`/guild-configs/seasons/${factorId}`);
 };
+
+/**
+ * 获取当前群组的快捷开团选项配置
+ */
+export const getGuildQuickTeamOptions = async () => {
+  const response = await apiClient.get("/guild-configs/quick-team");
+  return response;
+};
+
+/**
+ * 更新当前群组的快捷开团选项配置
+ * @param {Array} options - 快捷开团选项列表
+ */
+export const updateGuildQuickTeamOptions = async (options) => {
+  const response = await apiClient.put("/guild-configs/quick-team", {
+    quick_team_options: options,
+  });
+  return response;
+};

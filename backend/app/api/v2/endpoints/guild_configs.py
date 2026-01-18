@@ -14,7 +14,10 @@ from app.models.season_correction_factor import SeasonCorrectionFactor
 from app.schemas.guild_config import (
     DungeonOption,
     GuildDungeonConfigUpdate,
-    DungeonOptionsResponse
+    DungeonOptionsResponse,
+    QuickTeamOption,
+    QuickTeamOptionsUpdate,
+    QuickTeamOptionsResponse
 )
 from app.schemas.season_correction import (
     SeasonCorrectionFactorCreate,
@@ -286,3 +289,79 @@ async def delete_guild_season_correction(
     await db.commit()
 
     return success(message="删除成功")
+
+
+# ==================== 快捷开团配置 ====================
+
+# 默认快捷开团选项
+DEFAULT_QUICK_TEAM_OPTIONS = [
+    {"name": "🚗 第一车 19:50", "label": "第一车", "hour": 19, "minute": 50, "order": 1},
+    {"name": "🚙 第二车 22:00", "label": "第二车", "hour": 22, "minute": 0, "order": 2},
+]
+
+
+@router.get("/quick-team", response_model=QuickTeamOptionsResponse)
+async def get_guild_quick_team_options(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_user),
+    current_guild: Guild = Depends(deps.get_current_guild)
+):
+    """
+    获取当前群组的快捷开团选项配置
+    如果群组没有配置，则返回默认配置
+    """
+    result = await db.execute(
+        select(GuildDungeonConfig).where(GuildDungeonConfig.guild_id == current_guild.id)
+    )
+    guild_config = result.scalar_one_or_none()
+
+    if guild_config and guild_config.quick_team_options:
+        options = guild_config.quick_team_options
+    else:
+        options = DEFAULT_QUICK_TEAM_OPTIONS
+
+    # 按 order 字段排序
+    options.sort(key=lambda x: x.get("order", 0))
+
+    return {"options": options}
+
+
+@router.put("/quick-team", response_model=QuickTeamOptionsResponse)
+async def update_guild_quick_team_options(
+    data: QuickTeamOptionsUpdate,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_user),
+    current_guild: Guild = Depends(deps.get_current_guild),
+    member_role: str = Depends(deps.get_current_member_role)
+):
+    """
+    更新当前群组的快捷开团选项配置（需要群管理员权限）
+    """
+    # 检查权限
+    if member_role not in ["owner", "helper"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="只有群主和管理员可以修改配置"
+        )
+
+    # 查找或创建群组配置
+    result = await db.execute(
+        select(GuildDungeonConfig).where(GuildDungeonConfig.guild_id == current_guild.id)
+    )
+    guild_config = result.scalar_one_or_none()
+
+    options_data = [opt.model_dump() for opt in data.quick_team_options]
+
+    if guild_config:
+        guild_config.quick_team_options = options_data
+    else:
+        guild_config = GuildDungeonConfig(
+            guild_id=current_guild.id,
+            quick_team_options=options_data
+        )
+        db.add(guild_config)
+
+    await db.commit()
+    await db.refresh(guild_config)
+
+    return {"options": data.quick_team_options}
