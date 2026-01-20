@@ -1,8 +1,11 @@
 """
 金团记录用户接口
 """
+import logging
 from typing import Optional
 from datetime import date
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
@@ -72,11 +75,13 @@ async def _auto_update_weekly_records(db: AsyncSession, gold_record: GoldRecord)
     工资计算公式：(总金团 - 总补贴) / 打工人数
     """
     from app.api.v2.endpoints.my_records import auto_create_weekly_record
-    
+
     # 计算人均金额：(总金团 - 总补贴) / 打工人数
     effective_gold = gold_record.total_gold - (gold_record.subsidy_gold or 0)
     per_person_gold = effective_gold // gold_record.worker_count
-    
+    logger.debug(f"[每周记录] 计算人均金额: effective_gold={effective_gold}, "
+                 f"worker_count={gold_record.worker_count}, per_person_gold={per_person_gold}")
+
     # 查找该团队的所有有效报名（非老板、未取消）
     result = await db.execute(
         select(Signup).where(
@@ -88,19 +93,30 @@ async def _auto_update_weekly_records(db: AsyncSession, gold_record: GoldRecord)
         )
     )
     signups = result.scalars().all()
-    
+    logger.info(f"[每周记录] 查找到报名记录: team_id={gold_record.team_id}, 报名数量={len(signups)}")
+
     # 为每个报名的角色创建/更新每周记录
-    for signup in signups:
-        await auto_create_weekly_record(
-            db=db,
-            user_id=signup.signup_user_id,
-            character_id=signup.signup_character_id,
-            dungeon_name=gold_record.dungeon,
-            gold_amount=per_person_gold,
-            gold_record_id=gold_record.id
-        )
-    
+    for idx, signup in enumerate(signups):
+        try:
+            logger.debug(f"[每周记录] 处理报名 {idx+1}/{len(signups)}: signup_id={signup.id}, "
+                        f"user_id={signup.signup_user_id}, character_id={signup.signup_character_id}")
+            await auto_create_weekly_record(
+                db=db,
+                user_id=signup.signup_user_id,
+                character_id=signup.signup_character_id,
+                dungeon_name=gold_record.dungeon,
+                gold_amount=per_person_gold,
+                gold_record_id=gold_record.id
+            )
+        except Exception as e:
+            logger.error(f"[每周记录] 创建单条记录失败: signup_id={signup.id}, user_id={signup.signup_user_id}, "
+                        f"character_id={signup.signup_character_id}, error_type={type(e).__name__}, error={str(e)}",
+                        exc_info=True)
+            raise
+
+    logger.debug(f"[每周记录] 准备提交事务: gold_record_id={gold_record.id}")
     await db.commit()
+    logger.info(f"[每周记录] 事务提交成功: gold_record_id={gold_record.id}, 更新数量={len(signups)}")
 
 
 @router.post("/{guild_id}/gold-records", response_model=ResponseModel[GoldRecordOut])
@@ -200,25 +216,49 @@ async def create_gold_record(
 
     await db.commit()
     await db.refresh(gold_record)
+    logger.info(f"[金团记录] 保存成功: id={gold_record.id}, guild_id={guild_id}, team_id={gold_record.team_id}, "
+                f"dungeon={gold_record.dungeon}, total_gold={gold_record.total_gold}, "
+                f"heibenren_user_id={gold_record.heibenren_user_id}, worker_count={gold_record.worker_count}")
 
     # 触发排名计算和快照保存
     if gold_record.heibenren_user_id:
-        from app.services.ranking_service import RankingService
-        ranking_service = RankingService(db)
-        rankings = await ranking_service.calculate_guild_rankings(guild_id)
-        await ranking_service.save_ranking_snapshot(guild_id, rankings)
+        try:
+            logger.info(f"[金团记录] 开始计算排名: guild_id={guild_id}, heibenren_user_id={gold_record.heibenren_user_id}")
+            from app.services.ranking_service import RankingService
+            ranking_service = RankingService(db)
+            rankings = await ranking_service.calculate_guild_rankings(guild_id)
+            logger.info(f"[金团记录] 排名计算完成: guild_id={guild_id}, 排名数量={len(rankings) if rankings else 0}")
+            await ranking_service.save_ranking_snapshot(guild_id, rankings)
+            logger.info(f"[金团记录] 排名快照保存成功: guild_id={guild_id}")
+        except Exception as e:
+            logger.error(f"[金团记录] 排名计算/快照保存失败: guild_id={guild_id}, gold_record_id={gold_record.id}, "
+                        f"error_type={type(e).__name__}, error={str(e)}", exc_info=True)
 
     # 金团记录联动：自动更新每周记录
     if gold_record.team_id and gold_record.worker_count > 0:
-        await _auto_update_weekly_records(db, gold_record)
+        try:
+            logger.info(f"[金团记录] 开始更新每周记录: gold_record_id={gold_record.id}, team_id={gold_record.team_id}, "
+                        f"worker_count={gold_record.worker_count}, total_gold={gold_record.total_gold}, "
+                        f"subsidy_gold={gold_record.subsidy_gold}")
+            await _auto_update_weekly_records(db, gold_record)
+            logger.info(f"[金团记录] 每周记录更新成功: gold_record_id={gold_record.id}")
+        except Exception as e:
+            logger.error(f"[金团记录] 每周记录更新失败: gold_record_id={gold_record.id}, team_id={gold_record.team_id}, "
+                        f"error_type={type(e).__name__}, error={str(e)}", exc_info=True)
 
     # 读取时覆盖黑本人信息（只覆盖 user_name）
-    gold_record.heibenren_info = await _get_heibenren_info(
-        db, guild_id,
-        gold_record.heibenren_user_id,
-        gold_record.heibenren_info
-    )
+    try:
+        gold_record.heibenren_info = await _get_heibenren_info(
+            db, guild_id,
+            gold_record.heibenren_user_id,
+            gold_record.heibenren_info
+        )
+    except Exception as e:
+        logger.error(f"[金团记录] 获取黑本人信息失败: gold_record_id={gold_record.id}, "
+                    f"heibenren_user_id={gold_record.heibenren_user_id}, "
+                    f"error_type={type(e).__name__}, error={str(e)}", exc_info=True)
 
+    logger.info(f"[金团记录] 创建流程完成: gold_record_id={gold_record.id}")
     return success(GoldRecordOut.model_validate(gold_record), message="创建成功")
 
 
