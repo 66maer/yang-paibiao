@@ -93,7 +93,17 @@ async def _auto_update_weekly_records(db: AsyncSession, gold_record: GoldRecord)
         )
     )
     signups = result.scalars().all()
-    logger.info(f"[每周记录] 查找到报名记录: team_id={gold_record.team_id}, 报名数量={len(signups)}")
+    original_count = len(signups)
+    logger.info(f"[每周记录] 查找到报名记录: team_id={gold_record.team_id}, 报名数量={original_count}")
+
+    # 按 character_id 去重（同一角色可能报名多个位置，保留最后一个）
+    character_signup_map = {}
+    for signup in signups:
+        character_signup_map[signup.signup_character_id] = signup
+    signups = list(character_signup_map.values())
+
+    if len(signups) != original_count:
+        logger.info(f"[每周记录] 去重后报名数量: {len(signups)} (原始: {original_count})")
 
     # 为每个报名的角色创建/更新每周记录
     for idx, signup in enumerate(signups):
