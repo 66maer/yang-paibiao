@@ -1027,7 +1027,7 @@ async def _handle_nlp_followup(
 
 # ==================== 初始化成员（超级管理员或群主专用）====================
 init_members = on_keyword(
-    {"初始化成员"},
+    {"初始化成员", "同步成员"},
     permission=SUPERUSER | GROUP_OWNER,
     priority=10,
     block=True
@@ -1036,7 +1036,7 @@ init_members = on_keyword(
 
 @init_members.handle()
 async def handle_init_members(bot: Bot, event: GroupMessageEvent):
-    """处理初始化成员命令 - 将当前群的所有成员同步到后端"""
+    """处理初始化成员命令 - 将当前群的所有成员同步到后端（以群组成员为准）"""
     try:
         group_id = event.group_id
 
@@ -1055,18 +1055,23 @@ async def handle_init_members(bot: Bot, event: GroupMessageEvent):
 
         result = await member_service.sync_all_members(group_members)
 
-        msg_text = (
-            f"成员同步完成！\n"
-            f"总成员数: {result['total']}\n"
-            f"新增成员: {result['added']}\n"
-            f"已存在成员: {result['existed']}"
-        )
-
-        # 如果有失败的，添加失败信息
+        # 构建结果消息
+        msg_parts = [f"成员同步完成！\n总成员数: {result['total']}"]
+        
+        if result.get('added', 0) > 0:
+            msg_parts.append(f"新增成员: {result['added']}")
+        if result.get('updated', 0) > 0:
+            msg_parts.append(f"更新成员: {result['updated']}")
+        if result.get('restored', 0) > 0:
+            msg_parts.append(f"恢复成员: {result['restored']}")
+        if result.get('removed', 0) > 0:
+            msg_parts.append(f"移除成员: {result['removed']}")
+        if result.get('unchanged', 0) > 0:
+            msg_parts.append(f"未变化成员: {result['unchanged']}")
         if result.get('failed', 0) > 0:
-            msg_text += f"\n失败成员: {result['failed']}"
+            msg_parts.append(f"失败成员: {result['failed']}")
 
-        msg = MessageBuilder.build_success_message(msg_text)
+        msg = MessageBuilder.build_success_message("\n".join(msg_parts))
         await init_members.finish(msg)
 
     except (FinishedException, PausedException, RejectedException):

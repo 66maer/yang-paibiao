@@ -62,6 +62,31 @@ class BotRemoveMembersResponse(BaseModel):
     results: List[BotRemoveResult] = Field(..., description="详细结果")
 
 
+# ============ 同步成员 ============
+
+class BotSyncMembersRequest(BaseModel):
+    """同步成员请求 - 以传入的成员列表为准，移除不在列表中的成员"""
+    members: List[BotMemberAdd] = Field(..., min_items=1, max_items=2000, description="当前群组的所有成员列表")
+
+
+class BotSyncMemberResult(BaseModel):
+    """同步成员单个结果"""
+    qq_number: str = Field(..., description="QQ号")
+    action: str = Field(..., description="操作: added/updated/removed/restored/unchanged/error")
+    message: str = Field(..., description="结果消息")
+
+
+class BotSyncMembersResponse(BaseModel):
+    """同步成员响应"""
+    added_count: int = Field(..., description="新增成员数量")
+    updated_count: int = Field(..., description="更新成员数量")
+    removed_count: int = Field(..., description="移除成员数量")
+    restored_count: int = Field(..., description="恢复成员数量")
+    unchanged_count: int = Field(..., description="未变化成员数量")
+    error_count: int = Field(..., description="错误数量")
+    results: List[BotSyncMemberResult] = Field(..., description="详细结果")
+
+
 class BotUpdateNicknameRequest(BaseModel):
     """修改群昵称请求"""
     group_nickname: str = Field(..., max_length=6, description="群内昵称（最多6个字符）")

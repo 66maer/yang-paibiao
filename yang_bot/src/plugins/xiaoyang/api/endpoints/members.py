@@ -89,3 +89,28 @@ class MembersEndpoint:
         # data 是一个字典，包含 members 键
         members = data.get("members", [])
         return [UserSearchResult(**user) for user in members]
+
+    async def sync_members(self, request: MemberBatchRequest) -> dict:
+        """
+        同步成员（以传入的成员列表为准）
+
+        此接口会：
+        - 添加新成员
+        - 更新已存在成员的信息
+        - 恢复曾离开的成员（包括红黑榜记录）
+        - 移除不在列表中的成员（隐藏红黑榜记录）
+        - 记录所有变更历史
+
+        Args:
+            request: 成员列表请求（包含当前群组的所有成员）
+
+        Returns:
+            dict: 同步结果，包含 added_count, updated_count, removed_count, 
+                  restored_count, unchanged_count, error_count, results
+        """
+        data = await self.client.request(
+            "POST",
+            f"/api/v2/bot/guilds/{self.client.guild_id}/members/sync",
+            json=request.model_dump()
+        )
+        return data

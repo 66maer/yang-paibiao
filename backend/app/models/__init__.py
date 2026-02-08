@@ -18,6 +18,7 @@ from app.models.team_log import TeamLog
 from app.models.bot import Bot, BotGuild
 from app.models.weekly_record import WeeklyRecordConfig, WeeklyRecord
 from app.models.guild_dungeon_config import GuildDungeonConfig
+from app.models.member_change_history import MemberChangeHistory
 
 __all__ = [
 	"SystemAdmin",
@@ -39,4 +40,5 @@ __all__ = [
 	"WeeklyRecordConfig",
 	"WeeklyRecord",
 	"GuildDungeonConfig",
+	"MemberChangeHistory",
 ]

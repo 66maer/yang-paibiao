@@ -13,6 +13,7 @@ from app.models.ranking_snapshot import RankingSnapshot
 from app.models.season_correction_factor import SeasonCorrectionFactor
 from app.models.signup import Signup
 from app.models.team import Team
+from app.models.guild_member import GuildMember
 
 
 class RankingService:
@@ -272,7 +273,23 @@ class RankingService:
             )
             .distinct()
         )
-        user_ids = [row[0] for row in result.all()]
+        all_user_ids = [row[0] for row in result.all()]
+        
+        # 过滤掉已退群的成员（left_at 不为空表示已退群）
+        active_members_result = await self.db.execute(
+            select(GuildMember.user_id)
+            .where(
+                and_(
+                    GuildMember.guild_id == guild_id,
+                    GuildMember.user_id.in_(all_user_ids),
+                    GuildMember.left_at.is_(None)
+                )
+            )
+        )
+        active_user_ids = {row[0] for row in active_members_result.all()}
+        
+        # 只保留仍在群组中的用户
+        user_ids = [uid for uid in all_user_ids if uid in active_user_ids]
 
         # 预先计算车次映射（避免重复计算）
         car_number_map = await self._get_car_number_map(guild_id)

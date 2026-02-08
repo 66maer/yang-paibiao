@@ -32,5 +32,8 @@ class RankingSnapshot(Base):
     score_change = Column(DECIMAL(12, 2), nullable=True, default=0, comment="分数变化值")
     rank_change_value = Column(Integer, nullable=True, default=0, comment="排名变化值（正数表示上升）")
 
+    # 软删除字段（成员退群时隐藏红黑榜记录）
+    deleted_at = Column(DateTime, nullable=True, comment="软删除时间")
+
     def __repr__(self):
         return f"<RankingSnapshot(id={self.id}, guild_id={self.guild_id}, user_id={self.user_id}, rank={self.rank_position})>"

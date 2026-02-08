@@ -4,7 +4,7 @@ Bot API - 成员管理
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app.database import get_db
 from app.api.deps import get_current_bot, verify_bot_guild_access_by_qq
@@ -12,6 +12,8 @@ from app.models.bot import Bot
 from app.models.guild import Guild
 from app.models.user import User
 from app.models.guild_member import GuildMember
+from app.models.ranking_snapshot import RankingSnapshot
+from app.models.member_change_history import MemberChangeHistory
 from app.schemas.bot import (
     BotAddMembersRequest,
     BotAddMembersResponse,
@@ -22,6 +24,9 @@ from app.schemas.bot import (
     BotUpdateNicknameRequest,
     BotMemberInfo,
     BotMemberSearchResponse,
+    BotSyncMembersRequest,
+    BotSyncMembersResponse,
+    BotSyncMemberResult,
 )
 from app.schemas.common import ResponseModel
 from app.core.security import get_password_hash
@@ -101,6 +106,28 @@ async def batch_add_members(
                 gm.joined_at = datetime.utcnow()
                 if member_data.group_nickname:
                     gm.group_nickname = member_data.group_nickname
+                
+                # 恢复该用户在该群组的红黑榜记录（如果有被软删除的）
+                await db.execute(
+                    update(RankingSnapshot)
+                    .where(
+                        RankingSnapshot.guild_id == guild.id,
+                        RankingSnapshot.user_id == user.id,
+                        RankingSnapshot.deleted_at.isnot(None)
+                    )
+                    .values(deleted_at=None)
+                )
+                
+                # 记录变更历史
+                history = MemberChangeHistory(
+                    guild_id=guild.id,
+                    user_id=user.id,
+                    action="restore",
+                    reason="bot_sync",
+                    notes="成员重新加入群组，恢复红黑榜记录"
+                )
+                db.add(history)
+                
                 status_msg = "re_added"
             else:
                 # 新成员
@@ -111,6 +138,17 @@ async def batch_add_members(
                     group_nickname=member_data.group_nickname
                 )
                 db.add(gm)
+                
+                # 记录变更历史
+                history = MemberChangeHistory(
+                    guild_id=guild.id,
+                    user_id=user.id,
+                    action="join",
+                    reason="bot_sync",
+                    notes="新成员加入群组"
+                )
+                db.add(history)
+                
                 status_msg = "added"
 
             await db.flush()
@@ -214,6 +252,28 @@ async def batch_remove_members(
 
             # 软删除：设置left_at
             gm.left_at = datetime.utcnow()
+            
+            # 软删除该用户在该群组的红黑榜记录
+            await db.execute(
+                update(RankingSnapshot)
+                .where(
+                    RankingSnapshot.guild_id == guild.id,
+                    RankingSnapshot.user_id == user.id,
+                    RankingSnapshot.deleted_at.is_(None)
+                )
+                .values(deleted_at=datetime.utcnow())
+            )
+            
+            # 记录变更历史
+            history = MemberChangeHistory(
+                guild_id=guild.id,
+                user_id=user.id,
+                action="leave",
+                reason="bot_sync",
+                notes="成员离开群组，红黑榜记录已隐藏"
+            )
+            db.add(history)
+            
             await db.flush()
 
             success_count += 1
@@ -358,3 +418,239 @@ async def search_members(
         ))
 
     return ResponseModel(data=BotMemberSearchResponse(members=members))
+
+
+@router.post(
+    "/guilds/{guild_qq_number}/members/sync",
+    response_model=ResponseModel[BotSyncMembersResponse]
+)
+async def sync_members(
+    guild_qq_number: str,
+    payload: BotSyncMembersRequest,
+    bot: Bot = Depends(get_current_bot),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    同步群组成员（通过QQ群号）
+    
+    以传入的成员列表为准：
+    - 新成员：添加到群组
+    - 已存在成员：更新信息
+    - 曾离开成员：恢复（清除left_at），同时恢复关联的金团记录
+    - 不在列表中的活跃成员：软删除（设置left_at），同时软删除关联的金团记录
+    - 记录所有变更历史
+    """
+    # 验证Bot权限
+    guild = await verify_bot_guild_access_by_qq(bot, guild_qq_number, db)
+    
+    results = []
+    added_count = 0
+    updated_count = 0
+    removed_count = 0
+    restored_count = 0
+    unchanged_count = 0
+    error_count = 0
+    
+    # 构建传入的QQ号集合
+    input_qq_numbers = {m.qq_number for m in payload.members}
+    
+    # 获取当前群组的所有活跃成员
+    current_members_result = await db.execute(
+        select(GuildMember, User)
+        .join(User, User.id == GuildMember.user_id)
+        .where(
+            GuildMember.guild_id == guild.id,
+            GuildMember.left_at.is_(None),
+            User.deleted_at.is_(None)
+        )
+    )
+    current_members = {row.User.qq_number: (row.GuildMember, row.User) for row in current_members_result.all()}
+    current_qq_numbers = set(current_members.keys())
+    
+    # 1. 处理传入的成员列表（添加/更新/恢复）
+    for member_data in payload.members:
+        try:
+            # 查找或创建用户
+            user_result = await db.execute(
+                select(User).where(
+                    User.qq_number == member_data.qq_number,
+                    User.deleted_at.is_(None)
+                )
+            )
+            user = user_result.scalar_one_or_none()
+            
+            if not user:
+                # 创建新用户
+                user = User(
+                    qq_number=member_data.qq_number,
+                    password_hash=get_password_hash("123456"),
+                    nickname=member_data.nickname
+                )
+                db.add(user)
+                await db.flush()
+            
+            # 查找群成员关系
+            gm_result = await db.execute(
+                select(GuildMember).where(
+                    GuildMember.guild_id == guild.id,
+                    GuildMember.user_id == user.id
+                )
+            )
+            gm = gm_result.scalar_one_or_none()
+            
+            if gm and gm.left_at is None:
+                # 已是活跃成员，检查是否需要更新
+                if member_data.group_nickname and gm.group_nickname != member_data.group_nickname:
+                    gm.group_nickname = member_data.group_nickname
+                    updated_count += 1
+                    results.append(BotSyncMemberResult(
+                        qq_number=member_data.qq_number,
+                        action="updated",
+                        message="更新群昵称"
+                    ))
+                else:
+                    unchanged_count += 1
+                    results.append(BotSyncMemberResult(
+                        qq_number=member_data.qq_number,
+                        action="unchanged",
+                        message="成员信息无变化"
+                    ))
+            elif gm and gm.left_at is not None:
+                # 曾离开，恢复
+                gm.left_at = None
+                gm.joined_at = datetime.utcnow()
+                if member_data.group_nickname:
+                    gm.group_nickname = member_data.group_nickname
+                
+                # 恢复关联的红黑榜记录
+                await db.execute(
+                    update(RankingSnapshot)
+                    .where(
+                        RankingSnapshot.guild_id == guild.id,
+                        RankingSnapshot.user_id == user.id,
+                        RankingSnapshot.deleted_at.isnot(None)
+                    )
+                    .values(deleted_at=None)
+                )
+                
+                # 记录变更历史
+                history = MemberChangeHistory(
+                    guild_id=guild.id,
+                    user_id=user.id,
+                    action="restore",
+                    reason="bot_sync",
+                    notes="成员重新加入群组，恢复红黑榜记录"
+                )
+                db.add(history)
+                
+                restored_count += 1
+                results.append(BotSyncMemberResult(
+                    qq_number=member_data.qq_number,
+                    action="restored",
+                    message="成员恢复"
+                ))
+            else:
+                # 新成员
+                gm = GuildMember(
+                    guild_id=guild.id,
+                    user_id=user.id,
+                    role="member",
+                    group_nickname=member_data.group_nickname
+                )
+                db.add(gm)
+                
+                # 记录变更历史
+                history = MemberChangeHistory(
+                    guild_id=guild.id,
+                    user_id=user.id,
+                    action="join",
+                    reason="bot_sync",
+                    notes="新成员加入群组"
+                )
+                db.add(history)
+                
+                added_count += 1
+                results.append(BotSyncMemberResult(
+                    qq_number=member_data.qq_number,
+                    action="added",
+                    message="新成员添加"
+                ))
+            
+            await db.flush()
+            
+        except Exception as e:
+            error_count += 1
+            results.append(BotSyncMemberResult(
+                qq_number=member_data.qq_number,
+                action="error",
+                message=str(e)
+            ))
+    
+    # 2. 处理不在传入列表中的活跃成员（移除）
+    members_to_remove = current_qq_numbers - input_qq_numbers
+    for qq_number in members_to_remove:
+        try:
+            gm, user = current_members[qq_number]
+            
+            # 不能移除群主
+            if gm.role == "owner":
+                results.append(BotSyncMemberResult(
+                    qq_number=qq_number,
+                    action="error",
+                    message="不能移除群主"
+                ))
+                error_count += 1
+                continue
+            
+            # 软删除成员
+            gm.left_at = datetime.utcnow()
+            
+            # 软删除关联的红黑榜记录
+            await db.execute(
+                update(RankingSnapshot)
+                .where(
+                    RankingSnapshot.guild_id == guild.id,
+                    RankingSnapshot.user_id == user.id,
+                    RankingSnapshot.deleted_at.is_(None)
+                )
+                .values(deleted_at=datetime.utcnow())
+            )
+            
+            # 记录变更历史
+            history = MemberChangeHistory(
+                guild_id=guild.id,
+                user_id=user.id,
+                action="leave",
+                reason="bot_sync",
+                notes="成员离开群组（同步移除），红黑榜记录已隐藏"
+            )
+            db.add(history)
+            
+            await db.flush()
+            
+            removed_count += 1
+            results.append(BotSyncMemberResult(
+                qq_number=qq_number,
+                action="removed",
+                message="成员已移除"
+            ))
+            
+        except Exception as e:
+            error_count += 1
+            results.append(BotSyncMemberResult(
+                qq_number=qq_number,
+                action="error",
+                message=str(e)
+            ))
+    
+    await db.commit()
+    
+    return ResponseModel(data=BotSyncMembersResponse(
+        added_count=added_count,
+        updated_count=updated_count,
+        removed_count=removed_count,
+        restored_count=restored_count,
+        unchanged_count=unchanged_count,
+        error_count=error_count,
+        results=results
+    ))
