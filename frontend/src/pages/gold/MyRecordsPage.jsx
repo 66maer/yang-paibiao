@@ -188,57 +188,64 @@ function RecordCell({ cell, characterId, dungeonName, weekStart, isCurrentWeek, 
           {saving ? <Spinner size="sm" color="current" /> : isCleared ? "✓" : "○"}
         </button>
 
-        {/* 收入金额显示/编辑 */}
-        {isEditing ? (
-          <Input
-            size="sm"
-            type="number"
-            value={goldAmount}
-            onChange={(e) => setGoldAmount(e.target.value)}
-            onBlur={handleGoldSave}
-            onKeyDown={handleKeyDown}
-            className="w-24"
-            autoFocus
-          />
-        ) : (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="text-xs text-default-500 hover:text-primary min-w-[40px]"
-          >
-            {formatGold(cell.gold_amount)}
-          </button>
-        )}
-
-        {/* 消费金额显示/编辑 */}
-        {isEditingExpense ? (
-          <Input
-            size="sm"
-            type="number"
-            value={expenseAmount}
-            onChange={(e) => setExpenseAmount(e.target.value)}
-            onBlur={handleExpenseSave}
-            onKeyDown={handleExpenseKeyDown}
-            className="w-24"
-            autoFocus
-            placeholder="消费金额"
-          />
-        ) : cell.expense_amount ? (
-          <button
-            onClick={() => setIsEditingExpense(true)}
-            className="text-xs text-warning-600 dark:text-warning-400 min-w-[40px]"
-          >
-            -{formatGold(cell.expense_amount)}
-          </button>
-        ) : (
-          <Tooltip content="点击记录消费">
+        {/* 金额行：收入 + 消费同行显示 */}
+        <div className="flex items-center justify-center gap-1">
+          {/* 收入金额 */}
+          {isEditing ? (
+            <Input
+              size="sm"
+              type="number"
+              value={goldAmount}
+              onChange={(e) => setGoldAmount(e.target.value)}
+              onBlur={handleGoldSave}
+              onKeyDown={handleKeyDown}
+              className="w-24"
+              autoFocus
+            />
+          ) : (
             <button
-              onClick={() => setIsEditingExpense(true)}
-              className="text-xs text-default-300 hover:text-warning-500 min-w-[40px] opacity-0 hover:opacity-100 transition-opacity"
+              onClick={() => setIsEditing(true)}
+              className="text-xs text-default-500 hover:text-primary"
             >
-              +消费
+              {formatGold(cell.gold_amount)}
             </button>
-          </Tooltip>
-        )}
+          )}
+
+          {/* 消费金额（同一行，括号包裹） */}
+          {!isEditing && (
+            <>
+              {isEditingExpense ? (
+                <Input
+                  size="sm"
+                  type="number"
+                  value={expenseAmount}
+                  onChange={(e) => setExpenseAmount(e.target.value)}
+                  onBlur={handleExpenseSave}
+                  onKeyDown={handleExpenseKeyDown}
+                  className="w-20"
+                  autoFocus
+                  placeholder="消费"
+                />
+              ) : cell.expense_amount ? (
+                <button
+                  onClick={() => setIsEditingExpense(true)}
+                  className="text-xs text-warning-600 dark:text-warning-400"
+                >
+                  (-{formatGold(cell.expense_amount)})
+                </button>
+              ) : (
+                <Tooltip content="点击记录消费">
+                  <button
+                    onClick={() => setIsEditingExpense(true)}
+                    className="text-xs text-default-300 hover:text-warning-500 opacity-0 hover:opacity-100 transition-opacity"
+                  >
+                    +消费
+                  </button>
+                </Tooltip>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -593,11 +600,17 @@ export default function MyRecordsPage() {
 
                       {/* 行合计 */}
                       <TableCell className="text-center font-medium bg-primary-50 dark:bg-primary-900/20">
-                        <div>{formatGold(row.row_total)}</div>
-                        {row.row_expense_total > 0 && (
-                          <div className="text-xs text-warning-600 dark:text-warning-400">
-                            -{formatGold(row.row_expense_total)}
+                        {row.row_expense_total > 0 ? (
+                          <div className="text-xs leading-relaxed">
+                            <span>{formatGold(row.row_total)}</span>
+                            <span className="text-warning-600 dark:text-warning-400">(-{formatGold(row.row_expense_total)})</span>
+                            <span className="text-success-600 dark:text-success-400">=</span>
+                            <span className="text-success-600 dark:text-success-400 font-bold">
+                              {formatGold(row.row_total - row.row_expense_total)}
+                            </span>
                           </div>
+                        ) : (
+                          <div>{formatGold(row.row_total)}</div>
                         )}
                       </TableCell>
                     </TableRow>
@@ -607,26 +620,46 @@ export default function MyRecordsPage() {
                 {/* 列合计行 */}
                 <TableRow key="totals" className="bg-primary-100 dark:bg-primary-900/30 font-medium">
                   <TableCell>列合计</TableCell>
-                  {matrixData.columns.map((col) => (
-                    <TableCell key={`total-${col.name}`} className="text-center">
-                      <div>{formatGold(matrixData.column_totals[col.name])}</div>
-                      {matrixData.column_expense_totals?.[col.name] > 0 && (
-                        <div className="text-xs text-warning-600 dark:text-warning-400">
-                          -{formatGold(matrixData.column_expense_totals[col.name])}
+                  {matrixData.columns.map((col) => {
+                    const income = matrixData.column_totals[col.name] || 0;
+                    const expense = matrixData.column_expense_totals?.[col.name] || 0;
+                    return (
+                      <TableCell key={`total-${col.name}`} className="text-center">
+                        {expense > 0 ? (
+                          <div className="text-xs leading-relaxed">
+                            <span>{formatGold(income)}</span>
+                            <span className="text-warning-600 dark:text-warning-400">(-{formatGold(expense)})</span>
+                            <span className="text-success-600 dark:text-success-400">=</span>
+                            <span className="text-success-600 dark:text-success-400 font-bold">
+                              {formatGold(income - expense)}
+                            </span>
+                          </div>
+                        ) : (
+                          <div>{formatGold(income)}</div>
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                  <TableCell className="text-center bg-success-100 dark:bg-success-900/30">
+                    {matrixData.grand_expense_total > 0 ? (
+                      <Tooltip content="本周净收益">
+                        <div className="text-xs leading-relaxed">
+                          <span>{formatGold(matrixData.grand_total)}</span>
+                          <span className="text-warning-600 dark:text-warning-400">
+                            (-{formatGold(matrixData.grand_expense_total)})
+                          </span>
+                          <span className="text-success-600 dark:text-success-400">=</span>
+                          <span className="text-success-600 dark:text-success-400 font-bold text-base">
+                            {formatGold(matrixData.grand_total - matrixData.grand_expense_total)}
+                          </span>
                         </div>
-                      )}
-                    </TableCell>
-                  ))}
-                  <TableCell className="text-center text-lg bg-success-100 dark:bg-success-900/30">
-                    <Tooltip content="本周总收入">
-                      <span className="text-success-600 dark:text-success-400">
-                        {formatGold(matrixData.grand_total)}
-                      </span>
-                    </Tooltip>
-                    {matrixData.grand_expense_total > 0 && (
-                      <div className="text-xs text-warning-600 dark:text-warning-400">
-                        消费: -{formatGold(matrixData.grand_expense_total)}
-                      </div>
+                      </Tooltip>
+                    ) : (
+                      <Tooltip content="本周总收入">
+                        <span className="text-success-600 dark:text-success-400 text-lg">
+                          {formatGold(matrixData.grand_total)}
+                        </span>
+                      </Tooltip>
                     )}
                   </TableCell>
                 </TableRow>
