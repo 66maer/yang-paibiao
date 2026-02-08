@@ -193,8 +193,10 @@ async def get_weekly_matrix(
     # 构建行数据
     rows = []
     column_totals = {col.name: 0 for col in columns}
+    column_expense_totals = {col.name: 0 for col in columns}
     grand_total = 0
-    
+    grand_expense_total = 0
+
     for char in characters:
         char_info = CharacterInfo(
             id=char.id,
@@ -203,9 +205,10 @@ async def get_weekly_matrix(
             xinfa=char.xinfa,
             remark=char.remark
         )
-        
+
         cells = {}
         row_total = 0
+        row_expense_total = 0
 
         for col in columns:
             # 获取工资记录
@@ -218,28 +221,35 @@ async def get_weekly_matrix(
                     record_id=record.id if record else None,
                     is_cleared=is_cleared,
                     gold_amount=record.gold_amount if record else 0,
+                    expense_amount=record.expense_amount if record else 0,
                     gold_record_id=record.gold_record_id if record else None
                 )
                 if record:
                     row_total += record.gold_amount
                     column_totals[col.name] += record.gold_amount
+                    row_expense_total += record.expense_amount
+                    column_expense_totals[col.name] += record.expense_amount
             else:
                 cells[col.name] = CellData()
-        
+
         grand_total += row_total
+        grand_expense_total += row_expense_total
         rows.append(CharacterRowData(
             character=char_info,
             cells=cells,
-            row_total=row_total
+            row_total=row_total,
+            row_expense_total=row_expense_total
         ))
-    
+
     return success(WeeklyMatrixResponse(
         week_start_date=week_start,
         is_current_week=current_week,
         columns=columns,
         rows=rows,
         column_totals=column_totals,
-        grand_total=grand_total
+        grand_total=grand_total,
+        column_expense_totals=column_expense_totals,
+        grand_expense_total=grand_expense_total
     ))
 
 
@@ -393,14 +403,16 @@ async def create_weekly_record(
     if record:
         # 更新现有工资记录
         record.gold_amount = payload.gold_amount
-    elif payload.gold_amount > 0:
-        # 只有当工资大于0时才创建记录
+        record.expense_amount = payload.expense_amount
+    elif payload.gold_amount > 0 or payload.expense_amount > 0:
+        # 当工资或消费大于0时才创建记录
         record = WeeklyRecord(
             user_id=current_user.id,
             character_id=payload.character_id,
             week_start_date=week_start,
             dungeon_name=payload.dungeon_name,
-            gold_amount=payload.gold_amount
+            gold_amount=payload.gold_amount,
+            expense_amount=payload.expense_amount
         )
         db.add(record)
 
@@ -412,6 +424,7 @@ async def create_weekly_record(
         record_id=record.id if record else None,
         is_cleared=payload.is_cleared,
         gold_amount=payload.gold_amount,
+        expense_amount=payload.expense_amount,
         gold_record_id=record.gold_record_id if record else None
     ))
 
@@ -466,6 +479,10 @@ async def update_weekly_record(
     if payload.gold_amount is not None:
         record.gold_amount = payload.gold_amount
 
+    # 3. 更新消费金额（如果需要）
+    if payload.expense_amount is not None:
+        record.expense_amount = payload.expense_amount
+
     await db.commit()
     await db.refresh(record)
 
@@ -483,6 +500,7 @@ async def update_weekly_record(
         record_id=record.id,
         is_cleared=cd_status.is_cleared if cd_status else False,
         gold_amount=record.gold_amount,
+        expense_amount=record.expense_amount,
         gold_record_id=record.gold_record_id
     ))
 

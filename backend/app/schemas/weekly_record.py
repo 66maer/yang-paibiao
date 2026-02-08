@@ -35,6 +35,7 @@ class WeeklyRecordUpdate(BaseModel):
     """更新单元格数据"""
     is_cleared: Optional[bool] = Field(None, description="是否通关")
     gold_amount: Optional[int] = Field(None, ge=0, description="人均金团金额")
+    expense_amount: Optional[int] = Field(None, ge=0, description="消费金额")
 
 
 class WeeklyRecordCreate(BaseModel):
@@ -43,6 +44,7 @@ class WeeklyRecordCreate(BaseModel):
     dungeon_name: str = Field(..., description="副本名称")
     is_cleared: bool = Field(default=False, description="是否通关")
     gold_amount: int = Field(default=0, ge=0, description="人均金团金额")
+    expense_amount: int = Field(default=0, ge=0, description="消费金额")
 
 
 class CharacterInfo(BaseModel):
@@ -76,6 +78,7 @@ class CellData(BaseModel):
     record_id: Optional[int] = None
     is_cleared: bool = False
     gold_amount: int = 0
+    expense_amount: int = 0
     gold_record_id: Optional[int] = None
 
 
@@ -84,6 +87,7 @@ class CharacterRowData(BaseModel):
     character: CharacterInfo
     cells: dict[str, CellData]  # key: dungeon_name, value: CellData
     row_total: int = 0  # 该行总金额
+    row_expense_total: int = 0  # 该行消费合计
 
 
 class WeeklyMatrixResponse(BaseModel):
@@ -94,6 +98,8 @@ class WeeklyMatrixResponse(BaseModel):
     rows: List[CharacterRowData]
     column_totals: dict[str, int]  # key: dungeon_name, value: total
     grand_total: int = 0  # 总计
+    column_expense_totals: dict[str, int] = {}  # key: dungeon_name, value: expense total
+    grand_expense_total: int = 0  # 消费总计
 
 
 class WeekOption(BaseModel):

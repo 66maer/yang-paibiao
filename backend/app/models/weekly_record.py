@@ -139,6 +139,13 @@ class WeeklyRecord(Base):
         nullable=False,
         comment="人均金团金额"
     )
+    expense_amount = Column(
+        Integer,
+        default=0,
+        server_default="0",
+        nullable=False,
+        comment="消费金额"
+    )
     gold_record_id = Column(
         Integer,
         ForeignKey("gold_records.id", ondelete="SET NULL"),

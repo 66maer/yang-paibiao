@@ -52,12 +52,15 @@ const formatGold = (amount) => {
 function RecordCell({ cell, characterId, dungeonName, weekStart, isCurrentWeek, onUpdate }) {
   const [isCleared, setIsCleared] = useState(cell.is_cleared);
   const [goldAmount, setGoldAmount] = useState(cell.gold_amount || "");
+  const [expenseAmount, setExpenseAmount] = useState(cell.expense_amount || "");
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingExpense, setIsEditingExpense] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setIsCleared(cell.is_cleared);
     setGoldAmount(cell.gold_amount || "");
+    setExpenseAmount(cell.expense_amount || "");
   }, [cell]);
 
   const handleClearToggle = async () => {
@@ -77,6 +80,7 @@ function RecordCell({ cell, characterId, dungeonName, weekStart, isCurrentWeek, 
             dungeon_name: dungeonName,
             is_cleared: newCleared,
             gold_amount: parseInt(goldAmount) || 0,
+            expense_amount: parseInt(expenseAmount) || 0,
           },
           weekStart
         );
@@ -105,11 +109,41 @@ function RecordCell({ cell, characterId, dungeonName, weekStart, isCurrentWeek, 
             dungeon_name: dungeonName,
             is_cleared: isCleared,
             gold_amount: amount,
+            expense_amount: parseInt(expenseAmount) || 0,
           },
           weekStart
         );
       }
       setIsEditing(false);
+      onUpdate();
+    } catch (error) {
+      showToast.error("更新失败");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleExpenseSave = async () => {
+    if (saving) return;
+    setSaving(true);
+
+    try {
+      const amount = parseInt(expenseAmount) || 0;
+      if (cell.record_id) {
+        await updateWeeklyRecord(cell.record_id, { expense_amount: amount });
+      } else {
+        await createWeeklyRecord(
+          {
+            character_id: characterId,
+            dungeon_name: dungeonName,
+            is_cleared: isCleared,
+            gold_amount: parseInt(goldAmount) || 0,
+            expense_amount: amount,
+          },
+          weekStart
+        );
+      }
+      setIsEditingExpense(false);
       onUpdate();
     } catch (error) {
       showToast.error("更新失败");
@@ -124,6 +158,15 @@ function RecordCell({ cell, characterId, dungeonName, weekStart, isCurrentWeek, 
     } else if (e.key === "Escape") {
       setIsEditing(false);
       setGoldAmount(cell.gold_amount || "");
+    }
+  };
+
+  const handleExpenseKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleExpenseSave();
+    } else if (e.key === "Escape") {
+      setIsEditingExpense(false);
+      setExpenseAmount(cell.expense_amount || "");
     }
   };
 
@@ -145,7 +188,7 @@ function RecordCell({ cell, characterId, dungeonName, weekStart, isCurrentWeek, 
           {saving ? <Spinner size="sm" color="current" /> : isCleared ? "✓" : "○"}
         </button>
 
-        {/* 金额显示/编辑 */}
+        {/* 收入金额显示/编辑 */}
         {isEditing ? (
           <Input
             size="sm"
@@ -164,6 +207,37 @@ function RecordCell({ cell, characterId, dungeonName, weekStart, isCurrentWeek, 
           >
             {formatGold(cell.gold_amount)}
           </button>
+        )}
+
+        {/* 消费金额显示/编辑 */}
+        {isEditingExpense ? (
+          <Input
+            size="sm"
+            type="number"
+            value={expenseAmount}
+            onChange={(e) => setExpenseAmount(e.target.value)}
+            onBlur={handleExpenseSave}
+            onKeyDown={handleExpenseKeyDown}
+            className="w-24"
+            autoFocus
+            placeholder="消费金额"
+          />
+        ) : cell.expense_amount ? (
+          <button
+            onClick={() => setIsEditingExpense(true)}
+            className="text-xs text-warning-600 dark:text-warning-400 min-w-[40px]"
+          >
+            -{formatGold(cell.expense_amount)}
+          </button>
+        ) : (
+          <Tooltip content="点击记录消费">
+            <button
+              onClick={() => setIsEditingExpense(true)}
+              className="text-xs text-default-300 hover:text-warning-500 min-w-[40px] opacity-0 hover:opacity-100 transition-opacity"
+            >
+              +消费
+            </button>
+          </Tooltip>
         )}
       </div>
     </div>
@@ -519,7 +593,12 @@ export default function MyRecordsPage() {
 
                       {/* 行合计 */}
                       <TableCell className="text-center font-medium bg-primary-50 dark:bg-primary-900/20">
-                        {formatGold(row.row_total)}
+                        <div>{formatGold(row.row_total)}</div>
+                        {row.row_expense_total > 0 && (
+                          <div className="text-xs text-warning-600 dark:text-warning-400">
+                            -{formatGold(row.row_expense_total)}
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
@@ -530,7 +609,12 @@ export default function MyRecordsPage() {
                   <TableCell>列合计</TableCell>
                   {matrixData.columns.map((col) => (
                     <TableCell key={`total-${col.name}`} className="text-center">
-                      {formatGold(matrixData.column_totals[col.name])}
+                      <div>{formatGold(matrixData.column_totals[col.name])}</div>
+                      {matrixData.column_expense_totals?.[col.name] > 0 && (
+                        <div className="text-xs text-warning-600 dark:text-warning-400">
+                          -{formatGold(matrixData.column_expense_totals[col.name])}
+                        </div>
+                      )}
                     </TableCell>
                   ))}
                   <TableCell className="text-center text-lg bg-success-100 dark:bg-success-900/30">
@@ -539,6 +623,11 @@ export default function MyRecordsPage() {
                         {formatGold(matrixData.grand_total)}
                       </span>
                     </Tooltip>
+                    {matrixData.grand_expense_total > 0 && (
+                      <div className="text-xs text-warning-600 dark:text-warning-400">
+                        消费: -{formatGold(matrixData.grand_expense_total)}
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               </TableBody>
