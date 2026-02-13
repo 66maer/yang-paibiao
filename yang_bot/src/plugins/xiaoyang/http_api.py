@@ -139,8 +139,8 @@ async def send_card(request: SendCardRequest) -> SendCardResponse:
         screenshot_url = f"{config.frontend_url}/games/2026/card?{urlencode(params)}"
         logger.info(f"构建卡牌截图URL: {screenshot_url}")
 
-        # 截图
-        image_bytes = await screenshot_service.capture_url(screenshot_url)
+        # 截图（卡片宽度260px + padding 64px = 324px）
+        image_bytes = await screenshot_service.capture_url(screenshot_url, viewport_width=330)
         image_b64 = base64.b64encode(image_bytes).decode()
 
         # 构建消息

@@ -42,9 +42,8 @@ class ScreenshotService:
                 headless=True,
                 args=["--no-sandbox", "--disable-dev-shm-usage"]
             )
-            # 卡片宽度 260px + padding 64px = 324px
             self._context = await self._browser.new_context(
-                viewport={"width": 330, "height": 0},
+                viewport={"width": 1280, "height": 0},
                 device_scale_factor=1
             )
             logger.info("Playwright 浏览器启动成功")
@@ -175,7 +174,12 @@ class ScreenshotService:
             logger.error(f"截图失败: {e}")
             raise
 
-    async def capture_url(self, url: str, wait_selector: str = "[data-screenshot-ready='true']") -> bytes:
+    async def capture_url(
+        self,
+        url: str,
+        wait_selector: str = "[data-screenshot-ready='true']",
+        viewport_width: Optional[int] = None
+    ) -> bytes:
         """
         通用 URL 截图，复用现有 Playwright 浏览器实例。
         不使用缓存（每次内容可能不同）。
@@ -183,6 +187,7 @@ class ScreenshotService:
         Args:
             url: 要截图的完整 URL
             wait_selector: 等待的 CSS 选择器（确保页面加载完成）
+            viewport_width: 自定义视口宽度（像素），None则使用默认1280
 
         Returns:
             PNG 图片的字节数据
@@ -190,9 +195,19 @@ class ScreenshotService:
         await self._ensure_browser()
 
         try:
-            page = await self._context.new_page()
-            logger.info(f"通用截图 - 访问页面: {url}")
+            # 如果指定了自定义视口宽度，创建新的上下文
+            if viewport_width is not None:
+                context = await self._browser.new_context(
+                    viewport={"width": viewport_width, "height": 0},
+                    device_scale_factor=1
+                )
+                page = await context.new_page()
+                logger.info(f"通用截图 - 使用自定义视口宽度: {viewport_width}px")
+            else:
+                page = await self._context.new_page()
+                logger.info(f"通用截图 - 使用默认视口宽度")
 
+            logger.info(f"通用截图 - 访问页面: {url}")
             await page.goto(url, wait_until="networkidle", timeout=15000)
 
             # 等待页面内容加载完成
@@ -203,9 +218,13 @@ class ScreenshotService:
                 except Exception as e:
                     logger.warning(f"通用截图 - 等待选择器超时: {e}")
 
-            # 截取整页（视口宽度已调整为适合卡片的尺寸）
+            # 截取整页
             screenshot = await page.screenshot(type="png", full_page=True)
+            
+            # 清理
             await page.close()
+            if viewport_width is not None:
+                await context.close()
 
             logger.info(f"通用截图成功，大小: {len(screenshot)} bytes")
             return screenshot
