@@ -42,8 +42,9 @@ class ScreenshotService:
                 headless=True,
                 args=["--no-sandbox", "--disable-dev-shm-usage"]
             )
+            # 卡片宽度 260px + padding 64px = 324px
             self._context = await self._browser.new_context(
-                viewport={"width": 1280, "height": 0},
+                viewport={"width": 330, "height": 0},
                 device_scale_factor=1
             )
             logger.info("Playwright 浏览器启动成功")
@@ -174,14 +175,14 @@ class ScreenshotService:
             logger.error(f"截图失败: {e}")
             raise
 
-    async def capture_url(self, url: str, selector: str = "[data-screenshot-ready='true']") -> bytes:
+    async def capture_url(self, url: str, wait_selector: str = "[data-screenshot-ready='true']") -> bytes:
         """
         通用 URL 截图，复用现有 Playwright 浏览器实例。
         不使用缓存（每次内容可能不同）。
 
         Args:
             url: 要截图的完整 URL
-            selector: 等待的 CSS 选择器
+            wait_selector: 等待的 CSS 选择器（确保页面加载完成）
 
         Returns:
             PNG 图片的字节数据
@@ -194,11 +195,15 @@ class ScreenshotService:
 
             await page.goto(url, wait_until="networkidle", timeout=15000)
 
-            try:
-                await page.wait_for_selector(selector, timeout=10000)
-            except Exception as e:
-                logger.warning(f"通用截图 - 等待选择器超时: {e}")
+            # 等待页面内容加载完成
+            if wait_selector:
+                try:
+                    await page.wait_for_selector(wait_selector, timeout=10000)
+                    logger.info(f"通用截图 - 页面加载完成: {wait_selector}")
+                except Exception as e:
+                    logger.warning(f"通用截图 - 等待选择器超时: {e}")
 
+            # 截取整页（视口宽度已调整为适合卡片的尺寸）
             screenshot = await page.screenshot(type="png", full_page=True)
             await page.close()
 
