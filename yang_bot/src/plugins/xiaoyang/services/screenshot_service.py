@@ -174,6 +174,41 @@ class ScreenshotService:
             logger.error(f"截图失败: {e}")
             raise
 
+    async def capture_url(self, url: str, selector: str = "[data-screenshot-ready='true']") -> bytes:
+        """
+        通用 URL 截图，复用现有 Playwright 浏览器实例。
+        不使用缓存（每次内容可能不同）。
+
+        Args:
+            url: 要截图的完整 URL
+            selector: 等待的 CSS 选择器
+
+        Returns:
+            PNG 图片的字节数据
+        """
+        await self._ensure_browser()
+
+        try:
+            page = await self._context.new_page()
+            logger.info(f"通用截图 - 访问页面: {url}")
+
+            await page.goto(url, wait_until="networkidle", timeout=15000)
+
+            try:
+                await page.wait_for_selector(selector, timeout=10000)
+            except Exception as e:
+                logger.warning(f"通用截图 - 等待选择器超时: {e}")
+
+            screenshot = await page.screenshot(type="png", full_page=True)
+            await page.close()
+
+            logger.info(f"通用截图成功，大小: {len(screenshot)} bytes")
+            return screenshot
+
+        except Exception as e:
+            logger.error(f"通用截图失败: {e}")
+            raise
+
     def _cleanup_old_cache(self, team_id: int, keep: int = 10):
         """
         清理旧缓存文件

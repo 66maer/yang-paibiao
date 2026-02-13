@@ -1,10 +1,13 @@
 """HTTP API - 提供召唤成员等 HTTP 接口供 Backend 调用"""
+import base64
 from typing import List
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
 from nonebot import get_bot, logger
 from nonebot.adapters.onebot.v11 import Bot, Message, MessageSegment
 from nonebot.exception import ActionFailed
+
+from .services.screenshot_service import screenshot_service
 
 # 创建 API 路由器
 api_router = APIRouter(prefix="/api", tags=["HTTP API"])
@@ -78,6 +81,65 @@ async def call_members(request: CallMembersRequest) -> CallMembersResponse:
     except Exception as e:
         logger.exception(f"召唤成员失败: {e}")
         raise HTTPException(status_code=500, detail=f"召唤成员失败: {e}") from e
+
+
+class SendCardRequest(BaseModel):
+    """发送卡牌请求"""
+
+    url: str = Field(..., description="卡牌截图URL")
+    group_id: str = Field(..., description="QQ群号")
+    text: str = Field(default="", description="文字消息")
+
+
+class SendCardResponse(BaseModel):
+    """发送卡牌响应"""
+
+    success: bool = Field(..., description="是否成功")
+    message: str = Field(default="", description="响应消息")
+
+
+@api_router.post("/send-card", response_model=SendCardResponse)
+async def send_card(request: SendCardRequest) -> SendCardResponse:
+    """
+    截图卡牌并发送到QQ群
+
+    1. 用 screenshot_service 截图 request.url
+    2. base64 编码
+    3. 构建消息: text + image
+    4. 发送群消息
+    """
+    try:
+        bot: Bot = get_bot()
+
+        # 截图
+        image_bytes = await screenshot_service.capture_url(request.url)
+        image_b64 = base64.b64encode(image_bytes).decode()
+
+        # 构建消息
+        msg = Message()
+        if request.text:
+            msg += request.text + "\n"
+        msg += MessageSegment.image(f"base64://{image_b64}")
+
+        # 发送
+        group_id = int(request.group_id)
+        await bot.send_group_msg(group_id=group_id, message=msg)
+
+        logger.info(f"成功发送卡牌到群 {request.group_id}")
+
+        return SendCardResponse(success=True, message="发送成功")
+
+    except ActionFailed as e:
+        logger.error(f"发送卡牌群消息失败: {e}")
+        raise HTTPException(status_code=500, detail=f"发送群消息失败: {e}") from e
+
+    except ValueError as e:
+        logger.error(f"群号格式错误: {request.group_id}")
+        raise HTTPException(status_code=400, detail="群号格式错误") from e
+
+    except Exception as e:
+        logger.exception(f"发送卡牌失败: {e}")
+        raise HTTPException(status_code=500, detail=f"发送卡牌失败: {e}") from e
 
 
 @root_router.get("/health")

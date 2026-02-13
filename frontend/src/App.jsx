@@ -36,6 +36,9 @@ import GuildConfigLayout from "@/layouts/GuildConfigLayout";
 import GuildDungeonConfigPage from "@/pages/guild/GuildDungeonConfigPage";
 import GuildSeasonCorrectionPage from "@/pages/guild/GuildSeasonCorrectionPage";
 import GuildQuickTeamConfigPage from "@/pages/guild/GuildQuickTeamConfigPage";
+import Games2026Page from "@/pages/games/Games2026Page";
+import GameConsolePage from "@/pages/games/GameConsolePage";
+import GameCardSinglePage from "@/pages/games/GameCardSinglePage";
 
 function AppContent() {
   const navigate = useNavigate();
@@ -51,6 +54,11 @@ function AppContent() {
 
         {/* 组件调试页面（无需登录） */}
         <Route path="/debug/team-board" element={<DebugTeamBoardPage />} />
+
+        {/* 游戏页面（无需登录） */}
+        <Route path="/games/2026" element={<GameConsolePage />} />
+        <Route path="/games/2026/card_book" element={<Games2026Page />} />
+        <Route path="/games/2026/card" element={<GameCardSinglePage />} />
 
         {/* Bot专用页面（无需登录） */}
         <Route path="/bot/guilds/:guild_qq_number/teams/:team_id" element={<TeamImagePage />} />

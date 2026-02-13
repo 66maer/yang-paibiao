@@ -12,6 +12,7 @@ from app.api.v2.endpoints import configs
 from app.api.v2.endpoints import ranking
 from app.api.v2.endpoints import my_records
 from app.api.v2.endpoints import guild_configs
+from app.api.v2.endpoints import game_console
 from app.api.v2 import admin
 from app.api.v2 import users
 from app.api.v2 import characters
@@ -106,4 +107,10 @@ api_router.include_router(
     guild_configs.router,
     prefix="/guild-configs",
     tags=["群组配置"]
+)
+
+# 游戏控制台接口
+api_router.include_router(
+    game_console.router,
+    tags=["游戏控制台"]
 )
