@@ -86,9 +86,14 @@ async def call_members(request: CallMembersRequest) -> CallMembersResponse:
 class SendCardRequest(BaseModel):
     """发送卡牌请求"""
 
-    url: str = Field(..., description="卡牌截图URL")
     group_id: str = Field(..., description="QQ群号")
     text: str = Field(default="", description="文字消息")
+    card_type: str = Field(..., description="卡牌类型")
+    card_name: str = Field(..., description="卡牌名称")
+    desc: str = Field(..., description="卡牌描述")
+    enhanced: str = Field(default="", description="强化效果")
+    note: str = Field(default="", description="备注")
+    image_dir: str = Field(default="", description="图片目录")
 
 
 class SendCardResponse(BaseModel):
@@ -103,16 +108,39 @@ async def send_card(request: SendCardRequest) -> SendCardResponse:
     """
     截图卡牌并发送到QQ群
 
-    1. 用 screenshot_service 截图 request.url
-    2. base64 编码
-    3. 构建消息: text + image
-    4. 发送群消息
+    1. 根据卡牌参数构建前端URL
+    2. 用 screenshot_service 截图
+    3. base64 编码
+    4. 构建消息: text + image
+    5. 发送群消息
     """
     try:
         bot: Bot = get_bot()
 
+        # 从配置获取 frontend_url
+        from .config import Config
+        config = Config()
+        
+        # 构建卡牌URL参数
+        from urllib.parse import urlencode
+        params = {
+            "type": request.card_type,
+            "name": request.card_name,
+            "desc": request.desc,
+        }
+        if request.enhanced:
+            params["enhanced"] = request.enhanced
+        if request.note:
+            params["note"] = request.note
+        if request.image_dir:
+            params["image_dir"] = request.image_dir
+        
+        # 使用机器人端配置的 frontend_url 构建截图URL
+        screenshot_url = f"{config.frontend_url}/games/2026/card?{urlencode(params)}"
+        logger.info(f"构建卡牌截图URL: {screenshot_url}")
+
         # 截图
-        image_bytes = await screenshot_service.capture_url(request.url)
+        image_bytes = await screenshot_service.capture_url(screenshot_url)
         image_b64 = base64.b64encode(image_bytes).decode()
 
         # 构建消息

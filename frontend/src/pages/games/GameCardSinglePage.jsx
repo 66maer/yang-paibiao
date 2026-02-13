@@ -13,16 +13,15 @@ export default function GameCardSinglePage() {
 
   // 天使卡特判
   if (type === "天使") {
+    const angelImage = getImagePath(name || "天使卡", "天使");
     return (
-      <div
-        className="min-h-screen bg-gray-950 flex items-center justify-center p-8"
-        data-screenshot-ready="true"
-      >
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-8" data-screenshot-ready="true">
         <GameCard
           type="天使"
-          title={name || "天使赐福"}
+          title={name || "天使卡"}
           description={desc || "获得金币"}
           note={note}
+          image={angelImage}
         />
       </div>
     );
@@ -31,18 +30,8 @@ export default function GameCardSinglePage() {
   const image = getImagePath(name, imageDir);
 
   return (
-    <div
-      className="min-h-screen bg-gray-950 flex items-center justify-center p-8"
-      data-screenshot-ready="true"
-    >
-      <GameCard
-        type={type}
-        title={name}
-        description={desc}
-        enhancedEffect={enhanced}
-        note={note}
-        image={image}
-      />
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-8" data-screenshot-ready="true">
+      <GameCard type={type} title={name} description={desc} enhancedEffect={enhanced} note={note} image={image} />
     </div>
   );
 }

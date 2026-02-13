@@ -7,19 +7,12 @@ import { getImagePath } from "../cardUtils";
 import cardData from "../cardData.json";
 
 const cardTypes = ["恶魔卡", "混沌卡", "绝境卡", "天使卡"];
-const typeToDir = { 恶魔卡: "恶魔", 混沌卡: "混沌", 绝境卡: "绝境" };
+const typeToDir = { 恶魔卡: "恶魔", 混沌卡: "混沌", 绝境卡: "绝境", 天使卡: "天使" };
 const typeToDisplay = { 恶魔卡: "恶魔", 混沌卡: "混沌", 绝境卡: "绝境", 天使卡: "天使" };
 
 export default function CardDrawArea() {
-  const {
-    currentBoss,
-    discardPile,
-    qqGroupNumber,
-    addToDiscardPile,
-    assignCardToTeam,
-    addLog,
-    removeFromDiscardPile,
-  } = useGameConsoleStore();
+  const { currentBoss, discardPile, qqGroupNumber, addToDiscardPile, assignCardToTeam, addLog, removeFromDiscardPile } =
+    useGameConsoleStore();
 
   const [selectedType, setSelectedType] = useState("恶魔卡");
   const [selectedCardId, setSelectedCardId] = useState(null);
@@ -40,9 +33,7 @@ export default function CardDrawArea() {
   const availableCards = useMemo(() => {
     if (selectedType === "天使卡") return [];
     const cards = cardData[selectedType] || [];
-    const discardedIds = new Set(
-      discardPile.filter((c) => c.type === typeToDisplay[selectedType]).map((c) => c.id)
-    );
+    const discardedIds = new Set(discardPile.filter((c) => c.type === typeToDisplay[selectedType]).map((c) => c.id));
     return cards.filter((c) => c.pool.includes(currentBoss) && !discardedIds.has(c.id));
   }, [selectedType, currentBoss, discardPile]);
 
@@ -72,11 +63,11 @@ export default function CardDrawArea() {
     if (selectedType === "天使卡") {
       const gold = Math.floor(Math.random() * 11) + 10; // 10-20
       setAngelGold(String(gold));
-      setEditName("天使赐福");
+      setEditName("天使卡");
       setEditDesc(`获得 ${gold} 金币`);
       setEditEnhanced("");
       setEditNote("天使的恩赐");
-      setEditDetail(`天使赐福：获得 ${gold} 金币`);
+      setEditDetail(`天使卡：获得 ${gold} 金币`);
       setSelectedCardId(null);
       return;
     }
@@ -123,7 +114,7 @@ export default function CardDrawArea() {
         const gold = parseInt(angelGold) || 0;
         if (gold > 0) {
           useGameConsoleStore.getState().adjustTeamGold(teamIdx, gold);
-          addLog("gold", `${targetTeam}队 天使赐福 +${gold} 金币`);
+          addLog("gold", `${targetTeam}队 天使卡 +${gold} 金币`);
         }
       } else {
         // 非天使卡进弃牌堆
@@ -176,7 +167,6 @@ export default function CardDrawArea() {
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-sm font-bold text-gray-700">抽卡区</h3>
-
       {/* 类型选择 */}
       <RadioGroup
         orientation="horizontal"
@@ -199,7 +189,6 @@ export default function CardDrawArea() {
           </Radio>
         ))}
       </RadioGroup>
-
       {/* 卡牌选择或天使卡设置 */}
       {selectedType === "天使卡" ? (
         <div className="flex gap-2 items-center">
@@ -213,9 +202,9 @@ export default function CardDrawArea() {
             value={angelGold}
             onValueChange={(v) => {
               setAngelGold(v);
-              setEditName("天使赐福");
+              setEditName("天使卡");
               setEditDesc(`获得 ${v} 金币`);
-              setEditDetail(`天使赐福：获得 ${v} 金币`);
+              setEditDetail(`天使卡：获得 ${v} 金币`);
             }}
             className="w-24"
             classNames={{ inputWrapper: "bg-default-100 min-h-7 h-7", input: "text-xs" }}
@@ -236,7 +225,13 @@ export default function CardDrawArea() {
               <SelectItem key={String(c.id)}>{c.name}</SelectItem>
             ))}
           </Select>
-          <Button size="sm" color="secondary" variant="flat" onPress={handleRandom} isDisabled={availableCards.length === 0}>
+          <Button
+            size="sm"
+            color="secondary"
+            variant="flat"
+            onPress={handleRandom}
+            isDisabled={availableCards.length === 0}
+          >
             随机
           </Button>
         </div>
@@ -253,7 +248,7 @@ export default function CardDrawArea() {
               description={editDesc}
               enhancedEffect={editEnhanced}
               note={editNote}
-              image={selectedType !== "天使卡" ? getImagePath(editName, typeToDir[selectedType]) : undefined}
+              image={getImagePath(editName, typeToDir[selectedType])}
             />
           </div>
 
@@ -301,33 +296,20 @@ export default function CardDrawArea() {
           </div>
         </div>
       )}
-
       {/* 目标队伍 & 发布 */}
       <div className="flex items-center gap-2 relative z-10">
         <span className="text-xs text-gray-500">目标队伍:</span>
-        <RadioGroup
-          orientation="horizontal"
-          value={targetTeam}
-          onValueChange={setTargetTeam}
-          size="sm"
-        >
+        <RadioGroup orientation="horizontal" value={targetTeam} onValueChange={setTargetTeam} size="sm">
           {["1", "2", "3", "4", "5"].map((t) => (
             <Radio key={t} value={t} classNames={{ label: "text-xs" }}>
               {t}
             </Radio>
           ))}
         </RadioGroup>
-        <Button
-          size="sm"
-          color="success"
-          isDisabled={!canPublish}
-          isLoading={publishing}
-          onPress={handlePublish}
-        >
+        <Button size="sm" color="success" isDisabled={!canPublish} isLoading={publishing} onPress={handlePublish}>
           {qqGroupNumber ? "发布到QQ群" : "分配卡牌"}
         </Button>
       </div>
-
       {/* 弃牌堆 */}
       {discardPile.length > 0 && (
         <div>
