@@ -125,6 +125,7 @@ class BotTeamSimple(BaseModel):
     dungeon: str = Field(..., description="副本名称")
     max_members: int = Field(..., description="最大成员数")
     status: str = Field(..., description="状态")
+    is_locked: bool = Field(False, description="是否锁定")
     created_at: datetime = Field(..., description="创建时间")
     # 报名统计
     signup_count: int = Field(0, description="当前报名人数")

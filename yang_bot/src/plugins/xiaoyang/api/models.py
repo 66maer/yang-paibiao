@@ -13,6 +13,7 @@ class TeamInfo(BaseModel):
     dungeon: str
     max_members: int
     status: str
+    is_locked: bool = False
     created_at: datetime
     # 报名统计
     signup_count: int = 0
@@ -49,6 +50,7 @@ class SignupInfo(BaseModel):
     signup_character_id: Optional[int] = None
     signup_info: Dict[str, Any]
     is_rich: bool
+    is_proxy: bool = False
     created_at: datetime
     # 分配状态字段（后端排坑服务返回）
     allocation_status: Optional[str] = None  # "allocated" | "waitlist" | "unallocated"

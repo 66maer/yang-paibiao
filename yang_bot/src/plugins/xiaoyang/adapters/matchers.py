@@ -1,155 +1,172 @@
-"""NoneBot Matcher 定义和处理函数（重构版）
+"""NoneBot Matcher 定义和处理函数（重构版 v2）
 
-处理流程：
-1. 关键词过滤（使用 NoneBot 的 on_keyword）
-2. 二次过滤（排除询问类消息、正在进行会话的消息）
-3. 预查询数据（用户角色列表、当前报名信息）
-4. NLP 解析意图
-5. 根据意图分别处理
+不再使用 LLM 解析用户意图，完全基于 NoneBot 的事件机制处理固定格式命令。
 
-意图模式：
-- signup: 自己报名
-- proxy_signup: 代他人报名
-- register_rich: 登记老板
-- cancel_signup: 取消报名
+命令格式（不加前缀 /）：
+- 报名 [副本编号] [心法] [角色昵称]
+- 取消报名 <副本编号>
+- 代报名 <副本编号> <被报名人昵称> <心法> [角色昵称]
+- 添加角色 <心法> <角色昵称>
+- 查看团队 / 查团 / 有团吗 / 有车吗
+- 修改昵称 <新昵称>
 """
 import re
-from nonebot import on_command, on_message, on_keyword
+from nonebot import on_keyword, on_message
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, Message
-from nonebot.params import CommandArg, EventPlainText
+from nonebot.params import EventPlainText
 from nonebot.log import logger
 from nonebot.permission import SUPERUSER
 from nonebot.adapters.onebot.v11.permission import GROUP_OWNER
 from nonebot.exception import FinishedException, PausedException, RejectedException
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Tuple
 
 from ..api.client import get_api_client, APIError
+from ..api.models import SignupRequest
 from ..services.team_service import TeamService
+from ..services.character_service import CharacterService
 from ..services.member_service import MemberService, clean_and_truncate_nickname
 from ..services.session_manager import get_session_manager
-from ..services.parser import get_parser
 from .message_builder import MessageBuilder
-from ..data.xinfa import normalize_xinfa_name, get_xinfa_key, XINFA_INFO
+from ..data.xinfa import (
+    normalize_xinfa_name, get_xinfa_key, XINFA_INFO,
+    is_xinfa_name,
+)
 
 
 # ==================== 辅助函数 ====================
 
 def format_xinfa_display(xinfa: str) -> str:
-    """
-    格式化心法名用于输出显示
-    
-    Args:
-        xinfa: 心法名（可能是英文key、中文标准名或昵称）
-    
-    Returns:
-        str: 标准的中文心法名
-    """
+    """格式化心法名用于输出显示"""
     if not xinfa:
         return "未知"
-    
-    # 如果是英文 key，转换为中文名
     if xinfa in XINFA_INFO:
         return XINFA_INFO[xinfa]["name"]
-    
-    # 尝试标准化心法名
     normalized = normalize_xinfa_name(xinfa)
     return normalized if normalized != xinfa or not xinfa else xinfa
 
 
-# 排除的询问类正则模式
-EXCLUDE_PATTERNS = [
-    r"有.*吗[？?]?$",
-    r"还有.*吗[？?]?$",
-    r".*多少.*[？?]$",
-    r"什么时候",
-    r"几点",
-    r"谁.*报名",
-    r"不要.*取消",
-    r"别.*取消",
-]
-
-
-def is_question_or_statement(text: str) -> bool:
-    """判断消息是否是询问类或陈述类（非命令式）"""
-    for pattern in EXCLUDE_PATTERNS:
-        if re.search(pattern, text):
-            return True
-    return False
-
-
-async def pre_query_context(api_client, qq_number: str, guild_id: int) -> Dict[str, Any]:
+def parse_signup_args(text: str) -> Tuple[Optional[int], Optional[str], Optional[str]]:
     """
-    预查询相关数据
-    
-    Args:
-        api_client: API 客户端
-        qq_number: 用户 QQ 号
-        guild_id: 群组 ID
-    
-    Returns:
-        包含团队列表、用户角色列表、用户报名信息的字典
+    解析报名命令参数，返回 (副本编号, 参数1, 参数2)
+
+    副本编号（数字）可以出现在任意位置，其余按顺序作为 arg1、arg2。
+
+    支持格式：
+    - ""                          -> (None, None, None)
+    - "丐帮"                       -> (None, "丐帮", None)
+    - "1 丐帮"                     -> (1, "丐帮", None)
+    - "丐帮 1"                     -> (1, "丐帮", None)
+    - "丐帮 丐箩箩"                -> (None, "丐帮", "丐箩箩")
+    - "1 丐帮 丐箩箩"               -> (1, "丐帮", "丐箩箩")
+    - "丐帮 1 丐箩箩"               -> (1, "丐帮", "丐箩箩")
+    - "丐帮 丐箩箩 1"               -> (1, "丐帮", "丐箩箩")
     """
-    context = {
-        "teams": [],
-        "user_characters": [],
-        "user_signups": [],  # 用户相关的所有报名（自己报的或被代报的）
-    }
-    
-    try:
-        # 获取团队列表
-        teams = await api_client.teams.get_teams()
-        context["teams"] = [
-            {
-                "index": idx + 1,
-                "id": team.id,
-                "title": team.title,
-                "time": team.team_time.strftime("%Y-%m-%d %H:%M") if team.team_time else None,
-                "dungeon": team.dungeon,
-                "signup_count": team.signup_count,
-            }
-            for idx, team in enumerate(teams)
-        ]
-        
-        # 获取用户角色列表（用于 signup 意图时匹配角色）
+    parts = text.strip().split()
+    if not parts:
+        return None, None, None
+
+    team_index = None
+    non_number_parts = []
+
+    for part in parts:
         try:
-            characters = await api_client.characters.get_user_characters(qq_number)
-            context["user_characters"] = [
-                {
-                    "id": char.id,
-                    "name": char.name,
-                    "xinfa": char.xinfa,
-                    "priority": char.priority,
-                }
-                for char in characters
-            ]
-        except Exception as e:
-            logger.debug(f"获取用户角色列表失败: {e}")
-        
-        # 获取用户在各个团队的报名信息
-        # 包括：自己给自己报的、自己给别人代报的、别人给自己代报的
-        for idx, team in enumerate(teams):
-            try:
-                signups = await api_client.signups.get_user_signups(team.id, qq_number)
-                for signup in signups:
-                    context["user_signups"].append({
-                        "signup_id": signup.id,
-                        "team_index": idx + 1,
-                        "team_id": team.id,
-                        "xinfa": signup.signup_info.get("xinfa", ""),
-                        "character_name": signup.signup_info.get("character_name", ""),
-                        "player_name": signup.signup_info.get("player_name", ""),
-                        "player_qq_number": signup.signup_info.get("player_qq_number"),  # 用于判断是否是自己的报名
-                        "is_rich": signup.is_rich,
-                        "submitter_id": signup.submitter_id,
-                        "signup_user_id": signup.signup_user_id,
-                    })
-            except Exception as e:
-                logger.debug(f"获取团队 {team.id} 报名状态失败: {e}")
-    
-    except Exception as e:
-        logger.error(f"预查询上下文失败: {e}")
-    
-    return context
+            num = int(part)
+            if team_index is None:
+                team_index = num
+            else:
+                # 多个数字，后续当作普通参数
+                non_number_parts.append(part)
+        except ValueError:
+            non_number_parts.append(part)
+
+    arg1 = non_number_parts[0] if len(non_number_parts) > 0 else None
+    arg2 = non_number_parts[1] if len(non_number_parts) > 1 else None
+
+    return team_index, arg1, arg2
+
+
+def resolve_xinfa_and_character(
+    arg1: Optional[str],
+    arg2: Optional[str],
+) -> Tuple[Optional[str], Optional[str]]:
+    """
+    根据两个参数识别心法和角色昵称。
+
+    规则：
+    - 只有一个参数：先看是否是心法名
+    - 两个参数：如果只有一个匹配心法，那个是心法，另一个是角色名
+    - 两个都匹配心法：第一个当心法，第二个当角色名
+
+    Returns:
+        (xinfa_key, character_name)
+    """
+    if arg1 is None and arg2 is None:
+        return None, None
+
+    if arg2 is None:
+        # 只有一个参数
+        if is_xinfa_name(arg1):
+            return get_xinfa_key(arg1), None
+        else:
+            return None, arg1
+
+    # 两个参数
+    is_arg1_xinfa = is_xinfa_name(arg1)
+    is_arg2_xinfa = is_xinfa_name(arg2)
+
+    if is_arg1_xinfa and not is_arg2_xinfa:
+        return get_xinfa_key(arg1), arg2
+    elif not is_arg1_xinfa and is_arg2_xinfa:
+        return get_xinfa_key(arg2), arg1
+    elif is_arg1_xinfa and is_arg2_xinfa:
+        # 都匹配心法，第一个当心法，第二个当角色昵称
+        return get_xinfa_key(arg1), arg2
+    else:
+        # 都不匹配心法 - 无法确定
+        return None, None
+
+
+async def get_single_open_team(team_service: TeamService):
+    """获取团队列表，如果只有一个则直接返回"""
+    teams = await team_service.get_teams()
+    # 过滤掉锁定的团队
+    open_teams = [t for t in teams if not t.is_locked]
+    return open_teams
+
+
+async def resolve_team(
+    team_service: TeamService,
+    team_index: Optional[int]
+) -> Tuple[any, int, List]:
+    """
+    解析团队，返回 (team, index, all_teams)
+
+    如果 team_index 为 None 且只有一个团队，自动选择
+    """
+    teams = await get_single_open_team(team_service)
+
+    if not teams:
+        raise ValueError("当前没有可报名的团队")
+
+    if team_index is None:
+        if len(teams) == 1:
+            return teams[0], 1, teams
+        else:
+            # 构建提示
+            team_list = "\n".join(
+                f"  【{i+1}】{t.title} - {t.dungeon}"
+                for i, t in enumerate(teams)
+            )
+            raise ValueError(
+                f"当前有多个团队，请指定副本编号：\n{team_list}\n\n"
+                f"示例：报名 1 丐帮 丐箩箩"
+            )
+
+    try:
+        team = await team_service.get_team_by_index(teams, team_index)
+        return team, team_index, teams
+    except ValueError:
+        raise ValueError(f"副本编号无效，请输入 1-{len(teams)} 之间的数字")
 
 
 # ==================== 查看团队 ====================
@@ -162,14 +179,7 @@ view_teams = on_keyword(
 
 @view_teams.handle()
 async def handle_view_teams(event: GroupMessageEvent, plain_text: str = EventPlainText()):
-    """
-    处理查看团队命令
-
-    支持格式:
-    - 查看团队 / 查团 / 有团吗 / 有车吗 - 查看所有团队列表
-    - 查看团队 1 / 查团 1 - 查看指定序号的团队详情
-    - 查看团队 全部 / 查团 全部 - 一次性发送所有团队截图
-    """
+    """处理查看团队命令"""
     try:
         guild_id = event.group_id
         api_client = get_api_client(guild_id=guild_id)
@@ -177,7 +187,7 @@ async def handle_view_teams(event: GroupMessageEvent, plain_text: str = EventPla
 
         teams = await team_service.get_teams()
 
-        # 提取参数（去除关键词部分）
+        # 提取参数
         for keyword in ["查看团队", "查团", "有团吗", "有车吗"]:
             if plain_text.startswith(keyword):
                 args_text = plain_text[len(keyword):].strip()
@@ -194,15 +204,11 @@ async def handle_view_teams(event: GroupMessageEvent, plain_text: str = EventPla
                 msg = MessageBuilder.build_teams_list(teams)
                 await view_teams.finish(msg)
         elif args_text in ["全部", "all", "ALL"]:
-            # 发送所有团队的截图
             if not teams:
-                msg = MessageBuilder.build_error_message("当前没有开放的团队")
-                await view_teams.finish(msg)
+                await view_teams.finish(MessageBuilder.build_error_message("当前没有开放的团队"))
 
-            # 遍历所有团队，发送每个团队的截图
             for idx, team in enumerate(teams, 1):
                 msg = await MessageBuilder.build_team_detail(team, idx, str(guild_id))
-                # 除了最后一个团队，其他都用 send，最后一个用 finish
                 if idx < len(teams):
                     await view_teams.send(msg)
                 else:
@@ -214,21 +220,16 @@ async def handle_view_teams(event: GroupMessageEvent, plain_text: str = EventPla
                 msg = await MessageBuilder.build_team_detail(team, index, str(guild_id))
                 await view_teams.finish(msg)
             except ValueError as e:
-                msg = MessageBuilder.build_error_message(str(e))
-                await view_teams.finish(msg)
+                await view_teams.finish(MessageBuilder.build_error_message(str(e)))
 
     except (FinishedException, PausedException, RejectedException):
         raise
-
     except APIError as e:
         logger.error(f"API 错误: {e}")
-        msg = MessageBuilder.build_error_message(f"获取团队列表失败: {e}")
-        await view_teams.finish(msg)
-
+        await view_teams.finish(MessageBuilder.build_error_message(f"获取团队列表失败: {e}"))
     except Exception as e:
         logger.exception(f"未知错误: {e}")
-        msg = MessageBuilder.build_error_message("系统错误，请联系管理员")
-        await view_teams.finish(msg)
+        await view_teams.finish(MessageBuilder.build_error_message("系统错误，请联系管理员"))
 
 
 # ==================== 修改昵称 ====================
@@ -246,23 +247,17 @@ async def handle_update_nickname(event: GroupMessageEvent, plain_text: str = Eve
         raw_nickname = plain_text.replace("修改昵称", "", 1).strip()
 
         if not raw_nickname:
-            msg = MessageBuilder.build_error_message("请提供新昵称，格式：修改昵称 <新昵称>")
-            await update_nickname.finish(msg)
+            await update_nickname.finish(
+                MessageBuilder.build_error_message("请提供新昵称，格式：修改昵称 <新昵称>")
+            )
 
         qq_number = str(event.user_id)
-
-        # 清理和截断昵称（如果为空使用QQ号作为后备）
         new_nickname = clean_and_truncate_nickname(raw_nickname, fallback=qq_number)
-
-        # 如果清理后的昵称与原始昵称不同，提示用户
-        if new_nickname != raw_nickname:
-            logger.info(f"昵称被自动处理: {raw_nickname} -> {new_nickname}")
 
         guild_id = event.group_id
         api_client = get_api_client(guild_id=guild_id)
         await api_client.members.update_nickname(qq_number, new_nickname)
 
-        # 如果昵称被修改，告知用户实际使用的昵称
         if new_nickname != raw_nickname:
             msg = MessageBuilder.build_success_message(
                 f"昵称已修改为: {new_nickname}\n"
@@ -274,334 +269,596 @@ async def handle_update_nickname(event: GroupMessageEvent, plain_text: str = Eve
 
     except (FinishedException, PausedException, RejectedException):
         raise
-
     except APIError as e:
         logger.error(f"API 错误: {e}")
-        msg = MessageBuilder.build_error_message(f"修改昵称失败: {e}")
-        await update_nickname.finish(msg)
-
+        await update_nickname.finish(MessageBuilder.build_error_message(f"修改昵称失败: {e}"))
     except Exception as e:
         logger.exception(f"未知错误: {e}")
-        msg = MessageBuilder.build_error_message("系统错误，请联系管理员")
-        await update_nickname.finish(msg)
+        await update_nickname.finish(MessageBuilder.build_error_message("系统错误，请联系管理员"))
 
 
-# ==================== 报名相关关键词匹配 ====================
-# 使用 on_keyword 进行第一层过滤
-signup_keywords = on_keyword(
-    {"报名", "代报", "老板", "取消报名", "取消", "报"},
+# ==================== 报名 ====================
+signup_matcher = on_keyword(
+    {"报名"},
     priority=20,
-    block=False  # 不阻断，让后续处理决定
+    block=True
+)
+
+# 排除的关键词前缀
+SIGNUP_EXCLUDE_PREFIXES = ["取消报名", "代报名", "取消"]
+# 排除的询问类正则模式
+SIGNUP_EXCLUDE_PATTERNS = [
+    r"有.*吗[？?]?$",
+    r"还有.*吗[？?]?$",
+    r".*多少.*[？?]$",
+    r"什么时候",
+    r"几点",
+    r"谁.*报名",
+]
+
+
+@signup_matcher.handle()
+async def handle_signup(event: GroupMessageEvent, plain_text: str = EventPlainText()):
+    """
+    处理报名命令
+
+    支持格式（编号可在任意位置）：
+    - 报名 丐帮                    → 只有一个团时省略编号,只提供心法
+    - 报名 丐帮 丐箩箩             → 省略编号,心法+角色名
+    - 报名 丐箩箩 丐帮             → 角色名和心法可以互换
+    - 报名 1 丐帮                   → 指定团队编号和心法
+    - 报名 丐帮 1                   → 编号放后面也行
+    - 报名 1 丐帮 丐箩箩           → 完整格式
+    - 报名 丐帮 丐箩箩 1           → 编号在末尾
+    - 报名 丐帮 1 丐箩箩           → 编号在中间
+    - 报名 丐箩箩                  → 只提供角色名（需要角色信息已录入）
+
+    注意：单独输入「报名」不会触发报名
+    """
+    try:
+        # 排除取消报名/代报名等
+        stripped = plain_text.strip()
+        for prefix in SIGNUP_EXCLUDE_PREFIXES:
+            if stripped.startswith(prefix):
+                return
+
+        # 排除询问类消息
+        for pattern in SIGNUP_EXCLUDE_PATTERNS:
+            if re.search(pattern, stripped):
+                return
+
+        guild_id = event.group_id
+        qq_number = str(event.user_id)
+
+        # 检查是否在会话中
+        session_manager = get_session_manager()
+        if session_manager.get_session(qq_number, str(guild_id)):
+            return
+
+        api_client = get_api_client(guild_id=guild_id)
+        team_service = TeamService(api_client)
+        char_service = CharacterService(api_client)
+
+        # 提取「报名」后面的参数
+        # 找到 "报名" 的位置并取后面的文本
+        signup_idx = stripped.find("报名")
+        if signup_idx == -1:
+            return
+        args_text = stripped[signup_idx + len("报名"):].strip()
+
+        # 解析参数
+        team_index, arg1, arg2 = parse_signup_args(args_text)
+
+        # 解析团队
+        try:
+            team, resolved_index, teams = await resolve_team(team_service, team_index)
+        except ValueError as e:
+            await signup_matcher.finish(MessageBuilder.build_error_message(str(e)))
+
+        # 解析心法和角色名
+        xinfa_key, character_name = resolve_xinfa_and_character(arg1, arg2)
+
+        # 获取用户角色列表
+        try:
+            user_characters = await char_service.get_user_characters(qq_number)
+        except Exception:
+            user_characters = []
+
+        # ===== 分场景处理 =====
+
+        if xinfa_key and character_name:
+            # 场景1: 心法+角色名都提供了 → 直接报名
+            await _do_signup(
+                signup_matcher, api_client, char_service, event,
+                team, resolved_index, xinfa_key, character_name,
+                user_characters
+            )
+
+        elif xinfa_key and not character_name:
+            # 场景2: 只提供了心法 → 查找匹配角色
+            matching_chars = [
+                c for c in user_characters
+                if c.xinfa == xinfa_key or (
+                    c.secondary_xinfas and xinfa_key in c.secondary_xinfas
+                )
+            ]
+
+            if len(matching_chars) == 1:
+                # 唯一匹配，直接报名
+                char = matching_chars[0]
+                await _do_signup(
+                    signup_matcher, api_client, char_service, event,
+                    team, resolved_index, xinfa_key, char.name,
+                    user_characters, character_id=char.id
+                )
+            elif len(matching_chars) > 1:
+                # 多个匹配，创建会话让用户选择
+                session_manager.create_session(
+                    user_id=qq_number,
+                    group_id=str(guild_id),
+                    action="signup_select_character",
+                    data={
+                        "team_id": team.id,
+                        "team_index": resolved_index,
+                        "xinfa_key": xinfa_key,
+                        "characters": [
+                            {"id": c.id, "name": c.name, "xinfa": c.xinfa}
+                            for c in matching_chars
+                        ],
+                    }
+                )
+                xinfa_display = format_xinfa_display(xinfa_key)
+                char_list = "\n".join(
+                    f"  【{i+1}】{c.name}"
+                    for i, c in enumerate(matching_chars)
+                )
+                await signup_matcher.finish(Message(
+                    f"你有多个 {xinfa_display} 的角色，要用哪一个报名？\n"
+                    f"{char_list}\n\n"
+                    f"请回复序号或角色名"
+                ))
+            else:
+                # 没有匹配的角色，直接用心法报名（模糊报名）
+                await _do_signup(
+                    signup_matcher, api_client, char_service, event,
+                    team, resolved_index, xinfa_key, None,
+                    user_characters
+                )
+
+        elif not xinfa_key and character_name:
+            # 场景3: 只提供了角色名 → 查找角色获取心法
+            matched_chars = [c for c in user_characters if c.name == character_name]
+
+            if len(matched_chars) == 1:
+                char = matched_chars[0]
+                # 检查是否多修
+                all_xinfas = [char.xinfa]
+                if char.secondary_xinfas:
+                    all_xinfas.extend(char.secondary_xinfas)
+
+                if len(all_xinfas) == 1:
+                    await _do_signup(
+                        signup_matcher, api_client, char_service, event,
+                        team, resolved_index, char.xinfa, char.name,
+                        user_characters, character_id=char.id
+                    )
+                else:
+                    # 多修角色，让用户选心法
+                    session_manager.create_session(
+                        user_id=qq_number,
+                        group_id=str(guild_id),
+                        action="signup_select_xinfa",
+                        data={
+                            "team_id": team.id,
+                            "team_index": resolved_index,
+                            "character_id": char.id,
+                            "character_name": char.name,
+                            "xinfas": all_xinfas,
+                        }
+                    )
+                    xinfa_list = "\n".join(
+                        f"  【{i+1}】{format_xinfa_display(x)}"
+                        for i, x in enumerate(all_xinfas)
+                    )
+                    await signup_matcher.finish(Message(
+                        f"角色 {char.name} 有多个心法，要用哪个心法报名？\n"
+                        f"{xinfa_list}\n\n"
+                        f"请回复序号或心法名"
+                    ))
+            elif len(matched_chars) == 0:
+                # 角色不存在
+                await signup_matcher.finish(MessageBuilder.build_error_message(
+                    f"未找到角色「{character_name}」\n\n"
+                    f"如果是新角色，请使用完整格式报名：\n"
+                    f"  报名 {resolved_index} 心法 角色名\n"
+                    f"例如：报名 {resolved_index} 丐帮 丐箩箩\n\n"
+                    f"或者先添加角色：\n"
+                    f"  添加角色 心法 角色名\n"
+                    f"例如：添加角色 丐帮 丐箩箩"
+                ))
+            else:
+                # 多个同名角色（不太可能但防御性处理）
+                await signup_matcher.finish(MessageBuilder.build_error_message(
+                    f"找到多个同名角色「{character_name}」，请使用完整格式：\n"
+                    f"  报名 {resolved_index} 心法 {character_name}"
+                ))
+
+        else:
+            # 场景4: 什么都没提供（或无法识别）
+            if not args_text:
+                # 用户只输入了 "报名"，拒绝
+                await signup_matcher.finish(MessageBuilder.build_error_message(
+                    "请提供报名信息\n\n"
+                    "格式：报名 [编号] 心法 [角色名]\n"
+                    "例如：报名 丐帮 丐箩箩\n"
+                    "例如：报名 1 丐帮\n\n"
+                    "编号可以放在任意位置，心法和角色名可互换\n"
+                    "如果已添加角色，也可以只写心法或角色名：\n"
+                    "  报名 丐帮\n"
+                    "  报名 丐箩箩"
+                ))
+            else:
+                # arg1 和 arg2 都不是心法也不是已知角色
+                await signup_matcher.finish(MessageBuilder.build_error_message(
+                    f"无法识别输入「{args_text}」\n\n"
+                    f"请检查心法名是否正确，或者使用完整格式：\n"
+                    f"  报名 心法 角色名 [编号]\n"
+                    f"例如：报名 丐帮 丐箩箩"
+                ))
+
+    except (FinishedException, PausedException, RejectedException):
+        raise
+    except APIError as e:
+        logger.error(f"API 错误: {e}")
+        await signup_matcher.finish(MessageBuilder.build_error_message(f"报名失败: {e}"))
+    except Exception as e:
+        logger.exception(f"报名处理失败: {e}")
+        await signup_matcher.finish(MessageBuilder.build_error_message(f"报名失败: {str(e)}"))
+
+
+async def _do_signup(
+    matcher,
+    api_client,
+    char_service: CharacterService,
+    event: GroupMessageEvent,
+    team,
+    team_index: int,
+    xinfa_key: str,
+    character_name: Optional[str],
+    user_characters: list,
+    character_id: Optional[int] = None,
+):
+    """
+    执行实际的报名操作
+
+    如果角色昵称存在但没有录入系统，自动创建角色。
+    """
+    qq_number = str(event.user_id)
+    guild_id = event.group_id
+
+    # 如果没有character_id但有character_name，尝试查找或创建
+    if not character_id and character_name:
+        existing = next((c for c in user_characters if c.name == character_name), None)
+        if existing:
+            character_id = existing.id
+            # 检查心法是否需要添加多修
+            if existing.xinfa != xinfa_key:
+                existing_xinfas = [existing.xinfa]
+                if existing.secondary_xinfas:
+                    existing_xinfas.extend(existing.secondary_xinfas)
+                if xinfa_key not in existing_xinfas:
+                    # TODO: 添加多修心法的API支持
+                    logger.info(f"角色 {character_name} 新增心法 {xinfa_key}（暂不支持API添加多修）")
+        else:
+            # 自动创建角色
+            try:
+                new_char = await char_service.create_character(
+                    qq_number=qq_number,
+                    name=character_name,
+                    xinfa=xinfa_key,
+                )
+                character_id = new_char.id
+                logger.info(f"自动创建角色: {character_name} ({format_xinfa_display(xinfa_key)})")
+            except Exception as e:
+                logger.warning(f"自动创建角色失败: {e}")
+                # 创建失败也继续报名，使用字符串模式
+
+    # 检查重复报名
+    try:
+        existing_signups = await api_client.signups.get_user_signups(team.id, qq_number)
+        for signup in existing_signups:
+            if (signup.signup_info.get("xinfa") == xinfa_key and
+                    str(signup.signup_info.get("player_qq_number", "")) == qq_number):
+                xinfa_display = format_xinfa_display(xinfa_key)
+                await matcher.finish(MessageBuilder.build_error_message(
+                    f"你已经用 {xinfa_display} 报名过该团队了，如需修改请先取消报名"
+                ))
+    except Exception:
+        pass
+
+    # 构建报名请求
+    signup_request = SignupRequest(
+        qq_number=qq_number,
+        xinfa=xinfa_key,
+        character_id=character_id,
+        character_name=character_name,
+        is_rich=False,
+        is_proxy=False,
+    )
+
+    signup_info = await api_client.signups.create_signup(team.id, signup_request)
+
+    # 构建成功消息
+    xinfa_display = format_xinfa_display(xinfa_key)
+    char_display = character_name or signup_info.signup_info.get("character_name", "") or "待定"
+
+    msg = MessageBuilder.build_signup_result_message(
+        player_name=char_display,
+        xinfa=xinfa_display,
+        allocation_status=signup_info.allocation_status,
+        allocated_slot=signup_info.allocated_slot,
+        waitlist_position=signup_info.waitlist_position,
+        is_proxy=False,
+        is_rich=False,
+    )
+
+    auto_create_hint = ""
+    if character_name and not any(c.name == character_name for c in user_characters):
+        auto_create_hint = f"\n💡 已自动录入角色：{char_display}（{xinfa_display}）"
+
+    if auto_create_hint:
+        await matcher.send(Message(str(msg) + auto_create_hint))
+    else:
+        await matcher.send(msg)
+
+    # 发送团队截图
+    try:
+        updated_teams = await TeamService(api_client).get_teams()
+        for idx, t in enumerate(updated_teams, 1):
+            if t.id == team.id:
+                team_image_msg = await MessageBuilder.build_team_detail(t, idx, str(guild_id))
+                await matcher.finish(team_image_msg)
+                break
+        else:
+            await matcher.finish()
+    except Exception:
+        await matcher.finish()
+
+
+# ==================== 取消报名 ====================
+cancel_signup_matcher = on_keyword(
+    {"取消报名"},
+    priority=15,
+    block=True
 )
 
 
-@signup_keywords.handle()
-async def handle_signup_keywords(event: GroupMessageEvent, plain_text: str = EventPlainText()):
+@cancel_signup_matcher.handle()
+async def handle_cancel_signup(event: GroupMessageEvent, plain_text: str = EventPlainText()):
     """
-    处理报名相关的消息
-    
-    步骤：
-    1. 已通过关键词过滤（由 on_keyword 完成）
-    2. 二次过滤（排除询问类消息、正在会话中的消息）
-    3. 预查询数据
-    4. NLP 解析意图
-    5. 根据意图分别处理
+    处理取消报名命令
+
+    格式：取消报名 <副本编号>
     """
     try:
         guild_id = event.group_id
         qq_number = str(event.user_id)
-        session_manager = get_session_manager()
-        
-        # ========== 第二步：二次过滤 ==========
-        
-        # 检查是否正在进行会话（防止多轮对话冲突）
-        existing_session = session_manager.get_session(qq_number, str(guild_id))
-        if existing_session:
-            # 如果是会话中的消息，由 session_handler 处理
-            return
-        
-        # 排除询问类消息
-        if is_question_or_statement(plain_text):
-            logger.debug(f"消息被识别为询问类，跳过: {plain_text[:50]}")
-            return
-        
-        # ========== 第三步：预查询数据 ==========
-        api_client = get_api_client(guild_id=guild_id)
-        context = await pre_query_context(api_client, qq_number, guild_id)
-        
-        # ========== 第四步：NLP 解析意图 ==========
-        parse_context = {
-            "user_id": qq_number,
-            "group_id": str(guild_id),
-            "api_client": api_client,
-            **context,  # 包含 teams, user_characters, user_signups
-        }
-        
-        parser = get_parser()
-        intent = await parser.parse(plain_text, parse_context)
-        
-        # 调试日志
-        logger.info(f"[NLP解析] 原始消息: {plain_text}")
-        logger.info(f"[NLP解析] 解析结果: {intent}")
-        if intent:
-            logger.info(f"[NLP解析] 动作: {intent.action}, 参数: {intent.params}")
-        
-        # 如果无法解析，不处理
-        if not intent:
-            return
-        
-        if intent.error_message:
-            msg = MessageBuilder.build_error_message(intent.error_message)
-            await signup_keywords.finish(msg)
 
-        # 如果需要追问用户
-        if intent.need_followup and intent.followup_question:
+        # 检查是否在会话中
+        session_manager = get_session_manager()
+        if session_manager.get_session(qq_number, str(guild_id)):
+            return
+
+        api_client = get_api_client(guild_id=guild_id)
+        team_service = TeamService(api_client)
+
+        # 提取参数
+        stripped = plain_text.strip()
+        cancel_idx = stripped.find("取消报名")
+        if cancel_idx == -1:
+            return
+        args_text = stripped[cancel_idx + len("取消报名"):].strip()
+
+        # 解析副本编号
+        team_index = None
+        if args_text:
+            try:
+                team_index = int(args_text.split()[0])
+            except ValueError:
+                await cancel_signup_matcher.finish(MessageBuilder.build_error_message(
+                    "请提供正确的副本编号\n\n"
+                    "格式：取消报名 副本编号\n"
+                    "例如：取消报名 1"
+                ))
+
+        # 获取团队
+        teams = await team_service.get_teams()
+        if not teams:
+            await cancel_signup_matcher.finish(MessageBuilder.build_error_message("当前没有开放的团队"))
+
+        if team_index is None:
+            if len(teams) == 1:
+                team_index = 1
+            else:
+                team_list = "\n".join(
+                    f"  【{i+1}】{t.title} - {t.dungeon}"
+                    for i, t in enumerate(teams)
+                )
+                await cancel_signup_matcher.finish(MessageBuilder.build_error_message(
+                    f"请指定要取消报名的团队编号：\n{team_list}\n\n"
+                    f"格式：取消报名 副本编号\n"
+                    f"例如：取消报名 1"
+                ))
+
+        try:
+            team = await team_service.get_team_by_index(teams, team_index)
+        except ValueError:
+            await cancel_signup_matcher.finish(MessageBuilder.build_error_message(
+                f"副本编号无效，请输入 1-{len(teams)} 之间的数字"
+            ))
+
+        # 获取用户的报名记录
+        try:
+            user_signups = await api_client.signups.get_user_signups(team.id, qq_number)
+        except Exception:
+            user_signups = []
+
+        if not user_signups:
+            await cancel_signup_matcher.finish(MessageBuilder.build_error_message(
+                f"你在「{team.title}」没有报名记录"
+            ))
+
+        if len(user_signups) == 1:
+            # 只有一条记录，直接取消
+            signup = user_signups[0]
+            await api_client.signups.cancel_signup(team.id, qq_number, signup_id=signup.id)
+
+            xinfa_display = format_xinfa_display(signup.signup_info.get("xinfa", ""))
+            char_name = signup.signup_info.get("character_name", "") or signup.signup_info.get("player_name", "") or "待定"
+
+            await cancel_signup_matcher.finish(MessageBuilder.build_success_message(
+                f"取消报名成功！\n"
+                f"团队：{team.title}\n"
+                f"心法：{xinfa_display}\n"
+                f"角色：{char_name}"
+            ))
+        else:
+            # 多条记录，启动会话让用户选择
             session_manager.create_session(
                 user_id=qq_number,
                 group_id=str(guild_id),
-                action="nlp_followup",
+                action="cancel_signup_select",
                 data={
-                    "history": [
-                        {"role": "user", "content": plain_text},
-                        {"role": "assistant", "content": intent.followup_question},
-                    ],
-                    "partial_intent": {
-                        "action": intent.action,
-                        "params": intent.params,
-                    }
+                    "team_id": team.id,
+                    "team_title": team.title,
+                    "signups": [
+                        {
+                            "signup_id": s.id,
+                            "xinfa": format_xinfa_display(s.signup_info.get("xinfa", "")),
+                            "character_name": s.signup_info.get("character_name", "") or "待定",
+                            "player_name": s.signup_info.get("player_name", ""),
+                            "is_rich": s.is_rich,
+                            "is_proxy": s.is_proxy,
+                        }
+                        for s in user_signups
+                    ]
                 }
             )
-            await signup_keywords.finish(intent.followup_question)
-        
-        # ========== 第五步：根据意图分别处理 ==========
-        
-        # 获取团队信息
-        team_service = TeamService(api_client)
-        teams = await team_service.get_teams()
-        
-        team_index = intent.params.get("team_index")
-        try:
-            team = await team_service.get_team_by_index(teams, team_index)
-        except ValueError as e:
-            msg = MessageBuilder.build_error_message(str(e))
-            await signup_keywords.finish(msg)
-        
-        # 根据意图类型处理
-        if intent.action == "signup":
-            await _handle_self_signup(
-                signup_keywords, api_client, event, team.id, intent.params, context
-            )
-        elif intent.action == "proxy_signup":
-            await _handle_proxy_signup(
-                signup_keywords, api_client, event, team.id, intent.params
-            )
-        elif intent.action == "register_rich":
-            await _handle_register_rich(
-                signup_keywords, api_client, event, team.id, intent.params
-            )
-        elif intent.action == "cancel_signup":
-            await _handle_cancel_signup(
-                signup_keywords, api_client, event, team.id, intent.params, context
-            )
+
+            msg_parts = [f"你在「{team.title}」有多条报名记录，请选择要取消的：\n"]
+            for idx, signup in enumerate(user_signups, 1):
+                xinfa_display = format_xinfa_display(signup.signup_info.get("xinfa", ""))
+                char_name = signup.signup_info.get("character_name", "") or "待定"
+                player_name = signup.signup_info.get("player_name", "")
+                rich_tag = " [老板]" if signup.is_rich else ""
+                proxy_tag = " [代报]" if signup.is_proxy else ""
+
+                if player_name and player_name != char_name:
+                    msg_parts.append(f"  【{idx}】{player_name} - {xinfa_display} - {char_name}{rich_tag}{proxy_tag}")
+                else:
+                    msg_parts.append(f"  【{idx}】{xinfa_display} - {char_name}{rich_tag}{proxy_tag}")
+
+            msg_parts.append("\n请回复序号进行取消")
+            await cancel_signup_matcher.finish(Message("\n".join(msg_parts)))
 
     except (FinishedException, PausedException, RejectedException):
         raise
-
     except APIError as e:
         logger.error(f"API 错误: {e}")
-        msg = MessageBuilder.build_error_message(f"操作失败: {e}")
-        await signup_keywords.finish(msg)
-
+        await cancel_signup_matcher.finish(MessageBuilder.build_error_message(f"取消报名失败: {e}"))
     except Exception as e:
-        logger.exception(f"未知错误: {e}")
-        # 不 finish，让消息继续传递
-        return
+        logger.exception(f"取消报名处理失败: {e}")
+        await cancel_signup_matcher.finish(MessageBuilder.build_error_message(f"取消报名失败: {str(e)}"))
 
 
-async def _handle_self_signup(
-    matcher,
-    api_client,
-    event: GroupMessageEvent,
-    team_id: int,
-    params: dict,
-    context: dict
-):
+# ==================== 代报名 ====================
+proxy_signup_matcher = on_keyword(
+    {"代报名"},
+    priority=15,
+    block=True
+)
+
+
+@proxy_signup_matcher.handle()
+async def handle_proxy_signup(event: GroupMessageEvent, plain_text: str = EventPlainText()):
     """
-    处理自己报名
+    处理代报名命令
 
-    逻辑：
-    1. 检查是否已报名（防止重复报名）
-    2. 构建报名信息
-    3. 调用后端 API
-    4. 发送成功消息和团队截图
+    固定格式：代报名 <副本编号> <被报名人昵称> <心法> [角色昵称]
+    例如：代报名 1 张三 丐帮
+    例如：代报名 1 张三 丐帮 丐箩箩
     """
     try:
-        qq_number = str(event.user_id)
         guild_id = event.group_id
-        xinfa_key = params.get("xinfa_key")
+        qq_number = str(event.user_id)
 
-        # 获取心法（提前获取用于重复检查）
-        if not xinfa_key:
-            msg = MessageBuilder.build_error_message("请指定心法，例如：报1 藏剑")
-            await matcher.finish(msg)
+        api_client = get_api_client(guild_id=guild_id)
+        team_service = TeamService(api_client)
 
-        # 检查是否已经报名（通过 player_qq_number 判断是否是自己的报名）
-        user_signups = context.get("user_signups", [])
-        logger.info(f"[重复检查] team_id={team_id}, qq_number={qq_number}")
-        logger.info(f"[重复检查] user_signups={user_signups}")
+        # 提取参数
+        stripped = plain_text.strip()
+        proxy_idx = stripped.find("代报名")
+        if proxy_idx == -1:
+            return
+        args_text = stripped[proxy_idx + len("代报名"):].strip()
+        parts = args_text.split()
 
-        # 筛选该团队中自己的报名
-        existing_self_signups = [
-            s for s in user_signups
-            if s["team_id"] == team_id
-            and str(s.get("player_qq_number", "")) == qq_number  # 确保字符串比较
-        ]
-        logger.info(f"[重复检查] existing_self_signups={existing_self_signups}")
+        if len(parts) < 3:
+            await proxy_signup_matcher.finish(MessageBuilder.build_error_message(
+                "代报名格式不正确\n\n"
+                "格式：代报名 副本编号 被报名人昵称 心法 [角色昵称]\n"
+                "例如：代报名 1 张三 丐帮\n"
+                "例如：代报名 1 张三 丐帮 丐箩箩"
+            ))
 
-        if existing_self_signups:
-            # 已有报名，检查是否是相同心法
-            same_xinfa = [s for s in existing_self_signups if s.get("xinfa") == xinfa_key]
-            if same_xinfa:
-                xinfa_display = format_xinfa_display(xinfa_key)
-                msg = MessageBuilder.build_error_message(
-                    f"你已经用 {xinfa_display} 报名过该团队了，如需修改请先取消"
-                )
-                await matcher.finish(msg)
-
-        # 尝试获取用户昵称
+        # 解析参数
         try:
-            member = await api_client.members.get_member(qq_number)
-            user_nickname = member.group_nickname or member.nickname or qq_number
-        except:
-            user_nickname = qq_number
+            team_index = int(parts[0])
+        except ValueError:
+            await proxy_signup_matcher.finish(MessageBuilder.build_error_message(
+                "副本编号必须是数字\n\n"
+                "格式：代报名 副本编号 被报名人昵称 心法 [角色昵称]\n"
+                "例如：代报名 1 张三 丐帮"
+            ))
+
+        player_name = parts[1]
+        xinfa_input = parts[2]
+        character_name = parts[3] if len(parts) > 3 else None
+
+        xinfa_key = get_xinfa_key(xinfa_input)
+        if not xinfa_key:
+            await proxy_signup_matcher.finish(MessageBuilder.build_error_message(
+                f"无法识别心法「{xinfa_input}」\n\n"
+                f"请使用正确的心法名称，例如：丐帮、藏剑、奶花 等"
+            ))
+
+        # 获取团队
+        teams = await team_service.get_teams()
+        open_teams = [t for t in teams if not t.is_locked]
+        if not open_teams:
+            await proxy_signup_matcher.finish(MessageBuilder.build_error_message("当前没有可报名的团队"))
+
+        try:
+            team = await team_service.get_team_by_index(open_teams, team_index)
+        except ValueError:
+            await proxy_signup_matcher.finish(MessageBuilder.build_error_message(
+                f"副本编号无效，请输入 1-{len(open_teams)} 之间的数字"
+            ))
 
         # 构建报名请求
-        signup_request = {
-            "qq_number": qq_number,
-            "xinfa": xinfa_key,
-            "character_id": params.get("character_id"),
-            "character_name": params.get("character_name"),
-            "is_rich": False,
-        }
-
-        # 调用后端 API
-        from ..api.models import SignupRequest
-        signup_info = await api_client.signups.create_signup(
-            team_id,
-            SignupRequest(**signup_request)
+        signup_request = SignupRequest(
+            qq_number=qq_number,
+            xinfa=xinfa_key,
+            character_name=character_name,
+            is_rich=False,
+            is_proxy=True,
+            player_name=player_name,
         )
 
-        # 构建成功消息（使用分配状态）
-        xinfa_display = format_xinfa_display(xinfa_key)
-        char_name = signup_info.signup_info.get("character_name", "") or "待定"
-        
-        # 使用新的报名结果消息构建器（显示分配状态）
-        msg = MessageBuilder.build_signup_result_message(
-            player_name=char_name,
-            xinfa=xinfa_display,
-            allocation_status=signup_info.allocation_status,
-            allocated_slot=signup_info.allocated_slot,
-            waitlist_position=signup_info.waitlist_position,
-            is_proxy=False,
-            is_rich=False
-        )
-        # 发送成功消息（不finish，后续还需要发送截图）
-        await matcher.send(msg)
-
-        # 获取最新的团队信息并发送截图
-        team_service = TeamService(api_client)
-        teams = await team_service.get_teams()
-
-        # 找到当前团队的索引和最新信息
-        team_index = None
-        updated_team = None
-        for idx, team in enumerate(teams, 1):
-            if team.id == team_id:
-                team_index = idx
-                updated_team = team
-                break
-
-        if updated_team and team_index:
-            team_image_msg = await MessageBuilder.build_team_detail(
-                updated_team, team_index, str(guild_id)
-            )
-            await matcher.finish(team_image_msg)
-        else:
-            # 如果找不到团队，只结束对话
-            await matcher.finish()
-
-    except (FinishedException, PausedException, RejectedException):
-        raise
-
-    except APIError as e:
-        msg = MessageBuilder.build_error_message(f"报名失败: {e}")
-        await matcher.finish(msg)
-
-    except Exception as e:
-        logger.exception(f"报名处理失败: {e}")
-        msg = MessageBuilder.build_error_message(f"报名失败: {str(e)}")
-        await matcher.finish(msg)
-
-
-async def _handle_proxy_signup(
-    matcher,
-    api_client,
-    event: GroupMessageEvent,
-    team_id: int,
-    params: dict
-):
-    """
-    处理代他人报名
-
-    逻辑：
-    1. 获取被报名用户昵称
-    2. 构建报名信息（signup_user_id 为空）
-    3. 调用后端 API
-    4. 发送成功消息和团队截图
-    """
-    try:
-        qq_number = str(event.user_id)
-        guild_id = event.group_id
-
-        # 获取被报名用户昵称
-        player_name = params.get("player_name")
-        if not player_name:
-            msg = MessageBuilder.build_error_message("请指定被报名的用户名，例如：帮张三报1藏剑")
-            await matcher.finish(msg)
-
-        # 获取心法
-        xinfa_key = params.get("xinfa_key")
-        if not xinfa_key:
-            msg = MessageBuilder.build_error_message("请指定心法，例如：帮张三报1藏剑")
-            await matcher.finish(msg)
-
-        # 尝试获取提交者昵称
-        try:
-            member = await api_client.members.get_member(qq_number)
-            submitter_nickname = member.group_nickname or member.nickname or qq_number
-        except:
-            submitter_nickname = qq_number
-
-        # 构建报名请求（代报名模式）
-        signup_request = {
-            "qq_number": qq_number,  # 提交者的 QQ
-            "xinfa": xinfa_key,
-            "character_name": params.get("character_name"),
-            "is_rich": False,
-            "is_proxy": True,
-            "player_name": player_name,
-        }
-
-        # 调用后端 API（需要修改后端支持代报名）
-        from ..api.models import SignupRequest
-        signup_info = await api_client.signups.create_signup(
-            team_id,
-            SignupRequest(**signup_request)
-        )
+        signup_info = await api_client.signups.create_signup(team.id, signup_request)
 
         xinfa_display = format_xinfa_display(xinfa_key)
-        
-        # 使用新的报名结果消息构建器（显示分配状态）
+
         msg = MessageBuilder.build_signup_result_message(
             player_name=player_name,
             xinfa=xinfa_display,
@@ -609,420 +866,323 @@ async def _handle_proxy_signup(
             allocated_slot=signup_info.allocated_slot,
             waitlist_position=signup_info.waitlist_position,
             is_proxy=True,
-            is_rich=False
+            is_rich=False,
         )
-        # 发送成功消息（不finish，后续还需要发送截图）
-        await matcher.send(msg)
+        await proxy_signup_matcher.send(msg)
 
-        # 获取最新的团队信息并发送截图
-        team_service = TeamService(api_client)
-        teams = await team_service.get_teams()
-
-        # 找到当前团队的索引和最新信息
-        team_index = None
-        updated_team = None
-        for idx, team in enumerate(teams, 1):
-            if team.id == team_id:
-                team_index = idx
-                updated_team = team
-                break
-
-        if updated_team and team_index:
-            team_image_msg = await MessageBuilder.build_team_detail(
-                updated_team, team_index, str(guild_id)
-            )
-            await matcher.finish(team_image_msg)
-        else:
-            # 如果找不到团队，只结束对话
-            await matcher.finish()
+        # 发送团队截图
+        try:
+            updated_teams = await TeamService(api_client).get_teams()
+            for idx, t in enumerate(updated_teams, 1):
+                if t.id == team.id:
+                    team_image_msg = await MessageBuilder.build_team_detail(t, idx, str(guild_id))
+                    await proxy_signup_matcher.finish(team_image_msg)
+                    break
+            else:
+                await proxy_signup_matcher.finish()
+        except Exception:
+            await proxy_signup_matcher.finish()
 
     except (FinishedException, PausedException, RejectedException):
         raise
-
     except APIError as e:
-        msg = MessageBuilder.build_error_message(f"代报名失败: {e}")
-        await matcher.finish(msg)
-
+        logger.error(f"API 错误: {e}")
+        await proxy_signup_matcher.finish(MessageBuilder.build_error_message(f"代报名失败: {e}"))
     except Exception as e:
         logger.exception(f"代报名处理失败: {e}")
-        msg = MessageBuilder.build_error_message(f"代报名失败: {str(e)}")
-        await matcher.finish(msg)
+        await proxy_signup_matcher.finish(MessageBuilder.build_error_message(f"代报名失败: {str(e)}"))
 
 
-async def _handle_register_rich(
-    matcher,
-    api_client,
-    event: GroupMessageEvent,
-    team_id: int,
-    params: dict
-):
+# ==================== 添加角色 ====================
+add_character_matcher = on_keyword(
+    {"添加角色"},
+    priority=10,
+    block=True
+)
+
+
+@add_character_matcher.handle()
+async def handle_add_character(event: GroupMessageEvent, plain_text: str = EventPlainText()):
     """
-    处理登记老板
-    
-    逻辑：
-    1. 获取老板名称
-    2. 构建报名信息（is_rich=True）
-    3. 调用后端 API
+    处理添加角色命令
+
+    固定格式：添加角色 <心法> <角色昵称>
+    例如：添加角色 丐帮 丐箩箩
     """
     try:
+        guild_id = event.group_id
         qq_number = str(event.user_id)
-        
-        # 获取老板名称
-        boss_name = params.get("player_name")
-        if not boss_name:
-            msg = MessageBuilder.build_error_message("请指定老板名称，例如：登记老板 张三 藏剑")
-            await matcher.finish(msg)
-        
-        # 获取心法
-        xinfa_key = params.get("xinfa_key")
+
+        api_client = get_api_client(guild_id=guild_id)
+        char_service = CharacterService(api_client)
+
+        # 提取参数
+        stripped = plain_text.strip()
+        add_idx = stripped.find("添加角色")
+        if add_idx == -1:
+            return
+        args_text = stripped[add_idx + len("添加角色"):].strip()
+        parts = args_text.split()
+
+        if len(parts) < 2:
+            await add_character_matcher.finish(MessageBuilder.build_error_message(
+                "请提供心法和角色名\n\n"
+                "格式：添加角色 心法 角色昵称\n"
+                "例如：添加角色 丐帮 丐箩箩"
+            ))
+
+        xinfa_input = parts[0]
+        character_name = parts[1]
+
+        xinfa_key = get_xinfa_key(xinfa_input)
         if not xinfa_key:
-            msg = MessageBuilder.build_error_message("请指定心法，例如：登记老板 张三 藏剑")
-            await matcher.finish(msg)
-        
-        # 尝试获取提交者昵称
+            await add_character_matcher.finish(MessageBuilder.build_error_message(
+                f"无法识别心法「{xinfa_input}」\n\n"
+                f"请使用正确的心法名称，例如：丐帮、藏剑、奶花 等"
+            ))
+
+        # 检查角色是否已存在
         try:
-            member = await api_client.members.get_member(qq_number)
-            submitter_nickname = member.group_nickname or member.nickname or qq_number
-        except:
-            submitter_nickname = qq_number
-        
-        # 构建报名请求（老板模式）
-        signup_request = {
-            "qq_number": qq_number,  # 提交者的 QQ
-            "xinfa": xinfa_key,
-            "is_rich": True,
-            "is_proxy": True,
-            "player_name": boss_name,
-        }
-        
-        # 调用后端 API
-        from ..api.models import SignupRequest
-        signup_info = await api_client.signups.create_signup(
-            team_id,
-            SignupRequest(**signup_request)
+            existing_chars = await char_service.get_user_characters(qq_number)
+            existing = next((c for c in existing_chars if c.name == character_name), None)
+
+            if existing:
+                existing_xinfa = format_xinfa_display(existing.xinfa)
+                new_xinfa = format_xinfa_display(xinfa_key)
+                if existing.xinfa == xinfa_key:
+                    await add_character_matcher.finish(MessageBuilder.build_error_message(
+                        f"角色「{character_name}」({existing_xinfa}) 已存在"
+                    ))
+                else:
+                    # TODO: 添加多修支持
+                    await add_character_matcher.finish(MessageBuilder.build_success_message(
+                        f"角色「{character_name}」已存在（{existing_xinfa}）\n"
+                        f"暂不支持通过命令添加多修心法，请联系管理员"
+                    ))
+        except Exception:
+            pass
+
+        # 创建角色
+        new_char = await char_service.create_character(
+            qq_number=qq_number,
+            name=character_name,
+            xinfa=xinfa_key,
         )
-        
+
         xinfa_display = format_xinfa_display(xinfa_key)
-        
-        # 使用新的报名结果消息构建器（显示分配状态）
-        msg = MessageBuilder.build_signup_result_message(
-            player_name=boss_name,
-            xinfa=xinfa_display,
-            allocation_status=signup_info.allocation_status,
-            allocated_slot=signup_info.allocated_slot,
-            waitlist_position=signup_info.waitlist_position,
-            is_proxy=True,
-            is_rich=True
-        )
-        await matcher.finish(msg)
+        await add_character_matcher.finish(MessageBuilder.build_success_message(
+            f"角色添加成功！\n"
+            f"角色名：{character_name}\n"
+            f"心法：{xinfa_display}"
+        ))
 
     except (FinishedException, PausedException, RejectedException):
         raise
-
     except APIError as e:
-        msg = MessageBuilder.build_error_message(f"登记老板失败: {e}")
-        await matcher.finish(msg)
-
+        logger.error(f"API 错误: {e}")
+        await add_character_matcher.finish(MessageBuilder.build_error_message(f"添加角色失败: {e}"))
     except Exception as e:
-        logger.exception(f"登记老板处理失败: {e}")
-        msg = MessageBuilder.build_error_message(f"登记老板失败: {str(e)}")
-        await matcher.finish(msg)
-
-
-async def _handle_cancel_signup(
-    matcher,
-    api_client,
-    event: GroupMessageEvent,
-    team_id: int,
-    params: dict,
-    context: dict
-):
-    """
-    处理取消报名
-    
-    逻辑：
-    1. 从 NLP 解析结果获取 signup_id
-    2. 如果 signup_id 明确，直接取消
-    3. 如果不明确，展示列表让用户选择
-    """
-    try:
-        qq_number = str(event.user_id)
-        session_manager = get_session_manager()
-        
-        # 获取用户在该团队的报名
-        user_signups = [s for s in context.get("user_signups", []) if s["team_id"] == team_id]
-        
-        if not user_signups:
-            msg = MessageBuilder.build_error_message("你在该团队没有报名记录")
-            await matcher.finish(msg)
-        
-        # 尝试从 NLP 结果获取 signup_id
-        signup_id = params.get("signup_id")
-        
-        # 如果只有一个报名，直接使用
-        if len(user_signups) == 1 and not signup_id:
-            signup_id = user_signups[0]["signup_id"]
-        
-        # 如果有明确的 signup_id，直接取消
-        if signup_id:
-            await api_client.signups.cancel_signup(team_id, qq_number, signup_id=signup_id)
-            
-            # 查找对应的报名信息用于显示
-            signup_info = next((s for s in user_signups if s["signup_id"] == signup_id), None)
-            if signup_info:
-                xinfa_display = format_xinfa_display(signup_info.get("xinfa", ""))
-                char_name = signup_info.get("character_name", "") or "待定"
-            else:
-                xinfa_display = "未知"
-                char_name = "未知"
-            
-            msg = MessageBuilder.build_success_message(
-                f"取消报名成功！\n"
-                f"第{params.get('team_index')}车\n"
-                f"心法: {xinfa_display}\n"
-                f"角色: {char_name}"
-            )
-            await matcher.finish(msg)
-        
-        # 尝试通过心法匹配
-        xinfa_key = params.get("xinfa_key")
-        if xinfa_key:
-            matched = [s for s in user_signups if s.get("xinfa") == xinfa_key]
-            if len(matched) == 1:
-                signup_id = matched[0]["signup_id"]
-                await api_client.signups.cancel_signup(team_id, qq_number, signup_id=signup_id)
-                
-                xinfa_display = format_xinfa_display(matched[0].get("xinfa", ""))
-                char_name = matched[0].get("character_name", "") or "待定"
-                msg = MessageBuilder.build_success_message(
-                    f"取消报名成功！\n"
-                    f"第{params.get('team_index')}车\n"
-                    f"心法: {xinfa_display}\n"
-                    f"角色: {char_name}"
-                )
-                await matcher.finish(msg)
-        
-        # 无法确定，创建会话让用户选择
-        session_manager.create_session(
-            user_id=qq_number,
-            group_id=str(event.group_id),
-            action="cancel_signup_select",
-            data={
-                "team_id": team_id,
-                "signups": [
-                    {
-                        "signup_id": s["signup_id"],
-                        "xinfa": format_xinfa_display(s.get("xinfa", "")),
-                        "character_name": s.get("character_name", "") or "待定",
-                        "player_name": s.get("player_name", ""),
-                        "is_rich": s.get("is_rich", False),
-                    }
-                    for s in user_signups
-                ]
-            }
-        )
-        
-        # 构建选择列表
-        msg_parts = ["你有多个报名，请选择要取消的报名：\n"]
-        for idx, signup in enumerate(user_signups, 1):
-            xinfa_display = format_xinfa_display(signup.get("xinfa", ""))
-            char_name = signup.get("character_name", "") or "待定"
-            player_name = signup.get("player_name", "")
-            rich_tag = " [老板]" if signup.get("is_rich") else ""
-            
-            if player_name and player_name != char_name:
-                msg_parts.append(f"\n【{idx}】{player_name} - {xinfa_display} - {char_name}{rich_tag}")
-            else:
-                msg_parts.append(f"\n【{idx}】{xinfa_display} - {char_name}{rich_tag}")
-        
-        msg_parts.append("\n\n请回复序号进行取消")
-        await matcher.finish(Message("".join(msg_parts)))
-
-    except (FinishedException, PausedException, RejectedException):
-        raise
-
-    except APIError as e:
-        msg = MessageBuilder.build_error_message(f"取消报名失败: {e}")
-        await matcher.finish(msg)
-
-    except Exception as e:
-        logger.exception(f"取消报名处理失败: {e}")
-        msg = MessageBuilder.build_error_message(f"取消报名失败: {str(e)}")
-        await matcher.finish(msg)
+        logger.exception(f"添加角色失败: {e}")
+        await add_character_matcher.finish(MessageBuilder.build_error_message(f"添加角色失败: {str(e)}"))
 
 
 # ==================== 会话处理 ====================
 session_handler = on_message(
-    priority=15,  # 优先级高于 signup_keywords
+    priority=5,  # 最高优先级，确保会话消息优先处理
     block=False
 )
 
 
 @session_handler.handle()
 async def handle_session_message(event: GroupMessageEvent, plain_text: str = EventPlainText()):
-    """处理会话中的用户消息"""
+    """处理会话中的用户消息（选择角色、选择心法、取消报名选择等）"""
     session_manager = get_session_manager()
     qq_number = str(event.user_id)
     group_id = str(event.group_id)
 
     session = session_manager.get_session(qq_number, group_id)
-
     if not session:
         return
 
-    if session.action == "cancel_signup_select":
-        await _handle_cancel_signup_select(
-            session_handler, event, session, plain_text.strip()
-        )
-    elif session.action == "nlp_followup":
-        await _handle_nlp_followup(
-            session_handler, event, session, plain_text.strip()
-        )
+    user_input = plain_text.strip()
+
+    try:
+        if session.action == "cancel_signup_select":
+            await _handle_cancel_signup_select(session_handler, event, session, user_input)
+        elif session.action == "signup_select_character":
+            await _handle_signup_select_character(session_handler, event, session, user_input)
+        elif session.action == "signup_select_xinfa":
+            await _handle_signup_select_xinfa(session_handler, event, session, user_input)
+    except (FinishedException, PausedException, RejectedException):
+        raise
+    except Exception as e:
+        logger.exception(f"会话处理失败: {e}")
+        session_manager.close_session(qq_number, group_id)
+        await session_handler.finish(MessageBuilder.build_error_message(f"操作失败: {str(e)}"))
 
 
 async def _handle_cancel_signup_select(
     matcher,
     event: GroupMessageEvent,
     session,
-    user_input: str
+    user_input: str,
 ):
     """处理取消报名的选择"""
     try:
-        # 尝试解析为数字
-        try:
-            index = int(user_input)
-        except ValueError:
-            return
+        index = int(user_input)
+    except ValueError:
+        return
 
-        signups = session.data.get("signups", [])
-        team_id = session.data.get("team_id")
+    signups = session.data.get("signups", [])
+    team_id = session.data.get("team_id")
+    team_title = session.data.get("team_title", "")
 
-        if index < 1 or index > len(signups):
-            msg = MessageBuilder.build_error_message(f"无效的序号，请输入 1-{len(signups)} 之间的数字")
-            await matcher.send(msg)
-            return
+    if index < 1 or index > len(signups):
+        await matcher.send(MessageBuilder.build_error_message(
+            f"无效的序号，请输入 1-{len(signups)} 之间的数字"
+        ))
+        return
 
-        selected_signup = signups[index - 1]
-        signup_id = selected_signup["signup_id"]
+    selected = signups[index - 1]
+    signup_id = selected["signup_id"]
 
-        # 调用 API 取消报名（使用 signup_id）
-        guild_id = event.group_id
-        api_client = get_api_client(guild_id=guild_id)
-        qq_number = str(event.user_id)
-        await api_client.signups.cancel_signup(team_id, qq_number, signup_id=signup_id)
+    guild_id = event.group_id
+    api_client = get_api_client(guild_id=guild_id)
+    qq_number = str(event.user_id)
 
-        # 关闭会话
-        session_manager = get_session_manager()
-        session_manager.close_session(qq_number, str(event.group_id))
+    await api_client.signups.cancel_signup(team_id, qq_number, signup_id=signup_id)
 
-        xinfa = selected_signup["xinfa"]
-        char_name = selected_signup["character_name"]
-        msg = MessageBuilder.build_success_message(
-            f"取消报名成功！\n心法: {xinfa}\n角色: {char_name}"
-        )
-        await matcher.finish(msg)
+    session_manager = get_session_manager()
+    session_manager.close_session(qq_number, str(guild_id))
 
-    except (FinishedException, PausedException, RejectedException):
-        raise
-
-    except Exception as e:
-        logger.exception(f"处理取消报名选择失败: {e}")
-        msg = MessageBuilder.build_error_message(f"取消报名失败: {str(e)}")
-        await matcher.finish(msg)
+    await matcher.finish(MessageBuilder.build_success_message(
+        f"取消报名成功！\n"
+        f"团队：{team_title}\n"
+        f"心法：{selected['xinfa']}\n"
+        f"角色：{selected['character_name']}"
+    ))
 
 
-async def _handle_nlp_followup(
+async def _handle_signup_select_character(
     matcher,
     event: GroupMessageEvent,
     session,
-    user_input: str
+    user_input: str,
 ):
-    """处理 NLP 多轮对话的追问回复"""
+    """处理报名时选择角色"""
+    characters = session.data.get("characters", [])
+    team_id = session.data.get("team_id")
+    team_index = session.data.get("team_index")
+    xinfa_key = session.data.get("xinfa_key")
+
+    selected_char = None
+
+    # 尝试按序号选择
     try:
-        qq_number = str(event.user_id)
-        guild_id = event.group_id
-        session_manager = get_session_manager()
+        index = int(user_input)
+        if 1 <= index <= len(characters):
+            selected_char = characters[index - 1]
+    except ValueError:
+        # 尝试按角色名匹配
+        for char in characters:
+            if char["name"] == user_input:
+                selected_char = char
+                break
 
-        history = session.data.get("history", [])
-        history.append({"role": "user", "content": user_input})
-
-        api_client = get_api_client(guild_id=guild_id)
-        
-        # 预查询上下文
-        context = await pre_query_context(api_client, qq_number, guild_id)
-        
-        parse_context = {
-            "user_id": qq_number,
-            "group_id": str(guild_id),
-            "api_client": api_client,
-            **context,
-        }
-
-        parser = get_parser()
-        
-        if hasattr(parser, 'parse') and 'history' in parser.parse.__code__.co_varnames:
-            intent = await parser.parse(user_input, parse_context, history=history)
-        else:
-            intent = await parser.parse(user_input, parse_context)
-
-        logger.info(f"[NLP多轮] 用户输入: {user_input}")
-        logger.info(f"[NLP多轮] 解析结果: {intent}")
-
-        if not intent:
-            return
-
-        if intent.need_followup and intent.followup_question:
-            history.append({"role": "assistant", "content": intent.followup_question})
-            session_manager.create_session(
-                user_id=qq_number,
-                group_id=str(guild_id),
-                action="nlp_followup",
-                data={
-                    "history": history,
-                    "partial_intent": {
-                        "action": intent.action,
-                        "params": intent.params,
-                    }
-                }
-            )
-            await matcher.finish(intent.followup_question)
-
-        # 关闭会话
-        session_manager.close_session(qq_number, str(guild_id))
-
-        # 获取团队服务
-        team_service = TeamService(api_client)
-        teams = await team_service.get_teams()
-
-        team_index = intent.params.get("team_index")
-        try:
-            team = await team_service.get_team_by_index(teams, team_index)
-        except ValueError as e:
-            msg = MessageBuilder.build_error_message(str(e))
-            await matcher.finish(msg)
-
-        if intent.action == "signup":
-            await _handle_self_signup(matcher, api_client, event, team.id, intent.params, context)
-        elif intent.action == "proxy_signup":
-            await _handle_proxy_signup(matcher, api_client, event, team.id, intent.params)
-        elif intent.action == "register_rich":
-            await _handle_register_rich(matcher, api_client, event, team.id, intent.params)
-        elif intent.action == "cancel_signup":
-            await _handle_cancel_signup(matcher, api_client, event, team.id, intent.params, context)
-
-    except (FinishedException, PausedException, RejectedException):
-        raise
-
-    except APIError as e:
-        logger.error(f"API 错误: {e}")
-        msg = MessageBuilder.build_error_message(f"操作失败: {e}")
-        await matcher.finish(msg)
-
-    except Exception as e:
-        logger.exception(f"处理 NLP 追问失败: {e}")
-        session_manager = get_session_manager()
-        session_manager.close_session(str(event.user_id), str(event.group_id))
+    if not selected_char:
+        await matcher.send(Message(
+            f"未匹配到角色，请回复序号（1-{len(characters)}）或角色名"
+        ))
         return
+
+    # 关闭会话
+    session_manager = get_session_manager()
+    session_manager.close_session(str(event.user_id), str(event.group_id))
+
+    # 执行报名
+    guild_id = event.group_id
+    qq_number = str(event.user_id)
+    api_client = get_api_client(guild_id=guild_id)
+    char_service = CharacterService(api_client)
+
+    try:
+        user_characters = await char_service.get_user_characters(qq_number)
+    except Exception:
+        user_characters = []
+
+    # 获取团队
+    team_service = TeamService(api_client)
+    teams = await team_service.get_teams()
+    team = next((t for t in teams if t.id == team_id), None)
+    if not team:
+        await matcher.finish(MessageBuilder.build_error_message("团队已关闭或不存在"))
+
+    await _do_signup(
+        matcher, api_client, char_service, event,
+        team, team_index, xinfa_key, selected_char["name"],
+        user_characters, character_id=selected_char["id"]
+    )
+
+
+async def _handle_signup_select_xinfa(
+    matcher,
+    event: GroupMessageEvent,
+    session,
+    user_input: str,
+):
+    """处理报名时选择心法"""
+    xinfas = session.data.get("xinfas", [])
+    team_id = session.data.get("team_id")
+    team_index = session.data.get("team_index")
+    character_id = session.data.get("character_id")
+    character_name = session.data.get("character_name")
+
+    selected_xinfa = None
+
+    # 尝试按序号选择
+    try:
+        index = int(user_input)
+        if 1 <= index <= len(xinfas):
+            selected_xinfa = xinfas[index - 1]
+    except ValueError:
+        # 尝试按心法名匹配
+        input_key = get_xinfa_key(user_input)
+        if input_key and input_key in xinfas:
+            selected_xinfa = input_key
+
+    if not selected_xinfa:
+        await matcher.send(Message(
+            f"未匹配到心法，请回复序号（1-{len(xinfas)}）或心法名"
+        ))
+        return
+
+    # 关闭会话
+    session_manager = get_session_manager()
+    session_manager.close_session(str(event.user_id), str(event.group_id))
+
+    # 执行报名
+    guild_id = event.group_id
+    qq_number = str(event.user_id)
+    api_client = get_api_client(guild_id=guild_id)
+    char_service = CharacterService(api_client)
+
+    try:
+        user_characters = await char_service.get_user_characters(qq_number)
+    except Exception:
+        user_characters = []
+
+    # 获取团队
+    team_service = TeamService(api_client)
+    teams = await team_service.get_teams()
+    team = next((t for t in teams if t.id == team_id), None)
+    if not team:
+        await matcher.finish(MessageBuilder.build_error_message("团队已关闭或不存在"))
+
+    await _do_signup(
+        matcher, api_client, char_service, event,
+        team, team_index, selected_xinfa, character_name,
+        user_characters, character_id=character_id
+    )
 
 
 # ==================== 初始化成员（超级管理员或群主专用）====================
@@ -1036,15 +1196,12 @@ init_members = on_keyword(
 
 @init_members.handle()
 async def handle_init_members(bot: Bot, event: GroupMessageEvent):
-    """处理初始化成员命令 - 将当前群的所有成员同步到后端（以群组成员为准）"""
+    """处理初始化成员命令"""
     try:
         group_id = event.group_id
-
         await init_members.send("正在获取群成员列表，请稍候...")
 
-        logger.info(f"开始获取群 {group_id} 的成员列表")
         group_members = await bot.get_group_member_list(group_id=group_id)
-
         logger.info(f"获取到 {len(group_members)} 个群成员")
 
         guild_id = event.group_id
@@ -1055,9 +1212,7 @@ async def handle_init_members(bot: Bot, event: GroupMessageEvent):
 
         result = await member_service.sync_all_members(group_members)
 
-        # 构建结果消息
         msg_parts = [f"成员同步完成！\n总成员数: {result['total']}"]
-        
         if result.get('added', 0) > 0:
             msg_parts.append(f"新增成员: {result['added']}")
         if result.get('updated', 0) > 0:
@@ -1071,18 +1226,13 @@ async def handle_init_members(bot: Bot, event: GroupMessageEvent):
         if result.get('failed', 0) > 0:
             msg_parts.append(f"失败成员: {result['failed']}")
 
-        msg = MessageBuilder.build_success_message("\n".join(msg_parts))
-        await init_members.finish(msg)
+        await init_members.finish(MessageBuilder.build_success_message("\n".join(msg_parts)))
 
     except (FinishedException, PausedException, RejectedException):
         raise
-
     except APIError as e:
         logger.error(f"API 错误: {e}")
-        msg = MessageBuilder.build_error_message(f"同步成员失败: {e}")
-        await init_members.finish(msg)
-
+        await init_members.finish(MessageBuilder.build_error_message(f"同步成员失败: {e}"))
     except Exception as e:
         logger.exception(f"初始化成员失败: {e}")
-        msg = MessageBuilder.build_error_message(f"初始化成员失败: {str(e)}")
-        await init_members.finish(msg)
+        await init_members.finish(MessageBuilder.build_error_message(f"初始化成员失败: {str(e)}"))

@@ -25,6 +25,7 @@ from app.schemas.signup import SignupOut
 from app.schemas.common import ResponseModel
 from app.core.logging import get_logger
 from app.services.slot_allocation_service import SlotAllocationService
+from app.services.team_log_service import TeamLogService
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -115,6 +116,19 @@ async def create_signup(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="团队不存在"
+        )
+
+    # 检查团队状态
+    if team.status != "open":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="该团队未开放报名"
+        )
+
+    if team.is_locked:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="该团队已锁定，无法报名"
         )
 
     logger.debug(f"找到团队 - 团队名称: {team.title}")
@@ -242,7 +256,23 @@ async def create_signup(
     
     # 调用排坑服务重新分配
     allocation_result = await SlotAllocationService.reallocate(db, team_id, signup.id)
-    
+
+    # 记录团队日志
+    await TeamLogService.log_signup_created(
+        db=db,
+        team_id=team_id,
+        guild_id=guild.id,
+        user_id=submitter.id,
+        signup_id=signup.id,
+        player_name=signup_info.get("player_name", ""),
+        character_name=signup_info.get("character_name", ""),
+        xinfa=signup_info.get("xinfa", ""),
+        is_proxy=signup.is_proxy,
+        is_rich=signup.is_rich,
+        slot_position=None,
+        submitter_name=signup_info.get("submitter_name", "")
+    )
+
     await db.commit()
     await db.refresh(signup)
     
@@ -354,6 +384,21 @@ async def cancel_signup(
 
     # 重新分配坑位（取消的报名会被移除，候补可能会补上）
     await SlotAllocationService.reallocate(db, team_id)
+
+    # 记录团队日志
+    signup_info = signup.signup_info or {}
+    cancelled_by_self = (signup.submitter_id == user.id)
+    await TeamLogService.log_signup_cancelled(
+        db=db,
+        team_id=team_id,
+        guild_id=guild.id,
+        user_id=user.id,
+        signup_id=signup.id,
+        player_name=signup_info.get("player_name", ""),
+        character_name=signup_info.get("character_name", ""),
+        xinfa=signup_info.get("xinfa", ""),
+        cancelled_by_self=cancelled_by_self
+    )
 
     await db.commit()
 

@@ -87,6 +87,7 @@ async def get_open_teams(
                 dungeon=team.dungeon,
                 max_members=team.max_members,
                 status=team.status,
+                is_locked=team.is_locked,
                 created_at=team.created_at,
                 signup_count=active_count,
                 cancelled_count=cancelled_count,
