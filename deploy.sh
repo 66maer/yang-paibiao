@@ -17,10 +17,12 @@ else
     echo "⚠ Warning: .env.docker not found, using defaults"
 fi
 
-# 设置默认值（使用南京大学 GitHub 镜像加速）
-REGISTRY="${DOCKER_REGISTRY:-ghcr.nju.edu.cn}"
+# 设置默认值
+REGISTRY="${DOCKER_REGISTRY:-ghcr.io}"
 USERNAME="${DOCKER_USERNAME:-66maer}"
 VERSION="${VERSION:-latest}"
+DEFAULT_REGISTRY_CANDIDATES="ghcr.m.daocloud.io,m.daocloud.io/ghcr.io,dockerproxy.net/ghcr.io,dockerproxy.com/ghcr.io,docker.1ms.run/ghcr.io,docker.nju.edu.cn/ghcr.io,docker.mirrors.sjtug.sjtu.edu.cn/ghcr.io,dockerhub.azk8s.cn/ghcr.io,ghcr.io"
+REGISTRY_CANDIDATES="${DOCKER_REGISTRY_CANDIDATES:-$DEFAULT_REGISTRY_CANDIDATES}"
 
 # 解析要部署的服务
 SERVICES_TO_DEPLOY="$@"
@@ -30,13 +32,56 @@ if [ -z "$SERVICES_TO_DEPLOY" ]; then
     SERVICES_TO_DEPLOY="backend frontend bot"
 fi
 
+pull_image_with_fallback() {
+    local service="$1"
+    local image_name="yangpaibiao-${service}"
+    local canonical_image="${REGISTRY}/${USERNAME}/${image_name}:${VERSION}"
+    local registry_prefixes=()
+    local registry_prefix=""
+    local candidate_image=""
+    local IFS=','
+
+    read -r -a registry_prefixes <<< "$REGISTRY_CANDIDATES"
+
+    echo "📦 Pulling ${image_name}:${VERSION}"
+    for registry_prefix in "${registry_prefixes[@]}"; do
+        registry_prefix="${registry_prefix//[[:space:]]/}"
+
+        if [ -z "$registry_prefix" ]; then
+            continue
+        fi
+
+        candidate_image="${registry_prefix}/${USERNAME}/${image_name}:${VERSION}"
+        echo "  -> trying $candidate_image"
+
+        if docker pull "$candidate_image"; then
+            if [ "$candidate_image" != "$canonical_image" ]; then
+                docker tag "$candidate_image" "$canonical_image"
+            fi
+
+            echo "  ✓ using $candidate_image"
+            return 0
+        fi
+    done
+
+    echo "✗ Failed to pull ${image_name}:${VERSION} from all configured registries"
+    return 1
+}
+
 echo ""
 echo "Configuration:"
 echo "  Registry: $REGISTRY"
 echo "  Username: $USERNAME"
 echo "  Version: $VERSION"
+echo "  Registry candidates: $REGISTRY_CANDIDATES"
 echo "  Services to deploy: $SERVICES_TO_DEPLOY"
 echo ""
+
+# 优先拉取镜像，拉取成功后再重启服务，避免无谓停机
+echo "📥 Pulling images with fallback registries..."
+for service in $SERVICES_TO_DEPLOY; do
+    pull_image_with_fallback "$service"
+done
 
 # 停止要更新的服务
 echo "🛑 Stopping services: $SERVICES_TO_DEPLOY"

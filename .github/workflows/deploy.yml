@@ -205,7 +205,6 @@ jobs:
        needs.detect-changes.outputs.frontend == 'true' ||
        needs.detect-changes.outputs.bot == 'true')
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -221,28 +220,22 @@ jobs:
             # 进入项目目录
             cd /home/ubuntu/xiaoyang
 
-            # 根据变化情况拉取对应的镜像（使用南京大学镜像加速）
+            # 根据变化情况确定需要更新的服务
             SERVICES_TO_UPDATE=""
 
             if [ "${{ needs.detect-changes.outputs.backend }}" == "true" ]; then
-              echo "📦 Pulling backend image..."
-              docker pull ghcr.nju.edu.cn/${{ github.repository_owner }}/yangpaibiao-backend:latest
               SERVICES_TO_UPDATE="$SERVICES_TO_UPDATE backend"
             fi
 
             if [ "${{ needs.detect-changes.outputs.frontend }}" == "true" ]; then
-              echo "📦 Pulling frontend image..."
-              docker pull ghcr.nju.edu.cn/${{ github.repository_owner }}/yangpaibiao-frontend:latest
               SERVICES_TO_UPDATE="$SERVICES_TO_UPDATE frontend"
             fi
 
             if [ "${{ needs.detect-changes.outputs.bot }}" == "true" ]; then
-              echo "📦 Pulling bot image..."
-              docker pull ghcr.nju.edu.cn/${{ github.repository_owner }}/yangpaibiao-bot:latest
               SERVICES_TO_UPDATE="$SERVICES_TO_UPDATE bot"
             fi
 
-            # 运行部署脚本（传入需要更新的服务列表）
+            # 运行部署脚本，由脚本负责按镜像站顺序回退拉取
             echo "🚀 Deploying services:$SERVICES_TO_UPDATE"
             bash deploy.sh $SERVICES_TO_UPDATE
 
