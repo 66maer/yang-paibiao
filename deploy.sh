@@ -23,8 +23,6 @@ USERNAME="${DOCKER_USERNAME:-66maer}"
 VERSION="${VERSION:-latest}"
 DEFAULT_REGISTRY_CANDIDATES="ghcr.m.daocloud.io,m.daocloud.io/ghcr.io,dockerproxy.net/ghcr.io,dockerproxy.com/ghcr.io,docker.1ms.run/ghcr.io,docker.nju.edu.cn/ghcr.io,docker.mirrors.sjtug.sjtu.edu.cn/ghcr.io,dockerhub.azk8s.cn/ghcr.io,ghcr.io"
 REGISTRY_CANDIDATES="${DOCKER_REGISTRY_CANDIDATES:-$DEFAULT_REGISTRY_CANDIDATES}"
-GHCR_USERNAME="${GHCR_USERNAME:-$USERNAME}"
-GHCR_TOKEN="${GHCR_TOKEN:-${DOCKER_PASSWORD:-}}"
 
 # 解析要部署的服务
 SERVICES_TO_DEPLOY="$@"
@@ -33,39 +31,6 @@ if [ -z "$SERVICES_TO_DEPLOY" ]; then
     echo "ℹ️  No specific services specified, deploying all services"
     SERVICES_TO_DEPLOY="backend frontend bot"
 fi
-
-prioritize_registry_candidate() {
-    local prioritized_registry="$1"
-    local registry_prefixes=()
-    local registry_prefix=""
-    local updated_candidates="$prioritized_registry"
-    local IFS=','
-
-    read -r -a registry_prefixes <<< "$REGISTRY_CANDIDATES"
-
-    for registry_prefix in "${registry_prefixes[@]}"; do
-        registry_prefix="${registry_prefix//[[:space:]]/}"
-
-        if [ -z "$registry_prefix" ] || [ "$registry_prefix" = "$prioritized_registry" ]; then
-            continue
-        fi
-
-        updated_candidates="${updated_candidates},${registry_prefix}"
-    done
-
-    REGISTRY_CANDIDATES="$updated_candidates"
-}
-
-login_to_ghcr_if_configured() {
-    if [ -z "$GHCR_TOKEN" ]; then
-        echo "ℹ️  GHCR_TOKEN not configured, private GHCR images will not be pullable from ghcr.io"
-        return 0
-    fi
-
-    echo "🔐 Logging in to ghcr.io as $GHCR_USERNAME"
-    echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin >/dev/null
-    prioritize_registry_candidate "ghcr.io"
-}
 
 pull_image_with_fallback() {
     local service="$1"
@@ -100,22 +65,14 @@ pull_image_with_fallback() {
     done
 
     echo "✗ Failed to pull ${image_name}:${VERSION} from all configured registries"
-
-    if [ -z "$GHCR_TOKEN" ]; then
-        echo "  Hint: configure GHCR_TOKEN with packages:read to pull private GHCR images"
-    fi
-
     return 1
 }
-
-login_to_ghcr_if_configured
 
 echo ""
 echo "Configuration:"
 echo "  Registry: $REGISTRY"
 echo "  Username: $USERNAME"
 echo "  Version: $VERSION"
-echo "  GHCR auth: $([ -n "$GHCR_TOKEN" ] && echo configured || echo not-configured)"
 echo "  Registry candidates: $REGISTRY_CANDIDATES"
 echo "  Services to deploy: $SERVICES_TO_DEPLOY"
 echo ""

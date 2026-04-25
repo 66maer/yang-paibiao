@@ -211,15 +211,11 @@ jobs:
 
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.0
-        env:
-          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
-          envs: GHCR_USERNAME,GHCR_TOKEN
           script: |
             # 进入项目目录
             cd /home/ubuntu/xiaoyang

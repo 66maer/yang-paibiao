@@ -85,9 +85,6 @@ cat > .env.docker <<EOF
 DOCKER_REGISTRY=ghcr.io
 DOCKER_USERNAME=66maer
 VERSION=latest
-# 如果 GHCR 包保持私有，需要提供 packages:read 的 GitHub PAT
-# GHCR_USERNAME=66maer
-# GHCR_TOKEN=ghp_xxx_or_github_pat_with_read_packages
 
 # ============================================
 # 数据库配置
@@ -267,15 +264,13 @@ echo "✅ Nginx 配置已重载"
 
 在浏览器中打开你的 GitHub 仓库，进入 `Settings > Secrets and variables > Actions`，添加以下 secrets：
 
-| Secret 名称         | 说明                  | 获取方式                                     |
-| ------------------- | --------------------- | -------------------------------------------- |
-| `SSH_HOST`          | 服务器 IP 或域名      | 你的服务器地址                               |
-| `SSH_USER`          | SSH 用户名            | `maer`                                       |
-| `SSH_PRIVATE_KEY`   | SSH 私钥              | 见下方说明                                   |
-| `SERVER_PORT`       | SSH 端口（可选）      | `22`（默认可不填）                           |
-| `VITE_API_BASE_URL` | 前端 API 地址（可选） | `/api/v2`（默认可不填）                      |
-| `GHCR_TOKEN`        | GHCR 拉取令牌         | 具有 `packages:read` 的 GitHub PAT           |
-| `GHCR_USERNAME`     | GHCR 用户名（可选）   | `66maer`；默认取服务器上的 `DOCKER_USERNAME` |
+| Secret 名称         | 说明                  | 获取方式                |
+| ------------------- | --------------------- | ----------------------- |
+| `SERVER_HOST`       | 服务器 IP 或域名      | 你的服务器地址          |
+| `SERVER_USER`       | SSH 用户名            | `maer`                  |
+| `SERVER_SSH_KEY`    | SSH 私钥              | 见下方说明              |
+| `SERVER_PORT`       | SSH 端口（可选）      | `22`（默认可不填）      |
+| `VITE_API_BASE_URL` | 前端 API 地址（可选） | `/api/v2`（默认可不填） |
 
 **获取 SSH 私钥：**
 
@@ -284,7 +279,7 @@ echo "✅ Nginx 配置已重载"
 cat ~/.ssh/id_rsa
 
 # 复制整个输出（包括 -----BEGIN OPENSSH PRIVATE KEY----- 和 -----END OPENSSH PRIVATE KEY-----）
-# 粘贴到 GitHub Secrets 的 SSH_PRIVATE_KEY 中
+# 粘贴到 GitHub Secrets 的 SERVER_SSH_KEY 中
 ```
 
 **如果没有 SSH 密钥，先生成一个：**
@@ -300,9 +295,7 @@ ssh-copy-id maer@your-server-ip
 cat ~/.ssh/id_rsa
 ```
 
-**GHCR Token 权限要求：** 至少包含 `read:packages`。如果镜像包是私有的，这是部署必需项。
-
-**✅ 检查点：** 基础 5 个 GitHub Secrets 已配置；若 GHCR 包为私有，还需补充 `GHCR_TOKEN`（以及可选的 `GHCR_USERNAME`）
+**✅ 检查点：** 5 个 GitHub Secrets 已配置（或 3 个必需 + 2 个可选）
 
 ---
 
@@ -573,12 +566,15 @@ bash scripts/health-check.sh
 ### 步骤 4.7: 验证部署（📍 浏览器）
 
 1. **访问前端：** `https://zyhm.fun`
+
    - 应该能看到登录页面
 
 2. **访问 API 文档：** `https://zyhm.fun/api/docs`
+
    - 应该能看到 Swagger UI
 
 3. **测试登录：**
+
    - 使用创建的管理员账户登录
    - 用户名: `admin`
    - 密码: `admin123456`（或你设置的自定义密码）
