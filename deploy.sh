@@ -26,6 +26,7 @@ PREFERRED_REGISTRY="${DOCKER_REGISTRY:-}"
 USERNAME="${DOCKER_USERNAME:-66maer}"
 VERSION="${VERSION:-latest}"
 REGISTRY_CANDIDATES_RAW="${DOCKER_REGISTRY_CANDIDATES:-}"
+DOCKER_PULL_TIMEOUT_SECONDS="${DOCKER_PULL_TIMEOUT_SECONDS:-45}"
 
 DEFAULT_REGISTRY_CANDIDATES=(
     "ghcr.nju.edu.cn"
@@ -74,6 +75,17 @@ export DOCKER_CANONICAL_REGISTRY="$CANONICAL_REGISTRY"
 export DOCKER_USERNAME="$USERNAME"
 export VERSION="$VERSION"
 
+pull_image_with_timeout() {
+    local image="$1"
+
+    if command -v timeout >/dev/null 2>&1; then
+        timeout --foreground "${DOCKER_PULL_TIMEOUT_SECONDS}s" docker pull "$image"
+    else
+        echo "  ⚠ timeout command not found, pulling without per-registry timeout"
+        docker pull "$image"
+    fi
+}
+
 get_service_image_name() {
     case "$1" in
         backend)
@@ -96,6 +108,7 @@ pull_service_image() {
     local image_name
     local target_image
     local source_image
+    local pull_status
 
     image_name="$(get_service_image_name "$service")"
 
@@ -112,13 +125,19 @@ pull_service_image() {
         source_image="${candidate}/${USERNAME}/${image_name}:${VERSION}"
         echo "  -> Trying $source_image"
 
-        if docker pull "$source_image"; then
+        if pull_image_with_timeout "$source_image"; then
             if [ "$source_image" != "$target_image" ]; then
                 docker tag "$source_image" "$target_image"
             fi
 
             echo "  ✓ Ready: $target_image"
             return 0
+        else
+            pull_status=$?
+
+            if [ "$pull_status" -eq 124 ]; then
+                echo "  ⚠ Timed out after ${DOCKER_PULL_TIMEOUT_SECONDS}s: $source_image"
+            fi
         fi
     done
 
@@ -138,6 +157,7 @@ echo ""
 echo "Configuration:"
 echo "  Canonical registry: $CANONICAL_REGISTRY"
 echo "  Registry candidates: ${REGISTRY_CANDIDATES[*]}"
+echo "  Pull timeout per registry: ${DOCKER_PULL_TIMEOUT_SECONDS}s"
 echo "  Username: $USERNAME"
 echo "  Version: $VERSION"
 echo "  Services to deploy: $SERVICES_TO_DEPLOY"
