@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { CardBody, CardHeader, Input, Button } from "@heroui/react";
 import { userLogin, getUserInfo } from "@/api/auth";
 import useAuthStore from "@/stores/authStore";
@@ -83,89 +83,98 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="w-full max-w-md">
-        <HoverEffectCard className="items-center gap-4 pt-0 pb-6 bg-default-50" maxXRotation={3} maxYRotation={3}>
-          <CardHeader className="flex flex-col gap-2 pb-6 pt-10 relative">
-            <ThemeSwitch className="absolute right-4 top-4" />
-            <h1 className="text-3xl font-bold text-center bg-gradient-to-b from-pink-500 to-purple-600 bg-clip-text text-transparent">
-              小秧排表
-            </h1>
-            <p className="text-sm text-default-500 text-center">请使用QQ号登录</p>
-          </CardHeader>
-          <CardBody className="flex flex-col gap-5 py-5 px-5 md:px-10">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <Input
-                label="QQ号"
-                placeholder="请输入QQ号"
-                value={formData.qq_number}
-                onChange={(e) => setFormData({ ...formData, qq_number: e.target.value })}
-                isRequired
-                autoFocus
-                classNames={{
-                  inputWrapper: [
-                    "shadow-xl",
-                    "bg-default-100/70",
-                    "dark:bg-default/60",
-                    "backdrop-blur-xl",
-                    "backdrop-saturate-200",
-                    "hover:bg-default-200/70",
-                    "dark:hover:bg-default/70",
-                    "group-data-[focus=true]:bg-default-100/50",
-                    "dark:group-data-[focus=true]:bg-default/60",
-                    "!cursor-text",
-                  ],
-                }}
-              />
-              <Input
-                label="密码"
-                type="password"
-                placeholder="请输入密码"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                isRequired
-                classNames={{
-                  inputWrapper: [
-                    "shadow-xl",
-                    "bg-default-100/70",
-                    "dark:bg-default/60",
-                    "backdrop-blur-xl",
-                    "backdrop-saturate-200",
-                    "hover:bg-default-200/70",
-                    "dark:hover:bg-default/70",
-                    "group-data-[focus=true]:bg-default-100/50",
-                    "dark:group-data-[focus=true]:bg-default/60",
-                    "!cursor-text",
-                  ],
-                }}
-              />
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-pink-50 to-purple-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="flex flex-1 items-center justify-center p-4 sm:py-6">
+        <div className="w-full max-w-md">
+          <HoverEffectCard className="items-center gap-4 pt-0 pb-6 bg-default-50" maxXRotation={3} maxYRotation={3}>
+            <CardHeader className="flex flex-col gap-2 pb-6 pt-10 relative">
+              <ThemeSwitch className="absolute right-4 top-4" />
+              <h1 className="text-3xl font-bold text-center bg-gradient-to-b from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                小秧
+              </h1>
+              <p className="text-sm text-default-500 text-center">请使用QQ号登录</p>
+            </CardHeader>
+            <CardBody className="flex flex-col gap-5 py-5 px-5 md:px-10">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <Input
+                  label="QQ号"
+                  placeholder="请输入QQ号"
+                  value={formData.qq_number}
+                  onChange={(e) => setFormData({ ...formData, qq_number: e.target.value })}
+                  isRequired
+                  autoFocus
+                  classNames={{
+                    inputWrapper: [
+                      "shadow-xl",
+                      "bg-default-100/70",
+                      "dark:bg-default/60",
+                      "backdrop-blur-xl",
+                      "backdrop-saturate-200",
+                      "hover:bg-default-200/70",
+                      "dark:hover:bg-default/70",
+                      "group-data-[focus=true]:bg-default-100/50",
+                      "dark:group-data-[focus=true]:bg-default/60",
+                      "!cursor-text",
+                    ],
+                  }}
+                />
+                <Input
+                  label="密码"
+                  type="password"
+                  placeholder="请输入密码"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  isRequired
+                  classNames={{
+                    inputWrapper: [
+                      "shadow-xl",
+                      "bg-default-100/70",
+                      "dark:bg-default/60",
+                      "backdrop-blur-xl",
+                      "backdrop-saturate-200",
+                      "hover:bg-default-200/70",
+                      "dark:hover:bg-default/70",
+                      "group-data-[focus=true]:bg-default-100/50",
+                      "dark:group-data-[focus=true]:bg-default/60",
+                      "!cursor-text",
+                    ],
+                  }}
+                />
 
-              {error && (
-                <div className="text-sm text-danger bg-danger-50 dark:bg-danger-900/20 p-3 rounded-lg">{error}</div>
-              )}
+                {error && (
+                  <div className="text-sm text-danger bg-danger-50 dark:bg-danger-900/20 p-3 rounded-lg">{error}</div>
+                )}
 
-              <Button
-                type="submit"
-                color="primary"
-                isLoading={loading}
-                className="w-full mt-2"
-                size="lg"
-                variant="shadow"
-              >
-                登录
-              </Button>
+                <Button
+                  type="submit"
+                  color="primary"
+                  isLoading={loading}
+                  className="w-full mt-2"
+                  size="lg"
+                  variant="shadow"
+                >
+                  登录
+                </Button>
 
-              {/* 临时关闭注册入口 */}
-              {/* <div className="text-center text-sm text-default-500">
+                {/* 临时关闭注册入口 */}
+                {/* <div className="text-center text-sm text-default-500">
                 还没有账号？{' '}
                 <Link to="/register" className="text-primary hover:underline font-medium">
                   立即注册
                 </Link>
               </div> */}
-            </form>
-          </CardBody>
-        </HoverEffectCard>
+              </form>
+            </CardBody>
+          </HoverEffectCard>
+        </div>
       </div>
+      <footer className="border-t border-pink-200 dark:border-pink-900 py-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="text-sm text-default-500">
+            小秧排表 ©{new Date().getFullYear()} 丐箩箩 | 蜀ICP备2024079726号-1
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
