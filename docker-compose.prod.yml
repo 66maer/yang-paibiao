@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # 后端服务
   backend:
-    image: ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_USERNAME:-66maer}/yangpaibiao-backend:${VERSION:-latest}
+    image: ${DOCKER_REGISTRY:-ghcr.nju.edu.cn}/${DOCKER_USERNAME:-66maer}/yangpaibiao-backend:${VERSION:-latest}
     container_name: yangpaibiao-backend
     restart: always
     env_file:
@@ -29,7 +29,7 @@ services:
 
   # 前端服务
   frontend:
-    image: ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_USERNAME:-66maer}/yangpaibiao-frontend:${VERSION:-latest}
+    image: ${DOCKER_REGISTRY:-ghcr.nju.edu.cn}/${DOCKER_USERNAME:-66maer}/yangpaibiao-frontend:${VERSION:-latest}
     container_name: yangpaibiao-frontend
     restart: always
     environment:
@@ -50,7 +50,7 @@ services:
 
   # Bot 服务
   bot:
-    image: ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_USERNAME:-66maer}/yangpaibiao-bot:${VERSION:-latest}
+    image: ${DOCKER_REGISTRY:-ghcr.nju.edu.cn}/${DOCKER_USERNAME:-66maer}/yangpaibiao-bot:${VERSION:-latest}
     container_name: yangpaibiao-bot
     restart: always
     env_file:
