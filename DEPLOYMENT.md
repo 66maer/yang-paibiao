@@ -5,34 +5,41 @@
 所有 Docker 容器化和 CI/CD 配置文件已创建完成：
 
 ### 后端配置（3个文件）
+
 - ✅ `backend/Dockerfile` - 后端多阶段构建配置
 - ✅ `backend/.dockerignore` - Docker 构建排除文件
 - ✅ `backend/.env.production` - 生产环境变量模板
 
 ### 前端配置（4个文件）
+
 - ✅ `frontend/Dockerfile` - 前端多阶段构建（构建 + Nginx）
 - ✅ `frontend/.dockerignore` - Docker 构建排除文件
 - ✅ `frontend/nginx.conf` - Nginx 容器内配置
 - ✅ `frontend/docker-entrypoint.sh` - 容器启动脚本
 
 ### Bot 配置（3个文件）
+
 - ✅ `yang_bot/Dockerfile` - Bot 多阶段构建配置
 - ✅ `yang_bot/.dockerignore` - Docker 构建排除文件
 - ✅ `yang_bot/.env.prod` - Bot 生产环境变量模板
 
 ### Docker Compose配置（3个文件）
+
 - ✅ `docker-compose.prod.yml` - 生产环境编排（包含 backend、frontend、bot）
 - ✅ `docker-compose.dev.yml` - 开发环境编排（可选）
 - ✅ `.env.docker` - Docker 环境变量模板
 
 ### CI/CD 配置（1个文件）
+
 - ✅ `.github/workflows/deploy.yml` - GitHub Actions 自动部署
 
 ### 部署脚本（2个文件）
+
 - ✅ `deploy.sh` - 服务器部署脚本
 - ✅ `scripts/health-check.sh` - 健康检查脚本
 
 ### 共享基础设施（1个文件）
+
 - ✅ `/home/maer/work/shared-infra/nginx/conf.d/yang-paibiao.conf` - Nginx 反向代理配置（含 HTTPS）
 
 ---
@@ -112,6 +119,7 @@ docker start shared-nginx
 #### 方法 2: 使用现有证书
 
 如果你已有 SSL 证书，将证书文件复制到：
+
 - `/etc/letsencrypt/live/zyhm.fun/fullchain.pem`
 - `/etc/letsencrypt/live/zyhm.fun/privkey.pem`
 
@@ -129,13 +137,13 @@ crontab -e
 
 在 GitHub 仓库的 `Settings > Secrets and variables > Actions` 中添加以下 secrets：
 
-| Secret 名称 | 说明 | 示例值 | 必需 |
-|------------|------|--------|------|
-| SERVER_HOST | 服务器 IP 或域名 | `192.168.1.100` | ✅ 必需 |
-| SERVER_USER | SSH 用户名 | `maer` | ✅ 必需 |
-| SERVER_SSH_KEY | SSH 私钥内容 | `-----BEGIN OPENSSH PRIVATE KEY-----...` | ✅ 必需 |
-| SERVER_PORT | SSH 端口 | `22`（默认） | ⚪ 可选 |
-| VITE_API_BASE_URL | 前端 API 地址 | `/api/v2` | ⚪ 可选 |
+| Secret 名称       | 说明             | 示例值                                   | 必需    |
+| ----------------- | ---------------- | ---------------------------------------- | ------- |
+| SERVER_HOST       | 服务器 IP 或域名 | `192.168.1.100`                          | ✅ 必需 |
+| SERVER_USER       | SSH 用户名       | `maer`                                   | ✅ 必需 |
+| SERVER_SSH_KEY    | SSH 私钥内容     | `-----BEGIN OPENSSH PRIVATE KEY-----...` | ✅ 必需 |
+| SERVER_PORT       | SSH 端口         | `22`（默认）                             | ⚪ 可选 |
+| VITE_API_BASE_URL | 前端 API 地址    | `/api/v2`                                | ⚪ 可选 |
 
 **注意：** `GITHUB_TOKEN` 由 GitHub Actions 自动提供，不需要手动添加。
 
@@ -269,7 +277,8 @@ servers:
 需要在 `yang_bot/.env.prod` 中配置 OneBot 连接地址。
 
 详细配置请参考 [NoneBot2 文档](https://nonebot.dev/) 和 [OneBot 文档](https://onebot.adapters.nonebot.dev/)。
-```
+
+````
 
 ### 步骤 6: 验证部署
 
@@ -298,7 +307,7 @@ git push origin main
 # 4. 拉取最新镜像
 # 5. 运行部署脚本
 # 6. 执行健康检查
-```
+````
 
 ---
 
@@ -370,12 +379,7 @@ cd /home/maer/work/yang-paibiao
 # 拉取最新代码
 git pull origin main
 
-# 拉取最新镜像
-docker pull ghcr.io/66maer/yangpaibiao-backend:latest
-docker pull ghcr.io/66maer/yangpaibiao-frontend:latest
-docker pull ghcr.io/66maer/yangpaibiao-bot:latest
-
-# 运行部署脚本
+# 运行部署脚本（脚本会自动拉取镜像，并在多个镜像站之间回退）
 bash deploy.sh
 ```
 
@@ -510,6 +514,7 @@ chmod +x /home/maer/work/yang-paibiao/scripts/backup-db.sh
 ### 监控设置
 
 考虑集成以下监控工具：
+
 - **Prometheus + Grafana**: 应用和容器监控
 - **Loki**: 日志聚合
 - **Uptime Kuma**: 可用性监控
@@ -522,23 +527,27 @@ chmod +x /home/maer/work/yang-paibiao/scripts/backup-db.sh
 在推送到 main 分支之前，确保：
 
 ### 基础设施
+
 - [ ] shared-network 网络已创建（`docker network ls`）
 - [ ] shared-postgres 数据库容器运行中
 - [ ] shared-nginx 容器运行中
 - [ ] SSL 证书已申请并配置
 
 ### 配置文件
+
 - [ ] `.env.docker` 文件已配置（数据库密码、JWT 密钥、Bot 端口）
 - [ ] `yang_bot/.env.prod` 已配置（超级管理员、群号、OneBot 连接）
 - [ ] 数据库已创建（用户和数据库）
 - [ ] Nginx 配置已更新并重载
 
 ### GitHub 配置
+
 - [ ] GitHub Secrets 已全部设置（7个 secrets）
 - [ ] SSH 密钥已添加到服务器
 - [ ] GitHub Actions 有读写 packages 权限
 
 ### Bot 特殊配置
+
 - [ ] OneBot 客户端已安装并配置
 - [ ] OneBot 反向 WebSocket 地址已配置
 - [ ] Bot 端口（8080）已在防火墙开放

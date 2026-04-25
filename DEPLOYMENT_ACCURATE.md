@@ -82,7 +82,9 @@ cat > .env.docker <<EOF
 # ============================================
 # Docker 镜像配置
 # ============================================
-DOCKER_REGISTRY=ghcr.io
+DOCKER_CANONICAL_REGISTRY=ghcr.io
+DOCKER_REGISTRY=ghcr.nju.edu.cn
+DOCKER_REGISTRY_CANDIDATES="ghcr.nju.edu.cn ghcr.linkos.org ghcr.milu.moe ghcr.registry.cyou ghcr.chenby.cn docker.1ms.run/ghcr.io proxy.vvvv.ee/ghcr.io ghcr.io"
 DOCKER_USERNAME=66maer
 VERSION=latest
 
@@ -566,15 +568,12 @@ bash scripts/health-check.sh
 ### 步骤 4.7: 验证部署（📍 浏览器）
 
 1. **访问前端：** `https://zyhm.fun`
-
    - 应该能看到登录页面
 
 2. **访问 API 文档：** `https://zyhm.fun/api/docs`
-
    - 应该能看到 Swagger UI
 
 3. **测试登录：**
-
    - 使用创建的管理员账户登录
    - 用户名: `admin`
    - 密码: `admin123456`（或你设置的自定义密码）
