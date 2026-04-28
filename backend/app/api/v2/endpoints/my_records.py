@@ -3,12 +3,15 @@
 """
 from datetime import date, datetime, timedelta
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Header, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, text
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user, get_db
+from app.models.guild import Guild
+from app.models.guild_member import GuildMember
+from app.models.guild_dungeon_config import GuildDungeonConfig
 from app.models.user import User
 from app.models.character import Character, CharacterPlayer
 from app.models.weekly_record import WeeklyRecord, WeeklyRecordConfig, CharacterCDStatus
@@ -89,22 +92,78 @@ def sync_columns_with_primary_defaults(
     return synced_columns
 
 
-async def get_default_columns(db: AsyncSession) -> List[ColumnConfig]:
-    """获取默认列配置（从主要副本列表）"""
+async def resolve_selected_guild_id(
+    db: AsyncSession,
+    user_id: int,
+    x_guild_id: Optional[str],
+) -> Optional[int]:
+    """解析并验证当前选中的群组。"""
+    if not x_guild_id:
+        return None
+
+    try:
+        guild_id = int(x_guild_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="无效的群组ID",
+        ) from exc
+
     result = await db.execute(
-        text("SELECT value FROM system_configs WHERE key = 'dungeon_options'")
+        select(Guild).where(Guild.id == guild_id, Guild.deleted_at.is_(None))
     )
-    row = result.fetchone()
+    guild = result.scalar_one_or_none()
+    if not guild:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="群组不存在",
+        )
+
+    member_result = await db.execute(
+        select(GuildMember).where(
+            GuildMember.guild_id == guild_id,
+            GuildMember.user_id == user_id,
+            GuildMember.left_at.is_(None),
+        )
+    )
+    member = member_result.scalar_one_or_none()
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="您不是该群组的成员",
+        )
+
+    return guild_id
+
+
+async def get_default_columns(db: AsyncSession, guild_id: Optional[int] = None) -> List[ColumnConfig]:
+    """获取默认列配置（从主要副本列表）"""
+    options = None
+
+    if guild_id is not None:
+        result = await db.execute(
+            select(GuildDungeonConfig).where(GuildDungeonConfig.guild_id == guild_id)
+        )
+        guild_config = result.scalar_one_or_none()
+        if guild_config and guild_config.dungeon_options:
+            options = guild_config.dungeon_options
+
+    if options is None:
+        result = await db.execute(
+            text("SELECT value FROM system_configs WHERE key = 'dungeon_options'")
+        )
+        row = result.fetchone()
     
-    if not row:
-        # 默认副本列表
-        return [
-            ColumnConfig(name="25人英雄武林巅峰", type="primary", order=0),
-            ColumnConfig(name="25人英雄逐北怒涛", type="primary", order=1),
-            ColumnConfig(name="25人英雄西陇魂墟", type="primary", order=2),
-        ]
-    
-    options = row[0]
+        if not row:
+            # 默认副本列表
+            return [
+                ColumnConfig(name="25人英雄武林巅峰", type="primary", order=0),
+                ColumnConfig(name="25人英雄逐北怒涛", type="primary", order=1),
+                ColumnConfig(name="25人英雄西陇魂墟", type="primary", order=2),
+            ]
+
+        options = row[0]
+
     # 只返回 primary 类型的副本
     primary_options = [opt for opt in options if opt.get("type") == "primary"]
     primary_options.sort(key=lambda x: x.get("order", 0))
@@ -118,10 +177,11 @@ async def get_default_columns(db: AsyncSession) -> List[ColumnConfig]:
 async def get_or_create_week_config(
     db: AsyncSession,
     user_id: int,
-    week_start: date
+    week_start: date,
+    guild_id: Optional[int] = None,
 ) -> WeeklyRecordConfig:
     """获取或创建指定周的列配置"""
-    default_columns = await get_default_columns(db)
+    default_columns = await get_default_columns(db, guild_id)
 
     # 查找现有配置
     result = await db.execute(
@@ -187,6 +247,7 @@ async def get_or_create_week_config(
 @router.get("/matrix", response_model=ResponseModel[WeeklyMatrixResponse])
 async def get_weekly_matrix(
     week_start: Optional[date] = Query(None, description="周起始日期，不传则为当前周"),
+    x_guild_id: Optional[str] = Header(None, alias="X-Guild-Id"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -198,11 +259,13 @@ async def get_weekly_matrix(
     # 确定周起始日期
     if week_start is None:
         week_start = get_week_start_date()
+
+    guild_id = await resolve_selected_guild_id(db, current_user.id, x_guild_id)
     
     current_week = is_current_week(week_start)
     
     # 获取或创建列配置
-    config = await get_or_create_week_config(db, current_user.id, week_start)
+    config = await get_or_create_week_config(db, current_user.id, week_start, guild_id)
     columns = [ColumnConfig(**col) for col in config.columns_json]
     
     # 获取用户的所有角色
@@ -352,14 +415,17 @@ async def get_week_list(
 @router.get("/columns", response_model=ResponseModel[List[ColumnConfig]])
 async def get_weekly_columns(
     week_start: Optional[date] = Query(None, description="周起始日期"),
+    x_guild_id: Optional[str] = Header(None, alias="X-Guild-Id"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """获取指定周的列配置"""
     if week_start is None:
         week_start = get_week_start_date()
+
+    guild_id = await resolve_selected_guild_id(db, current_user.id, x_guild_id)
     
-    config = await get_or_create_week_config(db, current_user.id, week_start)
+    config = await get_or_create_week_config(db, current_user.id, week_start, guild_id)
     columns = [ColumnConfig(**col) for col in config.columns_json]
     
     return success(columns)
@@ -368,6 +434,7 @@ async def get_weekly_columns(
 @router.put("/columns", response_model=ResponseModel[List[ColumnConfig]])
 async def update_weekly_columns(
     payload: WeeklyRecordConfigCreate,
+    x_guild_id: Optional[str] = Header(None, alias="X-Guild-Id"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -377,9 +444,10 @@ async def update_weekly_columns(
     注意：主要副本类型的列不可删除
     """
     week_start = get_week_start_date()
+    guild_id = await resolve_selected_guild_id(db, current_user.id, x_guild_id)
     
     # 获取当前配置
-    config = await get_or_create_week_config(db, current_user.id, week_start)
+    config = await get_or_create_week_config(db, current_user.id, week_start, guild_id)
     current_columns = [ColumnConfig(**col) for col in config.columns_json]
     
     # 验证主要副本列未被删除
