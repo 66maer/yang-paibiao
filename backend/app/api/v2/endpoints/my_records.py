@@ -53,6 +53,42 @@ def is_current_week(week_start: date) -> bool:
     return week_start == current_week_start
 
 
+def sync_columns_with_primary_defaults(
+    existing_columns: List[ColumnConfig],
+    default_primary_columns: List[ColumnConfig],
+    *,
+    drop_obsolete_primary: bool,
+) -> List[ColumnConfig]:
+    """将周列配置与当前赛季的主要副本对齐。"""
+    synced_columns = [
+        ColumnConfig(name=column.name, type="primary", order=index)
+        for index, column in enumerate(default_primary_columns)
+    ]
+    seen_names = {column.name for column in synced_columns}
+
+    for column in existing_columns:
+        if column.name in seen_names:
+            continue
+
+        if column.type == "primary":
+            if drop_obsolete_primary:
+                continue
+            column_type = "custom"
+        else:
+            column_type = "custom"
+
+        synced_columns.append(
+            ColumnConfig(
+                name=column.name,
+                type=column_type,
+                order=len(synced_columns),
+            )
+        )
+        seen_names.add(column.name)
+
+    return synced_columns
+
+
 async def get_default_columns(db: AsyncSession) -> List[ColumnConfig]:
     """获取默认列配置（从主要副本列表）"""
     result = await db.execute(
@@ -85,6 +121,8 @@ async def get_or_create_week_config(
     week_start: date
 ) -> WeeklyRecordConfig:
     """获取或创建指定周的列配置"""
+    default_columns = await get_default_columns(db)
+
     # 查找现有配置
     result = await db.execute(
         select(WeeklyRecordConfig).where(
@@ -95,6 +133,19 @@ async def get_or_create_week_config(
     config = result.scalar_one_or_none()
     
     if config:
+        if is_current_week(week_start):
+            current_columns = [ColumnConfig(**col) for col in config.columns_json]
+            synced_columns = sync_columns_with_primary_defaults(
+                current_columns,
+                default_columns,
+                drop_obsolete_primary=False,
+            )
+            synced_columns_json = [col.model_dump() for col in synced_columns]
+
+            if synced_columns_json != config.columns_json:
+                config.columns_json = synced_columns_json
+                await db.commit()
+                await db.refresh(config)
         return config
     
     # 查找最近一周的配置作为继承
@@ -107,10 +158,17 @@ async def get_or_create_week_config(
     prev_config = result.scalar_one_or_none()
     
     if prev_config:
-        columns_json = prev_config.columns_json
+        prev_columns = [ColumnConfig(**col) for col in prev_config.columns_json]
+        columns_json = [
+            col.model_dump()
+            for col in sync_columns_with_primary_defaults(
+                prev_columns,
+                default_columns,
+                drop_obsolete_primary=True,
+            )
+        ]
     else:
         # 使用默认列配置
-        default_columns = await get_default_columns(db)
         columns_json = [col.model_dump() for col in default_columns]
     
     # 创建新配置
