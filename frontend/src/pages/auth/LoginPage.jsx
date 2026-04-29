@@ -7,74 +7,75 @@ import ThemeSwitch from "@/components/common/ThemeSwitch";
 const showcasePosts = [
   {
     id: 1,
-    category: "排表速览",
+    category: "读书笔记",
     date: "2026-04-18",
     readTime: "3 分钟阅读",
-    title: "本周团本安排已经排到周四，缺口位置同步开放中",
+    title: "重读《人间词话》：境界二字，落到生活里其实很轻",
     summary:
-      "这一版展示页主要用来承接登录入口，顺手把最近的团本、活动和值班安排做成了可浏览的信息区，方便成员登录前先看个大概。",
+      '最近又翻了一遍《人间词话》，比起几年前第一次读，这次更在意的是王国维谈"境界"时那种很克制的语气，不刻意拔高，反而显得真诚。',
     detail:
-      "周一到周四的主团时间已经固定，治疗和补位职业还留了两个空档。为了不让登录页显得太空，这里用一段较完整的摘要模拟站内内容，点击左侧不同条目会切换这里的正文预览。",
-    likes: 126,
-    comments: 18,
-    saves: 41,
+      '几年前第一次读时只记住了"有我之境"和"无我之境"，这次重读发现很多段落都在谈"真"——感情真、景物真、说话真。落到日常里，大概就是写字的时候不端着、记录心情的时候不修饰。',
+    likes: 12,
+    comments: 3,
+    saves: 5,
     hot: true,
   },
   {
     id: 2,
-    category: "活动记录",
+    category: "生活随笔",
     date: "2026-04-15",
     readTime: "5 分钟阅读",
-    title: "清明活动复盘：报名节奏更稳后，临时补位明显减少",
+    title: "周末去山里走了一圈，回来发现城市的声音变小了",
     summary:
-      "上周我们把报名确认时间从当天中午提前到了前一晚，实际执行下来效果不错，尤其是临时喊人补位的次数下降得很明显。",
+      "周六一早临时决定去附近的山里走走，没带相机也没做攻略，就是单纯想离屏幕远一点。从山脚到半山腰大概走了两个多小时。",
     detail:
-      "复盘里主要记录了三个点：报名提醒提前、替补名单前置、缺席说明统一入口。这个登录页不承载业务逻辑，所以这里只保留纯展示文字，但布局和阅读体验会贴近真正的内容页。",
-    likes: 89,
-    comments: 11,
-    saves: 27,
+      "山里的空气有一种很扎实的湿润感，和城里不一样。下山以后回到家，反倒觉得平时听惯的车流声、空调外机声都柔和了不少。可能不是声音变了，是自己的耳朵被洗过了一次。",
+    likes: 8,
+    comments: 2,
+    saves: 4,
     hot: false,
   },
   {
     id: 3,
-    category: "版本备忘",
+    category: "学习随想",
     date: "2026-04-09",
     readTime: "4 分钟阅读",
-    title: "下个版本准备补的三个小能力：请假备注、替补提醒、导出优化",
-    summary: "登录页之外，排表后台后续还会补几个比较实用的细节能力，先放在这里做一个轻量展示，也让页面看起来更完整。",
+    title: "学了一个月的水彩，最大的收获是学会了等水自己干",
+    summary:
+      "之前一直没耐心画水彩，总觉得颜色铺上去之后等待的时间太煎熬。这一个月慢慢摸索下来，反而觉得这段等待是水彩最有意思的地方。",
     detail:
-      "请假备注会补充更明确的时间描述，替补提醒会把状态变化推前一层提示，导出会优先处理字段顺序和空数据兼容。这里的文字只是展示占位，不影响现有登录流程。",
-    likes: 74,
-    comments: 9,
-    saves: 22,
+      '水分多的时候颜色会自己流动，留白和晕染都不是"画"出来的，是"等"出来的。这种顺着材料的脾气走的感觉，和我平时写代码追求精确控制完全相反，但意外地让人放松。',
+    likes: 6,
+    comments: 1,
+    saves: 3,
     hot: false,
   },
   {
     id: 4,
-    category: "站内随记",
+    category: "厨房日常",
     date: "2026-04-02",
     readTime: "2 分钟阅读",
-    title: "把登录入口做成展示页之后，首页终于不再像一堵墙",
+    title: "试了第三次做溏心蛋，终于摸清楚了自家锅的脾气",
     summary:
-      "原先登录页信息量太少，成员打开后除了输账号密码几乎看不到别的内容。这次改成展示型布局，至少能让页面先把气氛铺出来。",
+      "网上的教程都说煮 6 分半，但我家锅小水少，前两次不是太老就是壳粘住。这次记下了几个细节，算是给自己留个备忘。",
     detail:
-      "这类页面的核心不是交互多，而是信息排布得体、登录动作明确。左边展示近期内容，右边固定登录入口，再补一块当前阅读摘要，用户到这里就能很自然地完成后续操作。",
-    likes: 58,
-    comments: 6,
-    saves: 15,
+      "最后定下的方法：冷水下锅，沸腾后转中火 6 分钟，捞出来立刻泡冰水 3 分钟。蛋壳从大头开始剥更顺手。其实最关键的不是时间，是每次都用同一个锅、同一个炉头。",
+    likes: 4,
+    comments: 0,
+    saves: 2,
     hot: false,
   },
 ];
 
 const upcomingItems = [
-  { date: "04/28", title: "周常团本名单最终确认" },
-  { date: "05/02", title: "五一活动班表二次调整" },
-  { date: "05/08", title: "新成员分组规则展示稿更新" },
-  { date: "05/12", title: "请假与替补提醒文案整理" },
-  { date: "05/20", title: "五月排表节奏复盘" },
+  { date: "04/28", title: "把上周的水彩练习装订成册" },
+  { date: "05/02", title: "读完《活着》并写一篇短笔记" },
+  { date: "05/08", title: "整理三月以来的手机随手拍" },
+  { date: "05/12", title: "试做一次自家版本的提拉米苏" },
+  { date: "05/20", title: "把博客底部的版权信息再排一版" },
 ];
 
-const showcaseTags = ["排表", "团本", "招募", "值班", "公告", "活动记录", "版本备忘", "临时通知"];
+const showcaseTags = ["读书", "随笔", "水彩", "厨房", "散步", "摄影", "听歌", "胡思乱想"];
 
 const showcaseStyles = `
   .login-showcase-page {
@@ -541,6 +542,18 @@ const showcaseStyles = `
     margin: 0;
   }
 
+  .login-showcase-footer-link {
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--line);
+    transition: color 0.18s ease, border-color 0.18s ease;
+  }
+
+  .login-showcase-footer-link:hover {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
   @media (max-width: 1024px) {
     .login-showcase-main {
       grid-template-columns: 1fr;
@@ -663,18 +676,18 @@ export default function LoginPage() {
       <div className="login-showcase-page">
         <div className="login-showcase-shell">
           <header className="login-showcase-nav">
-            <div className="login-showcase-logo">小秧</div>
+            <div className="login-showcase-logo">小秧的小站</div>
             <ThemeSwitch className="login-showcase-theme-switch" />
           </header>
 
           <section className="login-showcase-hero">
-            <h1>分享近期安排与心得</h1>
+            <h1>记录生活</h1>
           </section>
 
           <main className="login-showcase-main">
             <section>
               <div className="login-showcase-section-title">
-                <h2>最新动态</h2>
+                <h2>最近写的</h2>
                 <span className="login-showcase-section-note">点击卡片可切换右侧摘要</span>
               </div>
 
@@ -705,7 +718,8 @@ export default function LoginPage() {
 
             <aside className="login-showcase-side">
               <section className="login-showcase-login-card">
-                <h3 className="login-showcase-login-title">老朋友登录</h3>
+                <h3 className="login-showcase-login-title">留言登录</h3>
+                <p className="login-showcase-login-sub">登录后可以在文章下面留言，也方便我回复你。</p>
 
                 <form className="login-showcase-form" onSubmit={handleSubmit} autoComplete="off">
                   <label className="login-showcase-field" htmlFor="login-qq-number">
@@ -740,7 +754,7 @@ export default function LoginPage() {
                   {error ? <div className="login-showcase-error">{error}</div> : null}
 
                   <button type="submit" className="login-showcase-submit" disabled={loading}>
-                    {loading ? "登录中..." : "登 录"}
+                    {loading ? "登录中..." : "登录留言"}
                   </button>
                 </form>
               </section>
@@ -753,7 +767,7 @@ export default function LoginPage() {
               </section>
 
               <section className="login-showcase-card">
-                <h3>近期安排</h3>
+                <h3>最近想做的</h3>
                 <ul className="login-showcase-schedule">
                   {upcomingItems.map((item) => (
                     <li key={`${item.date}-${item.title}`}>
@@ -779,7 +793,17 @@ export default function LoginPage() {
         </div>
 
         <footer className="login-showcase-footer">
-          <p>小秧排表 ©{new Date().getFullYear()} 丐箩箩 | 蜀ICP备2024079726号-1</p>
+          <p>
+            小秧的小站 ©{new Date().getFullYear()} 丐箩箩 |{" "}
+            <a
+              href="https://beian.miit.gov.cn/"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="login-showcase-footer-link"
+            >
+              蜀ICP备2024079726号-1
+            </a>
+          </p>
         </footer>
       </div>
     </>
