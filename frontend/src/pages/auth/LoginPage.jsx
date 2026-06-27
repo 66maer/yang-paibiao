@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { userLogin, getUserInfo } from "@/api/auth";
 import useAuthStore from "@/stores/authStore";
 import ThemeSwitch from "@/components/common/ThemeSwitch";
+import { beianUrl, getCurrentIcpRecord } from "@/config/icp";
 
 const showcasePosts = [
   {
@@ -796,12 +797,12 @@ export default function LoginPage() {
           <p>
             小秧的小站 ©{new Date().getFullYear()} 丐箩箩 |{" "}
             <a
-              href="https://beian.miit.gov.cn/"
+              href={beianUrl}
               target="_blank"
               rel="noreferrer noopener"
               className="login-showcase-footer-link"
             >
-              蜀ICP备2024079726号-1
+              {getCurrentIcpRecord()}
             </a>
           </p>
         </footer>

@@ -5,6 +5,7 @@ import ThemeSwitch from "@/components/common/ThemeSwitch";
 import GuildSwitcher from "@/features/user/components/GuildSwitcher";
 import UserMenu from "@/features/user/components/UserMenu";
 import { getFilteredMenu } from "@/config/userMenuConfig";
+import { beianUrl, getCurrentIcpRecord } from "@/config/icp";
 
 /**
  * 用户页面布局组件
@@ -127,7 +128,15 @@ export default function UserLayout() {
       <footer className="border-t border-pink-200 dark:border-pink-900 py-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-sm text-default-500">
-            小秧排表 ©{new Date().getFullYear()} 丐箩箩 | 蜀ICP备2024079726号-1
+            小秧排表 ©{new Date().getFullYear()} 丐箩箩 |{" "}
+            <a
+              href={beianUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-pink-500 hover:text-pink-600 dark:text-pink-300 dark:hover:text-pink-200 transition-colors"
+            >
+              {getCurrentIcpRecord()}
+            </a>
           </p>
         </div>
       </footer>
